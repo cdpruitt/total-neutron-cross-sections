@@ -1,0 +1,222 @@
+# ****************************************************************
+# DPPrunner Configuration File
+# ****************************************************************
+
+# NOTE:
+# The lines between the commands @OFF and @ON will be skipped.
+# This can be used to exclude parts of the file.
+
+# ----------------------------------------------------------------
+# Settings common to all channels
+# ----------------------------------------------------------------
+[COMMON]
+
+# OPEN: open the digitizer
+# options: USB 0 0      Desktop/NIM digitizer through USB              
+#          USB 0 BA     VME digitizer through USB-V1718 (BA = BaseAddress of the VME board, 32 bit hex)
+#          PCI 0 0 0    Desktop/NIM/VME through CONET (optical link) 
+#          PCI 0 0 BA   VME digitizer through V2718 (BA = BaseAddress of the VME board, 32 bit hex)
+#OPEN PCI 0 0 0
+OPEN USB 0 0
+
+# GNUPLOT_PATH: path to gnuplot executable file
+GNUPLOT_PATH "/usr/bin/gnuplot"
+
+ACQUISITION_MODE LIST
+
+LIST_PARAMS ENERGY_AND_TIME
+
+LIST_OUT_MODE ASCII
+
+# RECORD_LENGTH = number of samples in the acquisition window
+RECORD_LENGTH  4000
+
+
+# EXTERNAL_TRIGGER: external trigger input settings. When enabled, the ext. trg. can be either 
+# propagated (ACQUISITION_AND_TRGOUT) or not (ACQUISITION_ONLY) through the TRGOUT
+# options: DISABLED, ACQUISITION_ONLY, ACQUISITION_AND_TRGOUT
+EXTERNAL_TRIGGER DISABLED 
+
+
+# MAX_NUM_EVENTS_BLT: maximum number of events to read out in one Block Transfer. High values corresponds to 
+# options: 0 to 1023
+MAX_NUM_AGGREGATES_BLT  255
+
+# NEVT_AGGR <n>: Number of Events per Aggregate. Use small values for low rates, or high values for high rates.
+# options:
+#	<n> = 1 to 1023 -> set number of events per aggregate to <n> (use only in list mode)
+#	<n> = 0 -> Automatic mode (for high rates and best performance in list mode)
+NEVT_AGGR	0
+
+# PRE_TRIGGER: pre trigger size in number of samples
+# options: 1 to 511
+PRE_TRIGGER 136 
+
+# TRG_HOLDOFF: trigger hold off in ns
+# range: 0 - 1920 in steps of 128 ns
+TRG_HOLDOFF 0 
+
+# FPIO_LEVEL: type of the front panel I/O LEMO connectors 
+# options: NIM, TTL
+FPIO_LEVEL  NIM
+
+SELF_TRIGGER ENABLED
+
+GATED_START DISABLED
+
+# WRITE_REGISTER: generic write register access. This command allows the user to have a direct write access to the
+# registers of the board. NOTE: all the direct write accesses are executed before the other setting, thus it might
+# happen that one specific setting overwrites the register content.
+# Syntax: WRITE_REGISTER ADDRESS DATA, where ADDRESS is the address offset of the register (16 bit hex)
+# and DATA is the value being written (31 bit hex)
+# Example: WRITE_REGISTER  1080  00000010  # Set the threshold of channel 0 to 16 ADC counts (hex 10)
+#  WRITE_REGISTER  8168  8  
+
+
+PULSE_POLARITY      	POSITIVE
+STOP_TIME   		0.0
+
+VIRTUAL_PROBE_A1 0
+VIRTUAL_PROBE_A2 5
+VIRTUAL_PROBE_D1 26 
+VIRTUAL_PROBE_D2 25 
+VIRTUAL_PROBE_D3 20 
+VIRTUAL_PROBE_D4 25 
+
+TIME_HISTO_MAX		4000
+DTC_TIME_INTERVAL   	100000
+DTC_EVENT_INTERVAL  	10000
+EMIN_SKIM   		0
+EMAX_SKIM   		100
+ENABLE_ENERGY_SKIM  	NO
+CALIBRATION_X1		0
+CALIBRATION_Y1		0.0
+CALIBRATION_X2		0
+CALIBRATION_Y2		0.0
+
+TRG_THRESHOLD		50
+
+# ONLY FOR NG FIRMWARES
+TRIGGER_CONFIG		THRESHOLD
+# THRESHOLD, PEAK
+TRIGGER_MODE		NORMAL
+SELF_TRIGGER		ENABLED
+# NORMAL, COINCIDENCE
+PSD_SEL_CHARGE_SENS	0
+PSD_SHORT_GATE		50
+PSD_LONG_GATE		150
+PSD_PRE_GATE		40
+PSD_BL_THRESHOLD 0 
+PSD_BL_TIMEOUT		255
+TIME_VAL_ACQ_WIN	48
+PUR_MODE		DETECT
+#DETECT, REJECT
+PUR_GAP			100
+PSD_SEL_BASELINE		1
+
+
+DUMPFILE 		dump_015
+DUMP_WAVEFORMS 		NO
+DUMP_LIST 		NO
+DUMP_EHISTO 		NO
+DUMP_THISTO 		NO
+
+
+CFD_DELAY 1
+CFD_ATTENUATION 1
+DISC_MODE CFD
+
+# ----------------------------------------------------------------
+# Individual Settings 
+# ----------------------------------------------------------------
+# The following setting are usually applied on channel by channel
+# basis; however, you can put them also in the [COMMON] section in
+# order to apply them to all the channels.
+# ----------------------------------------------------------------
+
+# ENABLE_INPUT: enable/disable one channel (or one group in the case of the Mod 740)
+# options: YES, NO
+
+# DC_OFFSET: DC offset adjust (DAC channel setting) in percent of the Full Scale. 
+# -50: analog input dynamic range = -Vpp to 0 (negative signals)
+# +50: analog input dynamic range = 0 to +Vpp (positive signals)
+# 0:   analog input dynamic range = -Vpp/2 to +Vpp/2 (bipolar signals)
+# options: -50.0 to 50.0  (floating point)
+DC_OFFSET              0
+
+# TRIGGER_THRESHOLD: threshold for the channel auto trigger (ADC counts)
+# options 0 to 2^N-1 (N=Number of bit of the ADC)
+
+# CHANNEL_TRIGGER: channel auto trigger settings. When enabled, the ch. auto trg. can be either 
+# propagated (ACQUISITION_AND_TRGOUT) or not (ACQUISITION_ONLY) through the TRGOUT
+# options: DISABLED, ACQUISITION_ONLY, ACQUISITION_AND_TRGOUT
+
+# GROUP_TRG_ENABLE_MASK: this option is used only for the Models x740. These models have the
+# channels grouped 8 by 8; one group of 8 channels has a common trigger that is generated as
+# the OR of the self trigger of the channels in the group that are enabled by this mask.
+# options: 0 to F
+
+[GLOBAL]
+
+
+[0]
+ENABLE_INPUT YES
+CHANNEL_TRIGGER ENABLED
+TRG_THRESHOLD 10 
+RECORD_LENGTH 256
+DC_OFFSET 27 
+PSD_SHORT_GATE 22 
+PSD_PRE_GATE 12 
+PSD_LONG_GATE 60 
+
+[1]
+ENABLE_INPUT YES 
+CHANNEL_TRIGGER ENABLED
+RECORD_LENGTH 96 
+PSD_SHORT_GATE 20 
+DC_OFFSET 27
+TRG_THRESHOLD 2000
+PSD_PRE_GATE 18 
+PSD_LONG_GATE 60
+
+[2]
+ENABLE_INPUT NO 
+
+[3]
+ENABLE_INPUT NO 
+
+[4]
+ENABLE_INPUT NO 
+
+[5]
+ENABLE_INPUT NO 
+
+[6]
+ENABLE_INPUT NO 
+
+[7]
+ENABLE_INPUT NO 
+
+[8]
+ENABLE_INPUT NO 
+
+[9]
+ENABLE_INPUT NO 
+
+[10]
+ENABLE_INPUT NO 
+
+[11]
+ENABLE_INPUT NO 
+
+[12]
+ENABLE_INPUT NO 
+
+[13]
+ENABLE_INPUT NO 
+
+[14]
+ENABLE_INPUT NO 
+
+[15]
+ENABLE_INPUT NO 
