@@ -18,7 +18,9 @@ int main()
     tree->SetAutoSave(0);
 
     TH1S* outDPP = new TH1S("outDPP","outDPP",1024,0,60000);
-    TH1S* listWav[1000];
+    //TH1S* listWav[1000];
+    vector<TH1S*> listWaveforms;
+    vector<TH1S*> listWavelets; 
 
     struct DPPevent {
         unsigned int timetag, sgQ, lgQ, baseline;
@@ -35,7 +37,7 @@ int main()
 
     ostringstream histName;
     ifstream evtfile;
-    string name = "wutest.evt";
+    string name = "../output/wutest.evt";
     evtfile.clear();
     evtfile.open(name.c_str(),ios::binary);      
 
@@ -48,8 +50,9 @@ int main()
 
     point = buffer;
 
-    unsigned int Ne = 0; // number of events in the buffer
-    unsigned int Nwav = 0; // number of waveform mode events in the buffer
+    unsigned int Ne = 0; // counter for the number of events in the buffer
+    unsigned int Nwavelets = 0; // counter for the number of MIXED mode wavelets in the buffer
+    unsigned int Nwaveforms = 0; // counter for the number of waveform events in the buffer
 
     while(!evtfile.eof())
     {
@@ -124,9 +127,29 @@ int main()
             evtfile.read((char*)buffer,BufferBytes);
             const unsigned int nSamp = (nSamp2 << 16) | nSamp1;
             cout << "number of waveform samples = " << nSamp << endl;
+
             if(nSamp > 0)
+                // We must be in MIXED mode; time to output wavelet.
             {
-                struct MIXEDevent {
+                cout << "MIXED event wavelet data" << endl;
+
+                histName.str("");
+                histName << "outWavelet" << Nwavelets;
+                string tempHist = histName.str();
+
+                listWavelets.push_back(new TH1S(tempHist.c_str(),tempHist.c_str(),nSamp,0,nSamp*2));
+
+                for(int i=0;i<nSamp;i++)
+                {
+                    listWavelets[Nwavelets]->SetBinContent(i,buffer[0]);
+                    cout << buffer[0] << endl;
+                    evtfile.read((char*)buffer,BufferBytes);
+                    //waveform[i]=buffer[0];
+                }
+                Nwavelets++;
+            }
+
+                /*struct MIXEDevent {
                     vector<unsigned int> wavelet;
                 };
 
@@ -139,7 +162,7 @@ int main()
                 }
 
 
-            }
+            }*/
 
             de.timetag = timetag;
             de.sgQ = sgQ;
@@ -164,19 +187,21 @@ int main()
             //unsigned short waveform[nSamples];
 
             histName.str("");
-            histName << "outWav" << Nwav;
+            histName << "outWaveform" << Nwaveforms;
             string tempHist = histName.str();
 
-            listWav[Nwav]= new TH1S(tempHist.c_str(),"outWav",512,0,60000);
+            listWaveforms.push_back(new TH1S(tempHist.c_str(),tempHist.c_str(),nSamples,0,nSamples*2));
 
-            for(int i=1;i<=nSamples;i++)
+            for(int i=0;i<nSamples;i++)
             {
-                listWav[Nwav]->SetBinContent(i,buffer[0]);
+                listWaveforms[Nwaveforms]->SetBinContent(i,buffer[0]);
+                cout << buffer[0] << endl;
                 evtfile.read((char*)buffer,BufferBytes);
                 //waveform[i]=buffer[0];
             }
 
-            Nwav++;
+
+            Nwaveforms++;
         }
 
         else

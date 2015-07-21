@@ -22,15 +22,14 @@ OPEN USB 0 0
 # GNUPLOT_PATH: path to gnuplot executable file
 GNUPLOT_PATH "/usr/bin/gnuplot"
 
-ACQUISITION_MODE LIST
+ACQUISITION_MODE MIXED
 
 LIST_PARAMS ENERGY_AND_TIME
 
 LIST_OUT_MODE ASCII
 
 # RECORD_LENGTH = number of samples in the acquisition window
-RECORD_LENGTH  4000
-
+# RECORD_LENGTH 256 
 
 # EXTERNAL_TRIGGER: external trigger input settings. When enabled, the ext. trg. can be either 
 # propagated (ACQUISITION_AND_TRGOUT) or not (ACQUISITION_ONLY) through the TRGOUT
@@ -50,7 +49,7 @@ NEVT_AGGR	0
 
 # PRE_TRIGGER: pre trigger size in number of samples
 # options: 1 to 511
-PRE_TRIGGER 136 
+PRE_TRIGGER 10 
 
 # TRG_HOLDOFF: trigger hold off in ns
 # range: 0 - 1920 in steps of 128 ns
@@ -96,13 +95,14 @@ CALIBRATION_Y2		0.0
 
 TRG_THRESHOLD		50
 
+@OFF
 # ONLY FOR NG FIRMWARES
 TRIGGER_CONFIG		THRESHOLD
 # THRESHOLD, PEAK
 TRIGGER_MODE		NORMAL
 SELF_TRIGGER		ENABLED
 # NORMAL, COINCIDENCE
-PSD_SEL_CHARGE_SENS	0
+PSD_SEL_CHARGE_SENS	2
 PSD_SHORT_GATE		50
 PSD_LONG_GATE		150
 PSD_PRE_GATE		40
@@ -113,6 +113,7 @@ PUR_MODE		DETECT
 #DETECT, REJECT
 PUR_GAP			100
 PSD_SEL_BASELINE		1
+@ON
 
 
 DUMPFILE 		dump_015
@@ -142,7 +143,7 @@ DISC_MODE CFD
 # +50: analog input dynamic range = 0 to +Vpp (positive signals)
 # 0:   analog input dynamic range = -Vpp/2 to +Vpp/2 (bipolar signals)
 # options: -50.0 to 50.0  (floating point)
-DC_OFFSET              0
+#DC_OFFSET              0
 
 # TRIGGER_THRESHOLD: threshold for the channel auto trigger (ADC counts)
 # options 0 to 2^N-1 (N=Number of bit of the ADC)
@@ -164,13 +165,13 @@ ENABLE_INPUT YES
 CHANNEL_TRIGGER ENABLED
 TRG_THRESHOLD 10 
 RECORD_LENGTH 256
-DC_OFFSET 27 
+DC_OFFSET 48 
 PSD_SHORT_GATE 22 
 PSD_PRE_GATE 12 
 PSD_LONG_GATE 60 
 
 [1]
-ENABLE_INPUT YES 
+ENABLE_INPUT NO 
 CHANNEL_TRIGGER ENABLED
 RECORD_LENGTH 96 
 PSD_SHORT_GATE 20 
