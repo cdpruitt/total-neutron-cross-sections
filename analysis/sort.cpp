@@ -7,6 +7,7 @@
 #include "TH1S.h"
 #include "TFile.h"
 #include "TTree.h"
+#include "TDirectoryFile.h"
 
 using namespace std;
 
@@ -26,12 +27,13 @@ unsigned int Ne = 0; // counter for the number of events in the buffer
 unsigned int Nwavelets = 0; // counter for the number of MIXED mode wavelets in the buffer
 unsigned int Nwaveforms = 0; // counter for the number of waveform events in the buffer
 
-
-ofstream timeOut ("timeTags.txt");
-ofstream totalOut ("output.txt");
-ofstream targetChangerOut ("targetChangerOut.txt");
-ofstream monitorOut ("monitorOut.txt");
-ofstream detectorOut ("detectorOut.txt");
+ofstream timeOut ("sorted/timeTags.txt");
+ofstream totalOut ("sorted/allChannels.txt");
+ofstream targetChangerOut ("sorted/targetChanger.txt");
+ofstream monitorOut ("sorted/monitor.txt");
+ofstream detectorLOut ("sorted/detectorL.txt");
+ofstream detectorROut ("sorted/detectorR.txt");
+ofstream detectorTOut ("sorted/detectorT.txt");
 
 ostringstream histName;
 ifstream evtfile;
@@ -40,13 +42,21 @@ string name = "../output/wutest.evt";
 vector<TH1S*> listWaveforms;
 vector<TH1S*> listWavelets; 
 
+TFile *file; 
+TDirectoryFile *targetChangerDir;
+TDirectoryFile *monitorDir;
+TDirectoryFile *detLDir;
+TDirectoryFile *detRDir;
+TDirectoryFile *detTDir;
+
+// TDirectory *dirSub;
+
 struct DPPevent {
     unsigned int timetag, sgQ, lgQ, baseline;
 };
 
 DPPevent de;
 
-TFile* f; 
 TTree* tree;
 
 TH1S* outDPP;
@@ -90,6 +100,9 @@ int readHeader(ifstream& evtfile)
 // prints the data from the event header to the appropriate outfile
 void headerPrint(ofstream& out)
 {
+
+    out << "Event number = " << Ne << endl;
+
     out << "size = " << size << endl;
 
     if(evtype==1)
@@ -107,11 +120,14 @@ void headerPrint(ofstream& out)
 
     out << "channel # = " << channel << endl;
     out << "timetag = " << timetag << endl;
+    out << "\n";
 
 }
 
-// unpack takes data from an output.evt into readable ROOT or .txt output files, based on channel
+// unpack takes data from an output.evt into ROOT histograms and .txt output files, based on channel
 // the parameter indicates how the data should be interpreted, i.e., "detector" or "target changer"
+
+// 'out' is a stream to a textfile for inspection of each event
 
 void unpack(ifstream& evtfile, ofstream& out)
 {
@@ -159,7 +175,7 @@ void unpack(ifstream& evtfile, ofstream& out)
             out << "MIXED event wavelet data";
 
             histName.str("");
-            histName << "outWavelet" << Nwavelets;
+            histName << "outWavelet" << Ne;
             string tempHist = histName.str();
 
             listWavelets.push_back(new TH1S(tempHist.c_str(),tempHist.c_str(),nSamp,0,nSamp*2));
@@ -168,7 +184,7 @@ void unpack(ifstream& evtfile, ofstream& out)
             {
                 if(i%8 == 0)
                 {
-                    totalOut << "\n";
+                    out << "\n";
                 }
 
                 listWavelets[Nwavelets]->SetBinContent(i,buffer[0]);
@@ -201,8 +217,7 @@ void unpack(ifstream& evtfile, ofstream& out)
         unsigned short nSamples2 = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
         unsigned long nSamples = (nSamples2 << 16) | nSamples1;
-        out
-            << "nSamples = " << nSamples << endl;
+        out << "nSamples = " << nSamples << endl;
 
         //unsigned short waveform[nSamples];
 
@@ -214,13 +229,21 @@ void unpack(ifstream& evtfile, ofstream& out)
 
         for(int i=0;i<nSamples;i++)
         {
+            if(i%8 == 0)
+            {
+                out << "\n";
+            }
+
             listWaveforms[Nwaveforms]->SetBinContent(i,buffer[0]);
-            //totalOut << buffer[0] << endl;
+            out << buffer[0] << " ";
             evtfile.read((char*)buffer,BufferBytes);
-            //waveform[i]=buffer[0];
+
         }
+        
+        // done with this event; increment the wavelet counter to get ready for the next
+        // wavelet.
 
-
+        out << "\n\n";
         Nwaveforms++;
     }
 
@@ -234,9 +257,15 @@ void unpack(ifstream& evtfile, ofstream& out)
 int main()
 {
 
+    file = new TFile("events.root","RECREATE");
+    file->cd();
 
-    
-    f = new TFile("eventTest.root","RECREATE");
+    targetChangerDir = new TDirectoryFile("targetChanger","Target Changer");
+    monitorDir = new TDirectoryFile("monitor","Monitor");
+    detLDir = new TDirectoryFile("detL","Detector left)");
+    detRDir = new TDirectoryFile("detR","Detector right");
+    detTDir = new TDirectoryFile("detT","Detector sum");
+ 
     tree = new TTree("tree","");
     tree->SetAutoSave(0);
 
@@ -244,7 +273,6 @@ int main()
     //TH1S* listWav[1000];
 
     tree->Branch("event",&de.timetag,"time/I:sgQ:lgQ:baseline");
-
 
     evtfile.clear();
     evtfile.open(name.c_str(),ios::binary);      
@@ -259,10 +287,11 @@ int main()
     point = buffer;
 
     // start reading the evtfile for events
+
     while(!evtfile.eof())
     {
         int channelNum = readHeader(evtfile);
-        cout << channelNum << endl;
+        //cout << channelNum << endl;
         headerPrint(totalOut);
         timeOut << timetag << endl;
 
@@ -272,32 +301,51 @@ int main()
         {
             case 0: 
                 // target-changer data
+                targetChangerDir->cd();
                 headerPrint(targetChangerOut);
                 unpack(evtfile, targetChangerOut);
                 break;
+
             case 1:
+                targetChangerDir->cd();
+                headerPrint(targetChangerOut);
+                unpack(evtfile, targetChangerOut);
                 break;
+
             case 2:
                 // monitor data
+                monitorDir->cd();
                 headerPrint(monitorOut);
                 unpack(evtfile, monitorOut);
                 break;
+
             case 3:
                 break;
+
             case 4:
-                // detector data
-                headerPrint(detectorOut);
-                unpack(evtfile, detectorOut);
+                // L/R detector summed data
+                detTDir->cd();
+                headerPrint(detectorTOut);
+                unpack(evtfile, detectorTOut);
                 break;
+
             case 5:
                 break;
+
             case 6:
-                // detector data
-                headerPrint(detectorOut);
-                unpack(evtfile, detectorOut);
+                // left detector data
+                detLDir->cd();
+                headerPrint(detectorLOut);
+                unpack(evtfile, detectorLOut);
                 break;
+
             case 7:
+                // right detector data
+                detRDir->cd();
+                headerPrint(detectorROut);
+                unpack(evtfile, detectorROut);
                 break;
+
             default:
                 cout << "ERROR: unknown value for channel type" << endl;
                 return 0;
@@ -315,7 +363,9 @@ int main()
         Ne++;
     }
     cout << "Finished processing buffer" << endl;
-    f->Write();
+
+    file->Write();
+    
     tree->Write();
     cout << Ne++ << endl;
 }

@@ -1,0 +1,246 @@
+# ****************************************************************
+# DPPrunner Configuration File
+# ****************************************************************
+
+# There are two sections of this file:
+#   - settings common to all channels, headed by [COMMON]
+#   - per-channel settings, headed by [CH NO.], ranging from 0-7
+
+
+# ----------------------------------------------------------------
+# Settings common to all channels
+# ----------------------------------------------------------------
+
+[COMMON]
+
+# OPEN: parameters for opening the digitizer
+# options: USB 0 0      Desktop/NIM digitizer through USB              
+#          USB 0 BA     VME digitizer through USB-V1718 (BA = BaseAddress of the VME board, 32 bit hex)
+#          PCI 0 0 0    Desktop/NIM/VME through CONET (optical link) 
+#          PCI 0 0 BA   VME digitizer through V2718 (BA = BaseAddress of the VME board, 32 bit hex)
+OPEN USB 0 0
+
+# ACQUISITION_MODE: determines what data is read from the device each event.
+#
+# options: LIST    - only DPP parameters are read.
+#          MIXED   - DPP parameters + waveforms, with RECORD_LENGTH as number of samples
+ACQUISITION_MODE MIXED
+
+# PSD_SEL_BASELINE: Enable/disable automatic baseline calculation.
+# options: 0   - turns off dynamic baseline calculation (user must fix baseline) [CURRENTLY UNSUPPORTED]
+#          1   - turns on dynamic baseline calculation (using PSD_BL_SAMPLES)
+PSD_SEL_BASELINE 1
+
+# RECORD_LENGTH = number of samples in the acquisition window. Must be >= PSD_LONG_GATE
+RECORD_LENGTH 400
+
+# TRIGGER_MODE: determines how channel triggers are generated from discriminator-firings.
+# options: NORMAL      - each discriminator-firing triggers DPP processing/readout
+#          COINCIDENCE - channel coincidence must be satisfied before triggering [CURRENTLY UNSUPPORTED]
+TRIGGER_MODE NORMAL
+
+# FPIO_LEVEL: signal type for the front panel I/O LEMO connectors 
+# options: NIM
+#          TTL
+FPIO_LEVEL NIM
+
+# GATED_START: to require TRGIN input to start data acquisition.
+# options: ENABLED  - TRGIN signal required
+#          DISABLED - TRGIN signal not required [REQUIRED FOR CURRENT READOUT SOFTWARE]
+GATED_START DISABLED
+
+# EXTERNAL_TRIGGER: external trigger input settings. When enabled, the ext. trg. can be either 
+# propagated (ACQUISITION_AND_TRGOUT) or not (ACQUISITION_ONLY) through the TRGOUT
+# options: DISABLED
+#          ACQUISITION_ONLY
+#          ACQUISITION_AND_TRGOUT
+EXTERNAL_TRIGGER DISABLED 
+
+# NEVT_AGGR <n>: Number of Events per Aggregate. Use small values for low rates, or high values for high rates.
+# options:
+#	<n> = 1 to 1023 -> set number of events per aggregate to <n> (use only in list mode)
+#	<n> = 0 -> Automatic mode (for high rates and best performance in list mode)
+NEVT_AGGR	0
+
+# MAX_NUM_EVENTS_BLT: maximum number of events to read out in one Block Transfer.
+# options: 0 to 1023
+MAX_NUM_AGGREGATES_BLT  255
+
+# TRG_HOLDOFF: trigger hold off in ns
+# range: 0 - 1920 in steps of 128 ns [THESE UNITS CURRENTLY IN DOUBT?]
+TRG_HOLDOFF 10
+
+# PUR_MODE: pile-up rejection mode. [NOTE: this will be implemented in a firmware upgrade later.]
+# options:
+#          DETECT   - flag the existence of a pile-up, but do not discard the event
+#          ENABLED  - reject events with pile-up.
+PUR_MODE		DETECT
+
+# PSD_PUR_GAP: the purge gap for pile-up rejection as described in DPP-PSD manual appendix A.
+# [NOTE: this will be implemented in a firmwave upgrade later.]
+PSD_PUR_GAP 0
+
+
+# ----------------------------------------------------------------
+# Individual Settings 
+# ----------------------------------------------------------------
+# The following settings are usually applied on channel by channel
+# basis; however, you can put them also in the [COMMON] section in
+# order to apply them to all the channels. If settings appear in
+# both the common and individual sections, the value lower in this
+# file takes precedence.
+# ----------------------------------------------------------------
+
+# ENABLE_INPUT: enable/disable one channel.
+# options: YES, NO
+
+# DC_OFFSET: DC offset adjust (DAC channel setting) in percent of the Full Scale. 
+# -50: analog input dynamic range = -Vpp to 0 (negative signals)
+# +50: analog input dynamic range = 0 to +Vpp (positive signals)
+# 0:   analog input dynamic range = -Vpp/2 to +Vpp/2 (bipolar signals)
+# options: -50.0 to 50.0  (floating point)
+
+# PRE_TRIGGER: pre-trigger size in number of samples
+# options: 1 to 511
+PRE_TRIGGER 100 
+
+# TRIGGER_THRESHOLD: threshold for the channel auto trigger, relative to the baseline
+# options 0 to 2^N-1 (N=Number of bit of the ADC)
+
+# CHANNEL_TRIGGER: channel auto trigger settings. When enabled, the ch. auto trg. can be either 
+# propagated (ACQUISITION_AND_TRGOUT) or not (ACQUISITION_ONLY) through the TRGOUT
+# options: DISABLED, ACQUISITION_ONLY, ACQUISITION_AND_TRGOUT
+
+# PSD_LONG_GATE: number of samples in the long gate.
+
+# PSD_SHORT_GATE: number of samples in the short gate.
+
+# PSD_PRE_GATE: number of samples prior to the trigger that the long and short gates begin.
+
+# PSD_BL_SAMPLES: number of samples used to compute the dynamic baseline.
+# options: 0 - fixed baseline [CURRENTLY UNSUPPORTED]
+#          1 - 16 samples
+#          2 - 64 samples
+#          3 - 256 samples
+#          4 - 512 samples
+
+# PSD_SEL_CHARGE_SENSE: The meaning of the least significant bit of the ADC.
+# options: 0 - 5fC
+#          1 - 20fC
+#          2 - 80fC
+#          3 - 320fC
+#          4 - 1280fC
+
+# TRIGGER_VALIDATION_WINDOW: number of samples in the coincidence window when coincidence triggering
+# is enabled. [CURRENTLY UNSUPPORTED]
+
+# CFD_DELAY: signal delay of the CFD in ns
+CFD_DELAY 10
+
+# CFD_ATTENUATION: attenuation factor for the CFD.
+# options: 0 - 25% of the input signal
+#          1 - 50% of the input signal
+#          2 - 75% of the input signal
+#          3 - 100% (no attenuation)
+CFD_ATTENUATION 1
+
+# CFD_INTERPOLATE: defines which points on the waveform will be used for the zero-crossing
+# interpolation. [NOTE: interpolation is hard-coded as enabled.]
+# options: 0 - use the samples immediately before and after the zero crossing.
+#          1 - use the samples two cycles before and after the zero crossing.
+#          2 - use the samples three cycles before and after the zero crossing.
+#          3 - use the samples four cycles before and after the zero crossing.
+CFD_INTERPOLATE 0
+
+# DISC_MODE: type of discrimination used.
+# options: LED or CFD
+DISC_MODE CFD 
+
+# DYNAMIC_RANGE: sets the dynamic range for the module.
+# options: .5  - 0.5Vpp
+#          2   - 2Vpp
+DYNAMIC_RANGE 2
+
+# RESOLUTION: number of bits of resolution for the waveform.
+# options: 10, 12, 13, 14
+RESOLUTION 14
+
+# FREQUENCY: sampling frequency of the channel (MHz)
+# options: 250, 500
+FREQUENCY 500
+
+# POLARITY: channel input pulse polarity
+# options: POSITIVE, NEGATIVE
+
+# PSD_CUT: cut the data using PSD cut [CURRENTLY UNUSED].
+# options: DISABLED - no PSD cutting
+#          GAMMA
+#          NEUTRON
+PSD_CUT DISABLED
+
+# PSD_CUT_LEVEL: this is the fraction of PSD full scale where the PSD cut should be made.
+# options: range from 0.0-1.0
+
+[0]
+# TARGET CHANGER SETTINGS
+ENABLE_INPUT NO 
+POLARITY POSITIVE
+CHANNEL_TRIGGER ENABLED
+TRG_THRESHOLD 100 
+#DC_OFFSET 0 
+PSD_SHORT_GATE 12 
+PSD_PRE_GATE 4 
+PSD_LONG_GATE 40 
+PSD_SEL_CHARGE_SENSE 1
+DYNAMIC_RANGE 2
+
+[1]
+ENABLE_INPUT NO 
+
+[2]
+ENABLE_INPUT NO 
+
+[3]
+ENABLE_INPUT NO 
+
+[4]
+# SUM OF DETECTORS SETTINGS
+ENABLE_INPUT NO 
+POLARITY NEGATIVE
+CHANNEL_TRIGGER ENABLED
+TRG_THRESHOLD 50 
+#DC_OFFSET 0 
+PSD_SHORT_GATE 40 
+PSD_PRE_GATE 4 
+PSD_LONG_GATE 150 
+PSD_SEL_CHARGE_SENSE 2
+DYNAMIC_RANGE 2 
+
+[5]
+ENABLE_INPUT NO 
+
+[6]
+# LEFT DETECTOR SETTINGS
+ENABLE_INPUT NO 
+POLARITY NEGATIVE
+CHANNEL_TRIGGER ENABLED
+TRG_THRESHOLD 50 
+#DC_OFFSET 0 
+PSD_SHORT_GATE 40 
+PSD_PRE_GATE 4 
+PSD_LONG_GATE 150 
+PSD_SEL_CHARGE_SENSE 2
+DYNAMIC_RANGE 2 
+
+[7]
+# RIGHT DETECTOR SETTINGS
+ENABLE_INPUT YES 
+POLARITY NEGATIVE
+CHANNEL_TRIGGER ENABLED
+TRG_THRESHOLD 60 
+DC_OFFSET -40 
+PSD_SHORT_GATE 40 
+PSD_PRE_GATE 4 
+PSD_LONG_GATE 150 
+PSD_SEL_CHARGE_SENSE 2
+DYNAMIC_RANGE 2 

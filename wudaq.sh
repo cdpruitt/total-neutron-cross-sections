@@ -4,4 +4,4 @@ if [ -f ~/WashUDAQ/output/wutest.evt ]
       rm ~/WashUDAQ/output/wutest.evt
 fi
 
-bin/readout targetConfig/config.txt output/wutest.evt
+bin/readout testConfig/config.txt output/wutest.evt
