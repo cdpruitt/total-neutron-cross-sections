@@ -32,7 +32,7 @@ ACQUISITION_MODE MIXED
 PSD_SEL_BASELINE 1
 
 # RECORD_LENGTH = number of samples in the acquisition window. Must be >= PSD_LONG_GATE
-RECORD_LENGTH 400
+RECORD_LENGTH 200
 
 # TRIGGER_MODE: determines how channel triggers are generated from discriminator-firings.
 # options: NORMAL      - each discriminator-firing triggers DPP processing/readout
@@ -102,7 +102,7 @@ PSD_PUR_GAP 0
 
 # PRE_TRIGGER: pre-trigger size in number of samples
 # options: 1 to 511
-PRE_TRIGGER 100 
+PRE_TRIGGER 20 
 
 # TRIGGER_THRESHOLD: threshold for the channel auto trigger, relative to the baseline
 # options 0 to 2^N-1 (N=Number of bit of the ADC)
@@ -123,6 +123,7 @@ PRE_TRIGGER 100
 #          2 - 64 samples
 #          3 - 256 samples
 #          4 - 512 samples
+PSD_BL_SAMPLES 1
 
 # PSD_SEL_CHARGE_SENSE: The meaning of the least significant bit of the ADC.
 # options: 0 - 5fC
@@ -154,7 +155,7 @@ CFD_INTERPOLATE 0
 
 # DISC_MODE: type of discrimination used.
 # options: LED or CFD
-DISC_MODE CFD 
+DISC_MODE LED 
 
 # DYNAMIC_RANGE: sets the dynamic range for the module.
 # options: .5  - 0.5Vpp
@@ -237,9 +238,9 @@ DYNAMIC_RANGE 2
 ENABLE_INPUT YES 
 POLARITY NEGATIVE
 CHANNEL_TRIGGER ENABLED
-TRG_THRESHOLD 60 
+TRG_THRESHOLD 100 
 DC_OFFSET -40 
-PSD_SHORT_GATE 40 
+PSD_SHORT_GATE 30 
 PSD_PRE_GATE 4 
 PSD_LONG_GATE 150 
 PSD_SEL_CHARGE_SENSE 2

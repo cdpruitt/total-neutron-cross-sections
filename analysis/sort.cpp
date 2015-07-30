@@ -1,6 +1,40 @@
-// C++ file to read CAEN event files 
+// Reads output from washudaq-X.X and sorts into ROOT and text files
+// The expected event file structure is as follows:
+//
+//      EVENT HEADER:
+//
+//      Size            |   uint32; number of bytes in the event (self-inclusive)
+//      Event Type      |   uint32; possible values are 1 (DPP data) or 2 (waveform)
+//      Channel         |   uint32; channel number of event, starting with 0
+//      Time Tag        |   uint32; coarse time (2 ns units) of event trigger
+//
+//      (every event has an EVENT HEADER)
+//
+//      ---------------------------------------------------------------------------
+//
+//      DPP EVENT BODY:
+//
+//      Zero Crossing   |   uint16; interpolated zero-crossing, in picoseconds
+//      Short Gate Q    |   uint16; charge integrated in the short gate
+//      Long Gate Q     |   uint16; charge integrated in the long gate
+//      Baseline        |   uint16; baseline level of ADC
+//      Pile up rej.    |   uint16; pile-up rejection flag (not yet implemented)
+//      Num. of samples |   uint32; number of waveform samples to follow (mixed mode)
+//      Samples         |   series of uint16 giving raw waveform samples
+//
+//      (events of type 1 have DPP EVENT BODY)
+//
+//      ---------------------------------------------------------------------------
+//
+//      WAVEFORM EVENT BODY
+//
+//      Num. of samples |   uint32; number of waveform samples to follow (mixed mode)
+//      Samples         |   series of uint16 giving raw waveform samples
+//
+//      (events of type 2 have WAVEFORM EVENT BODY)
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <string>
 #include <sstream>
@@ -11,56 +45,40 @@
 
 using namespace std;
 
-// read the header for the event to determine how it should be processed
-// returns the channel number of the event to the main processing function
-
+// Buffer variables
 int const BufferWords = 1;
 int const BufferBytes = BufferWords*2;
 unsigned short buffer[BufferWords];
 unsigned short *point;
+
+// Header fields for events
 unsigned long size;
 unsigned long evtype;
 unsigned long channel;
-unsigned long timetag;
+unsigned long timetag, timetagP = 0;
 
-unsigned int Ne = 0; // counter for the number of events in the buffer
-unsigned int Nwavelets = 0; // counter for the number of MIXED mode wavelets in the buffer
-unsigned int Nwaveforms = 0; // counter for the number of waveform events in the buffer
+unsigned int Ne = 0; // counter for the total number of events in the input file
+unsigned int Nwavelets = 0; // counter for the number of MIXED mode wavelets in the input file 
+unsigned int Nwaveforms = 0; // counter for the number of waveform events in the input file 
 
-ofstream timeOut ("sorted/timeTags.txt");
-ofstream totalOut ("sorted/allChannels.txt");
-ofstream targetChangerOut ("sorted/targetChanger.txt");
-ofstream monitorOut ("sorted/monitor.txt");
-ofstream detectorLOut ("sorted/detectorL.txt");
-ofstream detectorROut ("sorted/detectorR.txt");
-ofstream detectorTOut ("sorted/detectorT.txt");
-
-ostringstream histName;
-ifstream evtfile;
-string name = "../output/wutest.evt";
+// Create a ROOT tree for event data
+TTree* tree;
+TH1S* outDPP;
 
 vector<TH1S*> listWaveforms;
 vector<TH1S*> listWavelets; 
 
-TFile *file; 
-TDirectoryFile *targetChangerDir;
-TDirectoryFile *monitorDir;
-TDirectoryFile *detLDir;
-TDirectoryFile *detRDir;
-TDirectoryFile *detTDir;
-
-// TDirectory *dirSub;
-
-struct DPPevent {
+/*struct DPPevent {
     unsigned int timetag, sgQ, lgQ, baseline;
-};
+} de;
 
-DPPevent de;
+tree->Branch("event",&de.timetag,"time/I:sgQ:lgQ:baseline");
 
-TTree* tree;
+outDPP = new TH1S("outDPP","outDPP",1024,0,60000);
+*/
 
-TH1S* outDPP;
-
+// read EVENT HEADER to determine where the event data should go (using channel number)
+// 'out' points to a channel-specific text file
 int readHeader(ifstream& evtfile)
 {
     // start reading header
@@ -97,69 +115,83 @@ int readHeader(ifstream& evtfile)
 
 }
 
-// prints the data from the event header to the appropriate outfile
-void headerPrint(ofstream& out)
+// prints EVENT HEADER to the appropriate text file
+// 'out' points to a channel-specific text file
+void printHeader(ofstream& out)
 {
 
-    out << "Event number = " << Ne << endl;
+    out << "|" << right << setfill('-') << setw(79) << "|" << endl;
+    out << "| EVENT " << left << setfill(' ') << setw(71) << Ne << "|" << endl;
+    out << "|" << right << setfill('-') << setw(79) << "|" << endl;
 
-    out << "size = " << size << endl;
+    out << "| size = " << left << setfill(' ') << setw(70) << size << "|" << endl;
 
     if(evtype==1)
     {
-        out << "event type = DPP" << endl;
+        out << left << setw(79) << "| DPP mode " << "|" << endl;
     }
     else if (evtype==2)
     {
-        out << "event type = waveform" << endl;
+        out << left << setw(79) << "| waveform mode " << "|" << endl;
     }
     else
     {
         cout << "Error: event type value out-of-range (DPP=1, waveform=2)" << endl;
+        cout << "Event number = " << Ne << endl;
+
     }
 
-    out << "channel # = " << channel << endl;
-    out << "timetag = " << timetag << endl;
-    out << "\n";
+    out << "| channel #" << right << channel << setw(68) << "|" << endl;
+
+    stringstream temp;
+    temp << timetag << " ns";
+    out << "| timetag = " << left << setw(67) << temp.str() << "|" << endl;
+
+    out << "|" << right << setfill('-') << setw(79) << "|" << endl;
 
 }
 
-// unpack takes data from an output.evt into ROOT histograms and .txt output files, based on channel
-// the parameter indicates how the data should be interpreted, i.e., "detector" or "target changer"
-
-// 'out' is a stream to a textfile for inspection of each event
-
+// unpacks EVENT BODY data into ROOT histograms and text output
+// 'out' points to a channel-specific text file
 void unpack(ifstream& evtfile, ofstream& out)
 {
+    ostringstream histName;
+    
+    // For DPP EVENT BODY unpacking 
     if(evtype==1)
-        // DPP mode detected
     {
 
         // zcTime is the interpolated zero-crossing time, in picoseconds
         unsigned short zcTime = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
-        out << "zero crossing Time = " << zcTime << endl;
+
+        stringstream temp;
+        temp << timetag << " ns";
+
+        out << "| timetag = " << left << setw(67) << temp.str() << "|" << endl;
+        out << "| zero crossing = " << zcTime << " ps |" << endl;
+        out << "| zero crossing = " << zcTime << setfill(' ') << setw(71) << Ne << "|" << endl;
 
         // sgQ is the short gate integrated charge, in digitizer units 
         unsigned short sgQ = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
-        out << "short gate charge = " << sgQ << endl;
+        out << "| short gate charge = " << sgQ << " |" << endl;
 
         // lgQ is the long gate integrated charge, in digitizer units 
         unsigned short lgQ = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
-        outDPP->Fill(lgQ);
-        out << "long gate charge = " << lgQ << endl;
+        //outDPP->Fill(lgQ);
+        out << "| long gate charge = " << lgQ << " |" << endl;
 
         // baseline is the baseline level, frozen at the trigger time
         unsigned short baseline = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
-        out << "baseline level = " << baseline << endl;
+        out << "| baseline level = " << baseline << " |" << endl;
 
         // puRej is a pile-up rejection flag (1 if pile-up detected? 0 if not?)
         unsigned short puRej = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
-        out << "pile-up detected = " << puRej << endl;
+        out << "| pile-up detected = " << puRej << " |" << endl;
 
         // nSamp is the number of waveform samples that follow (in LIST mode, this is 0)
         unsigned short nSamp1 = buffer[0];
@@ -167,13 +199,12 @@ void unpack(ifstream& evtfile, ofstream& out)
         unsigned short nSamp2 = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
         const unsigned int nSamp = (nSamp2 << 16) | nSamp1;
-        out << "number of waveform samples = " << nSamp << endl;
+        out << "| waveform length = " << nSamp << " |" << endl;
+        out << "|-----------------------------------------------------------|" << endl;
 
         if(nSamp > 0)
             // We must be in MIXED mode; time to output wavelet.
         {
-            out << "MIXED event wavelet data";
-
             histName.str("");
             histName << "outWavelet" << Ne;
             string tempHist = histName.str();
@@ -182,9 +213,9 @@ void unpack(ifstream& evtfile, ofstream& out)
 
             for(int i=0;i<nSamp;i++)
             {
-                if(i%8 == 0)
+                if(i%10 == 0)
                 {
-                    out << "\n";
+                    out << "|" << "\n" << "| ";
                 }
 
                 listWavelets[Nwavelets]->SetBinContent(i,buffer[0]);
@@ -257,22 +288,37 @@ void unpack(ifstream& evtfile, ofstream& out)
 int main()
 {
 
+    // create a ROOT file for holding events, with one directory per input channel
+    TFile *file; 
     file = new TFile("events.root","RECREATE");
     file->cd();
+    
+    // create a ROOT tree for holding event properties
+    tree = new TTree("tree","");
+    tree->SetAutoSave(0);
 
+    TDirectoryFile *targetChangerDir, *monitorDir, *detLDir, *detRDir, *detTDir;
     targetChangerDir = new TDirectoryFile("targetChanger","Target Changer");
     monitorDir = new TDirectoryFile("monitor","Monitor");
     detLDir = new TDirectoryFile("detL","Detector left)");
     detRDir = new TDirectoryFile("detR","Detector right");
     detTDir = new TDirectoryFile("detT","Detector sum");
+    // TDirectory *dirSub; to be uncommented and used for sub-directories, if desired
  
-    tree = new TTree("tree","");
-    tree->SetAutoSave(0);
+    // create text output for holding events, with file per input channel
+    ofstream totalOut ("sorted/allChannels.txt");
+    ofstream targetChangerOut ("sorted/targetChanger.txt");
+    ofstream monitorOut ("sorted/monitor.txt");
+    ofstream detectorLOut ("sorted/detectorL.txt");
+    ofstream detectorROut ("sorted/detectorR.txt");
+    ofstream detectorTOut ("sorted/detectorT.txt");
 
-    outDPP = new TH1S("outDPP","outDPP",1024,0,60000);
-    //TH1S* listWav[1000];
+    // create text output to examine time differences from one event to the next
+    ofstream timeDiff ("sorted/timeDiff.txt");
 
-    tree->Branch("event",&de.timetag,"time/I:sgQ:lgQ:baseline");
+    // open the event file
+    ifstream evtfile;
+    string name = "../output/wutest.evt";
 
     evtfile.clear();
     evtfile.open(name.c_str(),ios::binary);      
@@ -286,36 +332,39 @@ int main()
 
     point = buffer;
 
-    // start reading the evtfile for events
-
+    // start looping through the evtfile for events
     while(!evtfile.eof())
     {
+        // get channel number from the event header
         int channelNum = readHeader(evtfile);
-        //cout << channelNum << endl;
-        headerPrint(totalOut);
-        timeOut << timetag << endl;
+
+        // print the header to an allChannels.txt
+        printHeader(totalOut);
+
+        // print the time difference between adjacent events to timeDiff.txt
+        if(timetag>timetagP)
+        {
+            timeDiff << timetag - timetagP << endl;
+        }
+        timetagP = timetag;
 
         // funnel event data differently based on channel
-
         switch (channelNum)
         {
             case 0: 
                 // target-changer data
                 targetChangerDir->cd();
-                headerPrint(targetChangerOut);
+                printHeader(targetChangerOut);
                 unpack(evtfile, targetChangerOut);
                 break;
 
             case 1:
-                targetChangerDir->cd();
-                headerPrint(targetChangerOut);
-                unpack(evtfile, targetChangerOut);
                 break;
 
             case 2:
                 // monitor data
                 monitorDir->cd();
-                headerPrint(monitorOut);
+                printHeader(monitorOut);
                 unpack(evtfile, monitorOut);
                 break;
 
@@ -323,9 +372,9 @@ int main()
                 break;
 
             case 4:
-                // L/R detector summed data
+                // Detector data (assume detectors T'd together)
                 detTDir->cd();
-                headerPrint(detectorTOut);
+                printHeader(detectorTOut);
                 unpack(evtfile, detectorTOut);
                 break;
 
@@ -333,16 +382,16 @@ int main()
                 break;
 
             case 6:
-                // left detector data
+                // Detector data (left detector only)
                 detLDir->cd();
-                headerPrint(detectorLOut);
+                printHeader(detectorLOut);
                 unpack(evtfile, detectorLOut);
                 break;
 
             case 7:
-                // right detector data
+                // Detector data (right detector only)
                 detRDir->cd();
-                headerPrint(detectorROut);
+                printHeader(detectorROut);
                 unpack(evtfile, detectorROut);
                 break;
 
@@ -352,22 +401,16 @@ int main()
                 break;
         }
 
-        /*
-           for (int i=0;i<10;i++)
-           {
-           cout << *point << endl;
-           point++;
-           }
-           */
-
+        // Event finished
         Ne++;
     }
-    cout << "Finished processing buffer" << endl;
+    
+    // Input file finished
+    cout << "Finished processing event file" << endl;
+    cout << "Total events: " << Ne << endl;
 
     file->Write();
-    
     tree->Write();
-    cout << Ne++ << endl;
 }
 
 
@@ -385,5 +428,3 @@ int main()
 
 
   }*/
-
-
