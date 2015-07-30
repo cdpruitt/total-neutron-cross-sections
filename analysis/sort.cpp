@@ -120,34 +120,37 @@ int readHeader(ifstream& evtfile)
 void printHeader(ofstream& out)
 {
 
-    out << "|" << right << setfill('-') << setw(79) << "|" << endl;
-    out << "| EVENT " << left << setfill(' ') << setw(71) << Ne << "|" << endl;
-    out << "|" << right << setfill('-') << setw(79) << "|" << endl;
+    // use for formatting strings with units
+    stringstream temp;
 
-    out << "| size = " << left << setfill(' ') << setw(70) << size << "|" << endl;
+    out << setfill('*') << setw(63) << "*" << endl;
+    out << "| EVENT " << left << setfill(' ') << setw(54) << Ne << "|" << endl;
+    out << "|" << right << setfill('-') << setw(62) << "|" << endl;
+    out << "| channel #" << channel;
 
     if(evtype==1)
     {
-        out << left << setw(79) << "| DPP mode " << "|" << endl;
+        out << left << setfill(' ') << setw(50) << ", DPP mode" << "|" << endl;
     }
     else if (evtype==2)
     {
-        out << left << setw(79) << "| waveform mode " << "|" << endl;
+        out << left << setfill(' ') << setw(50) << ", waveform mode " << "|" << endl;
     }
     else
     {
+        out << left << setfill(' ') << setw(50) << ", ERROR DETERMINING MODE" << " |" << endl;
         cout << "Error: event type value out-of-range (DPP=1, waveform=2)" << endl;
         cout << "Event number = " << Ne << endl;
-
     }
 
-    out << "| channel #" << right << channel << setw(68) << "|" << endl;
+    temp << size << " bytes";
+    out << "| size = " << left << setfill(' ') << setw(53) << temp.str() << "|" << endl;
 
-    stringstream temp;
+    temp.str("");
     temp << timetag << " ns";
-    out << "| timetag = " << left << setw(67) << temp.str() << "|" << endl;
+    out << "| timetag = " << left << setw(50) << temp.str() << "|" << endl;
 
-    out << "|" << right << setfill('-') << setw(79) << "|" << endl;
+    out << "|" << right << setfill('-') << setw(62) << "|" << endl;
 
 }
 
@@ -166,32 +169,29 @@ void unpack(ifstream& evtfile, ofstream& out)
         evtfile.read((char*)buffer,BufferBytes);
 
         stringstream temp;
-        temp << timetag << " ns";
-
-        out << "| timetag = " << left << setw(67) << temp.str() << "|" << endl;
-        out << "| zero crossing = " << zcTime << " ps |" << endl;
-        out << "| zero crossing = " << zcTime << setfill(' ') << setw(71) << Ne << "|" << endl;
+        temp << zcTime << " ps";
+        out << "| zero crossing = " << left << setfill(' ') << setw(44) << temp.str() << "|" << endl;
 
         // sgQ is the short gate integrated charge, in digitizer units 
         unsigned short sgQ = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
-        out << "| short gate charge = " << sgQ << " |" << endl;
+        out << "| short gate charge = " << left << setw(40) << sgQ << "|" << endl;
 
         // lgQ is the long gate integrated charge, in digitizer units 
         unsigned short lgQ = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
         //outDPP->Fill(lgQ);
-        out << "| long gate charge = " << lgQ << " |" << endl;
+        out << "| long gate charge = " << left << setw(41) << lgQ << "|" << endl;
 
         // baseline is the baseline level, frozen at the trigger time
         unsigned short baseline = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
-        out << "| baseline level = " << baseline << " |" << endl;
+        out << "| baseline level = " << left << setw(42) << baseline << " |" << endl;
 
         // puRej is a pile-up rejection flag (1 if pile-up detected? 0 if not?)
         unsigned short puRej = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
-        out << "| pile-up detected = " << puRej << " |" << endl;
+        //out << "| pile-up detected = " << left << setw(40) << puRej << " |" << endl;
 
         // nSamp is the number of waveform samples that follow (in LIST mode, this is 0)
         unsigned short nSamp1 = buffer[0];
@@ -199,8 +199,10 @@ void unpack(ifstream& evtfile, ofstream& out)
         unsigned short nSamp2 = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
         const unsigned int nSamp = (nSamp2 << 16) | nSamp1;
-        out << "| waveform length = " << nSamp << " |" << endl;
-        out << "|-----------------------------------------------------------|" << endl;
+        temp.str("");
+        temp << nSamp << " samples";
+        out << "| waveform length = " << left << setw(41) << temp.str() << " |" << endl;
+        out << "|" << right << setfill('-') << setw(62) << "|" << endl;
 
         if(nSamp > 0)
             // We must be in MIXED mode; time to output wavelet.
@@ -211,21 +213,33 @@ void unpack(ifstream& evtfile, ofstream& out)
 
             listWavelets.push_back(new TH1S(tempHist.c_str(),tempHist.c_str(),nSamp,0,nSamp*2));
 
+            out << left << setfill(' ') << setw(62) << "| Waveform samples" << "|" << endl;
+            out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
+
             for(int i=0;i<nSamp;i++)
             {
-                if(i%10 == 0)
+                if(i%100 == 0 && i>0)
                 {
-                    out << "|" << "\n" << "| ";
+                    out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
                 }
 
+                if(i%10 == 0)
+                {
+                    out << "|";
+                } 
+
                 listWavelets[Nwavelets]->SetBinContent(i,buffer[0]);
-                out << buffer[0] << " ";
+                out << right << setfill(' ') << setw(6) << buffer[0];
                 evtfile.read((char*)buffer,BufferBytes);
 
+                if(i%10 == 9)
+                {
+                    out << " |" << endl;
+                } 
             }
+            
             // done with this event; increment the wavelet counter to get ready for the next
             // wavelet.
-            out << "\n\n";
             Nwavelets++;
         }
 
@@ -241,40 +255,59 @@ void unpack(ifstream& evtfile, ofstream& out)
 
     else if(evtype==2)
     {
-        out << "Waveform event data" << endl;
 
-        unsigned short nSamples1 = buffer[0];
+        unsigned short nSamp1 = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
-        unsigned short nSamples2 = buffer[0];
+        unsigned short nSamp2 = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
-        unsigned long nSamples = (nSamples2 << 16) | nSamples1;
-        out << "nSamples = " << nSamples << endl;
+        unsigned long nSamp = (nSamp2 << 16) | nSamp1;
 
-        //unsigned short waveform[nSamples];
+        stringstream temp;
+        temp << nSamp << " samples";
+        out << "| waveform length = " << left << setfill(' ') << setw(41) << temp.str() << " |" << endl;
+        out << "|" << right << setfill('-') << setw(62) << "|" << endl;
 
         histName.str("");
         histName << "outWaveform" << Nwaveforms;
         string tempHist = histName.str();
 
-        listWaveforms.push_back(new TH1S(tempHist.c_str(),tempHist.c_str(),nSamples,0,nSamples*2));
+        listWaveforms.push_back(new TH1S(tempHist.c_str(),tempHist.c_str(),nSamp,0,nSamp*2));
 
-        for(int i=0;i<nSamples;i++)
+        for(int i=0;i<nSamp;i++)
         {
-            if(i%8 == 0)
+
+            if(i%1000 == 0)
             {
-                out << "\n";
+                out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
+                stringstream temp;
+                temp << "Samples " << i << "-" << i+1000;
+                out << "| " << left << setw(60) << temp.str() << "|" << endl;
+}
+
+            if(i%100 == 0)
+            {
+                out << "|" << right << setw(62) << "|" << endl;
             }
 
+            if(i%10 == 0)
+            {
+                out << "|";
+            } 
+
             listWaveforms[Nwaveforms]->SetBinContent(i,buffer[0]);
-            out << buffer[0] << " ";
+            out << right << setfill(' ') << setw(6) << buffer[0];
             evtfile.read((char*)buffer,BufferBytes);
 
+            if(i%10 == 9)
+            {
+                out << " |" << endl;
+            } 
         }
-        
+
         // done with this event; increment the wavelet counter to get ready for the next
         // wavelet.
 
-        out << "\n\n";
+        out << "\n";
         Nwaveforms++;
     }
 
@@ -283,6 +316,10 @@ void unpack(ifstream& evtfile, ofstream& out)
         cout << "ERROR: unknown value for event type" << endl;
         return;
     }
+
+    out << setfill('*') << setw(63) << "*" << endl;
+    out << endl;
+
 }
 
 int main()
