@@ -218,6 +218,8 @@ void unpack(ifstream& evtfile, ofstream& out)
 
             for(int i=0;i<nSamp;i++)
             {
+                listWavelets[Nwavelets]->SetBinContent(i,buffer[0]);
+
                 if(i%100 == 0 && i>0)
                 {
                     out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
@@ -225,17 +227,18 @@ void unpack(ifstream& evtfile, ofstream& out)
 
                 if(i%10 == 0)
                 {
-                    out << "|";
-                } 
+                    temp.str("");
+                    temp << "|";
+                }
 
-                listWavelets[Nwavelets]->SetBinContent(i,buffer[0]);
-                out << right << setfill(' ') << setw(6) << buffer[0];
+                temp << right << setfill(' ') << setw(6) << buffer[0];
                 evtfile.read((char*)buffer,BufferBytes);
 
-                if(i%10 == 9)
+                if(i%10==9 || i==nSamp-1)
                 {
-                    out << " |" << endl;
+                    out << left << setw(62) << temp.str() << "|" << endl;
                 } 
+
             }
             
             // done with this event; increment the wavelet counter to get ready for the next
@@ -268,7 +271,7 @@ void unpack(ifstream& evtfile, ofstream& out)
         out << "|" << right << setfill('-') << setw(62) << "|" << endl;
 
         histName.str("");
-        histName << "outWaveform" << Nwaveforms;
+        histName << "outWaveform" << Ne;
         string tempHist = histName.str();
 
         listWaveforms.push_back(new TH1S(tempHist.c_str(),tempHist.c_str(),nSamp,0,nSamp*2));

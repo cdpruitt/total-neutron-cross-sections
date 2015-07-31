@@ -1,0 +1,6 @@
+[COMMON]
+
+dppconfig         prodConfig/dppconfig.txt
+waveformconfig    prodConfig/waveformconfig.txt 
+dpptriggers       100000
+waveformtriggers  1
