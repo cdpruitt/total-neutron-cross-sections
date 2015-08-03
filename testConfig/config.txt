@@ -2,5 +2,5 @@
 
 dppconfig         testConfig/dppconfig.txt
 waveformconfig    testConfig/waveformconfig.txt 
-dpptriggers       1
+dpptriggers       100
 waveformtriggers  1

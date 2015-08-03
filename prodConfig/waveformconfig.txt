@@ -4,6 +4,8 @@ RECORD_LENGTH 10000
 EXTERNAL_TRIGGER ACQUISITION_ONLY
 
 [0]
+# WARNING: disabling input on channel 0 causes acquisition to crash.
+# To reset, run CAEN's DPP_PSD software and connect to the digitizer.
 ENABLE_INPUT YES 
 CHANNEL_TRIGGER ENABLED
 TRG_THRESHOLD 60 

@@ -164,13 +164,26 @@ void unpack(ifstream& evtfile, ofstream& out)
     if(evtype==1)
     {
 
-        // zcTime is the interpolated zero-crossing time, in picoseconds
-        unsigned short zcTime = buffer[0];
+        // extras is a 32-bit word with data defined by the value of EXTRA_SELECT.
+        //      0: extended timestamp and baseline
+        //      1: extended timestamp and flags
+        //      2: extended timestamp, flags, and fine timestamp
+        //      3: pulse peak value (bits 0-15) [UNTESTED FEATURE]
+        //      5: CFD samples on either side of zero crossing (NZC and PZC)
+        //      7: fixed value of 0x12345678
+        unsigned short extras1 = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
+        unsigned short extras2 = buffer[0];
+        evtfile.read((char*)buffer,BufferBytes);
+        //const unsigned int extras = (extras2 << 16) | extras1;
 
         stringstream temp;
-        temp << zcTime << " ps";
-        out << "| zero crossing = " << left << setfill(' ') << setw(44) << temp.str() << "|" << endl;
+        temp << extras2 << " *8.59 s";
+        out << "| extended time stamp = " << left << setfill(' ') << setw(34) << temp.str() << "|" << endl;
+
+        // readout gives baseline*4, and we want baseline
+        extras1 /= 4;
+        out << "| baseline = " << left << setfill(' ') << setw(49) << extras1 << "|" << endl;
 
         // sgQ is the short gate integrated charge, in digitizer units 
         unsigned short sgQ = buffer[0];
@@ -184,10 +197,10 @@ void unpack(ifstream& evtfile, ofstream& out)
         out << "| long gate charge = " << left << setw(41) << lgQ << "|" << endl;
 
         // baseline is the baseline level, frozen at the trigger time
-        unsigned short baseline = buffer[0];
+/*        unsigned short baseline = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
         out << "| baseline level = " << left << setw(42) << baseline << " |" << endl;
-
+*/
         // puRej is a pile-up rejection flag (1 if pile-up detected? 0 if not?)
         unsigned short puRej = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);

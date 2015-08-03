@@ -35,11 +35,6 @@ ACQUISITION_MODE MIXED
 PSD_SEL_BASELINE 1
 
 
-# RECORD_LENGTH = number of samples in the acquisition window. Must be >= PSD_LONG_GATE
-# Must be a multiple of 8; otherwise, rounded up to nearest multiple of 8.
-RECORD_LENGTH 64
-
-
 # TRIGGER_MODE: determines how channel triggers are generated from discriminator-firings.
 # options: NORMAL      - each discriminator-firing triggers DPP processing/readout
 #          COINCIDENCE - channel coincidence must be satisfied before triggering [CURRENTLY UNSUPPORTED]
@@ -118,9 +113,16 @@ PSD_PUR_GAP 0
 # options: -50.0 to 50.0  (floating point)
 
 
+# RECORD_LENGTH = number of samples in the acquisition window. Must be >= PSD_LONG_GATE
+# Must be a multiple of 8; otherwise, rounded up to nearest multiple of 8.
+# Only valid on per-memory-bank basis (i.e., chs 0/1, 2/3, 4/5, 6/7). Use the even channel
+# of each bank to set the RECORD_LENGTH for each bank.
+RECORD_LENGTH 200
+
+
 # PRE_TRIGGER: pre-trigger size in number of samples
 # options: 1 to 511
-PRE_TRIGGER 20 
+PRE_TRIGGER 10 
 
 
 # TRIGGER_THRESHOLD: threshold for the channel auto trigger, relative to the baseline
@@ -201,7 +203,7 @@ RESOLUTION 14
 
 # FREQUENCY: sampling frequency of the channel (MHz)
 # options: 250, 500
-FREQUENCY 500
+FREQUENCY 250
 
 
 # POLARITY: channel input pulse polarity
@@ -218,22 +220,30 @@ PSD_CUT DISABLED
 # PSD_CUT_LEVEL: this is the fraction of PSD full scale where the PSD cut should be made.
 # options: range from 0.0-1.0
 
-
-# FREQUENCY 250
-
+# EXTRA_SELECT: defines what appears in the 32-bit 'EXTRAS' word of the output.
+# options: 0 - extended timestamp (bits 16-31) and baseline*4 (bits 0-15)
+#          1 - extended timestamp (bits 16-31) and flags
+#          2 - extended timestamp (bits 16-31), flags (bits 10-15), and fine time stamp (bits 0-9)
+#          3 - pulse peak value (bits 0-15) [UNTESTED FEATURE]
+#          5 - CFD positive zero crossing (bits 16-31) and CFD negative zero crossing (bits 0-15)
+#          7 - fixed value of 0x12345678
+EXTRA_SELECT 0
 
 [0]
 # TARGET CHANGER SETTINGS
-ENABLE_INPUT NO 
+ENABLE_INPUT YES 
 POLARITY POSITIVE
 CHANNEL_TRIGGER ENABLED
-TRG_THRESHOLD 100 
-#DC_OFFSET 0 
+TRG_THRESHOLD 500 
+DC_OFFSET 40 
 PSD_SHORT_GATE 12 
 PSD_PRE_GATE 4 
 PSD_LONG_GATE 40 
 PSD_SEL_CHARGE_SENSE 1
 DYNAMIC_RANGE 2
+RECORD_LENGTH 64
+PRE_TRIGGER 8
+FREQUENCY 250
 
 
 [1]
@@ -271,14 +281,15 @@ ENABLE_INPUT NO
 ENABLE_INPUT NO 
 POLARITY NEGATIVE
 CHANNEL_TRIGGER ENABLED
-TRG_THRESHOLD 50 
+TRG_THRESHOLD 500
 DC_OFFSET -40 
 PSD_SHORT_GATE 30 
 PSD_PRE_GATE 4 
 PSD_LONG_GATE 150 
 PSD_SEL_CHARGE_SENSE 2
 DYNAMIC_RANGE 2 
-FREQUENCY = 250
+RECORD_LENGTH 256
+#FREQUENCY 250
 
 
 [7]
@@ -286,11 +297,11 @@ FREQUENCY = 250
 ENABLE_INPUT YES 
 POLARITY NEGATIVE
 CHANNEL_TRIGGER ENABLED
-TRG_THRESHOLD 100 
+TRG_THRESHOLD 500
 DC_OFFSET -40 
 PSD_SHORT_GATE 30 
 PSD_PRE_GATE 4 
 PSD_LONG_GATE 150 
 PSD_SEL_CHARGE_SENSE 2
 DYNAMIC_RANGE 2 
-FREQUENCY = 500
+FREQUENCY 250 
