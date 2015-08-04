@@ -164,26 +164,70 @@ void unpack(ifstream& evtfile, ofstream& out)
     if(evtype==1)
     {
 
-        // extras is a 32-bit word with data defined by the value of EXTRA_SELECT.
-        //      0: extended timestamp and baseline
-        //      1: extended timestamp and flags
-        //      2: extended timestamp, flags, and fine timestamp
-        //      3: pulse peak value (bits 0-15) [UNTESTED FEATURE]
-        //      5: CFD samples on either side of zero crossing (NZC and PZC)
-        //      7: fixed value of 0x12345678
+        // extras is a 32-bit word whose content varies with the value of EXTRA_SELECT.
+        // [DEFAULT]    0: extended timestamp (bits 16-31) and baseline*4 (bits 0-15)
+        //              1: extended timestamp (bits 16-31) and flags (bits 0-15?)
+        //              2: extended timestamp (bits 16-31), flags (bits 10-15), and fine timestamp
+        //                  (bits 0-9)
+        //              3: pulse peak value (bits 0-15) [UNTESTED FEATURE]
+        //              5: CFD positive ZC (bits 16-31) and negative ZC (bits 0-15)
+        //              7: fixed value of 0x12345678
+
+        unsigned short extraSelect = buffer[0];
+        evtfile.read((char*)buffer,BufferBytes);
+
         unsigned short extras1 = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
+
         unsigned short extras2 = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
         //const unsigned int extras = (extras2 << 16) | extras1;
 
         stringstream temp;
-        temp << extras2 << " *8.59 s";
-        out << "| extended time stamp = " << left << setfill(' ') << setw(34) << temp.str() << "|" << endl;
+        switch(extraSelect)
+        {
+            case 0:
+                temp << extras2 << " *8.59 s";
+                out << "| extended time stamp = " << left << setfill(' ') << setw(38) << temp.str() << "|" << endl;
 
-        // readout gives baseline*4, and we want baseline
-        extras1 /= 4;
-        out << "| baseline = " << left << setfill(' ') << setw(49) << extras1 << "|" << endl;
+                // readout gives baseline*4, and we want just baseline
+                extras1 /= 4;
+                out << "| baseline = " << left << setfill(' ') << setw(49) << extras1 << "|" << endl;
+                break;
+
+            case 1:
+                temp << extras2 << " *8.59 s";
+                out << "| extended time stamp = " << left << setfill(' ') << setw(34) << temp.str() << "|" << endl;
+                // flag documentation
+                out << "| flags = " << left << setfill(' ') << setw(49) << extras1 << "|" << endl;
+                break; 
+
+            case 2:
+                temp << extras2 << " *8.59 s";
+                out << "| extended time stamp = " << left << setfill(' ') << setw(34) << temp.str() << "|" << endl;
+                // flag documentation
+                out << "| flags = " << left << setfill(' ') << setw(49) << extras1 << "|" << endl;
+                // fine time stamp documentation
+                out << "| fine time stamp = " << left << setfill(' ') << setw(49) << extras1 << "|" << endl;
+                break;
+
+            case 3:
+                // pulse peak value documentation
+                out << "| pulse peak value" << left << setfill(' ') << setw(49) << extras1 << "|" << endl;
+                break;
+
+            case 5:
+                // PZC and NZC
+                out << "| PZC" << left << setfill(' ') << setw(49) << extras2 << "|" << endl;
+                out << "| NZC" << left << setfill(' ') << setw(49) << extras1 << "|" << endl;
+                break;
+
+            case 7:
+                // fixed value of 0x12345678
+                const unsigned int extras = (extras2 << 16) | extras1;
+                out << "| " << left << setfill(' ') << setw(49) << extras << "|" << endl;
+                break;
+        }
 
         // sgQ is the short gate integrated charge, in digitizer units 
         unsigned short sgQ = buffer[0];

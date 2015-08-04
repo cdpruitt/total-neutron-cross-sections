@@ -116,13 +116,14 @@ PSD_PUR_GAP 0
 # RECORD_LENGTH = number of samples in the acquisition window. Must be >= PSD_LONG_GATE
 # Must be a multiple of 8; otherwise, rounded up to nearest multiple of 8.
 # Only valid on per-memory-bank basis (i.e., chs 0/1, 2/3, 4/5, 6/7). Use the even channel
-# of each bank to set the RECORD_LENGTH for each bank.
+# of each bank to set the RECORD_LENGTH for each bank. The even channel must have input
+# enabled for the RECORD_LENGTH to be set to apply to its partner channel.
 RECORD_LENGTH 200
 
 
 # PRE_TRIGGER: pre-trigger size in number of samples
 # options: 1 to 511
-PRE_TRIGGER 10 
+PRE_TRIGGER 256 
 
 
 # TRIGGER_THRESHOLD: threshold for the channel auto trigger, relative to the baseline
@@ -182,7 +183,7 @@ CFD_ATTENUATION 1
 #          1 - use the samples two cycles before and after the zero crossing.
 #          2 - use the samples three cycles before and after the zero crossing.
 #          3 - use the samples four cycles before and after the zero crossing.
-CFD_INTERPOLATE 2
+CFD_INTERPOLATE 0
 
 
 # DISC_MODE: type of discrimination used.
@@ -201,9 +202,9 @@ DYNAMIC_RANGE 2
 RESOLUTION 14
 
 
-# FREQUENCY: sampling frequency of the channel (MHz)
+# FREQUENCY: sampling frequency of the channel (MHz) [DISABLED SINCE VERS 2.2]
 # options: 250, 500
-FREQUENCY 250
+#FREQUENCY 250
 
 
 # POLARITY: channel input pulse polarity
@@ -234,16 +235,15 @@ EXTRA_SELECT 0
 ENABLE_INPUT YES 
 POLARITY POSITIVE
 CHANNEL_TRIGGER ENABLED
-TRG_THRESHOLD 500 
+TRG_THRESHOLD 200 
 DC_OFFSET 40 
 PSD_SHORT_GATE 12 
 PSD_PRE_GATE 4 
 PSD_LONG_GATE 40 
-PSD_SEL_CHARGE_SENSE 1
+PSD_SEL_CHARGE_SENSE 2
 DYNAMIC_RANGE 2
-RECORD_LENGTH 64
-PRE_TRIGGER 8
-FREQUENCY 250
+RECORD_LENGTH 600
+#PRE_TRIGGER 256
 
 
 [1]
@@ -289,12 +289,11 @@ PSD_LONG_GATE 150
 PSD_SEL_CHARGE_SENSE 2
 DYNAMIC_RANGE 2 
 RECORD_LENGTH 256
-#FREQUENCY 250
 
 
 [7]
 # RIGHT DETECTOR SETTINGS
-ENABLE_INPUT YES 
+ENABLE_INPUT NO 
 POLARITY NEGATIVE
 CHANNEL_TRIGGER ENABLED
 TRG_THRESHOLD 500
@@ -304,4 +303,3 @@ PSD_PRE_GATE 4
 PSD_LONG_GATE 150 
 PSD_SEL_CHARGE_SENSE 2
 DYNAMIC_RANGE 2 
-FREQUENCY 250 
