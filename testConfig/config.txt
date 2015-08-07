@@ -1,6 +1,0 @@
-[COMMON]
-
-dppconfig         testConfig/dppconfig.txt
-waveformconfig    testConfig/waveformconfig.txt 
-dpptriggers       100
-waveformtriggers  1

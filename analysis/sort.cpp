@@ -57,9 +57,11 @@ unsigned long evtype;
 unsigned long channel;
 unsigned long timetag, timetagP = 0;
 
-unsigned int Ne = 0; // counter for the total number of events in the input file
-unsigned int Nwavelets = 0; // counter for the number of MIXED mode wavelets in the input file 
-unsigned int Nwaveforms = 0; // counter for the number of waveform events in the input file 
+unsigned int nE = 0; // counter for the total number of events
+unsigned int nWavelets = 0; // counter for the number of short MIXED mode waveforms
+unsigned int nCFDs = 0; // counter for the number of MIXED mode CFD traces 
+unsigned int nBaselines = 0; // counter for the number of MIXED mode Baseline traces
+unsigned int nWaveforms = 0; // counter for the number of long MIXED mode waveforms
 
 // Create a ROOT tree for event data
 TTree* tree;
@@ -67,6 +69,8 @@ TH1S* outDPP;
 
 vector<TH1S*> listWaveforms;
 vector<TH1S*> listWavelets; 
+vector<TH1S*> listCFDs;
+vector<TH1S*> listBaselines;
 
 /*struct DPPevent {
     unsigned int timetag, sgQ, lgQ, baseline;
@@ -124,7 +128,7 @@ void printHeader(ofstream& out)
     stringstream temp;
 
     out << setfill('*') << setw(63) << "*" << endl;
-    out << "| EVENT " << left << setfill(' ') << setw(54) << Ne << "|" << endl;
+    out << "| EVENT " << left << setfill(' ') << setw(54) << nE << "|" << endl;
     out << "|" << right << setfill('-') << setw(62) << "|" << endl;
     out << "| channel #" << channel;
 
@@ -140,7 +144,7 @@ void printHeader(ofstream& out)
     {
         out << left << setfill(' ') << setw(50) << ", ERROR DETERMINING MODE" << " |" << endl;
         cout << "Error: event type value out-of-range (DPP=1, waveform=2)" << endl;
-        cout << "Event number = " << Ne << endl;
+        cout << "Event number = " << nE << endl;
     }
 
     temp << size << " bytes";
@@ -160,11 +164,11 @@ void unpack(ifstream& evtfile, ofstream& out)
 {
     ostringstream histName;
     
-    // For DPP EVENT BODY unpacking 
     if(evtype==1)
     {
+        // DPP EVENT BODY unpacking 
 
-        // extras is a 32-bit word whose content varies with the value of EXTRA_SELECT.
+        // EXTRAS is a 32-bit word whose content varies with the value of EXTRA_SELECT.
         // [DEFAULT]    0: extended timestamp (bits 16-31) and baseline*4 (bits 0-15)
         //              1: extended timestamp (bits 16-31) and flags (bits 0-15?)
         //              2: extended timestamp (bits 16-31), flags (bits 10-15), and fine timestamp
@@ -198,17 +202,17 @@ void unpack(ifstream& evtfile, ofstream& out)
             case 1:
                 temp << extras2 << " *8.59 s";
                 out << "| extended time stamp = " << left << setfill(' ') << setw(34) << temp.str() << "|" << endl;
-                // flag documentation
-                out << "| flags = " << left << setfill(' ') << setw(49) << extras1 << "|" << endl;
+                // extract flags from bits 10:15 (0xfc00)
+                out << "| flags = " << left << setfill(' ') << setw(49) << (extras1 & 0xfc00) << "|" << endl;
                 break; 
 
             case 2:
                 temp << extras2 << " *8.59 s";
-                out << "| extended time stamp = " << left << setfill(' ') << setw(34) << temp.str() << "|" << endl;
-                // flag documentation
-                out << "| flags = " << left << setfill(' ') << setw(49) << extras1 << "|" << endl;
-                // fine time stamp documentation
-                out << "| fine time stamp = " << left << setfill(' ') << setw(49) << extras1 << "|" << endl;
+                out << "| extended time stamp = " << left << setfill(' ') << setw(38) << temp.str() << "|" << endl;
+                // extract flags from bits 10:15 (0xfc00)
+                out << "| flags = " << left << setfill(' ') << setw(52) << (extras1 & 0xfc00) << "|" << endl;
+                // fine time from bits 0:9 (0x03ff)
+                out << "| fine time stamp = " << left << setfill(' ') << setw(42) << (extras1 & 0x03ff) << "|" << endl;
                 break;
 
             case 3:
@@ -218,8 +222,8 @@ void unpack(ifstream& evtfile, ofstream& out)
 
             case 5:
                 // PZC and NZC
-                out << "| PZC" << left << setfill(' ') << setw(49) << extras2 << "|" << endl;
-                out << "| NZC" << left << setfill(' ') << setw(49) << extras1 << "|" << endl;
+                out << "| PZC = " << left << setfill(' ') << setw(54) << extras2 << "|" << endl;
+                out << "| NZC = " << left << setfill(' ') << setw(54) << extras1 << "|" << endl;
                 break;
 
             case 7:
@@ -250,6 +254,13 @@ void unpack(ifstream& evtfile, ofstream& out)
         evtfile.read((char*)buffer,BufferBytes);
         //out << "| pile-up detected = " << left << setw(40) << puRej << " |" << endl;
 
+        // probe indicates whether an additional analog waveform will be captured along with the
+        // input trace. The top bit turns on the analog probe; the bottom two bits describe the
+        // probe type.
+        unsigned short probe = buffer[0];
+        evtfile.read((char*)buffer,BufferBytes);
+        out << "| probe = " << left << setw(52) << probe << "|" << endl;
+        
         // nSamp is the number of waveform samples that follow (in LIST mode, this is 0)
         unsigned short nSamp1 = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
@@ -265,7 +276,7 @@ void unpack(ifstream& evtfile, ofstream& out)
             // We must be in MIXED mode; time to output wavelet.
         {
             histName.str("");
-            histName << "outWavelet" << Ne;
+            histName << "outWavelet" << nE;
             string tempHist = histName.str();
 
             listWavelets.push_back(new TH1S(tempHist.c_str(),tempHist.c_str(),nSamp,0,nSamp*2));
@@ -275,7 +286,7 @@ void unpack(ifstream& evtfile, ofstream& out)
 
             for(int i=0;i<nSamp;i++)
             {
-                listWavelets[Nwavelets]->SetBinContent(i,buffer[0]);
+                listWavelets[nWavelets]->SetBinContent(i,buffer[0]);
 
                 if(i%100 == 0 && i>0)
                 {
@@ -297,20 +308,136 @@ void unpack(ifstream& evtfile, ofstream& out)
                 } 
 
             }
+            out << "|" << right << setfill('-') << setw(62) << "|" << endl;
             
-            // done with this event; increment the wavelet counter to get ready for the next
+            // done with wavelet; increment the wavelet counter to get ready for the next
             // wavelet.
-            Nwavelets++;
+            nWavelets++;
         }
 
-        // Fill the root tree with data extracted from the event for later analysis
-        /*de.timetag = timetag;
-        de.sgQ = sgQ;
-        de.lgQ = lgQ;
-        de.baseline = baseline;
+        if((probe & 0x8000)==0x8000)
+        {
+            // analog probe enabled
+            out << "| Analog probe enabled" << right << setfill(' ') << setw(41) << "|" << endl;
 
-        tree->Fill();
-        */
+            // anSamp is the number of waveform samples in the analog trace 
+            unsigned short anSamp1 = buffer[0];
+            evtfile.read((char*)buffer,BufferBytes);
+            unsigned short anSamp2 = buffer[0];
+            evtfile.read((char*)buffer,BufferBytes);
+            const unsigned int anSamp = (anSamp2 << 16) | anSamp1;
+
+            temp.str("");
+            temp << nSamp << " samples";
+            out << "| waveform length = " << left << setw(41) << temp.str() << " |" << endl;
+            out << "|" << right << setfill('-') << setw(62) << "|" << endl;
+
+            if((probe & 0x0003)==0x0002)
+            {
+                // analog probe is CFD
+                if(anSamp > 0)
+                {
+                    histName.str("");
+                    histName << "outCFD" << nE;
+                    string tempHist = histName.str();
+
+                    listCFDs.push_back(new TH1S(tempHist.c_str(),tempHist.c_str(),nSamp,0,nSamp*2));
+
+                    out << left << setfill(' ') << setw(62) << "| CFD samples" << "|" << endl;
+                    out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
+
+                    for(int i=0;i<anSamp;i++)
+                    {
+                        listCFDs[nCFDs]->SetBinContent(i,buffer[0]);
+
+                        if(i%100 == 0 && i>0)
+                        {
+                            out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
+                        }
+
+                        if(i%10 == 0)
+                        {
+                            temp.str("");
+                            temp << "|";
+                        }
+
+                        temp << right << setfill(' ') << setw(6) << buffer[0];
+                        evtfile.read((char*)buffer,BufferBytes);
+
+                        if(i%10==9 || i==anSamp-1)
+                        {
+                            out << left << setw(62) << temp.str() << "|" << endl;
+                        } 
+
+                    }
+
+                    // done with this event; increment the wavelet counter to get ready for the next
+                    // wavelet.
+                    nCFDs++;
+                }
+            }
+
+            if((probe & 0x0003)==0x0001)
+            {
+                // analog probe is baseline
+                if(anSamp > 0)
+                {
+                    histName.str("");
+                    histName << "outBaseline" << nE;
+                    string tempHist = histName.str();
+
+                    listBaselines.push_back(new TH1S(tempHist.c_str(),tempHist.c_str(),nSamp,0,nSamp*2));
+
+                    out << left << setfill(' ') << setw(62) << "| Baseline samples" << "|" << endl;
+                    out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
+
+                    for(int i=0;i<anSamp;i++)
+                    {
+                        listBaselines[nBaselines]->SetBinContent(i,buffer[0]);
+
+                        if(i%100 == 0 && i>0)
+                        {
+                            out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
+                        }
+
+                        if(i%10 == 0)
+                        {
+                            temp.str("");
+                            temp << "|";
+                        }
+
+                        temp << right << setfill(' ') << setw(6) << buffer[0];
+                        evtfile.read((char*)buffer,BufferBytes);
+
+                        if(i%10==9 || i==anSamp-1)
+                        {
+                            out << left << setw(62) << temp.str() << "|" << endl;
+                        } 
+
+                    }
+
+                    // done with this event; increment the wavelet counter to get ready for the next
+                    // wavelet.
+                    nBaselines++;
+                }
+            }
+
+            // Fill the root tree with data extracted from the event for later analysis
+            /*de.timetag = timetag;
+              de.sgQ = sgQ;
+              de.lgQ = lgQ;
+              de.baseline = baseline;
+
+              tree->Fill();
+              */
+        }
+
+        else
+        {
+            out << "| Analog probe disabled" << right << setfill(' ') << setw(40) << "|" << endl;
+            out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
+        }
+
     }
 
     else if(evtype==2)
@@ -328,7 +455,7 @@ void unpack(ifstream& evtfile, ofstream& out)
         out << "|" << right << setfill('-') << setw(62) << "|" << endl;
 
         histName.str("");
-        histName << "outWaveform" << Ne;
+        histName << "outWaveform" << nE;
         string tempHist = histName.str();
 
         listWaveforms.push_back(new TH1S(tempHist.c_str(),tempHist.c_str(),nSamp,0,nSamp*2));
@@ -354,7 +481,7 @@ void unpack(ifstream& evtfile, ofstream& out)
                 out << "|";
             } 
 
-            listWaveforms[Nwaveforms]->SetBinContent(i,buffer[0]);
+            listWaveforms[nWaveforms]->SetBinContent(i,buffer[0]);
             out << right << setfill(' ') << setw(6) << buffer[0];
             evtfile.read((char*)buffer,BufferBytes);
 
@@ -368,7 +495,7 @@ void unpack(ifstream& evtfile, ofstream& out)
         // wavelet.
 
         out << "\n";
-        Nwaveforms++;
+        nWaveforms++;
     }
 
     else
@@ -499,12 +626,12 @@ int main()
         }
 
         // Event finished
-        Ne++;
+        nE++;
     }
     
     // Input file finished
     cout << "Finished processing event file" << endl;
-    cout << "Total events: " << Ne << endl;
+    cout << "Total events: " << nE << endl;
 
     file->Write();
     tree->Write();
