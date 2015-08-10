@@ -63,23 +63,25 @@ unsigned int nCFDs = 0; // counter for the number of MIXED mode CFD traces
 unsigned int nBaselines = 0; // counter for the number of MIXED mode Baseline traces
 unsigned int nWaveforms = 0; // counter for the number of long MIXED mode waveforms
 
-// Create a ROOT tree for event data
+// Create a ROOT tree for holding DPP data 
 TTree* tree;
-TH1S* outDPP;
 
+struct DPPevent {
+    unsigned int timetag, sgQ, lgQ, baseline;
+} de;
+
+// Create histograms for DPP data
+TH1S* outTime;
+TH1S* outSGQ;
+TH1S* outLGQ;
+TH1S* outBaseline;
+
+// Create vectors for holding DPP histograms
 vector<TH1S*> listWaveforms;
 vector<TH1S*> listWavelets; 
 vector<TH1S*> listCFDs;
 vector<TH1S*> listBaselines;
 
-/*struct DPPevent {
-    unsigned int timetag, sgQ, lgQ, baseline;
-} de;
-
-tree->Branch("event",&de.timetag,"time/I:sgQ:lgQ:baseline");
-
-outDPP = new TH1S("outDPP","outDPP",1024,0,60000);
-*/
 
 // read EVENT HEADER to determine where the event data should go (using channel number)
 // 'out' points to a channel-specific text file
@@ -151,7 +153,7 @@ void printHeader(ofstream& out)
     out << "| size = " << left << setfill(' ') << setw(53) << temp.str() << "|" << endl;
 
     temp.str("");
-    temp << timetag << " ns";
+    temp << 2*timetag << " ns";
     out << "| timetag = " << left << setw(50) << temp.str() << "|" << endl;
 
     out << "|" << right << setfill('-') << setw(62) << "|" << endl;
@@ -241,7 +243,6 @@ void unpack(ifstream& evtfile, ofstream& out)
         // lgQ is the long gate integrated charge, in digitizer units 
         unsigned short lgQ = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
-        //outDPP->Fill(lgQ);
         out << "| long gate charge = " << left << setw(41) << lgQ << "|" << endl;
 
         // baseline is the baseline level, frozen at the trigger time
@@ -422,14 +423,6 @@ void unpack(ifstream& evtfile, ofstream& out)
                 }
             }
 
-            // Fill the root tree with data extracted from the event for later analysis
-            /*de.timetag = timetag;
-              de.sgQ = sgQ;
-              de.lgQ = lgQ;
-              de.baseline = baseline;
-
-              tree->Fill();
-              */
         }
 
         else
@@ -437,6 +430,21 @@ void unpack(ifstream& evtfile, ofstream& out)
             out << "| Analog probe disabled" << right << setfill(' ') << setw(40) << "|" << endl;
             out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
         }
+
+        // Populate histograms with DPP data
+
+        outTime->Fill(timetag);
+        outSGQ->Fill(sgQ);
+        outLGQ->Fill(lgQ);
+        //outBaseline->Fill(baseline);
+
+        // Fill the root tree with data extracted from the event for later analysis
+        de.timetag = timetag;
+        de.sgQ = sgQ;
+        de.lgQ = lgQ;
+        //de.baseline = baseline;
+
+        tree->Fill();
 
     }
 
@@ -463,7 +471,7 @@ void unpack(ifstream& evtfile, ofstream& out)
         for(int i=0;i<nSamp;i++)
         {
 
-            if(i%1000 == 0)
+            if(nSamp>1000 && (i%1000 == 0))
             {
                 out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
                 stringstream temp;
@@ -473,7 +481,7 @@ void unpack(ifstream& evtfile, ofstream& out)
 
             if(i%100 == 0)
             {
-                out << "|" << right << setw(62) << "|" << endl;
+                out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
             }
 
             if(i%10 == 0)
@@ -494,7 +502,7 @@ void unpack(ifstream& evtfile, ofstream& out)
         // done with this event; increment the wavelet counter to get ready for the next
         // wavelet.
 
-        out << "\n";
+        out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
         nWaveforms++;
     }
 
@@ -516,10 +524,15 @@ int main()
     TFile *file; 
     file = new TFile("events.root","RECREATE");
     file->cd();
-    
-    // create a ROOT tree for holding event properties
+
     tree = new TTree("tree","");
     tree->SetAutoSave(0);
+    tree->Branch("event",&de.timetag,"time/I:sgQ:lgQ:baseline");
+
+    outTime = new TH1S("outTime","outTime",1024,0,10000000000);
+    outSGQ = new TH1S("outSGQ","outSGQ",1024,0,70000);
+    outLGQ = new TH1S("outLGQ","outLGQ",1024,0,70000);
+    outBaseline = new TH1S("outBaseline","outBaseline",1024,0,17000);
 
     TDirectoryFile *targetChangerDir, *monitorDir, *detLDir, *detRDir, *detTDir;
     targetChangerDir = new TDirectoryFile("targetChanger","Target Changer");
@@ -568,7 +581,7 @@ int main()
         // print the time difference between adjacent events to timeDiff.txt
         if(timetag>timetagP)
         {
-            timeDiff << timetag - timetagP << endl;
+            timeDiff << (timetag - timetagP)*2 << endl;
         }
         timetagP = timetag;
 
