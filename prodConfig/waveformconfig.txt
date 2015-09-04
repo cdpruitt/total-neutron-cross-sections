@@ -1,46 +1,101 @@
+#*****************************************************************
+# washudaq-2.4 (or higher) Waveform-mode configuration File
+#*****************************************************************
+
+# This file has two sections:
+#   - COMMON settings that apply to all channels, headed by [COMMON]
+#   - INDIVIDUAL per-channel settings, headed by [CH NO.], which ranges from 0-7
+#
+# All variables not specified in this file default to the values
+# from dppconfig (the DPP-mode parameters). Variables specified
+# here override the values in DPP-mode for waveform-mode behavior.
+# See ./dppconfig.txt for a complete description of all variables.
+
+#*****************************************************************
+# Settings common to all channels
+#*****************************************************************
+
 [COMMON]
 
-RECORD_LENGTH 10000 
-EXTERNAL_TRIGGER ACQUISITION_ONLY
+
+
+EXTERNAL_TRIGGER ACQUISITION_ONLY 
+CHANNEL_TRIGGER DISABLED
+# In waveform mode, we trigger on a macropulse start signal to
+# take a full macropulse instead of taking channel self-triggers
+
+
+
+#*****************************************************************
+# Individual Settings 
+#*****************************************************************
+
+
 
 [0]
-# WARNING: disabling input on channel 0 causes acquisition to crash.
-# To reset, run CAEN's DPP_PSD software and connect to the digitizer.
+
+#************************
+# TARGET CHANGER SETTINGS
+#************************
+
 ENABLE_INPUT YES 
-CHANNEL_TRIGGER ENABLED
-TRG_THRESHOLD 60 
+
+
+
+[2]
+
+#*****************
+# MONITOR SETTINGS
+#*****************
+
+ENABLE_INPUT YES
+
+
+
+[4]
+
+#***************************
+# DETECTORS (SUMMED) SETTINGS
+#***************************
+
+ENABLE_INPUT YES 
+
+RECORD_LENGTH 30000
+# RECORD_LENGTH is rounded up to the nearest multiple of 8.
+# Note: RECORD_LENGTH is currently limited to values below 32767,
+# pending a firmware change from CAEN to provide more bits. 
+
+
+
+[6]
+
+#***************************
+# LEFT DETECTOR SETTINGS
+#***************************
+
+ENABLE_INPUT NO
+
+
+
+[7]
+
+#************************
+# RIGHT DETECTOR SETTINGS
+#************************
+
+ENABLE_INPUT NO 
+
+
+
+#****************
+# UNUSED CHANNELS
+#****************
 
 [1]
 ENABLE_INPUT NO 
-CHANNEL_TRIGGER ENABLED
-TRG_THRESHOLD 2000
-
-[2]
-ENABLE_INPUT NO 
-CHANNEL_TRIGGER ENABLED
-TRG_THRESHOLD 60 
 
 [3]
 ENABLE_INPUT NO 
-CHANNEL_TRIGGER ENABLED
-TRG_THRESHOLD 2000
-
-[4]
-ENABLE_INPUT NO 
-CHANNEL_TRIGGER ENABLED
-TRG_THRESHOLD 60 
 
 [5]
 ENABLE_INPUT NO 
-CHANNEL_TRIGGER ENABLED
-TRG_THRESHOLD 2000
-
-[6]
-ENABLE_INPUT YES 
-CHANNEL_TRIGGER ENABLED
-TRG_THRESHOLD 100 
-
-[7]
-ENABLE_INPUT YES 
-CHANNEL_TRIGGER ENABLED
-TRG_THRESHOLD 100 

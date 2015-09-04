@@ -74,7 +74,11 @@ struct DPPevent {
 TH1S* outTime;
 TH1S* outSGQ;
 TH1S* outLGQ;
+TH1S* outPZC;
+TH1S* outNZC;
 TH1S* outBaseline;
+TH1S* outFT;
+TH1S* outCT;
 
 // Create vectors for holding DPP histograms
 vector<TH1S*> listWaveforms;
@@ -158,6 +162,8 @@ void printHeader(ofstream& out)
 
     out << "|" << right << setfill('-') << setw(62) << "|" << endl;
 
+    outCT->Fill(2*timetag);
+
 }
 
 // unpacks EVENT BODY data into ROOT histograms and text output
@@ -215,6 +221,7 @@ void unpack(ifstream& evtfile, ofstream& out)
                 out << "| flags = " << left << setfill(' ') << setw(52) << (extras1 & 0xfc00) << "|" << endl;
                 // fine time from bits 0:9 (0x03ff)
                 out << "| fine time stamp = " << left << setfill(' ') << setw(42) << (extras1 & 0x03ff) << "|" << endl;
+                outFT->Fill((extras1 & 0x03ff));
                 break;
 
             case 3:
@@ -226,12 +233,14 @@ void unpack(ifstream& evtfile, ofstream& out)
                 // PZC and NZC
                 out << "| PZC = " << left << setfill(' ') << setw(54) << extras2 << "|" << endl;
                 out << "| NZC = " << left << setfill(' ') << setw(54) << extras1 << "|" << endl;
+                outPZC->Fill(extras2);
+                outNZC->Fill(extras1);
                 break;
 
             case 7:
                 // fixed value of 0x12345678
                 const unsigned int extras = (extras2 << 16) | extras1;
-                out << "| " << left << setfill(' ') << setw(49) << extras << "|" << endl;
+                out << "| 305419896 ?= " << left << setfill(' ') << setw(47) << extras << "|" << endl;
                 break;
         }
 
@@ -260,7 +269,6 @@ void unpack(ifstream& evtfile, ofstream& out)
         // probe type.
         unsigned short probe = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
-        out << "| probe = " << left << setw(52) << probe << "|" << endl;
         
         // nSamp is the number of waveform samples that follow (in LIST mode, this is 0)
         unsigned short nSamp1 = buffer[0];
@@ -436,7 +444,8 @@ void unpack(ifstream& evtfile, ofstream& out)
         outTime->Fill(timetag);
         outSGQ->Fill(sgQ);
         outLGQ->Fill(lgQ);
-        //outBaseline->Fill(baseline);
+        
+//outBaseline->Fill(baseline);
 
         // Fill the root tree with data extracted from the event for later analysis
         de.timetag = timetag;
@@ -529,10 +538,14 @@ int main()
     tree->SetAutoSave(0);
     tree->Branch("event",&de.timetag,"time/I:sgQ:lgQ:baseline");
 
-    outTime = new TH1S("outTime","outTime",1024,0,10000000000);
+    outTime = new TH1S("outTime","outTime",10000,0,10000000000);
     outSGQ = new TH1S("outSGQ","outSGQ",1024,0,70000);
     outLGQ = new TH1S("outLGQ","outLGQ",1024,0,70000);
+    outPZC = new TH1S("outPZC","outPZC",16384,0,16384);
+    outNZC = new TH1S("outNZC","outNZC",16384,0,16384);
     outBaseline = new TH1S("outBaseline","outBaseline",1024,0,17000);
+    outFT = new TH1S("outFT","outFT",1023,0,1023);
+    outCT = new TH1S("outCT","outCT",1000000,0,1000000);
 
     TDirectoryFile *targetChangerDir, *monitorDir, *detLDir, *detRDir, *detTDir;
     targetChangerDir = new TDirectoryFile("targetChanger","Target Changer");
