@@ -66,9 +66,9 @@ unsigned int nWaveforms = 0; // counter for the number of long MIXED mode wavefo
 // Create a ROOT tree for holding DPP data 
 TTree* tree;
 
-struct DPPevent {
+struct treeEvent {
     unsigned int timetag, sgQ, lgQ, baseline;
-} de;
+} te;
 
 // Create histograms for DPP data
 TH1S* outTime;
@@ -445,13 +445,10 @@ void unpack(ifstream& evtfile, ofstream& out)
         outSGQ->Fill(sgQ);
         outLGQ->Fill(lgQ);
         
-//outBaseline->Fill(baseline);
-
         // Fill the root tree with data extracted from the event for later analysis
-        de.timetag = timetag;
-        de.sgQ = sgQ;
-        de.lgQ = lgQ;
-        //de.baseline = baseline;
+        te.timetag = timetag;
+        te.sgQ = sgQ;
+        te.lgQ = lgQ;
 
         tree->Fill();
 
@@ -526,27 +523,19 @@ void unpack(ifstream& evtfile, ofstream& out)
 
 }
 
-int main()
+void processRun(string evtname)
 {
-
-    // create a ROOT file for holding events, with one directory per input channel
-    TFile *file; 
-    file = new TFile("events.root","RECREATE");
-    file->cd();
-
-    tree = new TTree("tree","");
-    tree->SetAutoSave(0);
-    tree->Branch("event",&de.timetag,"time/I:sgQ:lgQ:baseline");
-
+    // define ROOT histograms
     outTime = new TH1S("outTime","outTime",10000,0,10000000000);
     outSGQ = new TH1S("outSGQ","outSGQ",1024,0,70000);
     outLGQ = new TH1S("outLGQ","outLGQ",1024,0,70000);
     outPZC = new TH1S("outPZC","outPZC",16384,0,16384);
     outNZC = new TH1S("outNZC","outNZC",16384,0,16384);
     outBaseline = new TH1S("outBaseline","outBaseline",1024,0,17000);
-    outFT = new TH1S("outFT","outFT",1023,0,1023);
-    outCT = new TH1S("outCT","outCT",1000000,0,1000000);
+    outFT = new TH1S("outFT","outFT",1023,0,1023); // a ROOT plot to show fine time (FT) of events
+    outCT = new TH1S("outCT","outCT",1000000,0,1000000); // a ROOT plot to show coarse time (CT) of events
 
+    // define ROOT directory structure
     TDirectoryFile *targetChangerDir, *monitorDir, *detLDir, *detRDir, *detTDir;
     targetChangerDir = new TDirectoryFile("targetChanger","Target Changer");
     monitorDir = new TDirectoryFile("monitor","Monitor");
@@ -555,7 +544,7 @@ int main()
     detTDir = new TDirectoryFile("detT","Detector sum");
     // TDirectory *dirSub; to be uncommented and used for sub-directories, if desired
  
-    // create text output for holding events, with file per input channel
+    // create text output for holding events, organized by input channel to make sense of the data
     ofstream totalOut ("sorted/allChannels.txt");
     ofstream targetChangerOut ("sorted/targetChanger.txt");
     ofstream monitorOut ("sorted/monitor.txt");
@@ -566,115 +555,176 @@ int main()
     // create text output to examine time differences from one event to the next
     ofstream timeDiff ("sorted/timeDiff.txt");
 
-    // open the event file
+    // attempt to process the event file
     ifstream evtfile;
-    string name = "../output/wutest.evt";
+    evtfile.open(evtname,ios::binary);
 
-    evtfile.clear();
-    evtfile.open(name.c_str(),ios::binary);      
-
-    if (evtfile.bad()) cout << "bad" << endl;
-    if (evtfile.is_open()) cout << "open" << endl;
-    if (evtfile.good()) cout << "good" << endl;
-    if (evtfile.fail()) cout << "fail" << endl;
-
-    evtfile.read((char*)buffer,BufferBytes);
-
-    point = buffer;
-
-    // start looping through the evtfile for events
-    while(!evtfile.eof())
+    if (!evtfile)
     {
-        // get channel number from the event header
-        int channelNum = readHeader(evtfile);
-
-        // print the header to an allChannels.txt
-        printHeader(totalOut);
-
-        // print the time difference between adjacent events to timeDiff.txt
-        if(timetag>timetagP)
-        {
-            timeDiff << (timetag - timetagP)*2 << endl;
-        }
-        timetagP = timetag;
-
-        // funnel event data differently based on channel
-        switch (channelNum)
-        {
-            case 0: 
-                // target-changer data
-                targetChangerDir->cd();
-                printHeader(targetChangerOut);
-                unpack(evtfile, targetChangerOut);
-                break;
-
-            case 1:
-                break;
-
-            case 2:
-                // monitor data
-                monitorDir->cd();
-                printHeader(monitorOut);
-                unpack(evtfile, monitorOut);
-                break;
-
-            case 3:
-                break;
-
-            case 4:
-                // Detector data (assume detectors T'd together)
-                detTDir->cd();
-                printHeader(detectorTOut);
-                unpack(evtfile, detectorTOut);
-                break;
-
-            case 5:
-                break;
-
-            case 6:
-                // Detector data (left detector only)
-                detLDir->cd();
-                printHeader(detectorLOut);
-                unpack(evtfile, detectorLOut);
-                break;
-
-            case 7:
-                // Detector data (right detector only)
-                detRDir->cd();
-                printHeader(detectorROut);
-                unpack(evtfile, detectorROut);
-                break;
-
-            default:
-                cout << "ERROR: unknown value for channel type" << endl;
-                return 0;
-                break;
-        }
-
-        // Event finished
-        nE++;
+        cout << "Failed to open " << evtname << ". Please check that the file exists and is listed properly in runsToSort.txt" << endl;
+        abort();
     }
-    
-    // Input file finished
-    cout << "Finished processing event file" << endl;
-    cout << "Total events: " << nE << endl;
+
+    else // individual run is good - start processing events from that run.
+    {
+        cout << evtname << " opened successfully. Start reading events..." << endl;
+
+        evtfile.read((char*)buffer,BufferBytes);
+
+        point = buffer;
+
+        // start looping through the evtfile for events
+        while(!evtfile.eof())
+        {
+            // get channel number from the event header
+            int channelNum = readHeader(evtfile);
+
+            // print the header to an allChannels.txt
+            printHeader(totalOut);
+
+            // print the time difference between adjacent events to timeDiff.txt
+            if(timetag>timetagP)
+            {
+                timeDiff << (timetag - timetagP)*2 << endl;
+            }
+            timetagP = timetag;
+
+            // funnel event data differently based on channel
+            switch (channelNum)
+            {
+                case 0: 
+                    // target-changer data
+                    targetChangerDir->cd();
+                    printHeader(targetChangerOut);
+                    unpack(evtfile, targetChangerOut);
+                    break;
+
+                case 1:
+                    break;
+
+                case 2:
+                    // monitor data
+                    monitorDir->cd();
+                    printHeader(monitorOut);
+                    unpack(evtfile, monitorOut);
+                    break;
+
+                case 3:
+                    break;
+
+                case 4:
+                    // Detector data (assume detectors T'd together)
+                    detTDir->cd();
+                    printHeader(detectorTOut);
+                    unpack(evtfile, detectorTOut);
+                    break;
+
+                case 5:
+                    break;
+
+                case 6:
+                    // Detector data (left detector only)
+                    detLDir->cd();
+                    printHeader(detectorLOut);
+                    unpack(evtfile, detectorLOut);
+                    break;
+
+                case 7:
+                    // Detector data (right detector only)
+                    detRDir->cd();
+                    printHeader(detectorROut);
+                    unpack(evtfile, detectorROut);
+                    break;
+
+                default:
+                    cout << "ERROR: unknown value for channel type" << endl;
+                    break;
+            }
+
+            // Event finished
+            nE++;
+        }
+
+        // Input file finished
+        cout << "Finished processing event file" << endl;
+        cout << "Total events: " << nE << endl;
+
+    }
+
+    evtfile.close();
+}
+
+int main(int argc, char* argv[])
+{
+
+    // create a ROOT file for holding events, with one directory per input channel
+    TFile *file; 
+    file = new TFile("events.root","RECREATE");
+    file->cd();
+
+    tree = new TTree("tree","");
+    tree->SetAutoSave(0);
+    tree->Branch("event",&te.timetag,"time/I:sgQ:lgQ:baseline");
+
+    stringstream evtname;
+
+    // open the event files
+
+    if (argc > 1) // list of runs given in the command line; IGNORE runsToSort.txt
+    {
+        for (int i=1; i<argc; i++)
+        {
+            evtname.str("");
+            evtname << "../output/run" << argv[i] << ".evt";
+            processRun(evtname.str());
+        }
+    }
+
+    else // list of runs given in runsToSort.txt
+    {
+        ifstream evtFilenames;
+        string evtFilename = "runsToSort.txt";
+        evtname << "../output/wutest.evt";
+        string runNo = "-1";
+
+        evtFilenames.clear();
+        evtFilenames.open(evtFilename.c_str());
+
+        if (!evtFilenames)
+        {
+            cout << "The list of event files failed to open. Please check the input file (runsToSort.txt)" << endl;
+            abort();
+        }
+
+        else // run number list is good - start processing runs.
+        {
+            while (getline(evtFilenames,runNo))
+            {
+                evtname.str("");
+                evtname << "../output/run" <<  runNo << ".evt";
+                processRun(evtname.str());
+            }
+        }
+    }
 
     file->Write();
     tree->Write();
 }
 
 
-/*struct MIXEDevent {
-  vector<unsigned int> wavelet;
-  };
-
-  MIXEDevent me;
-
-  for(int i=0;i<nSamp;i++)
-  {
-  me.wavelet.push_back(buffer[0]);
-  evtfile.read((char*)buffer,BufferBytes);
-  }
 
 
-  }*/
+        /*struct MIXEDevent {
+          vector<unsigned int> wavelet;
+          };
+
+          MIXEDevent me;
+
+          for(int i=0;i<nSamp;i++)
+          {
+          me.wavelet.push_back(buffer[0]);
+          evtfile.read((char*)buffer,BufferBytes);
+          }
+
+
+          }*/

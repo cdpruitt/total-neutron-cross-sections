@@ -1,7 +1,12 @@
 #!/bin/bash
-if [ -f ~/WashUDAQ/output/wutest.evt ]
-  then
-      rm ~/WashUDAQ/output/wutest.evt
-fi
+runName=output/run
+i=0
+while [[ -e $runName$i.evt ]]
+do
+    let i++
+done
+runName=$runName$i.evt
 
-bin/readout testConfig/config.txt output/wutest.evt
+echo "Starting "$runName"..."
+
+bin/readout testConfig/config.txt $runName

@@ -17,20 +17,16 @@
 
 [COMMON]
 
-
-
 EXTERNAL_TRIGGER ACQUISITION_ONLY 
 CHANNEL_TRIGGER DISABLED
 # In waveform mode, we trigger on a macropulse start signal to
 # take a full macropulse instead of taking channel self-triggers
-
-
+GPO RUN 
+MAX_NUM_AGGREGATES_BLT 7
 
 #*****************************************************************
 # Individual Settings 
 #*****************************************************************
-
-
 
 [0]
 
@@ -39,6 +35,7 @@ CHANNEL_TRIGGER DISABLED
 #************************
 
 ENABLE_INPUT YES 
+RECORD_LENGTH 30000
 
 
 
@@ -48,7 +45,7 @@ ENABLE_INPUT YES
 # MONITOR SETTINGS
 #*****************
 
-ENABLE_INPUT YES
+ENABLE_INPUT NO
 
 
 
@@ -58,9 +55,9 @@ ENABLE_INPUT YES
 # DETECTORS (SUMMED) SETTINGS
 #***************************
 
-ENABLE_INPUT YES 
+ENABLE_INPUT NO 
 
-RECORD_LENGTH 30000
+RECORD_LENGTH 15000
 # RECORD_LENGTH is rounded up to the nearest multiple of 8.
 # Note: RECORD_LENGTH is currently limited to values below 32767,
 # pending a firmware change from CAEN to provide more bits. 
