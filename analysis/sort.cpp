@@ -1,4 +1,5 @@
 // Reads output from washudaq-X.X and sorts into ROOT and text files
+// 
 // The expected event file structure is as follows:
 //
 //      EVENT HEADER:
@@ -14,12 +15,15 @@
 //
 //      DPP EVENT BODY:
 //
+//      Extra select    |   uint16; describes the contents of Extras
+//      Extras          |   uint32; additional PSD data (see documentation)
 //      Zero Crossing   |   uint16; interpolated zero-crossing, in picoseconds
 //      Short Gate Q    |   uint16; charge integrated in the short gate
 //      Long Gate Q     |   uint16; charge integrated in the long gate
 //      Baseline        |   uint16; baseline level of ADC
 //      Pile up rej.    |   uint16; pile-up rejection flag (not yet implemented)
-//      Num. of samples |   uint32; number of waveform samples to follow (mixed mode)
+//      Probe info      |   uint16; turns on an analog probe for examining waveform
+//      Num. of samples |   uint32; number of waveform samples collected in Samples
 //      Samples         |   series of uint16 giving raw waveform samples
 //
 //      (events of type 1 have DPP EVENT BODY)
@@ -58,29 +62,30 @@ unsigned long channel;
 unsigned long timetag, timetagP = 0;
 
 unsigned int nE = 0; // counter for the total number of events
-unsigned int nWavelets = 0; // counter for the number of short MIXED mode waveforms
-unsigned int nCFDs = 0; // counter for the number of MIXED mode CFD traces 
-unsigned int nBaselines = 0; // counter for the number of MIXED mode Baseline traces
-unsigned int nWaveforms = 0; // counter for the number of long MIXED mode waveforms
+unsigned int nWavelets = 0; // counter for the number of waveforms in DPP mode
+unsigned int nCFDs = 0; // counter for the number of CFD traces (analog probe mode) 
+unsigned int nBaselines = 0; // counter for the number of baseline traces (analog probe mode)
+unsigned int nWaveforms = 0; // counter for the number of WAVEFORM mode waveforms
 
-// Create a ROOT tree for holding DPP data 
+// A ROOT tree holds DPP data, keyed by a timestamp (timetag).
+// Entries from different channels with the same timetag are associated via the tree.
 TTree* tree;
 
 struct treeEvent {
     unsigned int timetag, sgQ, lgQ, baseline;
 } te;
 
-// Create histograms for DPP data
-TH1S* outTime;
-TH1S* outSGQ;
-TH1S* outLGQ;
-TH1S* outPZC;
-TH1S* outNZC;
+// Histograms for DPP data
+TH1S* outTime; // coarse time
+TH1S* outSGQ; // short gate Q
+TH1S* outLGQ; // long gate Q
+TH1S* outPZC; // positive zero-crossing for the CFD
+TH1S* outNZC; // negative zero-crossing for the CFD
 TH1S* outBaseline;
-TH1S* outFT;
-TH1S* outCT;
+TH1S* outFT; // fine time
+TH1S* outCT; // coarse time
 
-// Create vectors for holding DPP histograms
+// For holding root histograms that display DPP data
 vector<TH1S*> listWaveforms;
 vector<TH1S*> listWavelets; 
 vector<TH1S*> listCFDs;
@@ -440,8 +445,6 @@ void unpack(ifstream& evtfile, ofstream& out)
         }
 
         // Populate histograms with DPP data
-
-        outTime->Fill(timetag);
         outSGQ->Fill(sgQ);
         outLGQ->Fill(lgQ);
         

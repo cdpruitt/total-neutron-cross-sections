@@ -19,8 +19,12 @@
 #          USB 0 BA     VME digitizer through USB-V1718 (BA = BaseAddress of the VME board, 32 bit hex)
 #          PCI 0 0 0    Desktop/NIM/VME through CONET (optical link) 
 #          PCI 0 0 BA   VME digitizer through V2718 (BA = BaseAddress of the VME board, 32 bit hex)
+#OPEN USB 1 0
 OPEN PCI 0 0 0
 
+
+#SELF_TRIGGER ENABLED
+#STOP_TIME 0.0
 
 # ACQUISITION_MODE: determines what data is read from the device each event.
 #
@@ -73,12 +77,12 @@ NEVT_AGGR 0
 
 # MAX_NUM_EVENTS_BLT: maximum number of events to read out in one Block Transfer.
 # options: 0 to 1023
-MAX_NUM_AGGREGATES_BLT 255
+MAX_NUM_AGGREGATES_BLT 256
 
 
 # TRG_HOLDOFF: trigger hold off in ns
 # range: 0 - 1920 in steps of 128 ns [THESE UNITS UNCONFIRMED]
-TRG_HOLDOFF 1
+TRG_HOLDOFF 8 
 
 
 # PUR_MODE: pile-up rejection mode. [NOTE: this will be implemented in a firmware upgrade later.]
@@ -113,7 +117,7 @@ ANALOG_PROBE CFD
 #          BUSY     - a busy signal from the board
 #          TRUE     - always asserted
 #          FALSE    - never asserted
-GPO RUN 
+GPO FALSE 
 
 
 # START_MODE: determines how the digitizer accepts triggers. This also determines 
@@ -122,7 +126,7 @@ GPO RUN
 #          S-IN     - acquisition accepts triggers when S-IN is asserted
 #          TRIG1    - DAQ starts after arming first trigger [UNCLEAR?]
 #          GPI      - acquisition accepts triggers when GPI is asserted
-START_MODE SOFTWARE
+START_MODE SOFTWARE 
 
 
 #*****************************************************************
@@ -155,12 +159,12 @@ DC_OFFSET 0
 # Only valid on per-memory-bank basis (i.e., chs 0/1, 2/3, 4/5, 6/7). Use the even channel
 # of each bank to set the RECORD_LENGTH for each bank. The even channel must have input
 # enabled for the RECORD_LENGTH to be set to apply to its partner channel.
-RECORD_LENGTH 40 
+RECORD_LENGTH 256 
 
 
 # PRE_TRIGGER: pre-trigger size in number of samples
 # options: 1 to 511
-PRE_TRIGGER 5 
+PRE_TRIGGER 76 
 
 
 # TRIGGER_THRESHOLD: threshold for the channel self-trigger, relative to the baseline
@@ -293,7 +297,7 @@ EXTRA_SELECT 2
 
   PULSE_POLARITY POSITIVE
   CHANNEL_TRIGGER ENABLED
-  TRG_THRESHOLD 500 
+  TRG_THRESHOLD 200 
   DC_OFFSET 40 
   
   
@@ -316,26 +320,25 @@ EXTRA_SELECT 2
 # MONITOR SETTINGS
 #*****************
 
-  ENABLE_INPUT NO 
-
+  ENABLE_INPUT YES 
 
 # Basic settings
   
-# PULSE_POLARITY NEGATIVE
-# CHANNEL_TRIGGER ENABLED
-# TRG_THRESHOLD 50 
-# DC_OFFSET -40 
-# 
-# 
+  PULSE_POLARITY NEGATIVE
+  CHANNEL_TRIGGER ENABLED
+  TRG_THRESHOLD 50 
+  DC_OFFSET -40 
+  
+  
 # PSD/CFD settings
-# 
-# DISC_MODE LED
-# 
-# PSD_SHORT_GATE 7 
-# PSD_PRE_GATE 4 
-# PSD_LONG_GATE 17 
-# PRE_TRIGGER 0
-# RECORD_LENGTH 48 
+  
+  DISC_MODE LED
+  
+  PSD_SHORT_GATE 7 
+  PSD_PRE_GATE 4 
+  PSD_LONG_GATE 17 
+  PRE_TRIGGER 0
+  RECORD_LENGTH 48 
 
 
 
@@ -356,7 +359,7 @@ EXTRA_SELECT 2
   DC_OFFSET -40 
   
   
-  PSD/CFD settings
+# PSD/CFD settings
   
   DISC_MODE CFD
   CFD_DELAY 3
@@ -402,21 +405,22 @@ EXTRA_SELECT 2
   
   PULSE_POLARITY NEGATIVE
   CHANNEL_TRIGGER ENABLED
-  TRG_THRESHOLD 20 
+  TRG_THRESHOLD 80 
   DC_OFFSET -40 
   
   
 # PSD/CFD settings
   
-# DISC_MODE CFD
-  CFD_DELAY 3
+  DISC_MODE CFD
+  CFD_DELAY 2
   CFD_ATTENUATION 1
   
-  PSD_SHORT_GATE 7 
-  PSD_PRE_GATE 2 
-  PSD_LONG_GATE 17 
-  PRE_TRIGGER 2
+  PSD_SHORT_GATE 8 
+  PSD_PRE_GATE 4 
+  PSD_LONG_GATE 16 
+  PRE_TRIGGER 24 
   RECORD_LENGTH 24 
+  PSD_SEL_CHARGE_SENSE 0
 
 
 
@@ -433,20 +437,21 @@ EXTRA_SELECT 2
   
   PULSE_POLARITY NEGATIVE
   CHANNEL_TRIGGER ENABLED
-  TRG_THRESHOLD 20 
+  TRG_THRESHOLD 80 
   DC_OFFSET -40 
   
   
 # PSD/CFD settings
   
-# DISC_MODE CFD
-  CFD_DELAY 3
+  DISC_MODE CFD
+  CFD_DELAY 2
   CFD_ATTENUATION 1
   
-  PSD_SHORT_GATE 7 
-  PSD_PRE_GATE 2 
-  PSD_LONG_GATE 17 
-  PRE_TRIGGER 2
+  PSD_SHORT_GATE 8 
+  PSD_PRE_GATE 4 
+  PSD_LONG_GATE 16 
+  PRE_TRIGGER 24 
+  PSD_SEL_CHARGE_SENSE 0
 
 
 
