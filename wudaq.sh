@@ -10,3 +10,5 @@ runName=$runName$i.evt
 echo "Starting "$runName"..."
 
 bin/readout testConfig/config.txt $runName
+
+echo "Testing after run"

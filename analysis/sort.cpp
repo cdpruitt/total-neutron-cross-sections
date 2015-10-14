@@ -64,7 +64,11 @@ unsigned short *point;
 unsigned long size;
 unsigned long evtType;
 unsigned long channel;
-unsigned long timetag, timetagP = 0;
+unsigned long timetag;
+
+// timetagP keeps track of the previous event's timetag, so we can count 
+// macropulses by looking at timetag resets
+unsigned long timetagP;
 
 unsigned int nE = 0; // counter for the total number of events
 unsigned int nWavelets = 0; // counter for the number of waveforms in DPP mode
@@ -73,7 +77,9 @@ unsigned int nBaselines = 0; // counter for the number of baseline traces (analo
 unsigned int nWaveforms = 0; // counter for the number of WAVEFORM mode waveforms
 
 unsigned int sgQ, lgQ, fineTime, nSamp, probe, anSamp, extraSelect, extras1, extras2, puRej;
-unsigned int runNo, macroNo, chNo;
+unsigned int macroNo, chNo;
+
+std::string runNo = "-1";
 
 std::vector<int> waveform; // for holding one event's waveform data
 std::vector<int> anProbe; // for holding one event's analog probe waveform data
@@ -106,6 +112,8 @@ struct treeEvent {
     vector<int> anProbe; // include the analog probe data for the event
 } te;
 
+TDirectoryFile *targetChangerDir, *monitorDir, *detectorLDir, *detectorRDir, *detectorTDir;
+
 // Histograms for DPP data
 TH1S* outTime; // coarse time
 TH1S* outSGQ; // short gate Q
@@ -116,6 +124,7 @@ TH1S* outBaseline;
 TH1S* outFT; // fine time
 TH1S* outCT; // coarse time
 
+
 // For holding root histograms that display DPP data
 //vector<TH1S*> listWaveforms;
 //vector<TH1S*> listWavelets; 
@@ -123,8 +132,8 @@ TH1S* outCT; // coarse time
 //vector<TH1S*> listBaselines;
 
 
-// read EVENT HEADER to determine where the event data should go (using channel number)
-// 'out' points to a channel-specific text file
+// read the EVENT HEADER
+// also determines where this event's data belongs (using channel)
 int readHeader(ifstream& evtfile)
 {
     // start reading header
@@ -157,6 +166,13 @@ int readHeader(ifstream& evtfile)
     evtfile.read((char*)buffer,BufferBytes);
     timetag = (timetag2<< 16) | timetag1;
 
+    if(timetag<timetagP)
+    {
+        // we must have reset the timetag at start of new macropulse
+        macroNo++;
+    }
+    timetagP = timetag;
+
     return channel;
 }
 
@@ -164,9 +180,7 @@ int readHeader(ifstream& evtfile)
 // 'out' points to a channel-specific text file
 void printHeader(ofstream& out)
 {
-
-    // use for formatting strings with units
-    stringstream temp;
+    stringstream temp; // used for formatting strings with units
 
     out << setfill('*') << setw(63) << "*" << endl;
     out << "| EVENT " << left << setfill(' ') << setw(54) << nE << "|" << endl;
@@ -201,11 +215,9 @@ void printHeader(ofstream& out)
 
 }
 
-// unpacks EVENT BODY data into ROOT histograms and text output
-// 'out' points to a channel-specific text file
+// read the EVENT BODY
 void readBody(ifstream& evtfile)
 {
-    
     if(evtType==1)
     {
         // DPP EVENT BODY unpacking 
@@ -239,12 +251,13 @@ void readBody(ifstream& evtfile)
         // baseline is the baseline level, frozen at the trigger time
 /*        unsigned short baseline = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
-        out << "| baseline level = " << left << setw(42) << baseline << " |" << endl;
 */
+
         // puRej is a pile-up rejection flag (1 if pile-up detected? 0 if not?)
+        // Not reliable in current washudaq version - but still need to read the
+        // word from the event file to avoid getting mismatched.
         puRej = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
-        //out << "| pile-up detected = " << left << setw(40) << puRej << " |" << endl;
 
         // probe indicates whether an additional analog waveform will be captured along with the
         // input trace. The top bit turns on the analog probe; the bottom two bits describe the
@@ -262,6 +275,7 @@ void readBody(ifstream& evtfile)
         if(nSamp > 0)
         {
             // read waveform, consisting of nSamp samples
+            waveform.clear();
             for(int i=0;i<nSamp;i++)
             {
                 waveform.push_back(buffer[0]);
@@ -269,9 +283,9 @@ void readBody(ifstream& evtfile)
             }
         }
 
-        if((probe & 0x8000)==0x8000)
+        if((probe & 0x8000)==0x8000) 
         {
-            // read analog probe waveform, consisting of anSamp samples
+            // analog probe enabled; read analog probe waveform
             unsigned short anSamp1 = buffer[0];
             evtfile.read((char*)buffer,BufferBytes);
             unsigned short anSamp2 = buffer[0];
@@ -297,6 +311,8 @@ void readBody(ifstream& evtfile)
         evtfile.read((char*)buffer,BufferBytes);
         nSamp = (nSamp2 << 16) | nSamp1;
 
+        // read waveform, consisting of nSamp samples
+        waveform.clear();
         for(int i=0;i<nSamp;i++)
         {
             waveform.push_back(buffer[0]);
@@ -370,6 +386,9 @@ void printBody(ofstream& out)
 
         out << "| short gate charge = " << left << setw(40) << sgQ << "|" << endl;
         out << "| long gate charge = " << left << setw(41) << lgQ << "|" << endl;
+
+        // Pile-up detection not operational in current washudaq - ignore it.
+        //out << "| pile-up detected = " << left << setw(40) << puRej << " |" << endl;
 
         temp.str("");
         temp << nSamp << " samples";
@@ -562,41 +581,24 @@ void treeFill()
     */
 
     // Fill the root tree with data extracted from the event for later analysis
-    te.runNo = runNo;
+    te.runNo = stoi(runNo);
     te.macroNo = macroNo;
     te.chNo = chNo;
+    te.evtType = evtType;
     te.timetag = timetag;
     te.fineTime = fineTime;
     te.sgQ = sgQ;
     te.lgQ = lgQ;
 
-    te.waveform = waveform;
-    te.anProbe = anProbe;
+    //te.waveform = waveform;
+    //te.anProbe = anProbe;
 
     tree->Fill();
 }
 
 void processRun(string evtname, bool text)
 {
-    // define ROOT histograms
-    outTime = new TH1S("outTime","outTime",10000,0,10000000000);
-    outSGQ = new TH1S("outSGQ","outSGQ",1024,0,70000);
-    outLGQ = new TH1S("outLGQ","outLGQ",1024,0,70000);
-    outPZC = new TH1S("outPZC","outPZC",16384,0,16384);
-    outNZC = new TH1S("outNZC","outNZC",16384,0,16384);
-    outBaseline = new TH1S("outBaseline","outBaseline",1024,0,17000);
-    outFT = new TH1S("outFT","outFT",1023,0,1023); // a ROOT plot to show fine time (FT) of events
-    outCT = new TH1S("outCT","outCT",1000000,0,1000000); // a ROOT plot to show coarse time (CT) of events
-
-    // define ROOT directory structure
-    TDirectoryFile *targetChangerDir, *monitorDir, *detectorLDir, *detectorRDir, *detectorTDir;
-    targetChangerDir = new TDirectoryFile("targetChanger","Target Changer");
-    monitorDir = new TDirectoryFile("monitor","Monitor");
-    detectorLDir = new TDirectoryFile("detL","Detector left)");
-    detectorRDir = new TDirectoryFile("detR","Detector right");
-    detectorTDir = new TDirectoryFile("detT","Detector sum");
-    // TDirectory *dirSub; to be uncommented and used for sub-directories, if desired
- 
+     
     // attempt to process the event file
     ifstream evtfile;
     evtfile.open(evtname,ios::binary);
@@ -614,6 +616,8 @@ void processRun(string evtname, bool text)
         evtfile.read((char*)buffer,BufferBytes);
 
         point = buffer;
+        timetagP = 0; // reset timetagP so macroNo counting works properly
+        macroNo = 0; // reset macroNo, so each macro in a run is counted right
 
         // start looping through the evtfile for events
         while(!evtfile.eof())
@@ -632,11 +636,7 @@ void processRun(string evtname, bool text)
                 printHeader(totalOut);
 
                 // print the time difference between adjacent events to timeDiff.txt
-                if(timetag>timetagP)
-                {
-                    timeDiff << (timetag - timetagP)*2 << endl;
-                }
-
+                timeDiff << (timetag - timetagP)*2 << endl;
                 timetagP = timetag;
 
                 switch (channelNum)
@@ -713,14 +713,32 @@ int main(int argc, char* argv[])
 
     tree = new TTree("tree","");
     tree->SetAutoSave(0);
-    tree->Branch("event",&te.runNo,"runNo/I:macroNo:chNo:timetag:fineTime:sgQ:lgQ");
+    tree->Branch("event",&te.runNo,"runNo/I:macroNo:chNo:evtType:timetag:fineTime:sgQ:lgQ");
 
     stringstream evtname;
 
-    bool text = false; // flag for producing text-file output in addition to
-                       // ROOT plots and ROOT tree
-    bool runlist = false; // runs to be processed should be read from
-                          // runsToSort.txt
+    bool text = false; // flag for producing text-file output apart from
+                       // the default ROOT plots and ROOT tree
+    bool runlist = false; // flag indicating that runs should be read from
+                          // runsToSort.txt, and NOT just the most recent file
+
+    // define ROOT histograms
+    outTime = new TH1S("outTime","outTime",10000,0,10000000000);
+    outSGQ = new TH1S("outSGQ","outSGQ",1024,0,70000);
+    outLGQ = new TH1S("outLGQ","outLGQ",1024,0,70000);
+    outPZC = new TH1S("outPZC","outPZC",16384,0,16384);
+    outNZC = new TH1S("outNZC","outNZC",16384,0,16384);
+    outBaseline = new TH1S("outBaseline","outBaseline",1024,0,17000);
+    outFT = new TH1S("outFT","outFT",1023,0,1023); // a ROOT plot to show fine time (FT) of events
+    outCT = new TH1S("outCT","outCT",1000000,0,1000000); // a ROOT plot to show coarse time (CT) of events
+
+    // set ROOT directory structure
+    targetChangerDir = new TDirectoryFile("targetChanger","Target Changer");
+    monitorDir = new TDirectoryFile("monitor","Monitor");
+    detectorLDir = new TDirectoryFile("detL","Detector left)");
+    detectorRDir = new TDirectoryFile("detR","Detector right");
+    detectorTDir = new TDirectoryFile("detT","Detector sum");
+    // TDirectory *dirSub; to be uncommented and used for sub-directories, if desired
 
     // open the event files
 
@@ -748,7 +766,6 @@ int main(int argc, char* argv[])
     {
         ifstream evtFilenames;
         string evtFilename = "runsToSort.txt";
-        string runNo = "-1";
 
         evtFilenames.clear();
         evtFilenames.open(evtFilename.c_str());
@@ -791,5 +808,5 @@ int main(int argc, char* argv[])
     }
 
     file->Write();
-    tree->Write();
+    //tree->Write();
 }
