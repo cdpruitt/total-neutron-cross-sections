@@ -46,11 +46,14 @@
 #include "TFile.h"
 #include "TTree.h"
 #include "TDirectoryFile.h"
+#include "MyClass.h"
 #include <dirent.h>
 #include <algorithm>
 #include "sys/stat.h"
 #include "unistd.h"
 #include "time.h"
+#include <regex>
+#include <limits>
 
 using namespace std;
 
@@ -61,14 +64,17 @@ unsigned short buffer[BufferWords];
 unsigned short *point;
 
 // Header fields for events
-unsigned long size;
-unsigned long evtType;
-unsigned long channel;
-unsigned long timetag;
+unsigned int size;
+unsigned int evtType;
+unsigned int channel;
+unsigned int timetag;
 
 // timetagP keeps track of the previous event's timetag, so we can count 
-// macropulses by looking at timetag resets
-unsigned long timetagP;
+// macropulses by looking at timetag resets. Because channels don't read out in
+// order, we need to track the most recent timetag for each enabled channel
+vector<int> timetagP (8,0); // 8 channels all start with previous timetag = 0
+vector<short> macroNo (8,0);  // 8 channels all start on the 0th macro
+vector<short> evtNo (8,0);    // 8 channels all start on the 0th event
 
 unsigned int nE = 0; // counter for the total number of events
 unsigned int nWavelets = 0; // counter for the number of waveforms in DPP mode
@@ -76,13 +82,13 @@ unsigned int nCFDs = 0; // counter for the number of CFD traces (analog probe mo
 unsigned int nBaselines = 0; // counter for the number of baseline traces (analog probe mode)
 unsigned int nWaveforms = 0; // counter for the number of WAVEFORM mode waveforms
 
-unsigned int sgQ, lgQ, fineTime, nSamp, probe, anSamp, extraSelect, extras1, extras2, puRej;
-unsigned int macroNo, chNo;
+unsigned short sgQ, lgQ, fineTime, nSamp, probe, anSamp, extraSelect, extras1, extras2, puRej;
+unsigned short chNo;
 
-std::string runNo = "-1";
+std::string runNo;
 
-std::vector<int> waveform; // for holding one event's waveform data
-std::vector<int> anProbe; // for holding one event's analog probe waveform data
+std::vector<short> waveform; // for holding one event's waveform data
+std::vector<short> anProbe; // for holding one event's analog probe waveform data
 
 std::vector<TH1S*> listWaveforms;
 std::vector<TH1S*> listWavelets;
@@ -104,13 +110,24 @@ ofstream timeDiff ("sorted/timeDiff.txt");
 // Entries from different channels with the same timetag are associated via the tree.
 TTree* tree;
 
-struct treeEvent {
-    unsigned int runNo, macroNo, chNo, evtType, timetag, fineTime, sgQ, lgQ;
-    // label each event by runNo, macroNo, chNo to uniquely identify
-    // include event data: timetag, fineTime, short gate charge, long gate charge
-    vector<int> waveform; // include the waveform data for the event
-    vector<int> anProbe; // include the analog probe data for the event
-} te;
+struct event
+{
+    // label each event by runNo, macroNo, evtNo to uniquely identify
+    unsigned short runNo, macroNo, evtNo;
+
+    unsigned short chNo, evtType; // describe the event data
+
+    unsigned int timetag;
+    unsigned short fineTime, sgQ, lgQ;
+
+    std::vector<short> waveform; // include the waveforms for each channel of the event
+    std::vector<short> anProbe; // include the analog probes for each channel of the event
+} ev;
+
+bool text = false; // flag for producing text-file output apart from
+                   // the default ROOT plots and ROOT tree
+bool runlist = false; // flag indicating that runs should be read from
+                      // runsToSort.txt, and NOT just the most recent file
 
 TDirectoryFile *targetChangerDir, *monitorDir, *detectorLDir, *detectorRDir, *detectorTDir;
 
@@ -123,14 +140,6 @@ TH1S* outNZC; // negative zero-crossing for the CFD
 TH1S* outBaseline;
 TH1S* outFT; // fine time
 TH1S* outCT; // coarse time
-
-
-// For holding root histograms that display DPP data
-//vector<TH1S*> listWaveforms;
-//vector<TH1S*> listWavelets; 
-//vector<TH1S*> listCFDs;
-//vector<TH1S*> listBaselines;
-
 
 // read the EVENT HEADER
 // also determines where this event's data belongs (using channel)
@@ -166,13 +175,6 @@ int readHeader(ifstream& evtfile)
     evtfile.read((char*)buffer,BufferBytes);
     timetag = (timetag2<< 16) | timetag1;
 
-    if(timetag<timetagP)
-    {
-        // we must have reset the timetag at start of new macropulse
-        macroNo++;
-    }
-    timetagP = timetag;
-
     return channel;
 }
 
@@ -191,15 +193,17 @@ void printHeader(ofstream& out)
     {
         out << left << setfill(' ') << setw(50) << ", DPP mode" << "|" << endl;
     }
+
     else if (evtType==2)
     {
         out << left << setfill(' ') << setw(50) << ", waveform mode " << "|" << endl;
     }
+
     else
     {
         out << left << setfill(' ') << setw(50) << ", ERROR DETERMINING MODE" << " |" << endl;
         cout << "Error: event type value out-of-range (DPP=1, waveform=2)" << endl;
-        cout << "Event number = " << nE << endl;
+        cout << "Event number = " << evtNo[chNo] << endl;
     }
 
     temp << size << " bytes";
@@ -240,6 +244,9 @@ void readBody(ifstream& evtfile)
         extras2 = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
 
+        // retrieve fine time from bits 0:9 (0x03ff)
+        fineTime = (extras1 & 0x03ff);
+
         // sgQ is the short gate integrated charge, in digitizer units 
         sgQ = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
@@ -272,10 +279,10 @@ void readBody(ifstream& evtfile)
         evtfile.read((char*)buffer,BufferBytes);
         nSamp = (nSamp2 << 16) | nSamp1;
 
+        waveform.clear();
         if(nSamp > 0)
         {
             // read waveform, consisting of nSamp samples
-            waveform.clear();
             for(int i=0;i<nSamp;i++)
             {
                 waveform.push_back(buffer[0]);
@@ -311,12 +318,15 @@ void readBody(ifstream& evtfile)
         evtfile.read((char*)buffer,BufferBytes);
         nSamp = (nSamp2 << 16) | nSamp1;
 
-        // read waveform, consisting of nSamp samples
         waveform.clear();
-        for(int i=0;i<nSamp;i++)
+        if(nSamp >0)
         {
-            waveform.push_back(buffer[0]);
-            evtfile.read((char*)buffer,BufferBytes);
+            // read waveform, consisting of nSamp samples
+            for(int i=0;i<nSamp;i++)
+            {
+                waveform.push_back(buffer[0]);
+                evtfile.read((char*)buffer,BufferBytes);
+            }
         }
     }
 
@@ -358,8 +368,7 @@ void printBody(ofstream& out)
                 out << "| extended time stamp = " << left << setfill(' ') << setw(38) << temp.str() << "|" << endl;
                 // extract flags from bits 10:15 (0xfc00)
                 out << "| flags = " << left << setfill(' ') << setw(52) << (extras1 & 0xfc00) << "|" << endl;
-                // fine time from bits 0:9 (0x03ff)
-                fineTime = (extras1 & 0x03ff);
+
                 out << "| fine time stamp = " << left << setfill(' ') << setw(42) << fineTime << "|" << endl;
                 outFT->Fill((extras1 & 0x03ff));
                 break;
@@ -477,7 +486,7 @@ void printBody(ofstream& out)
                 if(anSamp > 0)
                 {
                     histName.str("");
-                    histName << "outBaseline" << nE;
+                    histName << "outBaseline" << evtNo[chNo];
                     string tempHist = histName.str();
 
                     listBaselines.push_back(new TH1S(tempHist.c_str(),tempHist.c_str(),nSamp,0,nSamp*2));
@@ -515,6 +524,7 @@ void printBody(ofstream& out)
         {
             out << "| Analog probe disabled" << right << setfill(' ') << setw(40) << "|" << endl;
             out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
+            out << setfill('*') << setw(63) << "*" << endl;
         }
     }
 
@@ -562,43 +572,36 @@ void printBody(ofstream& out)
         cout << "ERROR: unknown value for event type" << endl;
         return;
     }
-
-    out << setfill('*') << setw(63) << "*" << endl;
     out << endl;
 }
 
-void treeFill()
+void fillTree()
 {
-    /*histName.str("");
-    histName << "outWaveform" << nE;
-    string tempHist = histName.str();
+    if(timetag <= timetagP[chNo])
+    {
+        // new macropulse for this channel
+        macroNo[chNo]++;
+    }
+    timetagP[chNo] = timetag;
 
-    listWaveforms.push_back(new TH1S(tempHist.c_str(),tempHist.c_str(),nSamp,0,nSamp*2));
-
-    // Populate histograms with DPP data
-    outSGQ->Fill(sgQ);
-    outLGQ->Fill(lgQ);
-    */
-
-    // Fill the root tree with data extracted from the event for later analysis
-    te.runNo = stoi(runNo);
-    te.macroNo = macroNo;
-    te.chNo = chNo;
-    te.evtType = evtType;
-    te.timetag = timetag;
-    te.fineTime = fineTime;
-    te.sgQ = sgQ;
-    te.lgQ = lgQ;
-
-    //te.waveform = waveform;
-    //te.anProbe = anProbe;
+    // detectors are summed; simply fill tree with the event
+    ev.runNo = std::stoi(runNo);
+    ev.macroNo = macroNo[chNo];
+    ev.evtNo = evtNo[chNo];
+    ev.chNo = chNo;
+    ev.evtType = evtType;
+    ev.timetag = timetag;
+    ev.fineTime = fineTime;
+    ev.sgQ = sgQ;
+    ev.lgQ = lgQ;
+    //ev.waveform = waveform;
+    //ev.anProbe = anProbe;
 
     tree->Fill();
 }
 
-void processRun(string evtname, bool text)
+void processRun(string evtname)
 {
-     
     // attempt to process the event file
     ifstream evtfile;
     evtfile.open(evtname,ios::binary);
@@ -616,17 +619,17 @@ void processRun(string evtname, bool text)
         evtfile.read((char*)buffer,BufferBytes);
 
         point = buffer;
-        timetagP = 0; // reset timetagP so macroNo counting works properly
-        macroNo = 0; // reset macroNo, so each macro in a run is counted right
+        std::fill(timetagP.begin(), timetagP.end(), 0); // reset timetagP so macroNo counting works properly
+        std::fill(macroNo.begin(), macroNo.end(), 0); // reset macroNo, so each macro in a run is counted right
 
         // start looping through the evtfile for events
         while(!evtfile.eof())
         {
             // get channel number from the event header
-            int channelNum = readHeader(evtfile);
+            chNo = readHeader(evtfile);
 
             readBody(evtfile); // extract data from the event body
-            treeFill(); // fill the tree with data from the event body
+            fillTree(); // fill the tree with data from the event body
 
             if(text)
             {
@@ -636,10 +639,10 @@ void processRun(string evtname, bool text)
                 printHeader(totalOut);
 
                 // print the time difference between adjacent events to timeDiff.txt
-                timeDiff << (timetag - timetagP)*2 << endl;
-                timetagP = timetag;
+                timeDiff << (timetag - timetagP[chNo])*2 << endl;
+                timetagP[chNo] = timetag;
 
-                switch (channelNum)
+                switch (chNo)
                 {
                     case 0: 
                         // target-changer data
@@ -692,6 +695,7 @@ void processRun(string evtname, bool text)
             }
 
             // Event finished
+            evtNo[chNo]++;
             nE++;
         }
 
@@ -713,15 +717,18 @@ int main(int argc, char* argv[])
 
     tree = new TTree("tree","");
     tree->SetAutoSave(0);
-    tree->Branch("event",&te.runNo,"runNo/I:macroNo:chNo:evtType:timetag:fineTime:sgQ:lgQ");
+    tree->Branch("runNo",&ev.runNo,"runNo/s");
+    tree->Branch("macroNo",&ev.macroNo,"macroNo/s");
+    tree->Branch("evtNo",&ev.evtNo,"evtNo/s");
+    tree->Branch("chNo",&ev.chNo,"chNo/s");
+    tree->Branch("evtType",&ev.evtType,"evtType/i");
+    tree->Branch("timetag",&ev.timetag,"timetag/i");
+    tree->Branch("fineTime",&ev.fineTime,"fineTime/s");
+    tree->Branch("sgQ",&ev.sgQ,"sgQ/s");
+    tree->Branch("lgQ",&ev.lgQ,"lgQ/s");
 
     stringstream evtname;
-
-    bool text = false; // flag for producing text-file output apart from
-                       // the default ROOT plots and ROOT tree
-    bool runlist = false; // flag indicating that runs should be read from
-                          // runsToSort.txt, and NOT just the most recent file
-
+    
     // define ROOT histograms
     outTime = new TH1S("outTime","outTime",10000,0,10000000000);
     outSGQ = new TH1S("outSGQ","outSGQ",1024,0,70000);
@@ -756,9 +763,11 @@ int main(int argc, char* argv[])
 
             if (std::string(argv[i]) == "--runlist" || std::string(argv[i]) == "-rl")
             {
-                // read the runs to be processed from runsToSort.txt
+                // read the runs to be processed from runsToSort.txt instead
+                // of using the most recently modified file in ../output
                 runlist = true;
             }
+
         }
     }
 
@@ -782,7 +791,7 @@ int main(int argc, char* argv[])
             {
                 evtname.str("");
                 evtname << "../output/run" <<  runNo << ".evt";
-                processRun(evtname.str(), text);
+                processRun(evtname.str());
             }
         }
     }
@@ -793,20 +802,22 @@ int main(int argc, char* argv[])
         char path[100];
 
         // Open the command for reading files
-        fp = popen("ls -t ../output | head -1", "r");
+        fp = popen("ls -t ../output | head -1 | egrep -o '[0-9]+'", "r");
         if (fp == NULL)
         {
-            std::cout  << "Failed to run file search in ../output" << std::endl;
+            std::cout  << "Failed to find most recent file in ../output" << std::endl;
             exit(1);
         }
 
         fscanf(fp,"%s",path);
-        evtname << "../output/" << path;
+        evtname << "../output/run" << path << ".evt";
 
-        std::cout << "run name is " << evtname.str() << std::endl;
-        processRun(evtname.str(), text);
+        std::stringstream temp;
+        temp << path;
+        runNo = temp.str();
+
+        processRun(evtname.str());
     }
 
     file->Write();
-    //tree->Write();
 }

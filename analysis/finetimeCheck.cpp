@@ -288,10 +288,11 @@ void unpack(ifstream& evtfile)
                 te.timetag = timetag*2; // 2 ns per unit
                 //cout << te.timetag << " " << te.finetimeL << " " << te.finetimeR << endl;
 
-                if ((te.lgQL + te.lgQR) > 1800 && (te.lgQL + te.lgQR) < 2800)
+                /*if ((te.lgQL + te.lgQR) > 1800 && (te.lgQL + te.lgQR) < 2800)
                 {
-                    tree->Fill();
                 }
+                */
+                tree->Fill();
 
                 channelCoin = 1; // reset the coincindence counter for next event
             }
