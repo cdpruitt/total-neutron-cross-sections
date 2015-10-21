@@ -42,11 +42,9 @@
 #include <fstream>
 #include <string>
 #include <sstream>
-#include "TH1S.h"
 #include "TFile.h"
 #include "TTree.h"
 #include "TDirectoryFile.h"
-#include "MyClass.h"
 #include <dirent.h>
 #include <algorithm>
 #include "sys/stat.h"
@@ -66,83 +64,72 @@ unsigned short *point;
 // Header fields for events
 unsigned int size;
 unsigned int evtType;
-unsigned int channel;
+unsigned int chNo;
 unsigned int timetag;
 
 // timetagP keeps track of the previous event's timetag, so we can count 
 // macropulses by looking at timetag resets. Because channels don't read out in
 // order, we need to track the most recent timetag for each enabled channel
 vector<int> timetagP (8,0); // 8 channels all start with previous timetag = 0
-vector<short> macroNo (8,0);  // 8 channels all start on the 0th macro
+//vector<short> macroNo (8,0);  // 8 channels all start on the 0th macro
 vector<short> evtNo (8,0);    // 8 channels all start on the 0th event
 
 unsigned int nE = 0; // counter for the total number of events
-unsigned int nWavelets = 0; // counter for the number of waveforms in DPP mode
+int macroNo = -1;
+
+/*unsigned int nWavelets = 0; // counter for the number of waveforms in DPP mode
 unsigned int nCFDs = 0; // counter for the number of CFD traces (analog probe mode) 
 unsigned int nBaselines = 0; // counter for the number of baseline traces (analog probe mode)
 unsigned int nWaveforms = 0; // counter for the number of WAVEFORM mode waveforms
-
-unsigned short sgQ, lgQ, fineTime, nSamp, probe, anSamp, extraSelect, extras1, extras2, puRej;
-unsigned short chNo;
+*/
 
 std::string runNo;
+unsigned short sgQ, lgQ, fineTime, nSamp, probe, anSamp, extraSelect, extras1, extras2, puRej;
 
 std::vector<short> waveform; // for holding one event's waveform data
 std::vector<short> anProbe; // for holding one event's analog probe waveform data
 
-std::vector<TH1S*> listWaveforms;
-std::vector<TH1S*> listWavelets;
-std::vector<TH1S*> listCFDs;
-std::vector<TH1S*> listBaselines;
-
 // for text file displaying events, organized by input channel to make sense of the data
-ofstream totalOut ("sorted/allChannels.txt");
-ofstream targetChangerOut ("sorted/targetChanger.txt");
-ofstream monitorOut ("sorted/monitor.txt");
-ofstream detectorLOut ("sorted/detectorL.txt");
-ofstream detectorROut ("sorted/detectorR.txt");
-ofstream detectorTOut ("sorted/detectorT.txt");
+ofstream totalOut ("textSort/allChannels.txt");
+ofstream targetChangerOut ("textSort/targetChanger.txt");
+ofstream monitorOut ("textSort/monitor.txt");
+ofstream detectorLOut ("textSort/detectorL.txt");
+ofstream detectorROut ("textSort/detectorR.txt");
+ofstream detectorTOut ("textSort/detectorT.txt");
 
 // for text output to examine time differences from one event to the next
-ofstream timeDiff ("sorted/timeDiff.txt");
+ofstream timeDiff ("textSort/timeDiff.txt");
 
-// A ROOT tree holds DPP data, keyed by a timestamp (timetag).
-// Entries from different channels with the same timetag are associated via the tree.
-TTree* tree;
+// Data is sorted into a ROOT tree; each event has a unique runNo-macroNo-evtNo ID.
+TTree* prodTree;
+TTree* tempTree;
 
 struct event
 {
     // label each event by runNo, macroNo, evtNo to uniquely identify
     unsigned short runNo, macroNo, evtNo;
 
-    unsigned short chNo, evtType; // describe the event data
+    unsigned short chNo;
+    unsigned int evtType; // describe the event data: either DPP or waveform
 
     unsigned int timetag;
     unsigned short fineTime, sgQ, lgQ;
 
-    std::vector<short> waveform; // include the waveforms for each channel of the event
-    std::vector<short> anProbe; // include the analog probes for each channel of the event
+    vector<short> waveform; // include the waveforms for each channel of the event
+    vector<short> anProbe; // include the analog probes for each channel of the event
 } ev;
 
 bool text = false; // flag for producing text-file output apart from
-                   // the default ROOT plots and ROOT tree
+                   // the default ROOT plots and tree filling
 bool runlist = false; // flag indicating that runs should be read from
                       // runsToSort.txt, and NOT just the most recent file
+bool prod = false; // flag indicating that data should be added to the
+                   // production tree as well as a temporary tree
 
 TDirectoryFile *targetChangerDir, *monitorDir, *detectorLDir, *detectorRDir, *detectorTDir;
 
-// Histograms for DPP data
-TH1S* outTime; // coarse time
-TH1S* outSGQ; // short gate Q
-TH1S* outLGQ; // long gate Q
-TH1S* outPZC; // positive zero-crossing for the CFD
-TH1S* outNZC; // negative zero-crossing for the CFD
-TH1S* outBaseline;
-TH1S* outFT; // fine time
-TH1S* outCT; // coarse time
-
 // read the EVENT HEADER
-// also determines where this event's data belongs (using channel)
+// also determines where this event's data belongs (using chNo)
 int readHeader(ifstream& evtfile)
 {
     // start reading header
@@ -161,12 +148,12 @@ int readHeader(ifstream& evtfile)
     evtfile.read((char*)buffer,BufferBytes);
     evtType = (evtType2 << 16) | evtType1;
 
-    // channel ranges from 0-7; each channel is considered an independent event generator
-    unsigned short channel1 = buffer[0];
+    // chNo ranges from 0-7
+    unsigned short chNo1 = buffer[0];
     evtfile.read((char*)buffer,BufferBytes);
-    unsigned short channel2 = buffer[0];
+    unsigned short chNo2 = buffer[0];
     evtfile.read((char*)buffer,BufferBytes);
-    channel = (channel2 << 16) | channel1;
+    chNo = (chNo2 << 16) | chNo1;
 
     // timetag is the coarse trigger time for this event, in 2ns increments
     unsigned short timetag1 = buffer[0];
@@ -174,8 +161,17 @@ int readHeader(ifstream& evtfile)
     unsigned short timetag2 = buffer[0];
     evtfile.read((char*)buffer,BufferBytes);
     timetag = (timetag2<< 16) | timetag1;
+    timetag *= 2; // 2 ns per timetag, 500 MHz sampling rate
 
-    return channel;
+    if(chNo==0)
+    {
+        // new macropulse
+        macroNo++;
+    }
+    timetagP[chNo] = timetag;
+
+
+    return chNo;
 }
 
 // prints EVENT HEADER to the appropriate text file
@@ -187,7 +183,9 @@ void printHeader(ofstream& out)
     out << setfill('*') << setw(63) << "*" << endl;
     out << "| EVENT " << left << setfill(' ') << setw(54) << nE << "|" << endl;
     out << "|" << right << setfill('-') << setw(62) << "|" << endl;
-    out << "| channel #" << channel;
+    out << "| run # " << runNo << endl;
+    out << "| macro # " << macroNo << endl;
+    out << "| channel #" << chNo << endl;
 
     if(evtType==1)
     {
@@ -215,7 +213,6 @@ void printHeader(ofstream& out)
 
     out << "|" << right << setfill('-') << setw(62) << "|" << endl;
 
-    outCT->Fill(2*timetag);
 
 }
 
@@ -370,7 +367,6 @@ void printBody(ofstream& out)
                 out << "| flags = " << left << setfill(' ') << setw(52) << (extras1 & 0xfc00) << "|" << endl;
 
                 out << "| fine time stamp = " << left << setfill(' ') << setw(42) << fineTime << "|" << endl;
-                outFT->Fill((extras1 & 0x03ff));
                 break;
 
             case 3:
@@ -382,8 +378,6 @@ void printBody(ofstream& out)
                 // PZC and NZC
                 out << "| PZC = " << left << setfill(' ') << setw(54) << extras2 << "|" << endl;
                 out << "| NZC = " << left << setfill(' ') << setw(54) << extras1 << "|" << endl;
-                outPZC->Fill(extras2);
-                outNZC->Fill(extras1);
                 break;
 
             case 7:
@@ -476,7 +470,7 @@ void printBody(ofstream& out)
 
                     // done with this event; increment the wavelet counter to get ready for the next
                     // wavelet.
-                    nCFDs++;
+                    //nCFDs++;
                 }
             }
 
@@ -489,14 +483,14 @@ void printBody(ofstream& out)
                     histName << "outBaseline" << evtNo[chNo];
                     string tempHist = histName.str();
 
-                    listBaselines.push_back(new TH1S(tempHist.c_str(),tempHist.c_str(),nSamp,0,nSamp*2));
+                    //listBaselines.push_back(new TH1S(tempHist.c_str(),tempHist.c_str(),nSamp,0,nSamp*2));
 
                     out << left << setfill(' ') << setw(62) << "| Baseline samples" << "|" << endl;
                     out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
 
                     for(int i=0;i<anSamp;i++)
                     {
-                        listBaselines[nBaselines]->SetBinContent(i,buffer[0]);
+                        //listBaselines[nBaselines]->SetBinContent(i,buffer[0]);
 
                         if(i%100 == 0 && i>0)
                         {
@@ -575,18 +569,10 @@ void printBody(ofstream& out)
     out << endl;
 }
 
-void fillTree()
+void fillTrees()
 {
-    if(timetag <= timetagP[chNo])
-    {
-        // new macropulse for this channel
-        macroNo[chNo]++;
-    }
-    timetagP[chNo] = timetag;
-
-    // detectors are summed; simply fill tree with the event
     ev.runNo = std::stoi(runNo);
-    ev.macroNo = macroNo[chNo];
+    ev.macroNo = macroNo;
     ev.evtNo = evtNo[chNo];
     ev.chNo = chNo;
     ev.evtType = evtType;
@@ -594,10 +580,18 @@ void fillTree()
     ev.fineTime = fineTime;
     ev.sgQ = sgQ;
     ev.lgQ = lgQ;
-    //ev.waveform = waveform;
-    //ev.anProbe = anProbe;
+    ev.waveform = waveform;
+    ev.anProbe = anProbe;
 
-    tree->Fill();
+    if(prod)
+    {
+        prodTree->Fill();
+    }
+
+    //if(chNo == 6 || chNo == 7)
+    //{
+        tempTree->Fill();
+    //}
 }
 
 void processRun(string evtname)
@@ -619,8 +613,8 @@ void processRun(string evtname)
         evtfile.read((char*)buffer,BufferBytes);
 
         point = buffer;
-        std::fill(timetagP.begin(), timetagP.end(), 0); // reset timetagP so macroNo counting works properly
-        std::fill(macroNo.begin(), macroNo.end(), 0); // reset macroNo, so each macro in a run is counted right
+        //std::fill(timetagP.begin(), timetagP.end(), 0); // reset timetagP so macroNo counting works properly
+        //std::fill(macroNo.begin(), macroNo.end(), 0); // reset macroNo, so each macro in a run is counted right
 
         // start looping through the evtfile for events
         while(!evtfile.eof())
@@ -629,7 +623,7 @@ void processRun(string evtname)
             chNo = readHeader(evtfile);
 
             readBody(evtfile); // extract data from the event body
-            fillTree(); // fill the tree with data from the event body
+            fillTrees(); // fill the trees with data from the event body
 
             if(text)
             {
@@ -646,7 +640,7 @@ void processRun(string evtname)
                 {
                     case 0: 
                         // target-changer data
-                        targetChangerDir->cd();
+                        //targetChangerDir->cd();
                         printHeader(targetChangerOut);
                         printBody(targetChangerOut);
                         break;
@@ -656,7 +650,7 @@ void processRun(string evtname)
 
                     case 2:
                         // monitor data
-                        monitorDir->cd();
+                        //monitorDir->cd();
                         printHeader(monitorOut);
                         printBody(monitorOut);
                         break;
@@ -666,7 +660,7 @@ void processRun(string evtname)
 
                     case 4:
                         // Detector data (assume detectors T'd together)
-                        detectorTDir->cd();
+                        //detectorTDir->cd();
                         printHeader(detectorTOut);
                         printBody(detectorTOut);
                         break;
@@ -676,14 +670,14 @@ void processRun(string evtname)
 
                     case 6:
                         // Detector data (left detector only)
-                        detectorLDir->cd();
+                        //detectorLDir->cd();
                         printHeader(detectorLOut);
                         printBody(detectorLOut);
                         break;
 
                     case 7:
                         // Detector data (right detector only)
-                        detectorRDir->cd();
+                        //detectorRDir->cd();
                         printHeader(detectorROut);
                         printBody(detectorROut);
                         break;
@@ -709,47 +703,47 @@ void processRun(string evtname)
 
 int main(int argc, char* argv[])
 {
+    TFile *tempFile;
+    TFile *prodFile;
 
-    // create a ROOT file for holding events, with one directory per input channel
-    TFile *file; 
-    file = new TFile("events.root","RECREATE");
-    file->cd();
+    // Create a temporary tree for examining just the data sorted in this run
+    // cf. the production tree prodTree, which holds all production data
+    tempFile = new TFile("tempTree.root","RECREATE");
+    //temp->cd();
 
-    tree = new TTree("tree","");
-    tree->SetAutoSave(0);
-    tree->Branch("runNo",&ev.runNo,"runNo/s");
-    tree->Branch("macroNo",&ev.macroNo,"macroNo/s");
-    tree->Branch("evtNo",&ev.evtNo,"evtNo/s");
-    tree->Branch("chNo",&ev.chNo,"chNo/s");
-    tree->Branch("evtType",&ev.evtType,"evtType/i");
-    tree->Branch("timetag",&ev.timetag,"timetag/i");
-    tree->Branch("fineTime",&ev.fineTime,"fineTime/s");
-    tree->Branch("sgQ",&ev.sgQ,"sgQ/s");
-    tree->Branch("lgQ",&ev.lgQ,"lgQ/s");
+    tempTree = new TTree("tempTree","");
+    tempTree->Branch("runNo",&ev.runNo,"runNo/s");
+    tempTree->Branch("macroNo",&ev.macroNo,"macroNo/s");
+    tempTree->Branch("evtNo",&ev.evtNo,"evtNo/s");
+    tempTree->Branch("chNo",&ev.chNo,"chNo/s");
+    tempTree->Branch("evtType",&ev.evtType,"evtType/i");
+    tempTree->Branch("timetag",&ev.timetag,"timetag/i");
+    tempTree->Branch("fineTime",&ev.fineTime,"fineTime/s");
+    tempTree->Branch("sgQ",&ev.sgQ,"sgQ/s");
+    tempTree->Branch("lgQ",&ev.lgQ,"lgQ/s");
+    tempTree->Branch("waveform",&ev.waveform,"waveform/s");
 
-    stringstream evtname;
-    
-    // define ROOT histograms
-    outTime = new TH1S("outTime","outTime",10000,0,10000000000);
-    outSGQ = new TH1S("outSGQ","outSGQ",1024,0,70000);
-    outLGQ = new TH1S("outLGQ","outLGQ",1024,0,70000);
-    outPZC = new TH1S("outPZC","outPZC",16384,0,16384);
-    outNZC = new TH1S("outNZC","outNZC",16384,0,16384);
-    outBaseline = new TH1S("outBaseline","outBaseline",1024,0,17000);
-    outFT = new TH1S("outFT","outFT",1023,0,1023); // a ROOT plot to show fine time (FT) of events
-    outCT = new TH1S("outCT","outCT",1000000,0,1000000); // a ROOT plot to show coarse time (CT) of events
+    //ENABLE for diagnostic analog probe
+    //tempTree->Branch("anProbe",&ev.anProbe);
 
     // set ROOT directory structure
-    targetChangerDir = new TDirectoryFile("targetChanger","Target Changer");
-    monitorDir = new TDirectoryFile("monitor","Monitor");
-    detectorLDir = new TDirectoryFile("detL","Detector left)");
-    detectorRDir = new TDirectoryFile("detR","Detector right");
-    detectorTDir = new TDirectoryFile("detT","Detector sum");
+    /*targetChangerDir = new TDirectoryFile("targetChanger","Target Changer");
+      monitorDir = new TDirectoryFile("monitor","Monitor");
+      detectorLDir = new TDirectoryFile("detL","Detector left)");
+      detectorRDir = new TDirectoryFile("detR","Detector right");
+      detectorTDir = new TDirectoryFile("detT","Detector sum");
+      */
+
     // TDirectory *dirSub; to be uncommented and used for sub-directories, if desired
 
-    // open the event files
 
-    if (argc > 1) // flags detected; modify behavior based on flags
+    /*************************************************************************/
+    /* read flags to set the sorting mode                                    */
+    /*************************************************************************/ 
+
+    stringstream evtname;
+
+    if (argc > 1) // flags detected
     {
         for (int i=1; i<argc; i++)
         {
@@ -768,10 +762,55 @@ int main(int argc, char* argv[])
                 runlist = true;
             }
 
+            if (std::string(argv[i]) == "--production" || std::string(argv[i]) == "-p")
+            {
+                // add this run to the production tree as well as the default
+                // temp tree used just to view a run's data
+                prod = true;
+            }
         }
     }
 
-    if (runlist)
+    if(prod)
+    {
+        // create/locate the production tree
+        prodFile = new TFile("prodTree.root","UPDATE");
+        prodFile.SetMaxTreeSize(1000000000000); // 1 TB max tree size
+        //prodFile->cd();
+
+        if(prodFile->Get("prodTree"))
+        {
+            prodTree = (TTree*)prodFile->Get("prodTree");
+            prodTree->SetBranchAddress("runNo",&ev.runNo);
+            prodTree->SetBranchAddress("macroNo",&ev.macroNo);
+            prodTree->SetBranchAddress("evtNo",&ev.evtNo);
+            prodTree->SetBranchAddress("chNo",&ev.chNo);
+            prodTree->SetBranchAddress("evtType",&ev.evtType);
+            prodTree->SetBranchAddress("timetag",&ev.timetag);
+            prodTree->SetBranchAddress("fineTime",&ev.fineTime);
+            prodTree->SetBranchAddress("sgQ",&ev.sgQ);
+            prodTree->SetBranchAddress("lgQ",&ev.lgQ);
+            prodTree->SetBranchAddress("waveform",&ev.waveform);
+        }
+
+        else
+        {
+            prodTree = new TTree("prodTree","");
+            prodTree->Branch("runNo",&ev.runNo,"runNo/s");
+            prodTree->Branch("macroNo",&ev.macroNo,"macroNo/s");
+            prodTree->Branch("evtNo",&ev.evtNo,"evtNo/s");
+            prodTree->Branch("chNo",&ev.chNo,"chNo/s");
+            prodTree->Branch("evtType",&ev.evtType,"evtType/i");
+            prodTree->Branch("timetag",&ev.timetag,"timetag/i");
+            prodTree->Branch("fineTime",&ev.fineTime,"fineTime/s");
+            prodTree->Branch("sgQ",&ev.sgQ,"sgQ/s");
+            prodTree->Branch("lgQ",&ev.lgQ,"lgQ/s");
+            prodTree->Branch("waveform",&ev.waveform,"waveform/s");
+
+        }
+    }
+
+    if (runlist) // read list of files from 'runsToSort.txt'
     {
         ifstream evtFilenames;
         string evtFilename = "runsToSort.txt";
@@ -812,12 +851,18 @@ int main(int argc, char* argv[])
         fscanf(fp,"%s",path);
         evtname << "../output/run" << path << ".evt";
 
-        std::stringstream temp;
-        temp << path;
-        runNo = temp.str();
+        std::stringstream temps;
+        temps << path;
+        runNo = temps.str();
 
         processRun(evtname.str());
     }
 
-    file->Write();
+    tempFile->Write();
+
+    if (prod)
+    {
+        prodFile->Delete("prodTree;1"); // delete stale tree header
+        prodFile->Write();
+    }
 }
