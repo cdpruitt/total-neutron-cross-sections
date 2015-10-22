@@ -8,6 +8,11 @@
 #include <vector>
 #include <string>
 
+#pragma link C++ class vector<short>+;
+#pragma link C++ class vector<TH1S*>+;
+//#pragma link C++ class vector<vector<TH1S*>>+;
+#pragma link C++ class vector<TDirectory*>+;
+
 void analyze::Loop()
 {
 //   In a ROOT session, you can do:
@@ -45,60 +50,90 @@ void analyze::Loop()
     UInt_t temprunNo = -1;
     std::vector<TDirectoryFile*> direct;
 
-    TDirectory *targetChangerDir;
-    TDirectory *monitorDir;
-    TDirectory *detectorTDir;
-    TDirectory *detectorLDir;
-    TDirectory *detectorRDir;
+    TDirectory *targetChanger;
+    TDirectory *monitor;
+    TDirectory *detectorT;
+    TDirectory *detectorL;
+    TDirectory *detectorR;
 
-    TH1S* outMacro;
-    TH1S* outEvt;
-    TH1S* outTime;
-    TH1S* outFT;
-    TH1S* outSGQ;
-    TH1S* outLGQ;
     vector<TH1S*> listWaveforms;
 
     Long64_t nbytes = 0, nb = 0;
 
-    for (Long64_t jentry=0; jentry<nentries;jentry++) {
+    for (Long64_t jentry=0; jentry<1000;jentry++) {
 
-        fChain->GetEntry(jentry);
-        if(temprunNo != runNo) // new run; new directory; new histos
+        if(jentry%1000 == 0)
         {
-            //std::string s = std::to_string(runNo);
-            direct.push_back(new TDirectoryFile("test","test"));
-            direct.back()->cd();
-
-            targetChangerDir = new TDirectory("targetChanger","Target Changer");
-            monitorDir = new TDirectory("monitor","Monitor");
-            detectorTDir = new TDirectory("detT","Detector sum");
-            detectorLDir = new TDirectory("detL","Detector left)");
-            detectorRDir = new TDirectory("detR","Detector right");
-
-            // instantiate histograms
-            outMacro = new TH1S("outMacro","outMacro",100000,0,10000000);
-            outEvt = new TH1S("outEvt","outEvt",500,0,1000);
-            outTime = new TH1S("outTime","outTime",100000,0,100000000);
-            outSGQ = new TH1S("outSGQ","outSGQ",1024,0,70000);
-            outLGQ = new TH1S("outLGQ","outLGQ",1024,0,70000);
-            outFT = new TH1S("outFT","outFT",1023,0,1023);
-            listWaveforms.clear();
+            cout << jentry << endl;
         }
 
-        temprunNo = runNo;
-            
+        GetEntry(jentry);
+        if(temprunNo != runNo) // new run; new directory; new histos
+        {
+            stringstream temp;
+            temp << "run " << runNo;
+
+            direct.push_back(new TDirectoryFile(temp.str().c_str(),temp.str().c_str()));
+            direct.back()->cd();
+
+            string subDirs[8] = {"targetChanger","","monitor","","detT","","detL","detR"}
+
+            vector<TH1S*> histos; // holds all histograms for the run
+            // split into sub-vectors on a per-channel basis
+
+            for(int i=0; i<8; i++)
+            {
+                //histos.push_back(new vector<TH1S>); // create sub-vector for this channel
+                if (subDirs[i].compare("") != 0)
+                {
+                    direct.back()->mkdir(subDirs[i].c_str(),subDirs[i].c_str());
+                    direct.back()->GetDirectory(subDirs[i].c_str())->cd();
+
+                    // instantiate histograms
+                    histos.push_back(new TH1S("outMacro","outMacro",100000,0,10000000));
+                    histos.push_back(new TH1S("outEvt","outEvt",500,0,1000));
+                    histos.push_back(new TH1S("outTime","outTime",100000,0,100000000));
+                    histos.push_back(new TH1S("outSGQ","outSGQ",1024,0,70000));
+                    histos.push_back(new TH1S("outLGQ","outLGQ",1024,0,70000));
+                    histos.push_back(new TH1S("outFT","outFT",1023,0,1023));
+
+                    direct.back()->GetDirectory(subDirs[i].c_str())->mkdir("waveforms","waveforms");
+                    listWaveforms.clear();
+                }
+            }
+        }
+
+        temprunNo = runNo; // update the runNo counter to prep for new runNo
+
+        direct.back()->GetDirectory(subDirs[chNo].c_str())->cd();
+
+        TH1S* outMacro = (TH1S*)(gDirectory->FindObject("outMacro"));
         outMacro->Fill(macroNo);
+
+        TH1S* outMacro = (TH1S*)(gDirectory->FindObject("outEvt"));
         outEvt->Fill(evtNo);
+
+        TH1S* outMacro = (TH1S*)(gDirectory->FindObject("outTime"));
         outTime->Fill(timetag);
+
+        TH1S* outMacro = (TH1S*)(gDirectory->FindObject("outSGQ"));
         outSGQ->Fill(sgQ);
+
+        TH1S* outMacro = (TH1S*)(gDirectory->FindObject("outLGQ"));
         outLGQ->Fill(lgQ);
+
+        TH1S* outMacro = (TH1S*)(gDirectory->FindObject("outFT"));
         outFT->Fill(fineTime);
 
-        listWaveforms.push_back(new TH1S("waveform","waveform",waveform.size(),0,waveform.size()*2));
-        for(int i=0;i<waveform.size();i++)
+        stringstream temp;
+        temp << "event " << evtNo;
+
+        waveforms->cd();
+        listWaveforms.push_back(new TH1S(temp.str().c_str(),temp.str().c_str(),waveform->size(),0,waveform->size()*2));
+
+        for(int i=0;i<waveform->size();i++)
         {
-            listWaveforms.back()->SetBinContent(i,waveform[i])
+            listWaveforms.back()->SetBinContent(i,waveform->at(i));
         }
 
         //Long64_t ientry = LoadTree(jentry);
@@ -106,4 +141,6 @@ void analyze::Loop()
         nb = fChain->GetEntry(jentry);   nbytes += nb;
         // if (Cut(ientry) < 0) continue;
     }
+
+    outMacro->Write();
 }

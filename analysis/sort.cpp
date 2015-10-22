@@ -52,6 +52,7 @@
 #include "time.h"
 #include <regex>
 #include <limits>
+#include "TROOT.h"
 
 using namespace std;
 
@@ -703,6 +704,8 @@ void processRun(string evtname)
 
 int main(int argc, char* argv[])
 {
+    gROOT->ProcessLine("#include <vector>");
+
     TFile *tempFile;
     TFile *prodFile;
 
@@ -721,7 +724,7 @@ int main(int argc, char* argv[])
     tempTree->Branch("fineTime",&ev.fineTime,"fineTime/s");
     tempTree->Branch("sgQ",&ev.sgQ,"sgQ/s");
     tempTree->Branch("lgQ",&ev.lgQ,"lgQ/s");
-    tempTree->Branch("waveform",&ev.waveform,"waveform/s");
+    tempTree->Branch("waveform",&ev.waveform);
 
     //ENABLE for diagnostic analog probe
     //tempTree->Branch("anProbe",&ev.anProbe);
@@ -775,7 +778,6 @@ int main(int argc, char* argv[])
     {
         // create/locate the production tree
         prodFile = new TFile("prodTree.root","UPDATE");
-        prodFile.SetMaxTreeSize(1000000000000); // 1 TB max tree size
         //prodFile->cd();
 
         if(prodFile->Get("prodTree"))
@@ -796,6 +798,7 @@ int main(int argc, char* argv[])
         else
         {
             prodTree = new TTree("prodTree","");
+            prodTree->SetMaxTreeSize(1000000000000); // 1 TB max tree size
             prodTree->Branch("runNo",&ev.runNo,"runNo/s");
             prodTree->Branch("macroNo",&ev.macroNo,"macroNo/s");
             prodTree->Branch("evtNo",&ev.evtNo,"evtNo/s");
@@ -805,7 +808,7 @@ int main(int argc, char* argv[])
             prodTree->Branch("fineTime",&ev.fineTime,"fineTime/s");
             prodTree->Branch("sgQ",&ev.sgQ,"sgQ/s");
             prodTree->Branch("lgQ",&ev.lgQ,"lgQ/s");
-            prodTree->Branch("waveform",&ev.waveform,"waveform/s");
+            prodTree->Branch("waveform",&ev.waveform);
 
         }
     }

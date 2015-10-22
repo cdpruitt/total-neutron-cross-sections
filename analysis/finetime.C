@@ -47,20 +47,20 @@ void finetime::Loop()
         f->Get("FTLR1D")->Delete();
     }
 
-    TH2S *FTLR = new TH2S("FTLR","FTLR", 2000, 0, 2000, 2000, 0, 2000);
-    TH1S *FTLR1D = new TH1S("FTLR1D","FTLR1D", 40, 0, 2000);
+    TH2S *FTLR = new TH2S("FTLR","FTLR", 500, -500, 2500, 2500, -2500, 2500);
+    TH1S *FTLR1D = new TH1S("FTLR1D","FTLR1D", 50, -2500, 2500);
 
     FTLR->GetXaxis()->SetTitle("Right fine time (ps)");
     FTLR->GetXaxis()->CenterTitle();
     FTLR->GetYaxis()->SetTitle("Left fine time (ps)");
     FTLR->GetYaxis()->CenterTitle();
-    FTLR->SetMarkerStyle(20);
+    FTLR->SetMarkerStyle(7);
 
     FTLR1D->GetXaxis()->SetTitle("Right-Left difference (ps)");
     FTLR1D->GetXaxis()->CenterTitle();
 
     UInt_t leftTime;
-    UInt_t leftFine;
+    Int_t leftFine;
     UInt_t leftMacro;
     UInt_t leftRun;
 
@@ -117,7 +117,18 @@ void finetime::Loop()
                     b_macroNo->GetEntry(kentry);
                     b_timetag->GetEntry(kentry);
 
-                    if ((leftTime == timetag ) && (leftMacro == macroNo && leftRun == runNo)) {
+                    if ((leftTime == timetag || leftTime == timetag+2 || leftTime == timetag-2) && (leftMacro == macroNo && leftRun == runNo)) {
+                        // run, macro, and time match; left/right detected same event
+                        b_fineTime->GetEntry(kentry);
+                        int diff = (timetag-leftTime)*1000; // adjust fine time by coarse time difference
+                        //cout << leftFine*2000/1024-diff << endl;
+                        FTLR->Fill(fineTime*2000/1024,(leftFine*2000/1024-diff)); // left det on abscissa
+                        FTLR1D->Fill((fineTime-leftFine)*2000/1024); // right-left diff
+
+                        //cout << "finetime is " << fineTime << " leftFine is " << leftFine << endl;
+                        //cout << "entry " << jentry << " entry2 " << kentry << endl;
+                    }
+                    /*if ((leftTime == timetag+2 || leftTime == timetag-2) && (leftMacro == macroNo && leftRun == runNo)) {
                         // run, macro, and time match; left/right detected same event
                         b_fineTime->GetEntry(kentry);
                         FTLR->Fill(fineTime*2000/1024,leftFine*2000/1024); // left det on abscissa
@@ -126,15 +137,7 @@ void finetime::Loop()
                         //cout << "finetime is " << fineTime << " leftFine is " << leftFine << endl;
                         //cout << "entry " << jentry << " entry2 " << kentry << endl;
                     }
-                    if ((leftTime == timetag+2 || leftTime == timetag-2) && (leftMacro == macroNo && leftRun == runNo)) {
-                        // run, macro, and time match; left/right detected same event
-                        b_fineTime->GetEntry(kentry);
-                        FTLR->Fill(fineTime*2000/1024,leftFine*2000/1024); // left det on abscissa
-                        FTLR1D->Fill((fineTime-leftFine)*2000/1024); // right-left diff
-
-                        //cout << "finetime is " << fineTime << " leftFine is " << leftFine << endl;
-                        //cout << "entry " << jentry << " entry2 " << kentry << endl;
-                    }
+                    */
                 }
             }
         }

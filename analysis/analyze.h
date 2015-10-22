@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
-// Wed Oct 21 11:31:20 2015 by ROOT version 5.34/32
+// Thu Oct 22 11:48:44 2015 by ROOT version 5.34/32
 // from TTree tempTree/
 // found on file: tempTree.root
 //////////////////////////////////////////////////////////
@@ -13,12 +13,12 @@
 #include <TFile.h>
 
 // Header file for the classes stored in the TTree if any.
+#include <vector>
 
 // Fixed size dimensions of array or collections stored in the TTree if any.
 
 class analyze {
 public :
-   TFile          *f;
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
    Int_t           fCurrent; //!current Tree number in a TChain
 
@@ -32,7 +32,7 @@ public :
    UShort_t        fineTime;
    UShort_t        sgQ;
    UShort_t        lgQ;
-   UShort_t        waveform;
+   vector<short>   *waveform;
 
    // List of branches
    TBranch        *b_runNo;   //!
@@ -65,9 +65,9 @@ analyze::analyze(TTree *tree) : fChain(0)
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
    if (tree == 0) {
-      f = (TFile*)gROOT->GetListOfFiles()->FindObject("tempTree.root");
+      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("tempTree.root");
       if (!f || !f->IsOpen()) {
-         f = new TFile("tempTree.root","UPDATE");
+         f = new TFile("tempTree.root");
       }
       f->GetObject("tempTree",tree);
 
@@ -110,6 +110,8 @@ void analyze::Init(TTree *tree)
    // Init() will be called many times when running on PROOF
    // (once per file to be processed).
 
+   // Set object pointer
+   waveform = 0;
    // Set branch addresses and branch pointers
    if (!tree) return;
    fChain = tree;
