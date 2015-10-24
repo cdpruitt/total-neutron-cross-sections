@@ -48,7 +48,7 @@ void analyze::Loop()
     UInt_t temptime;
     UInt_t tempfine;
     UInt_t temprunNo = -1;
-    std::vector<TDirectoryFile*> direct;
+    vector<TDirectoryFile*> direct;
 
     TDirectory *targetChanger;
     TDirectory *monitor;
