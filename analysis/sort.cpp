@@ -44,6 +44,7 @@
 #include <sstream>
 #include "TFile.h"
 #include "TTree.h"
+#include "TEntryList.h"
 #include "TH1I.h"
 #include "TDirectoryFile.h"
 #include <dirent.h>
@@ -56,6 +57,30 @@
 #include "TROOT.h"
 
 using namespace std;
+
+// Experimental constants
+
+
+const float FLIGHT_DISTANCE = 2500; // detector distance from source, in cm
+
+// Target positions and identities
+const string TARGETS[6] = {"blank","carbonS","carbonL","112Sn","Nat Sn","124Sn"};
+
+// Time delay of target changer coarse time after real macropulse start time
+const float TIME_OFFSET = 300; // in ns
+
+// Period of micropulses
+const float MICRO_PERIOD = 1788.82; // in ns
+
+// Target Changer lgQ gates for setting integral target positions 1-6
+const int tarGate[12] = {5000,7500,10500,13500,16000,19000,21000,25000,27000,31000,32000,36000};
+
+// Physical constants
+const float C = 299792458; // speed of light in m/s
+
+const float NEUTRON_MASS = 939.56536; // in MeV/c^2
+
+
 
 // Buffer variables
 int const BufferWords = 1;
@@ -74,11 +99,10 @@ unsigned int extTime;
 // macropulses by looking at timetag resets. Because channels don't read out in
 // order, we need to track the most recent timetag for each enabled channel
 vector<int> timetagP (8,0); // 8 channels all start with previous timetag = 0
-//vector<int> macroNo (8,0);  // 8 channels all start on the 0th macro
 vector<int> evtNo (8,0);    // 8 channels all start on the 0th event
 
 unsigned int nE = 0; // counter for the total number of events
-int macroNo = -1;
+unsigned int macroNo = 0;
 
 /*unsigned int nWavelets = 0; // counter for the number of waveforms in DPP mode
 unsigned int nCFDs = 0; // counter for the number of CFD traces (analog probe mode) 
@@ -87,7 +111,7 @@ unsigned int nWaveforms = 0; // counter for the number of WAVEFORM mode waveform
 */
 
 std::string runNo;
-unsigned short sgQ, lgQ, fineTime, nSamp, probe, anSamp, extraSelect, extras1, extras2, puRej;
+unsigned int sgQ, lgQ, fineTime, nSamp, probe, anSamp, extraSelect, extras1, extras2, puRej;
 
 std::vector<int> waveform; // for holding one event's waveform data
 std::vector<int> anProbe; // for holding one event's analog probe waveform data
@@ -109,7 +133,6 @@ TDirectory *waveformDir;
 
 vector<vector<TH1I*>> histos; // holds all histograms for the run
 // split into sub-vectors on a per-channel basis
-
 
 TH1I* outMacro;
 TH1I* outEvt;
@@ -140,6 +163,8 @@ struct event
     vector<int> waveform; // include the waveforms for each channel of the event
     vector<int> anProbe; // include the analog probes for each channel of the event
 } ev;
+
+TEventList *targetCh; // for sorting events by their target positions
 
 bool text = false; // flag for producing text-file output apart from
                    // the default ROOT plots and tree filling
@@ -181,7 +206,7 @@ int readHeader(ifstream& evtfile)
     unsigned short timetag2 = buffer[0];
     evtfile.read((char*)buffer,BufferBytes);
     timetag = (timetag2<< 16) | timetag1;
-    timetag *= 2; // 2 ns per timetag, 500 MHz sampling rate
+    timetag *= 2; // timetag converted to ns from samples
 
     if(chNo==0)
     {
@@ -615,10 +640,11 @@ void fillTree()
     ev.waveform = waveform;
     //ev.anProbe = anProbe;
 
-    //if(chNo == 6 || chNo == 7)
-    //{
-        tree->Fill();
-    //}
+    tree->Fill();
+
+    // If an event comes from the target changer, we'll want to use it later
+    // to group detector events based on target position. So segregate it into
+    // its own TEventList that we'll loop over when we get detector events.
 }
 
 void fillHistos()
@@ -662,6 +688,203 @@ void fillHistos()
             listWaveforms.back()->SetBinContent(i,waveform[i]);
         }
     }
+
+}
+
+void calculateCS()
+{
+    // create cross-section histograms
+
+    gDirectory->cd("/");
+
+    TH1I *blank = new TH1I("blank","blank",1000,0,800);
+    TH1I *carbonS = new TH1I("carbonS","carbonS",1000,0,800);
+    TH1I *carbonL = new TH1I("carbonL","carbonL",1000,0,800);
+    TH1I *Sn112 = new TH1I("Sn112","Sn112",1000,0,800);
+    TH1I *NatSn = new TH1I("NatSn","NatSn",1000,0,800);
+    TH1I *Sn124 = new TH1I("Sn124","Sn124",1000,0,800);
+
+    TH1I *TOF = new TH1I("TOF","Time of flight",1000,0,2000);
+
+    // link tree branches to variables-to-read
+    tree->SetBranchAddress("macroNo",&macroNo);
+    tree->SetBranchAddress("chNo",&chNo);
+    tree->SetBranchAddress("lgQ",&lgQ);
+    tree->SetBranchAddress("timetag",&timetag);
+    tree->SetBranchAddress("fineTime",&fineTime);
+    tree->SetBranchAddress("extTime",&extTime);
+
+    // create a list of all target-changer events for sub-looping
+    tree->Draw(">>targetCh","chNo == 0","entrylist");
+    TEntryList *targetCh;
+    gDirectory->GetObject("targetCh",targetCh);
+    tree->SetEntryList(targetCh);
+    int targetEntries = tree->GetEntries();
+
+    int targetPos = -1;
+
+    //int previousTargetPos = -1;
+    
+    //map<long,int> targetMap;
+
+    /*for (int i=0; i<targetEntries; i++)
+    {
+        tree->GetEntry(i);
+        
+        // assign an integral target position based on lgQ of target changer signal
+        if (lgQ>tarGate[0] && lgQ<tarGate[1])
+        {
+            currentTargetPos = 1;
+        }
+
+        else if (lgQ>tarGate[2] && lgQ<tarGate[3])
+        {
+            currentTargetPos = 2;
+        }
+
+        else if (lgQ>tarGate[4] && lgQ<tarGate[5])
+        {
+            currentTargetPos = 3;
+        }
+
+        else if (lgQ>tarGate[6] && lgQ<tarGate[7])
+        {
+            currentTargetPos = 4;
+        }
+
+        else if (lgQ>tarGate[8] && lgQ<tarGate[9])
+        {
+            currentTargetPos = 5;
+        }
+
+        else if (lgQ>tarGate[10] && lgQ<tarGate[11])
+        {
+            currentTargetPos = 6;
+        }
+
+        if (currentTargetPos != previousTargetPos)
+        {
+            // target position change detected
+
+            long targetTime = pow(2,32)*extTime + timetag + fineTime*(2000/1024); // in ns
+            targetMap.insert(pair<long,int>(targetTime,currentTargetPos)); // gives time of target change and new position
+            previousTargetPos = currentTargetPos;
+        }
+    }*/
+
+    // create a list of all events in the tree
+    int totalEntries = tree->GetEntries();
+    tree->Draw(">>total","","entrylist");
+    TEntryList *total;
+    gDirectory->GetObject("total",total);
+        
+    tree->SetEntryList(total);
+
+    for (int i=0; i<totalEntries/10; i++)
+    {
+        tree->GetEntry(i);
+
+        if (chNo == 4 || chNo == 6 || chNo == 7) // detector event; continue
+        {
+            int detMacro = macroNo; // save the detector event's data for the energy calculation
+            int detExtTime = extTime;
+            int detCoarseTime = timetag;
+            int detFineTime = fineTime;
+
+            for (int j=i; j>0; j--)
+            {
+                tree->GetEntry(j);
+
+                //cout << "detMacro is " << detMacro << ", targetMacro is " << macroNo << endl;
+
+                if (chNo == 0 && detMacro == macroNo) // same macropulse; found target changer position
+                {
+                    // assign an integral target position based on lgQ of target changer signal
+                    if (lgQ>tarGate[0] && lgQ<tarGate[1])
+                    {
+                        targetPos = 1;
+                    }
+
+                    if (lgQ>tarGate[2] && lgQ<tarGate[3])
+                    {
+                        targetPos = 2;
+                    }
+
+                    if (lgQ>tarGate[4] && lgQ<tarGate[5])
+                    {
+                        targetPos = 3;
+                    }
+
+                    if (lgQ>tarGate[6] && lgQ<tarGate[7])
+                    {
+                        targetPos = 4;
+                    }
+
+                    if (lgQ>tarGate[8] && lgQ<tarGate[9])
+                    {
+                        targetPos = 5;
+                    }
+
+                    if (lgQ>tarGate[10] && lgQ<tarGate[11])
+                    {
+                        targetPos = 6;
+                    }
+
+                    // calculate a targetTime-calibrated time-of-flight of neutrons
+                    // trueTime is neutron time-of-flight since micropulse start
+                    float trueTime = fmod((detCoarseTime+(detFineTime*2/1024)-timetag+TIME_OFFSET),MICRO_PERIOD);
+
+                    float fakeTime = fmod((detCoarseTime-timetag),MICRO_PERIOD);
+
+                    // convert trueTime into neutron velocity based on flight path distance
+                    float velocity = pow(10,9)*FLIGHT_DISTANCE/trueTime; // in meters/sec 
+
+                    // convert velocity to relativistic kinetic energy
+                    float rKE = (pow((1-pow((velocity/C),2)),-0.5)-1)*NEUTRON_MASS*pow(C,2); // in MeV
+
+                    switch (targetPos)
+                    {
+                        case 1:
+                            // BLANK
+                            blank->Fill(rKE);
+                            break;
+                        case 2:
+                            // SHORT CARBON
+                            carbonS->Fill(rKE);
+                            break;
+                        case 3:
+                            // LONG CARBON
+                            carbonL->Fill(rKE);
+                            break;
+                        case 4:
+                            // Sn112
+                            Sn112->Fill(rKE);
+                            break;
+                        case 5:
+                            // Natural Sn
+                            NatSn->Fill(rKE);
+                            break;
+                        case 6:
+                            // Sn124
+                            Sn124->Fill(rKE);
+                            break;
+                    }
+
+                    TOF->Fill(fakeTime);
+
+                    if (i%100 == 0)
+                    {
+                        cout << "Populated " << i << " events in cross-section histograms\r";
+                        fflush(stdout);
+                    }
+
+                    break;
+                }
+            }
+        }
+    }
+
+    cout << endl << endl;
 }
 
 
@@ -776,6 +999,8 @@ void processRun(string evtname)
         cout << "Total events: " << nE << endl;
     }
 
+    calculateCS(); // produce histograms showing cross-sections for each target
+
     evtfile.close();
 }
 
@@ -800,9 +1025,8 @@ int main(int argc, char* argv[])
 
     runNo = argv[1];
 
-    TFile *file;
-
     // Create a tree for this run
+    TFile *file;
 
     stringstream treeName;
     stringstream fileName;
@@ -810,9 +1034,8 @@ int main(int argc, char* argv[])
     fileName << treeName.str() << ".root";
 
     file = new TFile(fileName.str().c_str(),"RECREATE");
-    //temp->cd();
 
-    tree = new TTree(treeName.str().c_str(),"");
+    tree = new TTree("tree","");
     cout << "Created ROOT tree " << treeName.str() << endl;
 
     tree->Branch("runNo",&ev.runNo,"runNo/i");
@@ -829,8 +1052,7 @@ int main(int argc, char* argv[])
 
     //ENABLE for diagnostic analog probe
     //tree->Branch("anProbe",&ev.anProbe);
-
-
+        
     for(int i=0; i<8; i++)
     {
         vector<TH1I*> tempVec;
@@ -856,11 +1078,31 @@ int main(int argc, char* argv[])
             gDirectory->cd("/");
         }
     }
-    
-    
+
     stringstream runName;
     runName << "../output/run" << runNo << ".evt";
     processRun(runName.str());
 
     file->Write();
+
+    /*TChain *chain;
+    TFile *chainFile = TFile::Open("chain.root","UPDATE");
+    if (chainFile->GetListOfKeys()->Contains("chain"))
+    {
+        chainFile->GetObject("chain",chain);
+        cout << "already found" << endl;
+    }
+    else
+    {
+        chain = new TChain("tree","chain");
+        chain->AutoSave("Overwrite");
+        cout << "made new" << endl;
+    }
+
+    chain->Add(fileName.str().c_str());
+    cout << chain->GetEntries();
+    chain->Write();
+    chainFile->Close();
+    */
+
 }
