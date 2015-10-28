@@ -244,16 +244,17 @@ void printHeader(ofstream& out)
     out << setfill('*') << setw(63) << "*" << endl;
     out << "| EVENT " << left << setfill(' ') << setw(54) << nE << "|" << endl;
     out << "|" << right << setfill('-') << setw(62) << "|" << endl;
-    out << "| run " << runNo << ", macro " << macroNo;
+    out << "| run " << runNo << ", macro " << left << setfill(' ') << setw(45) << macroNo << "|" << endl;
+    out << "| channel " << chNo;
 
     if(evtType==1)
     {
-        out << left << setfill(' ') << setw(44) << ", DPP mode" << "|" << endl;
+        out << left << setfill(' ') << setw(51) << ", DPP mode" << "|" << endl;
     }
 
     else if (evtType==2)
     {
-        out << left << setfill(' ') << setw(44) << ", waveform mode " << "|" << endl;
+        out << left << setfill(' ') << setw(51) << ", waveform mode " << "|" << endl;
     }
 
     else
@@ -263,7 +264,6 @@ void printHeader(ofstream& out)
         cout << "Event number = " << evtNo[chNo] << endl;
     }
 
-    out << "| channel " << chNo << right << setfill(' ') << setw(52) << "|" << endl;
 
     temp << size << " bytes";
     out << "| size = " << left << setfill(' ') << setw(53) << temp.str() << "|" << endl;
