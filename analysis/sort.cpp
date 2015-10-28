@@ -75,6 +75,9 @@ const float MICRO_PERIOD = 1788.82; // in ns
 // Target Changer lgQ gates for setting integral target positions 1-6
 const int tarGate[12] = {5000,7500,10500,13500,16000,19000,21000,25000,27000,31000,32000,36000};
 
+// Number of wavelets in waveform mode that constitute a complete macropulse
+const int WAVELET_NO = 11;
+
 // Physical constants
 const float C = 299792458; // speed of light in m/s
 
@@ -101,6 +104,10 @@ unsigned int extTime;
 vector<int> timetagP (8,0); // 8 channels all start with previous timetag = 0
 vector<int> evtNo (8,0);    // 8 channels all start on the 0th event
 
+vector<bool> firstWaveform (8,false);
+// used to perform special behavior when the first wavelet of a new waveform
+// is detected during reconstruction of a full macropulse waveform
+
 unsigned int nE = 0; // counter for the total number of events
 unsigned int macroNo = 0;
 
@@ -125,11 +132,18 @@ ofstream detectorROut ("textSort/detectorR.txt");
 ofstream detectorTOut ("textSort/detectorT.txt");
 
 vector<TDirectoryFile*> directs;
-vector<TH1I*> listWaveforms;
+TH1I* DPPWaveform;
+TH1I* WaveWaveform0;
+TH1I* WaveWaveform2;
+TH1I* WaveWaveform4;
+TH1I* WaveWaveform6;
+TH1I* WaveWaveform7;
+int waveformStart[8]; // for indicating the timetag of the first waveform
 
 // ROOT file directory structure 
 string dirs[8] = {"targetChanger","","monitor","","detT","","detL","detR"};
-TDirectory *waveformDir;
+TDirectory *DPPWaveformsDir;
+TDirectory *WaveWaveformsDir;
 
 vector<vector<TH1I*>> histos; // holds all histograms for the run
 // split into sub-vectors on a per-channel basis
@@ -170,6 +184,8 @@ bool text = false; // flag for producing text-file output apart from
                    // the default ROOT plots and tree filling
 bool runlist = false; // flag indicating that runs should be read from
                       // runsToSort.txt, and NOT just the most recent file
+bool cs = false; // flag indicating that a cross-section plot should be
+                 // produced for each target position
 
 TDirectoryFile *targetChangerDir, *monitorDir, *detectorLDir, *detectorRDir, *detectorTDir;
 
@@ -208,13 +224,13 @@ int readHeader(ifstream& evtfile)
     timetag = (timetag2<< 16) | timetag1;
     timetag *= 2; // timetag converted to ns from samples
 
-    if(chNo==0)
+    if(chNo==0 && firstWaveform[0])
     {
         // new macropulse
         macroNo++;
+        //fill_n(evtNo.begin(),8,0);
     }
     timetagP[chNo] = timetag;
-
 
     return chNo;
 }
@@ -228,18 +244,16 @@ void printHeader(ofstream& out)
     out << setfill('*') << setw(63) << "*" << endl;
     out << "| EVENT " << left << setfill(' ') << setw(54) << nE << "|" << endl;
     out << "|" << right << setfill('-') << setw(62) << "|" << endl;
-    out << "| run # " << runNo << endl;
-    out << "| macro # " << macroNo << endl;
-    out << "| channel #" << chNo << endl;
+    out << "| run " << runNo << ", macro " << macroNo;
 
     if(evtType==1)
     {
-        out << left << setfill(' ') << setw(50) << ", DPP mode" << "|" << endl;
+        out << left << setfill(' ') << setw(44) << ", DPP mode" << "|" << endl;
     }
 
     else if (evtType==2)
     {
-        out << left << setfill(' ') << setw(50) << ", waveform mode " << "|" << endl;
+        out << left << setfill(' ') << setw(44) << ", waveform mode " << "|" << endl;
     }
 
     else
@@ -248,6 +262,8 @@ void printHeader(ofstream& out)
         cout << "Error: event type value out-of-range (DPP=1, waveform=2)" << endl;
         cout << "Event number = " << evtNo[chNo] << endl;
     }
+
+    out << "| channel " << chNo << right << setfill(' ') << setw(52) << "|" << endl;
 
     temp << size << " bytes";
     out << "| size = " << left << setfill(' ') << setw(53) << temp.str() << "|" << endl;
@@ -652,43 +668,165 @@ void fillHistos()
     gDirectory->cd("/");
     gDirectory->GetDirectory(dirs[chNo].c_str())->cd();
 
-    outMacro = (TH1I*)(gDirectory->FindObject("outMacro"));
-    outMacro->Fill(macroNo);
-
-    outEvt = (TH1I*)(gDirectory->FindObject("outEvt"));
-    outEvt->Fill(evtNo[chNo]);
-
-    outExtTime = (TH1I*)(gDirectory->FindObject("outExtTime"));
-    outExtTime->Fill(extTime);
-
-    outTime = (TH1I*)(gDirectory->FindObject("outTime"));
-    outTime->Fill(timetag);
-
-    outSGQ = (TH1I*)(gDirectory->FindObject("outSGQ"));
-    outSGQ->Fill(sgQ);
-
-    outLGQ = (TH1I*)(gDirectory->FindObject("outLGQ"));
-    outLGQ->Fill(lgQ);
-
-    outFT = (TH1I*)(gDirectory->FindObject("outFT"));
-    outFT->Fill(fineTime);
-
-    stringstream temp;
-    temp << "event " << evtNo[chNo];
-
-    waveformDir = (TDirectory*)gDirectory->FindObject("waveformDir");
-    waveformDir->cd();
-
-    if (evtNo[chNo]%100 == 0)
+    if (evtType == 1)
     {
-        listWaveforms.push_back(new TH1I(temp.str().c_str(),temp.str().c_str(),waveform.size(),0,waveform.size()*2));
+        // DPP mode - fill DPP histograms
 
-        for(int i=0;i<waveform.size();i++)
+        outMacro = (TH1I*)(gDirectory->FindObject("outMacro"));
+        outMacro->Fill(macroNo);
+
+        outEvt = (TH1I*)(gDirectory->FindObject("outEvt"));
+        outEvt->Fill(evtNo[chNo]);
+
+        outExtTime = (TH1I*)(gDirectory->FindObject("outExtTime"));
+        outExtTime->Fill(extTime);
+
+        outTime = (TH1I*)(gDirectory->FindObject("outTime"));
+        outTime->Fill(timetag);
+
+        outSGQ = (TH1I*)(gDirectory->FindObject("outSGQ"));
+        outSGQ->Fill(sgQ);
+
+        outLGQ = (TH1I*)(gDirectory->FindObject("outLGQ"));
+        outLGQ->Fill(lgQ);
+
+        outFT = (TH1I*)(gDirectory->FindObject("outFT"));
+        outFT->Fill(fineTime);
+
+        stringstream temp;
+        temp << "evtNo " << evtNo[chNo];
+
+        DPPWaveformsDir = (TDirectory*)gDirectory->FindObject("DPPWaveformsDir");
+        DPPWaveformsDir->cd();
+
+        if (evtNo[chNo]%100 == 0)
         {
-            listWaveforms.back()->SetBinContent(i,waveform[i]);
+            DPPWaveform = new TH1I(temp.str().c_str(),temp.str().c_str(),waveform.size(),0,waveform.size()*2);
+
+            for(int i=0;i<waveform.size();i++)
+            {
+                DPPWaveform->SetBinContent(i,waveform[i]);
+            }
         }
+
+        fill_n(firstWaveform.begin(),8,true);
     }
 
+    else if (evtType == 2)
+    {
+        // waveform mode - create full macropulse waveforms
+
+        WaveWaveformsDir = (TDirectory*)gDirectory->FindObject("WaveWaveformsDir");
+        WaveWaveformsDir->cd();
+
+        switch (chNo)
+        {
+            case 0:
+
+                if (firstWaveform[chNo])
+                {
+                    stringstream temp;
+                    temp << "macropulse " << macroNo;
+
+                    WaveWaveform0 = new TH1I(temp.str().c_str(),temp.str().c_str(),(WAVELET_NO+1)*waveform.size(),0,(WAVELET_NO+1)*waveform.size()*2);
+
+                    waveformStart[chNo] = timetag;
+
+                    firstWaveform[chNo] = false;
+                }
+
+                for(int i=0;i<waveform.size();i++)
+                {
+                    WaveWaveform0->SetBinContent(i+timetag-waveformStart[chNo],waveform[i]);
+                }
+
+                break;
+
+            case 2:
+
+                if (firstWaveform[chNo])
+                {
+                    stringstream temp;
+                    temp << "macropulse " << macroNo;
+
+                    WaveWaveform2 = new TH1I(temp.str().c_str(),temp.str().c_str(),(WAVELET_NO+1)*waveform.size(),0,(WAVELET_NO+1)*waveform.size()*2);
+
+                    waveformStart[chNo] = timetag;
+
+                    firstWaveform[chNo] = false;
+                }
+
+                for(int i=0;i<waveform.size();i++)
+                {
+                    WaveWaveform2->SetBinContent(i+timetag-waveformStart[chNo],waveform[i]);
+                }
+
+                break;
+
+            case 4:
+
+                if (firstWaveform[chNo])
+                {
+                    stringstream temp;
+                    temp << "macropulse " << macroNo;
+
+                    WaveWaveform4 = new TH1I(temp.str().c_str(),temp.str().c_str(),(WAVELET_NO+1)*waveform.size(),0,(WAVELET_NO+1)*waveform.size()*2);
+
+                    waveformStart[chNo] = timetag;
+
+                    firstWaveform[chNo] = false;
+                }
+
+                for(int i=0;i<waveform.size();i++)
+                {
+                    WaveWaveform4->SetBinContent(i+timetag-waveformStart[chNo],waveform[i]);
+                }
+
+                break;
+
+            case 6:
+
+                if (firstWaveform[chNo])
+                {
+                    stringstream temp;
+                    temp << "macropulse " << macroNo;
+
+                    WaveWaveform6 = new TH1I(temp.str().c_str(),temp.str().c_str(),(WAVELET_NO+1)*waveform.size(),0,(WAVELET_NO+1)*waveform.size()*2);
+
+                    waveformStart[chNo] = timetag;
+
+                    firstWaveform[chNo] = false;
+                }
+
+                for(int i=0;i<waveform.size();i++)
+                {
+                    WaveWaveform6->SetBinContent(i+timetag-waveformStart[chNo],waveform[i]);
+                }
+
+                break;
+
+            case 7:
+
+                if (firstWaveform[chNo])
+                {
+                    stringstream temp;
+                    temp << "macropulse " << macroNo;
+
+                    WaveWaveform7 = new TH1I(temp.str().c_str(),temp.str().c_str(),(WAVELET_NO+1)*waveform.size(),0,(WAVELET_NO+1)*waveform.size()*2);
+
+                    waveformStart[chNo] = timetag;
+
+                    firstWaveform[chNo] = false;
+                }
+
+                for(int i=0;i<waveform.size();i++)
+                {
+                    WaveWaveform7->SetBinContent(i+timetag-waveformStart[chNo],waveform[i]);
+                }
+
+                break;
+        }
+    }
 }
 
 void calculateCS()
@@ -999,8 +1137,7 @@ void processRun(string evtname)
         cout << "Total events: " << nE << endl;
     }
 
-    calculateCS(); // produce histograms showing cross-sections for each target
-
+    
     evtfile.close();
 }
 
@@ -1021,6 +1158,11 @@ int main(int argc, char* argv[])
             text = true;
         }
 
+        if (string(argv[3]) == "true")
+        {
+            // produce cross-section plots based on target position
+            cs = true;
+        }
     }
 
     runNo = argv[1];
@@ -1073,7 +1215,8 @@ int main(int argc, char* argv[])
             histos.back().push_back(new TH1I("outLGQ","outLGQ",1024,0,70000));
             histos.back().push_back(new TH1I("outFT","outFT",1023,0,1023));
 
-            gDirectory->mkdir("waveformDir","raw waveforms");
+            gDirectory->mkdir("DPPWaveformsDir","raw DPP waveforms");
+            gDirectory->mkdir("WaveWaveformsDir","concatenated waveform waveforms");
 
             gDirectory->cd("/");
         }
@@ -1083,26 +1226,11 @@ int main(int argc, char* argv[])
     runName << "../output/run" << runNo << ".evt";
     processRun(runName.str());
 
+    if (cs)
+    {
+        calculateCS(); // produce histograms showing cross-sections for each target
+    }
+
     file->Write();
-
-    /*TChain *chain;
-    TFile *chainFile = TFile::Open("chain.root","UPDATE");
-    if (chainFile->GetListOfKeys()->Contains("chain"))
-    {
-        chainFile->GetObject("chain",chain);
-        cout << "already found" << endl;
-    }
-    else
-    {
-        chain = new TChain("tree","chain");
-        chain->AutoSave("Overwrite");
-        cout << "made new" << endl;
-    }
-
-    chain->Add(fileName.str().c_str());
-    cout << chain->GetEntries();
-    chain->Write();
-    chainFile->Close();
-    */
 
 }
