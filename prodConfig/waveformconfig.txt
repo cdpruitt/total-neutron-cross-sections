@@ -21,9 +21,8 @@ EXTERNAL_TRIGGER ACQUISITION_ONLY
 CHANNEL_TRIGGER DISABLED
 # In waveform mode, we trigger on a macropulse start signal to
 # take a full macropulse instead of taking channel self-triggers
-GPO BUSY 
-MAX_NUM_AGGREGATES_BLT 20 
-START_MODE SOFTWARE 
+MAX_NUM_AGGREGATES_BLT 33 
+START_MODE SOFTWARE
 
 #*****************************************************************
 # Individual Settings 
@@ -36,7 +35,7 @@ START_MODE SOFTWARE
 #************************
 
 ENABLE_INPUT YES 
-RECORD_LENGTH 100
+RECORD_LENGTH 80
 
 
 
@@ -46,7 +45,8 @@ RECORD_LENGTH 100
 # MONITOR SETTINGS
 #*****************
 
-ENABLE_INPUT NO
+ENABLE_INPUT YES
+RECORD_LENGTH 80
 
 
 

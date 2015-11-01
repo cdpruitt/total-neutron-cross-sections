@@ -1,41 +1,66 @@
 #!/bin/bash
-runStem=output/run
-i=0
-while [[ -e $runStem$i.evt ]]
-do
-    let i++
-done
-runName=$runStem$i.evt
-
-runMeta=$runStem$i.txt
-touch $runMeta
-
-echo "New run will be $runName."
 
 echo "Enter run type:"
 read runtype
 
-echo "Enter run description/comments:\n"
+echo "Enter run description/comments:"
 read comments
 
-echo "Enter channels enabled \(i.e., 0 2 4\):"
+echo "Enter channels enabled (i.e., 0 2 4):"
 read channels
+
+echo "Enter stopping detector voltage:"
+read detVolt
+
+echo "Enter monitor detector voltage:"
+read monVolt
 
 echo "Enter experimenters on shift:" 
 read people
 
-echo "RUN $i metadata\n" >> $runMeta
-echo "Type: $runtype\n" >> $runMeta
-echo "Description: $comments\n" >> $runMeta
-echo "Channels: $channels\n" >> $runMeta
-echo "On shift: $people\n" >> $runMeta
+echo "Enter number of runs to attempt:"
+read runs
 
-echo "Time start: $(date +%R)\n" >> $runMeta
+runStem=/media/ExternalDrive1/output/run
+i=0
+while [[ -d $runStem$i ]]
+do
+    let i++
+done
+
+mkdir $runStem$i/
+
+cp prodConfig/config.txt $runStem$i/config.txt 
+cp prodConfig/dppconfig.txt $runStem$i/dppconfig.txt 
+cp prodConfig/waveformconfig.txt $runStem$i/waveformconfig.txt 
+
+runMeta=$runStem$i/meta.txt
+touch $runMeta
+
+echo "New run will be $runStem$i."
+
+echo "RUN $i metadata" >> $runMeta
+echo "Type: $runtype" >> $runMeta
+echo "Description: $comments" >> $runMeta
+echo "Channels: $channels" >> $runMeta
+echo "Detector voltage: $detVolt" >> $runMeta
+echo "Monitor voltage: $monVolt" >> $runMeta
+echo "On shift: $people" >> $runMeta
+
+echo "Time start: $(date +%c)" >> $runMeta
 rstart=$(date +%s)
 
-bin/readout testConfig/config.txt $runName
+runName=$runStem$i/data.evt
 
-echo "Time stop: $(date +%R)\n" >> $runMeta
+# run Ron's batch run mode
+# syntax is:
+# batchfile configFile runStem firstRunNo RunsToAttempt minFreeSpace(MB)
+bin/batchread.bash prodConfig/config.txt $runStem$i/data 0 $runs 20000 
+
+# run a one-shot run
+#bin/readout prodConfig/config.txt $runName
+
+echo "Time stop:  $(date +%c)" >> $runMeta
 rstop=$(date +%s)
 diff=$(($rstop-$rstart))
 

@@ -20,7 +20,7 @@
 #          PCI 0 0 0    Desktop/NIM/VME through CONET (optical link) 
 #          PCI 0 0 BA   VME digitizer through V2718 (BA = BaseAddress of the VME board, 32 bit hex)
 #OPEN USB 1 0
-OPEN PCI 0 0 0
+OPEN PCI 1 0 0
 
 
 #SELF_TRIGGER ENABLED
@@ -72,12 +72,12 @@ EXTERNAL_TRIGGER DISABLED
 # options:
 #	<n> = 1 to 1023 -> set number of events per aggregate to <n> (use only in list mode)
 #	<n> = 0 -> Automatic mode (for high rates and best performance in list mode)
-NEVT_AGGR 0 
+NEVT_AGGR 1 
 
 
 # MAX_NUM_EVENTS_BLT: maximum number of events to read out in one Block Transfer.
 # options: 0 to 1023
-MAX_NUM_AGGREGATES_BLT 256
+MAX_NUM_AGGREGATES_BLT 1023 
 
 
 # TRG_HOLDOFF: trigger hold off in ns
@@ -126,7 +126,7 @@ GPO FALSE
 #          S-IN     - acquisition accepts triggers when S-IN is asserted
 #          TRIG1    - DAQ starts after arming first trigger [UNCLEAR?]
 #          GPI      - acquisition accepts triggers when GPI is asserted
-START_MODE SOFTWARE 
+START_MODE SOFTWARE
 
 
 #*****************************************************************
@@ -297,7 +297,7 @@ EXTRA_SELECT 2
 
   PULSE_POLARITY POSITIVE
   CHANNEL_TRIGGER ENABLED
-  TRG_THRESHOLD 200 
+  TRG_THRESHOLD 80 
   DC_OFFSET 40 
   
   
@@ -309,7 +309,7 @@ EXTRA_SELECT 2
   PSD_PRE_GATE 2
   PSD_LONG_GATE 25 
   PRE_TRIGGER 20 
-  RECORD_LENGTH 80 
+  RECORD_LENGTH 80
   PSD_SEL_CHARGE_SENSE 1
 
 
@@ -321,6 +321,7 @@ EXTRA_SELECT 2
 #*****************
 
   ENABLE_INPUT YES 
+
 
 # Basic settings
   
@@ -338,7 +339,8 @@ EXTRA_SELECT 2
   PSD_PRE_GATE 4 
   PSD_LONG_GATE 17 
   PRE_TRIGGER 0
-  RECORD_LENGTH 48 
+  RECORD_LENGTH 160 
+  PSD_SEL_CHARGE_SENSE 0
 
 
 
@@ -355,7 +357,7 @@ EXTRA_SELECT 2
   
   PULSE_POLARITY NEGATIVE
   CHANNEL_TRIGGER ENABLED
-  TRG_THRESHOLD 50 
+  TRG_THRESHOLD 25 
   DC_OFFSET -40 
   
   
@@ -368,30 +370,12 @@ EXTRA_SELECT 2
   PSD_SHORT_GATE 8 
   PSD_PRE_GATE 4 
   PSD_LONG_GATE 16 
-  PRE_TRIGGER 24 
-  RECORD_LENGTH 24 
+  PRE_TRIGGER 32 
+  RECORD_LENGTH 32 
   PSD_SEL_CHARGE_SENSE 0
 
-  
-# Negative tail pulser settings
 
-# PULSE_POLARITY NEGATIVE
-# CHANNEL_TRIGGER ENABLED
-# TRG_THRESHOLD 200 
-# DC_OFFSET -40 
-# DISC_MODE CFD
-# CFD_DELAY 5 
-# CFD_INTERPOLATE 0
-# CFD_ATTENUATION 1
-# 
-# PSD_SHORT_GATE 25 
-# PSD_PRE_GATE 5 
-# PSD_LONG_GATE 100 
-# PRE_TRIGGER 8 
-# RECORD_LENGTH 200 
-
-
-
+ 
 [6]
 
 #***************************
@@ -418,8 +402,8 @@ EXTRA_SELECT 2
   PSD_SHORT_GATE 8 
   PSD_PRE_GATE 4 
   PSD_LONG_GATE 16 
-  PRE_TRIGGER 24 
-  RECORD_LENGTH 24 
+  PRE_TRIGGER 32 
+  RECORD_LENGTH 100 
   PSD_SEL_CHARGE_SENSE 0
 
 
@@ -450,7 +434,7 @@ EXTRA_SELECT 2
   PSD_SHORT_GATE 8 
   PSD_PRE_GATE 4 
   PSD_LONG_GATE 16 
-  PRE_TRIGGER 24 
+  PRE_TRIGGER 32 
   PSD_SEL_CHARGE_SENSE 0
 
 
