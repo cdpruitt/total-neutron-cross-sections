@@ -19,8 +19,8 @@
 #          USB 0 BA     VME digitizer through USB-V1718 (BA = BaseAddress of the VME board, 32 bit hex)
 #          PCI 0 0 0    Desktop/NIM/VME through CONET (optical link) 
 #          PCI 0 0 BA   VME digitizer through V2718 (BA = BaseAddress of the VME board, 32 bit hex)
-#OPEN USB 1 0
-OPEN PCI 1 0 0
+OPEN USB 1 0
+#OPEN PCI 1 0 0
 
 
 #SELF_TRIGGER ENABLED
@@ -72,12 +72,12 @@ EXTERNAL_TRIGGER DISABLED
 # options:
 #	<n> = 1 to 1023 -> set number of events per aggregate to <n> (use only in list mode)
 #	<n> = 0 -> Automatic mode (for high rates and best performance in list mode)
-NEVT_AGGR 1 
+NEVT_AGGR 1
 
 
 # MAX_NUM_EVENTS_BLT: maximum number of events to read out in one Block Transfer.
 # options: 0 to 1023
-MAX_NUM_AGGREGATES_BLT 1023 
+MAX_NUM_AGGREGATES_BLT 10
 
 
 # TRG_HOLDOFF: trigger hold off in ns
@@ -117,7 +117,7 @@ ANALOG_PROBE CFD
 #          BUSY     - a busy signal from the board
 #          TRUE     - always asserted
 #          FALSE    - never asserted
-GPO FALSE 
+GPO BUSY
 
 
 # START_MODE: determines how the digitizer accepts triggers. This also determines 
@@ -357,7 +357,7 @@ EXTRA_SELECT 2
   
   PULSE_POLARITY NEGATIVE
   CHANNEL_TRIGGER ENABLED
-  TRG_THRESHOLD 25 
+  TRG_THRESHOLD 35 
   DC_OFFSET -40 
   
   

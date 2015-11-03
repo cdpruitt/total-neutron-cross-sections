@@ -2,6 +2,6 @@
 
 dppconfig         prodConfig/dppconfig.txt
 waveformconfig    prodConfig/waveformconfig.txt 
-dpptriggers       10000 
-waveformtriggers  33 
+dpptriggers       1000000
+waveformtriggers  33
 end_after         50000000

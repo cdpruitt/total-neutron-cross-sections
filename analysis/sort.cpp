@@ -105,13 +105,12 @@ unsigned int extTime;
 vector<int> timetagP (8,0); // 8 channels all start with previous timetag = 0
 vector<int> evtNo (8,0);    // 8 channels all start on the 0th event
 
-int prevTarget = 1;
-
 // used to perform special behavior when the first wavelet of a new waveform
 // is detected during reconstruction of a full macropulse waveform
 
 unsigned int nE = 0; // counter for the total number of events
-unsigned int macroNo = 0;
+unsigned int macroNo = 0; // keep track of target changer macropulse number
+unsigned int tempMacro = 0; // keep track of an event's macropulse number
 
 /*unsigned int nWavelets = 0; // counter for the number of waveforms in DPP mode
 unsigned int nCFDs = 0; // counter for the number of CFD traces (analog probe mode) 
@@ -184,7 +183,12 @@ struct event
     vector<int> anProbe; // include the analog probes for each channel of the event
 } ev;
 
-double targetTime = -1;
+// hold previous 500 target times and macro numbers
+vector<pair<unsigned int,double>> targetTimeList;
+double targetTime; // this is the correct target time for each detector event
+double prevTime = 0;
+int prevTarget = 1;
+
 vector<bool> firstWaveform (8,false);
 
 //TEventList *targetCh; // for sorting events by their target positions
@@ -245,7 +249,7 @@ void printHeader(ofstream& out)
     out << setfill('*') << setw(63) << "*" << endl;
     out << "| EVENT " << left << setfill(' ') << setw(54) << nE << "|" << endl;
     out << "|" << right << setfill('-') << setw(62) << "|" << endl;
-    out << "| run " << runNo << ", macro " << left << setfill(' ') << setw(45) << macroNo << "|" << endl;
+    out << "| run " << runNo << ", macro " << left << setfill(' ') << setw(44) << macroNo << "|" << endl;
     out << "| channel " << chNo;
 
     if(evtType==1)
@@ -645,8 +649,8 @@ void printBody(ofstream& out)
 void fillTree()
 {
     //ev.runNo = std::stoi(runNo);
-    ev.macroNo = macroNo;
-    ev.evtNo = evtNo[chNo];
+    //ev.macroNo = macroNo;
+    //ev.evtNo = evtNo[chNo];
     ev.chNo = chNo;
     ev.evtType = evtType;
     ev.extTime = extTime;
@@ -663,173 +667,185 @@ void fillTree()
 
 void fillHistos()
 {
-    gDirectory->cd("/");
-    gDirectory->GetDirectory(dirs[chNo].c_str())->cd();
-    
-    // discard events coming >1ms after a target changer event
-    if ((timetag+pow(2,31)*extTime)-targetTime < 1000000) 
+    int totalEntries = tree->GetEntries();
+
+    targetTime = targetTimeList.front().second;
+
+    for (int i=0; i<totalEntries; i++)
     {
-        if (evtType == 1)
+        tree->GetEntry(i);
+
+        gDirectory->cd("/");
+        gDirectory->GetDirectory(dirs[chNo].c_str())->cd();
+
+        // don't plot events coming >1ms after a target changer event
+        if ((timetag+pow(2,32)*extTime)-targetTime < 1000000) 
         {
-            // DPP mode - fill DPP histograms
-
-            outMacro = (TH1I*)(gDirectory->FindObject("outMacro"));
-            outMacro->Fill(macroNo);
-
-            outEvt = (TH1I*)(gDirectory->FindObject("outEvt"));
-            outEvt->Fill(evtNo[chNo]);
-
-            outExtTime = (TH1I*)(gDirectory->FindObject("outExtTime"));
-            outExtTime->Fill(extTime);
-
-            outTime = (TH1I*)(gDirectory->FindObject("outTime"));
-            outTime->Fill(timetag);
-
-            outSGQ = (TH1I*)(gDirectory->FindObject("outSGQ"));
-            outSGQ->Fill(sgQ);
-
-            outLGQ = (TH1I*)(gDirectory->FindObject("outLGQ"));
-            outLGQ->Fill(lgQ);
-
-            outFT = (TH1I*)(gDirectory->FindObject("outFT"));
-            outFT->Fill(fineTime + rng->Rndm());
-
-            stringstream temp;
-            temp << "macroNo " << macroNo << "evtNo " << evtNo[chNo];
-
-            DPPWaveformsDir = (TDirectory*)gDirectory->FindObject("DPPWaveformsDir");
-            DPPWaveformsDir->cd();
-
-            if (evtNo[chNo]%10000 == 0)
+            if ((timetag+pow(2,32)*extTime)-targetTime < 0) 
             {
-                DPPWaveform = new TH1I(temp.str().c_str(),temp.str().c_str(),waveform.size(),0,waveform.size()*2);
-                //cout << timetag+pow(2,31)*extTime-targetTime << endl;
+                cout << timetag+pow(2,32)*extTime << " " << targetTime << endl;
+            }
 
-                for(int i=0;i<waveform.size();i++)
+            if (evtType == 1)
+            {
+                // DPP mode - fill DPP histograms
+
+                outMacro = (TH1I*)(gDirectory->FindObject("outMacro"));
+                outMacro->Fill(tempMacro);
+
+                outEvt = (TH1I*)(gDirectory->FindObject("outEvt"));
+                outEvt->Fill(evtNo[chNo]);
+
+                outExtTime = (TH1I*)(gDirectory->FindObject("outExtTime"));
+                outExtTime->Fill(extTime);
+
+                outTime = (TH1I*)(gDirectory->FindObject("outTime"));
+                outTime->Fill(timetag);
+
+                outSGQ = (TH1I*)(gDirectory->FindObject("outSGQ"));
+                outSGQ->Fill(sgQ);
+
+                outLGQ = (TH1I*)(gDirectory->FindObject("outLGQ"));
+                outLGQ->Fill(lgQ);
+
+                outFT = (TH1I*)(gDirectory->FindObject("outFT"));
+                outFT->Fill(fineTime + rng->Rndm());
+
+                stringstream temp;
+                temp << "macroNo " << macroNo << "evtNo " << evtNo[chNo];
+
+                DPPWaveformsDir = (TDirectory*)gDirectory->FindObject("DPPWaveformsDir");
+                DPPWaveformsDir->cd();
+
+                if (evtNo[chNo]%10000 == 0)
                 {
-                    DPPWaveform->SetBinContent(i,waveform[i]);
+                    DPPWaveform = new TH1I(temp.str().c_str(),temp.str().c_str(),waveform.size(),0,waveform.size()*2);
+                    //cout << timetag+pow(2,32)*extTime-targetTime << endl;
+
+                    for(int i=0;i<waveform.size();i++)
+                    {
+                        DPPWaveform->SetBinContent(i,waveform[i]);
+                    }
+                }
+
+            }
+
+            else if (evtType == 2)
+            {
+                // waveform mode - create full macropulse waveforms
+
+                WaveWaveformsDir = (TDirectory*)gDirectory->FindObject("WaveWaveformsDir");
+                WaveWaveformsDir->cd();
+
+                stringstream temp;
+
+                switch (chNo)
+                {
+                    case 0:
+
+                        if (timetag > waveformStart[chNo] + 1000000)
+                        {
+                            // new waveform-mode macropulse
+                            temp << "macropulse " << macroNo;
+
+                            WaveWaveform0 = new TH1I(temp.str().c_str(),temp.str().c_str(),400000,0,800000);
+
+                            waveformStart[chNo] = timetag;
+                        }
+
+                        for(int i=0;i<waveform.size();i++)
+                        {
+                            WaveWaveform0->SetBinContent(i+(timetag-waveformStart[chNo])/2,waveform[i]);
+                        }
+
+                        break;
+
+                    case 2:
+
+                        if (timetag > waveformStart[chNo] + 1000000)
+                        {
+                            temp << "macropulse " << macroNo;
+
+                            WaveWaveform2 = new TH1I(temp.str().c_str(),temp.str().c_str(),400000,0,800000);
+
+                            waveformStart[chNo] = timetag;
+                        }
+
+
+                        for(int i=0;i<waveform.size();i++)
+                        {
+                            WaveWaveform2->SetBinContent(i+(timetag-waveformStart[chNo])/2,waveform[i]);
+                        }
+
+                        break;
+
+                    case 4:
+
+                        if (timetag > waveformStart[chNo] + 1000000)
+                        {
+                            temp << "macropulse " << macroNo;
+
+                            WaveWaveform4 = new TH1I(temp.str().c_str(),temp.str().c_str(),400000,0,800000);
+
+                            waveformStart[chNo] = timetag;
+                        }
+
+
+                        for(int i=0;i<waveform.size();i++)
+                        {
+                            WaveWaveform4->SetBinContent(i+(timetag-waveformStart[chNo])/2,waveform[i]);
+                        }
+
+                        break;
+
+                    case 6:
+
+                        if (timetag > waveformStart[chNo] + 1000000)
+                        {
+
+                            temp << "macropulse " << macroNo;
+
+                            WaveWaveform6 = new TH1I(temp.str().c_str(),temp.str().c_str(),400000,0,800000);
+
+                            waveformStart[chNo] = timetag;
+                        }
+
+
+                        for(int i=0;i<waveform.size();i++)
+                        {
+                            WaveWaveform6->SetBinContent(i+(timetag-waveformStart[chNo])/2,waveform[i]);
+                        }
+
+                        break;
+
+                    case 7:
+
+                        if (timetag > waveformStart[chNo] + 1000000)
+                        {
+                            temp << "macropulse " << macroNo;
+
+                            WaveWaveform7 = new TH1I(temp.str().c_str(),temp.str().c_str(),400000,0,800000);
+
+                            waveformStart[chNo] = timetag;
+                        }
+
+
+                        for(int i=0;i<waveform.size();i++)
+                        {
+                            WaveWaveform7->SetBinContent(i+(timetag-waveformStart[chNo])/2,waveform[i]);
+                        }
+
+                        break;
                 }
             }
-
         }
-
-        else if (evtType == 2)
-        {
-            // waveform mode - create full macropulse waveforms
-
-            WaveWaveformsDir = (TDirectory*)gDirectory->FindObject("WaveWaveformsDir");
-            WaveWaveformsDir->cd();
-
-            stringstream temp;
-
-            switch (chNo)
-            {
-                case 0:
-
-                    if (firstWaveform[chNo])
-                    {
-                        temp << "macropulse " << macroNo;
-
-                        WaveWaveform0 = new TH1I(temp.str().c_str(),temp.str().c_str(),400000,0,800000);
-
-                        waveformStart[chNo] = timetag;
-                        firstWaveform[chNo] = false;
-                    }
-
-                    for(int i=0;i<waveform.size();i++)
-                    {
-                        WaveWaveform0->SetBinContent(i+(timetag-waveformStart[chNo])/2,waveform[i]);
-                    }
-
-                    break;
-
-                case 2:
-
-                    if (firstWaveform[chNo])
-                    {
-                        temp << "macropulse " << macroNo;
-
-                        WaveWaveform2 = new TH1I(temp.str().c_str(),temp.str().c_str(),400000,0,800000);
-
-                        waveformStart[chNo] = timetag;
-                        firstWaveform[chNo] = false;
-                    }
-
-
-                    for(int i=0;i<waveform.size();i++)
-                    {
-                        WaveWaveform2->SetBinContent(i+(timetag-waveformStart[chNo])/2,waveform[i]);
-                    }
-
-                    break;
-
-                case 4:
-
-                    if (firstWaveform[chNo])
-                    {
-                        temp << "macropulse " << macroNo;
-
-                        WaveWaveform4 = new TH1I(temp.str().c_str(),temp.str().c_str(),400000,0,800000);
-
-                        waveformStart[chNo] = timetag;
-                        firstWaveform[chNo] = false;
-                    }
-
-
-                    for(int i=0;i<waveform.size();i++)
-                    {
-                        WaveWaveform4->SetBinContent(i+(timetag-waveformStart[chNo])/2,waveform[i]);
-                    }
-
-                    break;
-
-                case 6:
-
-                    if (firstWaveform[chNo])
-                    {
-                        temp << "macropulse " << macroNo;
-
-                        WaveWaveform6 = new TH1I(temp.str().c_str(),temp.str().c_str(),400000,0,800000);
-
-                        waveformStart[chNo] = timetag;
-                        firstWaveform[chNo] = false;
-                    }
-
-
-                    for(int i=0;i<waveform.size();i++)
-                    {
-                        WaveWaveform6->SetBinContent(i+(timetag-waveformStart[chNo])/2,waveform[i]);
-                    }
-
-                    break;
-
-                case 7:
-
-                    if (firstWaveform[chNo])
-                    {
-                        temp << "macropulse " << macroNo;
-
-                        WaveWaveform7 = new TH1I(temp.str().c_str(),temp.str().c_str(),400000,0,800000);
-
-                        waveformStart[chNo] = timetag;
-                        firstWaveform[chNo] = false;
-                    }
-
-
-                    for(int i=0;i<waveform.size();i++)
-                    {
-                        WaveWaveform7->SetBinContent(i+(timetag-waveformStart[chNo])/2,waveform[i]);
-                    }
-
-                    break;
-            }
-        }
-    }
 }
 
 void calculateCS()
 {
     // create cross-section histograms
+
+    fill(targetTimeList.begin(),targetTimeList.end(),make_pair(0,0)); // clear the target time list
 
     gDirectory->cd("/");
 
@@ -848,139 +864,145 @@ void calculateCS()
     TH1I *RTOF = new TH1I("RTOF","Right detector time of flight",100000,0,2000);
 
     // link tree branches to variables-to-read
-    tree->SetBranchAddress("macroNo",&macroNo);
+    //tree->SetBranchAddress("macroNo",&macroNo);
     tree->SetBranchAddress("chNo",&chNo);
     tree->SetBranchAddress("lgQ",&lgQ);
     tree->SetBranchAddress("timetag",&timetag);
     tree->SetBranchAddress("fineTime",&fineTime);
     tree->SetBranchAddress("extTime",&extTime);
 
-    // create a list of all target-changer events for sub-looping
-    tree->Draw(">>targetCh","chNo == 0","entrylist");
-    TEntryList *targetCh;
-    gDirectory->GetObject("targetCh",targetCh);
-    tree->SetEntryList(targetCh);
-    int targetEntries = tree->GetEntries();
-
     int targetPos = -1;
 
-    // create a list of all events in the tree
     int totalEntries = tree->GetEntries();
     
     for (int i=0; i<totalEntries; i++)
     {
         tree->GetEntry(i);
 
-        if (chNo == 0) // update target position and target changer time
+        if (evtType==1) // don't use waveform events to populate
         {
-            // assign an integral target position based on lgQ of target changer signal
-            if (lgQ>tarGate[0] && lgQ<tarGate[1])
+
+            if (chNo == 0) // update target position and target changer time
             {
-                targetPos = 1;
-            }
-
-            else if (lgQ>tarGate[2] && lgQ<tarGate[3])
-            {
-                targetPos = 2;
-            }
-
-            else if (lgQ>tarGate[4] && lgQ<tarGate[5])
-            {
-                targetPos = 3;
-            }
-
-            else if (lgQ>tarGate[6] && lgQ<tarGate[7])
-            {
-                targetPos = 4;
-            }
-
-            else if (lgQ>tarGate[8] && lgQ<tarGate[9])
-            {
-                targetPos = 5;
-            }
-
-            else if (lgQ>tarGate[10] && lgQ<tarGate[11])
-            {
-                targetPos = 6;
-            }
-
-            else
-            {
-                targetPos = -1;
-            }
-
-            targetTime = timetag;
-        }
-
-        else if (chNo == 2 || chNo == 4 || chNo == 6 || chNo == 7) // detector event; continue
-        {
-            // calculate a targetTime-calibrated time-of-flight of neutrons
-            // trueTime is neutron time-of-flight since micropulse
-            // start, in ns
-            float trueTime = fmod(((double)timetag+((double)fineTime*2./1024.)-targetTime-TIME_OFFSET),MICRO_PERIOD);
-
-            // convert trueTime into neutron velocity based on flight path distance
-            float velocity = pow(10,7)*FLIGHT_DISTANCE/trueTime; // in meters/sec 
-
-            // convert velocity to relativistic kinetic energy
-            float rKE = (pow((1-pow((velocity/C),2)),-0.5)-1)*NEUTRON_MASS; // in MeV
-
-            if (trueTime > 100) // gate disallowing gammas
-            {
-                switch (targetPos)
+                // assign an integral target position based on lgQ of target changer signal
+                if (lgQ>tarGate[0] && lgQ<tarGate[1])
                 {
-                    case 1:
-                        // BLANK
-                        blankRaw->Fill(rKE);
+                    targetPos = 1;
+                }
+
+                else if (lgQ>tarGate[2] && lgQ<tarGate[3])
+                {
+                    targetPos = 2;
+                }
+
+                else if (lgQ>tarGate[4] && lgQ<tarGate[5])
+                {
+                    targetPos = 3;
+                }
+
+                else if (lgQ>tarGate[6] && lgQ<tarGate[7])
+                {
+                    targetPos = 4;
+                }
+
+                else if (lgQ>tarGate[8] && lgQ<tarGate[9])
+                {
+                    targetPos = 5;
+                }
+
+                else if (lgQ>tarGate[10] && lgQ<tarGate[11])
+                {
+                    targetPos = 6;
+                }
+
+                else
+                {
+                    targetPos = -1;
+                }
+
+            }
+
+            else if (chNo == 2 || chNo == 4 || chNo == 6 || chNo == 7) // detector event; continue
+            {
+                // calculate a targetTime-calibrated time-of-flight of neutrons
+                // trueTime is neutron time-of-flight since micropulse
+                // start, in ns
+
+                for(vector<pair<unsigned int,double>>::reverse_iterator it = targetTimeList.rbegin(); it != targetTimeList.rend(); ++it)
+                {
+                    if ((timetag+pow(2,32)*extTime)>it->second && (timetag+pow(2,32)*extTime)<it->second+1000000) 
+                    {
+                        // found a previous target time within 1 ms 
+                        targetTime = it->second;
                         break;
+                    }
+                }
+
+                float trueTime = fmod(((double)timetag+((double)fineTime*2./1024.)-targetTime-TIME_OFFSET),MICRO_PERIOD);
+
+                // convert trueTime into neutron velocity based on flight path distance
+                float velocity = pow(10,7)*FLIGHT_DISTANCE/trueTime; // in meters/sec 
+
+                // convert velocity to relativistic kinetic energy
+                float rKE = (pow((1-pow((velocity/C),2)),-0.5)-1)*NEUTRON_MASS; // in MeV
+
+                if (trueTime > 100) // gate disallowing gammas
+                {
+                    switch (targetPos)
+                    {
+                        case 1:
+                            // BLANK
+                            blankRaw->Fill(rKE);
+                            break;
+                        case 2:
+                            // SHORT CARBON
+                            carbonSRaw->Fill(rKE);
+                            break;
+                        case 3:
+                            // LONG CARBON
+                            carbonLRaw->Fill(rKE);
+                            break;
+                        case 4:
+                            // Sn112
+                            Sn112Raw->Fill(rKE);
+                            break;
+                        case 5:
+                            // Natural Sn
+                            NatSnRaw->Fill(rKE);
+                            break;
+                        case 6:
+                            // Sn124
+                            Sn124Raw->Fill(rKE);
+                            break;
+                        default:
+                            break;
+                    }
+                    totalRaw->Fill(rKE);
+                }
+
+                TTOF->Fill(trueTime);
+
+                switch (chNo)
+                {
                     case 2:
-                        // SHORT CARBON
-                        carbonSRaw->Fill(rKE);
-                        break;
-                    case 3:
-                        // LONG CARBON
-                        carbonLRaw->Fill(rKE);
+                        MTOF->Fill(trueTime);
                         break;
                     case 4:
-                        // Sn112
-                        Sn112Raw->Fill(rKE);
-                        break;
-                    case 5:
-                        // Natural Sn
-                        NatSnRaw->Fill(rKE);
+                        STOF->Fill(trueTime);
                         break;
                     case 6:
-                        // Sn124
-                        Sn124Raw->Fill(rKE);
+                        LTOF->Fill(trueTime);
                         break;
-                    default:
-                        break;
+                    case 8:
+                        RTOF->Fill(trueTime);
                 }
-                totalRaw->Fill(rKE);
-            }
 
-            TTOF->Fill(trueTime);
-
-            switch (chNo)
-            {
-                case 2:
-                    MTOF->Fill(trueTime);
-                    break;
-                case 4:
-                    STOF->Fill(trueTime);
-                    break;
-                case 6:
-                    LTOF->Fill(trueTime);
-                    break;
-                case 8:
-                    RTOF->Fill(trueTime);
-            }
-
-            if (i%10000 == 0)
-            {
-                //cout << "trueTime " << trueTime << " velocity " << velocity << " rKE " << rKE << endl;
-                cout << "Populated " << i << " events in cross-section histograms\r";
-                fflush(stdout);
+                if (i%10000 == 0)
+                {
+                    //cout << "trueTime " << trueTime << " velocity " << velocity << " rKE " << rKE << endl;
+                    cout << "Populated " << i << " events in cross-section histograms\r";
+                    fflush(stdout);
+                }
             }
         }
     }
@@ -988,7 +1010,6 @@ void calculateCS()
 
     //TH1I* carbonS = new TH1I("
 }
-
 
 void processRun(string evtname)
 {
@@ -1015,6 +1036,7 @@ void processRun(string evtname)
         // start looping through the evtfile for events
 
         int looplimit = 0;
+
         while(!evtfile.eof() && looplimit<10000000)
         {
             looplimit++;
@@ -1023,27 +1045,7 @@ void processRun(string evtname)
 
             readBody(evtfile); // extract data from the event body
 
-            // Refresh targetCh time
-            if(chNo==0 && prevTarget==1)
-            {
-                // new macropulse
-                macroNo++;
-                targetTime = timetag + pow(2,31)*extTime;
-                fill_n(evtNo.begin(),8,0);
-
-                if (evtType == 2 && prevTarget == 1)
-                {
-                    fill_n(firstWaveform.begin(),8,true);
-                }
-            }
-
-            if(chNo==0)
-            {
-                prevTarget = evtType; // for avoiding overcounting macros during waveform mode
-            }
-
             fillTree(); // fill the tree with event data
-            fillHistos(); // fill the histos with event data
 
             if(text)
             {
@@ -1124,8 +1126,49 @@ void processRun(string evtname)
         cout << "Total events: " << nE << endl;
     }
 
-    
     evtfile.close();
+}
+
+void populateMacros()
+{
+    int totalEntries = tree->GetEntries();
+
+    for (int i=0; i<totalEntries; i++)
+    {
+        tree->GetEntry(i);
+
+        // Refresh targetCh time
+        if (chNo==0) 
+        {
+            if (evtType==1)
+            {
+                // new macropulse in DPP mode
+                macroNo++;
+                fill_n(evtNo.begin(),8,0); // clear the evtNo counter for each channel
+            }
+
+            else if (evtType==2)
+            {
+                if (prevTarget==1)
+                {
+                    macroNo++;
+                    fill_n(evtNo.begin(),8,0); // clear the evtNo counter for each channel
+
+                    prevTime = timetag+pow(2,32)*extTime;
+                }
+
+                else if (timetag+pow(2,32)*extTime>prevTime+7000000)
+                {
+                    macroNo++;
+                    fill_n(evtNo.begin(),8,0); // clear the evtNo counter for each channel
+                }
+
+            }
+
+            targetTimeList.push_back(make_pair(macroNo,timetag + pow(2,32)*extTime));
+            prevTarget = evtType;
+        }
+    }
 }
 
 int main(int argc, char* argv[])
@@ -1177,8 +1220,8 @@ int main(int argc, char* argv[])
         cout << "Created ROOT tree " << treeName.str() << endl;
 
         //tree->Branch("runNo",&ev.runNo,"runNo/i");
-        tree->Branch("macroNo",&ev.macroNo,"macroNo/i");
-        tree->Branch("evtNo",&ev.evtNo,"evtNo/i");
+        //tree->Branch("macroNo",&ev.macroNo,"macroNo/i");
+        //tree->Branch("evtNo",&ev.evtNo,"evtNo/i");
         tree->Branch("chNo",&ev.chNo,"chNo/i");
         tree->Branch("evtType",&ev.evtType,"evtType/i");
         tree->Branch("extTime",&ev.extTime,"extTime/i");
@@ -1226,6 +1269,10 @@ int main(int argc, char* argv[])
         stringstream runName;
         runName << "/media/ExternalDrive1/output/" << runDir << "/data-" << runNo << ".evt";
         processRun(runName.str());
+
+        populateMacros();
+        fillHistos(); // fill the histos with event data
+
     }
 
     if (cs)
