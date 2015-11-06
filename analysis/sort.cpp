@@ -57,6 +57,7 @@
 #include "TROOT.h"
 #include "TRandom3.h"
 #include <tuple>
+#include <math.h>
 
 using namespace std;
 
@@ -99,13 +100,13 @@ unsigned short *point;
 unsigned int size;
 unsigned int evtType;
 unsigned int chNo;
-unsigned int timetag;
+double timetag;
 unsigned int extTime;
 
 // timetagP keeps track of the previous event's timetag, so we can count 
 // macropulses by looking at timetag resets. Because channels don't read out in
 // order, we need to track the most recent timetag for each enabled channel
-vector<int> timetagP (8,0); // 8 channels all start with previous timetag = 0
+vector<double> timetagP (8,0); // 8 channels all start with previous timetag = 0
 vector<int> evtNo (8,0);    // 8 channels all start on the 0th event
 
 // used to perform special behavior when the first wavelet of a new waveform
@@ -167,7 +168,9 @@ struct event
     unsigned int chNo; // describe data stream origin (i.e., detector)
     unsigned int evtType; // describe the event data: either DPP or waveform
 
-    unsigned int timetag, extTime, fineTime; // event timestamps
+    double timetag;
+    unsigned int extTime, fineTime; // event timestamps
+
     unsigned int sgQ, lgQ; // event charge gates
 
     vector<int> waveform; // include the waveforms for each channel of the event
@@ -190,7 +193,7 @@ vector<bool> firstWaveform (8,false);
 
 bool text = false; // flag for producing text-file output apart from
                    // the default ROOT plots and tree filling
-bool cs = false; // flag indicating that a cross-section plot should be
+bool plots = false; // flag indicating that a cross-section plot should be
                  // produced for each target position
 
 TDirectoryFile *targetChangerDir, *monitorDir, *detectorLDir, *detectorRDir, *detectorTDir;
@@ -682,11 +685,11 @@ void fillHistos()
     TH1I *Sn124Raw = new TH1I("Sn124","Sn124",700000,0,700);
     TH1I *totalRaw = new TH1I("total","total",700000,0,700);
 
-    TH1I *TTOF = new TH1I("TTOF","All events time of flight",100000,0,2000);
-    TH1I *MTOF = new TH1I("MTOF","Monitor time of flight",100000,0,2000);
-    TH1I *STOF = new TH1I("STOF","Summed-detector time of flight",100000,0,2000);
-    TH1I *LTOF = new TH1I("LTOF","Left detector time of flight",100000,0,2000);
-    TH1I *RTOF = new TH1I("RTOF","Right detector time of flight",100000,0,2000);
+    TH1I *TTOF = new TH1I("TTOF","All events time of flight",100000,-MICRO_PERIOD*1.1,MICRO_PERIOD*1.1);
+    TH1I *MTOF = new TH1I("MTOF","Monitor time of flight",100000,-MICRO_PERIOD*1.1,MICRO_PERIOD*1.1);
+    TH1I *STOF = new TH1I("STOF","Summed-detector time of flight",100000,-MICRO_PERIOD*1.1,MICRO_PERIOD*1.1);
+    TH1I *LTOF = new TH1I("LTOF","Left detector time of flight",100000,-MICRO_PERIOD*1.1,MICRO_PERIOD*1.1);
+    TH1I *RTOF = new TH1I("RTOF","Right detector time of flight",100000,-MICRO_PERIOD*1.1,MICRO_PERIOD*1.1);
 
     tree->Draw(">>targetChEvents","chNo==0","entrylist");
     tree->Draw(">>monitorEvents","chNo==2","entrylist");
@@ -828,7 +831,9 @@ void fillHistos()
 
                         if (chNo==2 || chNo==4 || chNo==6 || chNo==7)
                         {
-                            float trueTime = fmod(((double)timetag+((double)fineTime*2./1024.)-targetTime-TIME_OFFSET),MICRO_PERIOD);
+                            double trueTime = fmod(((double)extTime*pow(2,32)+(double)timetag+((double)fineTime*2./1024.)-targetTime-TIME_OFFSET),MICRO_PERIOD);
+
+                            timeDiff << trueTime << " " << timetag << " " << targetTime << endl;
 
                             // convert trueTime into neutron velocity based on flight path distance
                             float velocity = pow(10,7)*FLIGHT_DISTANCE/trueTime; // in meters/sec 
@@ -1203,7 +1208,7 @@ int main(int argc, char* argv[])
 
     if (argc > 3) // flags detected
     {
-        if (std::string(argv[3]) == "true")
+        if (string(argv[3]) == "true")
         {
             // produce text files for each channel containing all event
             // data from the input file. This will significantly increase
@@ -1214,7 +1219,7 @@ int main(int argc, char* argv[])
         if (string(argv[4]) == "true")
         {
             // produce cross-section plots based on target position
-            cs = true;
+            plots = true;
         }
     }
 
@@ -1229,7 +1234,7 @@ int main(int argc, char* argv[])
     treeName << runDir << "-" << runNo; 
     fileName << "/media/ExternalDrive1/analysis/" << runDir << "/" << treeName.str() << ".root";
 
-    file = new TFile(fileName.str().c_str(),"RECREATE");
+    file = new TFile(fileName.str().c_str(),"UPDATE");
 
     if(file->Get("tree"))
     {
@@ -1247,7 +1252,7 @@ int main(int argc, char* argv[])
         tree->Branch("chNo",&ev.chNo,"chNo/i");
         tree->Branch("evtType",&ev.evtType,"evtType/i");
         tree->Branch("extTime",&ev.extTime,"extTime/i");
-        tree->Branch("timetag",&ev.timetag,"timetag/i");
+        tree->Branch("timetag",&ev.timetag,"timetag/d");
         tree->Branch("fineTime",&ev.fineTime,"fineTime/i");
         tree->Branch("sgQ",&ev.sgQ,"sgQ/i");
         tree->Branch("lgQ",&ev.lgQ,"lgQ/i");
@@ -1287,13 +1292,15 @@ int main(int argc, char* argv[])
         stringstream runName;
         runName << "/media/ExternalDrive1/output/" << runDir << "/data-" << runNo << ".evt";
         processRun(runName.str());
+    }
 
+    if (plots)
+    {
         populateMacros();
         cout << "targerTimeList size " << targetTimeList.size() << endl;
         fillHistos(); // fill the histos with event data
-
     }
 
-    file->Write();
+file->Write();
 
 }
