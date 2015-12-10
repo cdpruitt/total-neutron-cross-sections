@@ -15,6 +15,8 @@ fi
 # process script options
 
 runlist=false
+runpath=/media/ExternalDrive1/output
+analysispath=/media/ExternalDrive1/analysis
 
 while getopts "trca" opt; do
     case ${opt} in
@@ -48,15 +50,15 @@ done
 
 if [ "$runlist" = false ]
 then
-    runDir=$(ls -t /media/ExternalDrive1/output | head -1)
-    runNo=$(ls -t /media/ExternalDrive1/output/$runDir/data-* | head -1 | egrep\
+    runDir=$(ls -t $runpath | head -1)
+    runNo=$(ls -t $runpath/$runDir/data-* | head -1 | egrep\
     -o '[0-9]+' | tail -1)
-    runName="/media/ExternalDrive1/output/$runDir/data-$runNo.evt"
+    runName="$runpath/$runDir/data-$runNo.evt"
     printf "\nSorting most recent file $runName\n"
 
-    if [ ! -a /media/ExternalDrive1/analysis/$runDir ]
+    if [ ! -a $analysispath/$runDir ]
     then
-        mkdir /media/ExternalDrive1/analysis/$runDir
+        mkdir $analysispath/$runDir
     fi
     ./sort "$runDir" "$runNo" "$text" "$cs"
 else
@@ -66,24 +68,24 @@ else
         while read runDir; do
 	    printf "Reading from directory run$runDir\n"
 
-            if [ ! -a /media/ExternalDrive1/analysis/run$runDir ]
+            if [ ! -a $analysispath/run$runDir ]
             then
-                mkdir /media/ExternalDrive1/analysis/run$runDir
+                mkdir $analysispath/run$runDir
             fi
 
             if [ "$allFiles" = true ]
             then
-                for f in /media/ExternalDrive1/output/run$runDir/data-*;
+                for f in $runpath/run$runDir/data-*;
                 do
                     runNo=$(echo $f | egrep -o '[0-9]+' | tail -1)
-                    runName="/media/ExternalDrive1/output/$runDir/data-$runNo.evt"
+                    runName="$runpath/$runDir/data-$runNo.evt"
                     printf "Sorting $runName\n"
                     ./sort "run$runDir" "$runNo" "$text" "$cs"
                 done
             else
-                runNo=$(ls -t /media/ExternalDrive1/output/run$runDir/data-* | head -1 | egrep\
+                runNo=$(ls -t $runpath/run$runDir/data-* | head -1 | egrep\
                     -o '[0-9]+' | tail -1)
-                runName="/media/ExternalDrive1/output/$runDir/data-$runNo.evt"
+                runName="$runpath/$runDir/data-$runNo.evt"
                 printf "Sorting $runName\n"
                 ./sort "run$runDir" "$runNo" "$text" "$cs"
             fi

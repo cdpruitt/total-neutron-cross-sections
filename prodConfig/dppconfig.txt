@@ -19,8 +19,8 @@
 #          USB 0 BA     VME digitizer through USB-V1718 (BA = BaseAddress of the VME board, 32 bit hex)
 #          PCI 0 0 0    Desktop/NIM/VME through CONET (optical link) 
 #          PCI 0 0 BA   VME digitizer through V2718 (BA = BaseAddress of the VME board, 32 bit hex)
-OPEN USB 1 0
-#OPEN PCI 1 0 0
+#OPEN USB 1 0
+OPEN PCI 0 0 0
 
 
 #SELF_TRIGGER ENABLED
@@ -38,8 +38,8 @@ ACQUISITION_MODE MIXED
 #          1   - turns on dynamic baseline calculation (using PSD_BL_SAMPLES)
 PSD_SEL_BASELINE 1
 
-# PSD_BL_THRESHOLD: [OPERATION UNKNOWN]
-
+# PSD_BL_THRESHOLD: [UNTESTED - set threshold when baseline recalculation is
+# turned off]
 
 # TRIGGER_MODE: determines how channel triggers are generated from discriminator-firings.
 # options: NORMAL      - each discriminator-firing triggers DPP processing/readout
@@ -72,17 +72,17 @@ EXTERNAL_TRIGGER DISABLED
 # options:
 #	<n> = 1 to 1023 -> set number of events per aggregate to <n> (use only in list mode)
 #	<n> = 0 -> Automatic mode (for high rates and best performance in list mode)
-NEVT_AGGR 1
+NEVT_AGGR 10
 
 
 # MAX_NUM_EVENTS_BLT: maximum number of events to read out in one Block Transfer.
 # options: 0 to 1023
-MAX_NUM_AGGREGATES_BLT 10
+MAX_NUM_AGGREGATES_BLT 1023 
 
 
 # TRG_HOLDOFF: trigger hold off in ns
 # range: 0 - 1920 in steps of 128 ns [THESE UNITS UNCONFIRMED]
-TRG_HOLDOFF 8 
+TRG_HOLDOFF 0 
 
 
 # PUR_MODE: pile-up rejection mode. [NOTE: this will be implemented in a firmware upgrade later.]
@@ -167,9 +167,9 @@ RECORD_LENGTH 256
 PRE_TRIGGER 76 
 
 
-# TRIGGER_THRESHOLD: threshold for the channel self-trigger, relative to the baseline
+# TRG_THRESHOLD: threshold for the channel self-trigger, relative to the baseline
 # options 0 to 2^N-1 (N=Number of bit of the ADC)
-TRIGGER_THRESHOLD 20
+TRG_THRESHOLD 20
 
 
 # CHANNEL_TRIGGER: enable channel self-triggering.
@@ -295,10 +295,10 @@ EXTRA_SELECT 2
 
 # Basic settings
 
-  PULSE_POLARITY POSITIVE
+  PULSE_POLARITY NEGATIVE
   CHANNEL_TRIGGER ENABLED
   TRG_THRESHOLD 80 
-  DC_OFFSET 40 
+  DC_OFFSET -40 
   
   
 # PSD/CFD settings
@@ -310,7 +310,7 @@ EXTRA_SELECT 2
   PSD_LONG_GATE 25 
   PRE_TRIGGER 20 
   RECORD_LENGTH 80
-  PSD_SEL_CHARGE_SENSE 1
+  PSD_SEL_CHARGE_SENSE 2
 
 
 
@@ -335,11 +335,11 @@ EXTRA_SELECT 2
   
   DISC_MODE LED
   
-  PSD_SHORT_GATE 7 
-  PSD_PRE_GATE 4 
-  PSD_LONG_GATE 17 
+  PSD_SHORT_GATE 18 
+  PSD_PRE_GATE 6 
+  PSD_LONG_GATE 46 
   PRE_TRIGGER 0
-  RECORD_LENGTH 160 
+  RECORD_LENGTH 40 
   PSD_SEL_CHARGE_SENSE 0
 
 
@@ -357,7 +357,7 @@ EXTRA_SELECT 2
   
   PULSE_POLARITY NEGATIVE
   CHANNEL_TRIGGER ENABLED
-  TRG_THRESHOLD 35 
+  TRG_THRESHOLD 30 
   DC_OFFSET -40 
   
   
@@ -367,44 +367,71 @@ EXTRA_SELECT 2
   CFD_DELAY 3
   CFD_ATTENUATION 1
   
-  PSD_SHORT_GATE 8 
-  PSD_PRE_GATE 4 
-  PSD_LONG_GATE 16 
-  PRE_TRIGGER 32 
-  RECORD_LENGTH 32 
-  PSD_SEL_CHARGE_SENSE 0
+  PSD_SHORT_GATE 16 
+  PSD_PRE_GATE 6 
+  PSD_LONG_GATE 30 
+  PRE_TRIGGER 24 
+  RECORD_LENGTH 48 
+  PSD_SEL_CHARGE_SENSE 1
 
-
- 
 [6]
 
-#***************************
-# LEFT DETECTOR SETTINGS
-#***************************
+#*******************
+# SCAVENGER SETTINGS
+#*******************
+  
 
-  ENABLE_INPUT NO 
+ENABLE_INPUT NO 
 
 
 # Basic settings
   
   PULSE_POLARITY NEGATIVE
   CHANNEL_TRIGGER ENABLED
-  TRG_THRESHOLD 80 
+  TRG_THRESHOLD 160 
   DC_OFFSET -40 
-  
   
 # PSD/CFD settings
   
   DISC_MODE CFD
-  CFD_DELAY 2
+  CFD_DELAY 3
   CFD_ATTENUATION 1
   
-  PSD_SHORT_GATE 8 
-  PSD_PRE_GATE 4 
-  PSD_LONG_GATE 16 
-  PRE_TRIGGER 32 
-  RECORD_LENGTH 100 
-  PSD_SEL_CHARGE_SENSE 0
+  PSD_SHORT_GATE 16 
+  PSD_PRE_GATE 6 
+  PSD_LONG_GATE 30 
+  PRE_TRIGGER 24 
+  RECORD_LENGTH 48 
+  PSD_SEL_CHARGE_SENSE 1
+
+
+#***************************
+# LEFT DETECTOR SETTINGS
+#***************************
+
+# ENABLE_INPUT NO 
+
+
+# Basic settings
+# 
+# PULSE_POLARITY NEGATIVE
+# CHANNEL_TRIGGER ENABLED
+# TRG_THRESHOLD 80 
+# DC_OFFSET -40 
+# 
+# 
+# PSD/CFD settings
+# 
+# DISC_MODE CFD
+# CFD_DELAY 2
+# CFD_ATTENUATION 1
+# 
+# PSD_SHORT_GATE 8 
+# PSD_PRE_GATE 4 
+# PSD_LONG_GATE 16 
+# PRE_TRIGGER 32 
+# RECORD_LENGTH 100 
+# PSD_SEL_CHARGE_SENSE 0
 
 
 
@@ -414,7 +441,7 @@ EXTRA_SELECT 2
 # RIGHT DETECTOR SETTINGS
 #************************
 
-  ENABLE_INPUT NO 
+  ENABLE_INPUT NO
 
 
 # Basic settings

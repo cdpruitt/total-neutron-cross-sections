@@ -21,9 +21,11 @@ read people
 echo "Enter number of runs to attempt:"
 read runs
 
-runStem=/media/ExternalDrive1/output/run
-i=0
-while [[ -d $runStem$i ]]
+runStem=/media/InternalDrive2/output/run
+runRepo=/media/ExternalDrive1/output/run
+
+i=1
+while [[ -d $runRepo$i ]]
 do
     let i++
 done
@@ -65,3 +67,5 @@ rstop=$(date +%s)
 diff=$(($rstop-$rstart))
 
 echo "Run duration: $diff seconds" >> $runMeta
+
+mv $runStem$i/ $runRepo$i/
