@@ -18,7 +18,7 @@ using namespace std;
 // Time delay of target changer coarse time after real macropulse start time
 const double TIME_OFFSET = 836; // in ns
 
-const string analysispath =  "/media/ExternalDrive1/";
+const string analysispath =  "/media/Drive3/";
 
 
 // variables for holding raw tree event data
@@ -131,23 +131,23 @@ void cleanTree(TTree* tree)
         {
             // found a target changer event - now test for beam on/off
             currentMacroTime = ((double)extTime*pow(2,32)+timetag);
-            timeDiff = prevMacroTime - currentMacroTime;
+            timeDiff = currentMacroTime-prevMacroTime;
 
             if ((timeDiff > 8250000 && timeDiff < 8350000) || (timeDiff > 16550000 && timeDiff < 16650000) || prevEvtType == 2)
             {
                 // the target changer event came within the expected window of
                 // 8.3 or 16.6 ms, or was the start of a new acquisition period
-                // -> beam was on, so continue looping
+                // ...thus beam was on, so accept this event and continue
             }
 
             else
             {
                 // target changer time was OUTSIDE acceptable bounds
-                // -> beam was off for some period, so figure out that period
+                // thus beam was off for some period, so figure out that period
 
                 // we'll need to go backwards to find the previous set of
                 // target changer events when beam was still good
-                // shift the index backwards by 10 so we can escape the current
+                // shift the event index backwards by 10 so we can escape the current
                 // chunk of target changer events where beam off was detected
                 for (int j = i-10; j>0; j--)
                 {
@@ -167,11 +167,12 @@ void cleanTree(TTree* tree)
                         break;
                     }
                 }
-
-                // reset placeholder variables for next event
-                prevEvtType = evtType;
-                prevMacroTime = currentMacroTime;
             }
+
+            // reset placeholder variables for next event
+            prevEvtType = evtType;
+            prevMacroTime = currentMacroTime;
+
         }
     }
 
@@ -187,7 +188,7 @@ void cleanTree(TTree* tree)
         int resume = beamOn[i].first;
         int omit = beamOn[i].second;
 
-        for(int j = resume; j<omit; j++)
+        for(int j = beamOn[i].first; j<beamOn[i].second; j++)
         {
             tree->GetEntry(j);
             cTree->Fill();
@@ -454,6 +455,9 @@ void populateTrees()
                     break;
 
                 }
+
+            default:
+                break;
         }
     }
 }
@@ -526,6 +530,8 @@ int main(int argc, char* argv[])
         cout << "Failed to find raw tree - exiting " << fileName << endl;
         exit(1);
     }
+
+    cleanTree(tree);
 
     populateTrees();
 

@@ -46,7 +46,7 @@
 
 using namespace std;
 
-const string analysispath =  "/media/ExternalDrive1/";
+const string analysispath =  "/media/Drive3/";
 
 struct event
 {

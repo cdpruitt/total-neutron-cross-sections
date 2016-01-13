@@ -1,10 +1,10 @@
 #!/bin/bash
 
-if [ sort.cpp -nt sort ] # sort.cpp has been edited
+if [ raw.cpp -nt raw ] # raw.cpp has been edited
 then
-    # recompile sort.cpp to prepare for event sorting
+    # recompile raw.cpp to prepare for event sorting
     make
-    if [ sort.cpp -nt sort ]
+    if [ raw.cpp -nt raw ]
     then
         # compilation failed - exit
         printf "\nCompilation failed - correct errors before sorting.\n"
@@ -15,8 +15,8 @@ fi
 # process script options
 
 runlist=false
-runpath=/media/ExternalDrive1/output
-analysispath=/media/ExternalDrive1/analysis
+runpath=/media/Drive3/output
+analysispath=/media/Drive3/analysis
 
 while getopts "trca" opt; do
     case ${opt} in
@@ -60,7 +60,7 @@ then
     then
         mkdir $analysispath/$runDir
     fi
-    ./sort "$runDir" "$runNo" "$text" "$cs"
+    ./raw "$runDir" "$runNo" "$text" "$cs"
 else
     if [ -a ./runsToSort.txt ]
     then
@@ -80,14 +80,14 @@ else
                     runNo=$(echo $f | egrep -o '[0-9]+' | tail -1)
                     runName="$runpath/$runDir/data-$runNo.evt"
                     printf "Sorting $runName\n"
-                    ./sort "run$runDir" "$runNo" "$text" "$cs"
+                    ./raw "run$runDir" "$runNo" "$text" "$cs"
                 done
             else
                 runNo=$(ls -t $runpath/run$runDir/data-* | head -1 | egrep\
                     -o '[0-9]+' | tail -1)
                 runName="$runpath/$runDir/data-$runNo.evt"
                 printf "Sorting $runName\n"
-                ./sort "run$runDir" "$runNo" "$text" "$cs"
+                ./raw "run$runDir" "$runNo" "$text" "$cs"
             fi
         done < runsToSort.txt
     fi

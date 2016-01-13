@@ -90,7 +90,7 @@ const double C = 299792458; // speed of light in m/s
 
 const double NEUTRON_MASS = 939.56536; // in MeV/c^2
 
-const string analysispath =  "/media/ExternalDrive1/";
+const string analysispath =  "/media/Drive3/";
 
 // active channels
 int chNoList[5] = {0,2,4,6,7};
