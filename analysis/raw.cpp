@@ -161,6 +161,10 @@ void readEvent(ifstream& evtfile)
         evtfile.read((char*)buffer,BufferBytes);
     }
 
+    // the DPP-mode only data has been read out, so now let's read out the data
+    // that's present in both DPP and waveform modes (number of samples and the
+    // waveform data)
+
     // nSamp is the number of waveform samples that follow (in LIST mode, nSamp = 0)
     unsigned short nSamp1 = buffer[0];
     evtfile.read((char*)buffer,BufferBytes);
@@ -187,7 +191,19 @@ void readEvent(ifstream& evtfile)
     ev.lgQ = lgQ;
     ev.waveform = waveform; 
 
-    tree->Fill();
+    // ignore 'junk' macropulse signals with off-scale lgQ
+    // --> not sure what these events are... didn't notice them during the
+    // experiment
+    if (lgQ != 65535 || chNo !=0)
+    {
+        tree->Fill();
+    }
+
+    // clear all DPP-specific event variables to prepare for next event
+    extTime = 0;
+    fineTime = 0;
+    sgQ = 0;
+    lgQ = 0;
 }
 
 void processRun(string evtname)
@@ -214,7 +230,7 @@ void processRun(string evtname)
         // start looping through the evtfile to extract events
         int nE = 0;
 
-        while(!evtfile.eof() /* use to truncate sort*/ && nE<1000000)
+        while(!evtfile.eof() /* use to truncate sort */ && nE<6000000)
         {
 
             readEvent(evtfile); // extract raw data from event file

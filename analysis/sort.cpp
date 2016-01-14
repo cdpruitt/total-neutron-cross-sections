@@ -1230,7 +1230,7 @@ void processRun(string evtname)
 
       int looplimit = 0;
 
-      while(!evtfile.eof() && looplimit<10000000)
+      while(!evtfile.eof() && looplimit<100000)
         {
 	  looplimit++;
 	  // get channel number from the event header

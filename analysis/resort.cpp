@@ -44,7 +44,7 @@ struct event
 
   unsigned int sgQ, lgQ; // event charge gates
 
-  vector<int> waveform;
+  vector<int> waveform; // transfer waveforms from raw to cleaned tree
 } ev;
 
 TTree* cTree; // holds raw data with beam-off periods removed
@@ -74,7 +74,7 @@ void fillTree(TTree* tree)
     ev.targetPos = targetPos;
     ev.sgQ = sgQ;
     ev.lgQ = lgQ;
-    ev.waveform = waveform; 
+    //ev.waveform = waveform; 
 
     tree->Fill();
 }
@@ -132,8 +132,9 @@ void cleanTree(TTree* tree)
             // found a target changer event - now test for beam on/off
             currentMacroTime = ((double)extTime*pow(2,32)+timetag);
             timeDiff = currentMacroTime-prevMacroTime;
+            cout << "macropulse time = " << currentMacroTime << endl;
 
-            if ((timeDiff > 8250000 && timeDiff < 8350000) || (timeDiff > 16550000 && timeDiff < 16650000) || prevEvtType == 2)
+            if ((timeDiff > 8300000 && timeDiff < 8360000) || (timeDiff > 16600000 && timeDiff < 16720000) || evtType == 2 || prevEvtType == 2)
             {
                 // the target changer event came within the expected window of
                 // 8.3 or 16.6 ms, or was the start of a new acquisition period
@@ -143,7 +144,7 @@ void cleanTree(TTree* tree)
             else
             {
                 // target changer time was OUTSIDE acceptable bounds
-                // thus beam was off for some period, so figure out that period
+                // thus beam was off for some period, so figure out what that period is
 
                 // we'll need to go backwards to find the previous set of
                 // target changer events when beam was still good
@@ -151,8 +152,11 @@ void cleanTree(TTree* tree)
                 // chunk of target changer events where beam off was detected
                 for (int j = i-10; j>0; j--)
                 {
+                    cout << "j = " << j << ", chNo = " << chNo << "\r";
+                    fflush(stdout);
+
                     tree->GetEntry(j);
-                    if(chNo=0)
+                    if(chNo==0)
                     {
                         // found the previous chunk of target changer events;
                         // record their index in beamOn
@@ -162,6 +166,8 @@ void cleanTree(TTree* tree)
                         // beam on period
                         init = i+1;
 
+                        cout << "beam off period" << endl;
+                        
                         // ... and keep looping forward through raw
                         // tree where we left off (that is, at index i)
                         break;
@@ -172,9 +178,16 @@ void cleanTree(TTree* tree)
             // reset placeholder variables for next event
             prevEvtType = evtType;
             prevMacroTime = currentMacroTime;
+        }
 
+        if(i%100==0)
+        {
+            cout << "Sorting through raw tree, event #" << i << "\r";
+            fflush(stdout);
         }
     }
+
+    cout << endl << endl;
 
     // after loop finishes, add the last leg of the run to the beamOn list
     beamOn.push_back(make_pair(init,totalEntries));
@@ -192,8 +205,17 @@ void cleanTree(TTree* tree)
         {
             tree->GetEntry(j);
             cTree->Fill();
+
+            if(j%100==0)
+            {
+                cout << "Populating cleaned tree, event #" << j << "\r";
+                fflush(stdout);
+            }
         }
     }
+
+    cout << endl << beamOn.size()-1 << " periods of beam-off detected and removed." << endl;
+
 }
 
 void populateTrees()
@@ -203,7 +225,7 @@ void populateTrees()
     // assigned to a macropulse for easier analysis later.
 
     // create subsets of the cleaned tree based on channel number
-    cTree->Draw(">>targetChEvents","chNo==0","entrylist");
+    /*cTree->Draw(">>targetChEvents","chNo==0","entrylist");
     cTree->Draw(">>monitorEvents","chNo==2","entrylist");
     cTree->Draw(">>detSEvents","chNo==4","entrylist");
     cTree->Draw(">>scavengerEvents","chNo==6","entrylist");
@@ -219,14 +241,15 @@ void populateTrees()
     channelList.push_back(monitorEvents);
     channelList.push_back(detSEvents);
     channelList.push_back(scavengerEvents);
+    */
 
-    for(int j = 0; j<channelList.size(); j++)
+    for(int j = 0; j<8; j=j+2)
     {
         // looping through tree once per channel number
-        cout << "Populating trees" << endl;
+        cout << "Populating trees, ch = " << j << endl;
 
-        cTree->SetEntryList(channelList[j]);
-        int channelEntries = cTree->GetEntries();
+        //cTree->SetEntryList(channelList[j]);
+        int totalEntries = cTree->GetEntries();
 
         int prevEvtType = 0; // keeps track of when acquisition switches modes
         // so that macropulse counting is done correctly
@@ -241,220 +264,276 @@ void populateTrees()
                 // for assigning times and target changer positions to the
                 // detector channels (ch2, ch4, ch6)
 
-                for (int i=0; i<channelEntries; i++)
+                for (int i=0; i<totalEntries; i++)
                 {
                     cTree->GetEntry(i);
 
-                    completeTime = (double)extTime*pow(2,32)+timetag;
-                    macroTime = completeTime;
-
-                    if (evtType==1)
+                    if (chNo == j)
                     {
-                        // new macropulse in DPP mode
+                        macroTime = (double)extTime*pow(2,32)+timetag;
+                        completeTime = macroTime;
 
-                        // assign an integral target position based on lgQ value
-                        if (lgQ>tarGate[0] && lgQ<tarGate[1])
+                        if (evtType==1)
                         {
-                            targetPos = 1;
+                            // new macropulse in DPP mode
+
+                            // assign an integral target position based on lgQ value
+                            if (lgQ>tarGate[0] && lgQ<tarGate[1])
+                            {
+                                targetPos = 1;
+                            }
+
+                            else if (lgQ>tarGate[2] && lgQ<tarGate[3])
+                            {
+                                targetPos = 2;
+                            }
+
+                            else if (lgQ>tarGate[4] && lgQ<tarGate[5])
+                            {
+                                targetPos = 3;
+                            }
+
+                            else if (lgQ>tarGate[6] && lgQ<tarGate[7])
+                            {
+                                targetPos = 4;
+                            }
+
+                            else if (lgQ>tarGate[8] && lgQ<tarGate[9])
+                            {
+                                targetPos = 5;
+                            }
+
+                            else if (lgQ>tarGate[10] && lgQ<tarGate[11])
+                            {
+                                targetPos = 6;
+                            }
+
+                            else
+                            {
+                                targetPos = 0;
+                            }
+
+                            if (prevEvtType==2)
+                            {
+                                // the previous event was a waveform event, so this
+                                // is the first DPP mode event
+
+                                // clear the evtNo counter
+                                evtNo = 0;
+                            }
+
+                            fillTree(ch0Tree);
+
+                            macroNo++; // increment macropulse counter
                         }
 
-                        else if (lgQ>tarGate[2] && lgQ<tarGate[3])
+                        else if (evtType==2)
                         {
-                            targetPos = 2;
-                        }
-
-                        else if (lgQ>tarGate[4] && lgQ<tarGate[5])
-                        {
-                            targetPos = 3;
-                        }
-
-                        else if (lgQ>tarGate[6] && lgQ<tarGate[7])
-                        {
-                            targetPos = 4;
-                        }
-
-                        else if (lgQ>tarGate[8] && lgQ<tarGate[9])
-                        {
-                            targetPos = 5;
-                        }
-
-                        else if (lgQ>tarGate[10] && lgQ<tarGate[11])
-                        {
-                            targetPos = 6;
-                        }
-
-                        else
-                        {
+                            // waveform mode
+                            // don't increment the macropulse number, but fill
+                            // the tree with timestamp, evtNo, and waveform data
                             targetPos = 0;
+
+                            if (prevEvtType==1)
+                            {
+                                // the previous event was a DPP event, so this is
+                                // the first waveform mode event in the wavelet
+
+                                // clear the evtNo counter
+                                evtNo = 0;
+                                prevTime = macroTime;
+                            }
+
+                            else if (macroTime>prevTime+7000000)
+                            {
+                                evtNo = 0; // clear the evtNo counter
+                            }
+
+                            fillTree(ch0TreeW);
                         }
 
-                        if (prevEvtType==2)
+                        prevEvtType = evtType;
+
+                        if (i%100==0)
                         {
-                            // the previous event was a waveform event, so this
-                            // is the first DPP mode event
-
-                            // clear the evtNo counter
-                            evtNo = 0;
+                            cout << "Evt number " << i << ", macroTime " << macroTime << "\r";
+                            fflush(stdout);
                         }
-
-                        fillTree(ch0Tree);
-
-                        macroNo++; // increment macropulse counter
-                    }
-
-                    else if (evtType==2)
-                    {
-                        // waveform mode
-                        // don't increment the macropulse number, but fill
-                        // the tree with timestamp, evtNo, and waveform data
-                        targetPos = 0;
-
-                        if (prevEvtType==1)
-                        {
-                            // the previous event was a DPP event, so this is
-                            // the first waveform mode event in the wavelet
-
-                            // clear the evtNo counter
-                            evtNo = 0;
-                            prevTime = timetag+pow(2,32)*extTime;
-                        }
-
-                        else if (timetag+pow(2,32)*extTime>prevTime+7000000)
-                        {
-                            evtNo = 0; // clear the evtNo counter
-                        }
-
-                        fillTree(ch0TreeW);
-                    }
-
-                    evtNo++;
-
-                    prevEvtType = evtType;
-
-                    if (macroNo%100==0)
-                    {
-                        cout << "Macro number " << macroNo << ", fullTime " << timetag+pow(2,32)*extTime << "\r";
-                        fflush(stdout);
                     }
                 }
 
-                cout << endl;
+                cout << endl << endl;
 
-                break;
-
-            case 1:
-                // Monitor (ch2)
-                // Populate a tree of only monitor events
-
-                // link tree branches to variables-to-read
+                // link tree branches to macropulse variables for filling
+                // ch2, ch4, ch6 trees
                 ch0Tree->SetBranchAddress("macroNo",&macroNo);
                 ch0Tree->SetBranchAddress("completeTime",&macroTime);
                 ch0Tree->SetBranchAddress("targetPos",&targetPos);
+
+                break;
+
+            case 2:
+                // Monitor (ch2)
+                // Populate a tree of only monitor events
 
                 ch0Tree->GetEntry(0);
                 // we're pointed at the first macropulse in preparation for
                 // scanning through all monitor events
 
-                for (int i=0; i<channelEntries; i++)
+                evtNo = 0; // first macropulse; reset event counter
+                //bool end = false; // use to terminate the loop through the clean
+                // tree when at the end of ch0tree (i.e., we're out of
+                // macropulses, and the while loop will never end)
+
+                //cout << "size of ch0Tree = " << ch0Tree->GetEntries() << endl;
+                //cout << "macroNo = " << macroNo << endl;
+                //cout << "completeTime = " << macroTime << endl;
+
+                for (int i=0; i<totalEntries; i++)
                 {
                     cTree->GetEntry(i);
 
-                    completeTime = (double)extTime*pow(2,32)+timetag;
-
-                    if (evtType==1)
+                    if (chNo == j)
                     {
-                        while (completeTime-macroTime+TIME_OFFSET > 8000000)
+                        completeTime = (double)extTime*pow(2,32)+timetag;
+
+                        if (evtType==1)
                         {
-                            // previous macropulse has elapsed -
-                            // move to the next target changer event
-                            ch0Tree->GetEntry(macroNo+1);
+                            if (macroNo+1 == ch0Tree->GetEntries())
+                            {
+                                // reached the end of ch0Tree
+                                // throw away all remaining monitor events
+                                break;
+                            }
+
+                            if (completeTime-macroTime+TIME_OFFSET > 8000000 && completeTime-macroTime+TIME_OFFSET < 4000000000)
+                            {
+                                //cout << endl;
+                                //cout << "completeTime = " << completeTime << endl;
+                                //cout << "macroTime = " << macroTime << endl;
+                                //cout << "macroNo = " << macroNo << endl;
+                                // previous macropulse has elapsed -
+                                // move to the next target changer event
+
+                                ch0Tree->GetEntry(macroNo+1);
+                                evtNo = 0; // new macropulse - reset event counter
+                            }
+
+                            fillTree(ch2Tree);
                         }
 
-                        fillTree(ch2Tree);
-                    }
-
-                    else if (evtType==2)
-                    {
-                        if (prevEvtType==1)
+                        else if (evtType==2)
                         {
-                            ch0Tree->GetEntry(macroNo+1); // shift to the next
-                            // macropulse in preparation for the next DPP mode
+                            if (prevEvtType==1)
+                            {
+                                ch0Tree->GetEntry(macroNo+1); // shift to the next
+                                // macropulse in preparation for the next DPP mode
+                            }
+
+                            fillTree(ch2TreeW);
                         }
 
-                        fillTree(ch2TreeW);
+                        evtNo++; // increment event counter for channel 2
+                        prevEvtType = evtType;
+
+                        if (i%10==0)
+                        {
+                            cout << "Evt number " << i << ", completeTime " << completeTime << "\r";
+                            fflush(stdout);
+                        }
                     }
 
-                    evtNo++; // increment event counter for channel 2
-
-                    prevEvtType = evtType;
+                    
                 }
+
+                cout << endl << endl;
 
                 break;
 
-            case 2: // summed detector (ch4)
-            case 3: // scavenger (ch6)
-
-                // link tree branches to variables-to-read
-                ch0Tree->SetBranchAddress("macroNo",&macroNo);
-                ch0Tree->SetBranchAddress("completeTime",&macroTime);
-                ch0Tree->SetBranchAddress("targetPos",&targetPos);
+            case 4: // summed detector (ch4)
+            case 6: // scavenger (ch6)
 
                 ch0Tree->GetEntry(0);
                 // we're pointed at the first macropulse in preparation for
                 // scanning through all detector events
+                evtNo = 0; // first macropulse; reset event counter
 
-                for (int i=0; i<channelEntries; i++)
+                for (int i=0; i<totalEntries; i++)
                 {
                     cTree->GetEntry(i);
 
-                    completeTime = (double)extTime*pow(2,32)+timetag+(double)fineTime*(2./1024.);
-
-                    if (evtType==1)
+                    if (chNo == j)
                     {
-                        while (completeTime-macroTime+TIME_OFFSET > 8000000)
+                        completeTime = (double)extTime*pow(2,32)+timetag+(double)fineTime*(2./1024.);
+
+                        if (evtType==1)
                         {
-                            // previous macropulse has elapsed -
-                            // move to the next target changer event
-                            ch0Tree->GetEntry(macroNo+1);
+                            if (macroNo+1 == ch0Tree->GetEntries())
+                            {
+                                // reached the end of ch0Tree
+                                // throw away all remaining monitor events
+                                break;
+                            }
+
+                            if (completeTime-macroTime+TIME_OFFSET > 8000000 && completeTime-macroTime+TIME_OFFSET < 4000000000)
+                            {
+                                // previous macropulse has elapsed -
+                                // move to the next target changer event
+                                ch0Tree->GetEntry(macroNo+1);
+                                evtNo = 0; // new macropulse; increment event counter
+                            }
+
+                            if (prevEvtType==2)
+                            {
+                                evtNo = 0; // first event in DPP mode; increment event counter
+                            }
+
+                            if (chNo==4)
+                            {
+                                fillTree(ch4Tree);
+                            }
+
+                            else
+                            {
+                                fillTree(ch6Tree);
+                            }
                         }
 
-                        if (chNo==4)
+                        else if (evtType==2)
                         {
-                            fillTree(ch4Tree);
+                            if (prevEvtType==1)
+                            {
+                                ch0Tree->GetEntry(macroNo+1); // shift to the next
+                                // macropulse in preparation for the next DPP mode
+                                evtNo = 0; // new macropulse; increment event counter
+                            }
+
+                            if (chNo==4)
+                            {
+                                fillTree(ch4TreeW);
+                            }
+
+                            else
+                            {
+                                fillTree(ch6TreeW);
+                            }
+
                         }
 
-                        else
-                        {
-                            fillTree(ch6Tree);
-                        }
-                    }
-
-                    else if (evtType==2)
-                    {
-                        if (prevEvtType==1)
-                        {
-                            ch0Tree->GetEntry(macroNo+1); // shift to the next
-                            // macropulse in preparation for the next DPP mode
-                        }
-
-                        if (chNo==4)
-                        {
-                            fillTree(ch4TreeW);
-                        }
-
-                        else
-                        {
-                            fillTree(ch6TreeW);
-                        }
-
-                        evtNo++; // increment event counter for channel 2
-
+                        evtNo++; // increment event counter for channel 4
                         prevEvtType = evtType;
+
+                        if (i%100==0)
+                        {
+                            cout << "Evt number " << i << ", completeTime " << completeTime << "\r";
+                            fflush(stdout);
+                        }
                     }
-
-                    break;
-
                 }
+
+                cout << endl << endl;
+
+                break;
 
             default:
                 break;
@@ -478,11 +557,14 @@ void branch(TTree* tree)
 int main(int argc, char* argv[])
 {
 
-    // Open the raw tree from an initial sort. If it doesn't exist, exit.
+    // read in the raw tree name
+    string runDir = argv[1];
+    string runNo = argv[2];
+
+    // Open the raw tree from the initial sort. If it doesn't exist, exit.
     TFile *file;
     TTree *tree;
 
-    string runDir, runNo;
     stringstream treeName;
     stringstream fileName;
 
@@ -495,7 +577,7 @@ int main(int argc, char* argv[])
     {
         // Found the raw tree; start sorting the raw trees into new trees for
         // each channel.
-        cout << "Found previous raw tree; creating processed trees for " << fileName << endl;
+        cout << "Found previous raw tree; creating cleaned subtrees for " << treeName << endl;
 
         tree = (TTree*)file->Get("tree");
 
@@ -522,7 +604,6 @@ int main(int argc, char* argv[])
 
         ch6TreeW = new TTree("ch6TreeW","");
         branch(ch6TreeW);
-
     }
 
     else

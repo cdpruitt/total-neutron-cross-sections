@@ -678,7 +678,7 @@ int main(int argc, char* argv[])
         for (int i=1; i<argc; i++)
         {
             evtname.str("");
-            evtname << "../output/run" << argv[i] << ".evt";
+            evtname << "/media/Drive3/output/run" << argv[i] << ".evt";
             processRun(evtname.str());
         }
     }
@@ -687,7 +687,7 @@ int main(int argc, char* argv[])
     {
         ifstream evtFilenames;
         string evtFilename = "runsToSort.txt";
-        evtname << "../output/wutest.evt";
+        evtname << "/media/Drive3/output/wutest.evt";
         string runNo = "-1";
 
         evtFilenames.clear();
@@ -704,7 +704,7 @@ int main(int argc, char* argv[])
             while (getline(evtFilenames,runNo))
             {
                 evtname.str("");
-                evtname << "../output/run" <<  runNo << ".evt";
+                evtname << "/media/Drive3/output/run" <<  runNo << ".evt";
                 processRun(evtname.str());
             }
         }
