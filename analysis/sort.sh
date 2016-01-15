@@ -1,10 +1,10 @@
 #!/bin/bash
 
-if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] # sorting code modified
+if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] || [ histos.cpp -nt histos ] # sorting code modified
 then
     # recompile to prepare for event sorting
     make
-    if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ]
+    if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] || [ histos.cpp -nt histos ]
     then
         # compilation failed - exit
         printf "\nCompilation failed - correct errors before sorting.\n"
@@ -61,7 +61,8 @@ then
         mkdir $analysispath/$runDir
     fi
     ./raw "$runDir" "$runNo" "$text" "$cs"
-    ./resort "run$runDir" "$runNo" "$text" "$cs"
+    ./resort "run$runDir" "$runNo"
+    ./histos "run$runDir" "$runNo"
 else
     if [ -a ./runsToSort.txt ]
     then
@@ -82,7 +83,8 @@ else
                     runName="$runpath/$runDir/data-$runNo.evt"
                     printf "Sorting $runName\n"
                     ./raw "run$runDir" "$runNo" "$text" "$cs"
-                    ./resort "run$runDir" "$runNo" "$text" "$cs"
+                    ./resort "run$runDir" "$runNo"
+                    ./histos "run$runDir" "$runNo"
                 done
             else
                 runNo=$(ls -t $runpath/run$runDir/data-* | head -1 | egrep\
@@ -90,7 +92,8 @@ else
                 runName="$runpath/$runDir/data-$runNo.evt"
                 printf "Sorting $runName\n"
                 ./raw "run$runDir" "$runNo" "$text" "$cs"
-                ./resort "run$runDir" "$runNo" "$text" "$cs"
+                ./resort "run$runDir" "$runNo"
+                ./histos "run$runDir" "$runNo"
             fi
         done < runsToSort.txt
     fi

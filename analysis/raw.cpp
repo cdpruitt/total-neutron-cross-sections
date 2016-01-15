@@ -220,7 +220,7 @@ void processRun(string evtname)
 
     else // successfully opened event file; start processing events
     {
-        cout << evtname << " opened successfully. Start reading events..." << endl;
+        cout << evtname << " opened successfully. Start readingjevents..." << endl;
 
         evtfile.read((char*)buffer,BufferBytes);
 
@@ -230,7 +230,7 @@ void processRun(string evtname)
         // start looping through the evtfile to extract events
         int nE = 0;
 
-        while(!evtfile.eof() /* use to truncate sort */ && nE<6000000)
+        while(!evtfile.eof() /* use to truncate sort */ && nE<10000000)
         {
 
             readEvent(evtfile); // extract raw data from event file
