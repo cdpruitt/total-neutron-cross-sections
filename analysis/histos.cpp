@@ -36,9 +36,11 @@ const string analysispath =  "/media/Drive3/";
 /* event variables */
 
 // variables for holding tree event data to be histogrammed
-unsigned int evtNo, macroNo, targetPos;
+unsigned int evtNo, macroNo, microNo, targetPos;
 unsigned int sgQ, lgQ;
-double completeTime, macroTime;
+double completeTime, macroTime, trueTime;
+
+vector<int> *waveform; // for holding one event's waveform data
 
 
 /* ROOT and organizational variables */
@@ -53,18 +55,25 @@ vector<TTree*> orchard; // holds all channel-specific trees
 vector<vector<TH1I*>> histos; // holds all histograms for the run
 // split into sub-vectors on a per-channel basis
 
+TH1I* DPPWaveform;
+
+TDirectory *DPPWaveformsDir;
+TDirectory *WaveWaveformsDir;
+
 
 // Re-link to an already-existing tree's data so we can read the tree
 void setBranches(TTree* tree)
 {
     tree->SetBranchAddress("macroNo",&macroNo);
+    tree->SetBranchAddress("microNo",&microNo);
     tree->SetBranchAddress("evtNo",&evtNo);
     tree->SetBranchAddress("macroTime",&macroTime);
     tree->SetBranchAddress("completeTime",&completeTime);
+    tree->SetBranchAddress("trueTime",&trueTime);
     tree->SetBranchAddress("targetPos",&targetPos);
     tree->SetBranchAddress("sgQ",&sgQ);
     tree->SetBranchAddress("lgQ",&lgQ);
-    //tree->SetBranchAddress("waveform",&waveform);
+    tree->SetBranchAddress("waveform",&waveform);
 }
 
 // Populate advanced histograms (TOFs, cross-section, etc) calculated using
@@ -107,12 +116,8 @@ void fillAdvanced(int i)
 
         if (timeDiff < 650000 && timeDiff > 0)
         {
-            double trueTime = fmod(timeDiff,MICRO_PERIOD);
-
             TOF->Fill(trueTime);
             triangle->Fill(trueTime,lgQ);
-
-            int microNo = floor(timeDiff/MICRO_PERIOD);
 
             // convert trueTime into neutron velocity based on flight path distance
             double velocity = pow(10.,7.)*FLIGHT_DISTANCE/trueTime; // in meters/sec 
@@ -120,7 +125,7 @@ void fillAdvanced(int i)
             // convert velocity to relativistic kinetic energy
             double rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
 
-            if (trueTime > 50 /* && !gammaInMicro*/) // gate disallowing gammas
+            if (trueTime > 90 /* && !gammaInMicro*/) // gate disallowing gammas
             {
                 switch (targetPos)
                 {
@@ -652,6 +657,9 @@ void fillHistos()
         TH1I* macroNoH = new TH1I("macroNoH","macroNo",100000,0,100000);
         macroNoH->GetXaxis()->SetTitle("macropulse number of each event");
 
+        TH1I* microNoH = new TH1I("microNoH","microNo",360,0,360);
+        microNoH->GetXaxis()->SetTitle("micropulse number of each event");
+
         TH1I* evtNoH = new TH1I("evtNoH","evtNo",2500,0,2500);
         evtNoH->GetXaxis()->SetTitle("event number of each event");
 
@@ -660,6 +668,9 @@ void fillHistos()
 
         TH1I* completeTimeH = new TH1I("completeTimeH","completeTime",6000,0,6000000000);
         completeTimeH->GetXaxis()->SetTitle("complete time for each event");
+
+        TH1I* trueTimeH = new TH1I("trueTimeH","trueTime",2000,0,2000);
+        trueTimeH->GetXaxis()->SetTitle("time since start of micro for each event");
 
         TH1I* targetPosH = new TH1I("targetPosH","targetPos",6,0,6);
         targetPosH->GetXaxis()->SetTitle("target position of each event");
@@ -682,13 +693,36 @@ void fillHistos()
         for(int j=0; j<totalEntries; j++)
         {
             orchard[i]->GetEntry(j);
-            macroNoH->Fill(macroNo);
-            evtNoH->Fill(evtNo);
-            macroTimeH->Fill(macroTime);
-            completeTimeH->Fill(completeTime);
-            targetPosH->Fill(targetPos);
-            sgQH->Fill(sgQ);
-            lgQH->Fill(lgQ);
+            if(completeTime-macroTime+TIME_OFFSET < 650000 && completeTime-macroTime+TIME_OFFSET > 0)
+            {
+                macroNoH->Fill(macroNo);
+                microNoH->Fill(microNo);
+                evtNoH->Fill(evtNo);
+                macroTimeH->Fill(macroTime);
+                completeTimeH->Fill(completeTime);
+                trueTimeH->Fill(trueTime);
+                targetPosH->Fill(targetPos);
+                sgQH->Fill(sgQ);
+                lgQH->Fill(lgQ);
+
+                //cout << "waveform first element is " << waveform->at(0) << endl;
+
+                if(waveform->size() > 0)
+                {
+                    DPPWaveformsDir = (TDirectory*)gDirectory->Get("DPPWaveformsDir");
+                    DPPWaveformsDir->cd();
+
+                    stringstream temp;
+                    temp << "macroNo " << macroNo << ", evtNo " << evtNo;
+                    DPPWaveform = new TH1I(temp.str().c_str(),temp.str().c_str(),waveform->size(),0,waveform->size()*2);
+
+                    for(int k=0; k<waveform->size(); k++)
+                    {
+                        DPPWaveform->SetBinContent(k,waveform->at(k));
+                    }
+                    gDirectory->cd("..");
+                }
+            }
         }
     }
 

@@ -18,6 +18,9 @@ using namespace std;
 // Time delay of target changer coarse time after real macropulse start time
 const double TIME_OFFSET = 836; // in ns
 
+// Period of micropulses
+const double MICRO_PERIOD = 1788.820; // in ns
+
 const string analysispath =  "/media/Drive3/";
 
 
@@ -26,19 +29,22 @@ unsigned int chNo, evtType, extTime, fineTime, sgQ, lgQ;
 double timetag;
 
 // additional variables for holding new tree event data
-unsigned int evtNo, macroNo, targetPos;
-double completeTime, macroTime;
+unsigned int evtNo, macroNo, microNo, targetPos;
+double completeTime, macroTime, trueTime;
 
 vector<int> waveform; // for holding one event's waveform data
+vector<int> *dummyWaveform; // for transferring waveform data from clean tree to subtrees
 
 // event structure for resorted trees (different from raw tree event structure)
 struct event
 {
-  unsigned int macroNo; // label each event by the macropulse it's in
+  unsigned int macroNo; // label each event by macropulse
+  unsigned int microNo; // label each event by micropulse
   unsigned int evtNo; // uniquely label each event in a macropulse
 
   double macroTime; // =extTime+timetag for target changer
   double completeTime; // =extTime+timetag+fineTime for detector events
+  double trueTime; // =completeTime-macroTime+TIME_OFFSET for detector events
 
   unsigned int targetPos; // target changer position;
 
@@ -67,14 +73,23 @@ const int tarGate[12] = {5000,7500,11000,13500,17000,20000,23000,27000,29000,330
 
 void fillTree(TTree* tree)
 {
+
     ev.macroNo = macroNo;
+    ev.microNo = microNo;
     ev.evtNo = evtNo;
     ev.macroTime = macroTime;
     ev.completeTime = completeTime;
+    ev.trueTime = trueTime;
     ev.targetPos = targetPos;
     ev.sgQ = sgQ;
     ev.lgQ = lgQ;
-    //ev.waveform = waveform; 
+
+    if ((int)completeTime%10000 != 0 && evtType==1)
+    {
+        waveform.clear(); 
+    }
+
+    ev.waveform = waveform; 
 
     tree->Fill();
 }
@@ -99,14 +114,10 @@ void cleanTree(TTree* tree)
 
     // link raw tree branches to variables-to-be-read
     tree->SetBranchAddress("chNo",&chNo);
-    tree->SetBranchAddress("sgQ",&sgQ);
-    tree->SetBranchAddress("lgQ",&lgQ);
     tree->SetBranchAddress("evtType",&evtType);
     tree->SetBranchAddress("timetag",&timetag);
     tree->SetBranchAddress("extTime",&extTime);
-    tree->SetBranchAddress("fineTime",&fineTime);
-    //tree->SetBranchAddress("waveform",&waveform);
-
+    
     // prepare variables for evaluating whether a macropulse has been skipped
     // (thus indicating that beam went off)
     double timeDiff = 0; // difference between times of adjacent macropulses
@@ -132,13 +143,15 @@ void cleanTree(TTree* tree)
             // found a target changer event - now test for beam on/off
             currentMacroTime = ((double)extTime*pow(2,32)+timetag);
             timeDiff = currentMacroTime-prevMacroTime;
-            cout << "macropulse time = " << currentMacroTime << endl;
+            cout << "macropulse time = " << currentMacroTime << "\r";
+            fflush(stdout);
 
-            if ((timeDiff > 8300000 && timeDiff < 8360000) || (timeDiff > 16600000 && timeDiff < 16720000) || evtType == 2 || prevEvtType == 2)
+            if ((timeDiff > 8300000 && timeDiff < 8360000) || (timeDiff > 16600000 && timeDiff < 16720000) || (timeDiff > 24900000 && timeDiff < 25080000) || evtType == 2 || prevEvtType == 2)
             {
                 // the target changer event came within the expected window of
-                // 8.3 or 16.6 ms, or was the start of a new acquisition period
-                // ...thus beam was on, so accept this event and continue
+                // 8.3 or 16.6 ms, or beam at 80 Hz (24.9 ms gaps),
+                // or was the start of a new acquisition period
+                // ...beam is ON so accept this event and continue
             }
 
             else
@@ -152,8 +165,8 @@ void cleanTree(TTree* tree)
                 // chunk of target changer events where beam off was detected
                 for (int j = i-10; j>0; j--)
                 {
-                    cout << "j = " << j << ", chNo = " << chNo << "\r";
-                    fflush(stdout);
+                    //cout << "j = " << j << ", chNo = " << chNo << "\r";
+                    //fflush(stdout);
 
                     tree->GetEntry(j);
                     if(chNo==0)
@@ -166,7 +179,7 @@ void cleanTree(TTree* tree)
                         // beam on period
                         init = i+1;
 
-                        cout << "beam off period" << endl;
+                        //cout << "beam off period" << endl;
                         
                         // ... and keep looping forward through raw
                         // tree where we left off (that is, at index i)
@@ -193,10 +206,10 @@ void cleanTree(TTree* tree)
     beamOn.push_back(make_pair(init,totalEntries));
 
     // create a new empty tree to hold the cleaned data from the raw tree
-    cTree = tree->CloneTree(); // COMMENT to start using clean tree method again
+    //cTree = tree->CloneTree(); // COMMENT to start using clean tree method again
 
-    /* UNCOMMENT to start using clean tree method again
-       cTree = tree->CloneTree(0);
+    //UNCOMMENT to start using clean tree method again
+    cTree = tree->CloneTree(0);
 
     // Add only events when beam was on to the cleaned tree
     for(int i = 0; i<beamOn.size(); i++)
@@ -215,11 +228,11 @@ void cleanTree(TTree* tree)
                 fflush(stdout);
             }
         }
+
+        cout << endl << "Skipping over beam anomaly..." << endl;
     }
 
-    cout << endl << beamOn.size()-1 << " periods of beam-off detected and removed." << endl;
-    */
-
+    cout << endl << beamOn.size()-1 << " periods of beam anomaly removed." << endl;
 }
 
 void populateTrees()
@@ -246,6 +259,15 @@ void populateTrees()
     channelList.push_back(detSEvents);
     channelList.push_back(scavengerEvents);
     */
+
+    cTree->SetBranchAddress("chNo",&chNo);
+    cTree->SetBranchAddress("evtType",&evtType);
+    cTree->SetBranchAddress("timetag",&timetag);
+    cTree->SetBranchAddress("extTime",&extTime);
+    cTree->SetBranchAddress("sgQ",&sgQ);
+    cTree->SetBranchAddress("lgQ",&lgQ);
+    cTree->SetBranchAddress("fineTime",&fineTime);
+    cTree->SetBranchAddress("waveform",&dummyWaveform);
 
     for(int j = 0; j<8; j=j+2)
     {
@@ -326,9 +348,15 @@ void populateTrees()
                                 evtNo = 0;
                             }
 
+                            for(int k = 0; k<dummyWaveform->size(); k++)
+                            {
+                                waveform.push_back(dummyWaveform->at(k));
+                            }
+
                             fillTree(ch0Tree);
 
                             macroNo++; // increment macropulse counter
+
                         }
 
                         else if (evtType==2)
@@ -403,6 +431,9 @@ void populateTrees()
 
                         if (evtType==1)
                         {
+
+                            double timeDiff = completeTime-macroTime+TIME_OFFSET;
+
                             if (macroNo+1 == ch0Tree->GetEntries())
                             {
                                 // reached the end of ch0Tree
@@ -410,7 +441,7 @@ void populateTrees()
                                 break;
                             }
 
-                            if (completeTime-macroTime+TIME_OFFSET > 8000000 && completeTime-macroTime+TIME_OFFSET < 4000000000)
+                            if (timeDiff > 8000000 && timeDiff < 4000000000)
                             {
                                 //cout << endl;
                                 //cout << "completeTime = " << completeTime << endl;
@@ -421,6 +452,15 @@ void populateTrees()
 
                                 ch0Tree->GetEntry(macroNo+1);
                                 evtNo = 0; // new macropulse - reset event counter
+                                timeDiff = completeTime-macroTime+TIME_OFFSET;
+                            }
+
+                            trueTime = fmod(timeDiff,MICRO_PERIOD);
+                            microNo = floor(timeDiff/MICRO_PERIOD);
+
+                            for(int k = 0; k<dummyWaveform->size(); k++)
+                            {
+                                waveform.push_back(dummyWaveform->at(k));
                             }
 
                             fillTree(ch2Tree);
@@ -470,6 +510,9 @@ void populateTrees()
 
                         if (evtType==1)
                         {
+
+                            double timeDiff = completeTime-macroTime+TIME_OFFSET;
+
                             if (macroNo+1 == ch0Tree->GetEntries())
                             {
                                 // reached the end of ch0Tree
@@ -477,17 +520,26 @@ void populateTrees()
                                 break;
                             }
 
-                            if (completeTime-macroTime+TIME_OFFSET > 8000000 && completeTime-macroTime+TIME_OFFSET < 4000000000)
+                            if (timeDiff > 8000000 && timeDiff < 4000000000)
                             {
                                 // previous macropulse has elapsed -
                                 // move to the next target changer event
                                 ch0Tree->GetEntry(macroNo+1);
                                 evtNo = 0; // new macropulse; increment event counter
+                                timeDiff = completeTime-macroTime+TIME_OFFSET;
                             }
 
                             if (prevEvtType==2)
                             {
                                 evtNo = 0; // first event in DPP mode; increment event counter
+                            }
+
+                            trueTime = fmod(timeDiff,MICRO_PERIOD);
+                            microNo = floor(timeDiff/MICRO_PERIOD);
+
+                            for(int k = 0; k<dummyWaveform->size(); k++)
+                            {
+                                waveform.push_back(dummyWaveform->at(k));
                             }
 
                             if (chNo==4)
@@ -546,9 +598,11 @@ void populateTrees()
 void branch(TTree* tree)
 {
     tree->Branch("macroNo",&ev.macroNo,"macroNo/i");
+    tree->Branch("microNo",&ev.microNo,"microNo/i");
     tree->Branch("evtNo",&ev.evtNo,"evtNo/i");
     tree->Branch("macroTime",&ev.macroTime,"macroTime/d");
     tree->Branch("completeTime",&ev.completeTime,"completeTime/d");
+    tree->Branch("trueTime",&ev.trueTime,"trueTime/d");
     tree->Branch("targetPos",&ev.targetPos,"targetPos/i");
     tree->Branch("sgQ",&ev.sgQ,"sgQ/i");
     tree->Branch("lgQ",&ev.lgQ,"lgQ/i");
