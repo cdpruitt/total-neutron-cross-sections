@@ -230,7 +230,7 @@ void processRun(string evtname)
         // start looping through the evtfile to extract events
         int nE = 0;
 
-        while(!evtfile.eof() /* use to truncate sort */ && nE<200000)
+        while(!evtfile.eof() /* use to truncate sort */ && nE<10000000)
         {
 
             readEvent(evtfile); // extract raw data from event file

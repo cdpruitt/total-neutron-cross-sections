@@ -38,7 +38,7 @@ const string analysispath =  "/media/Drive3/";
 // variables for holding tree event data to be histogrammed
 unsigned int evtNo, macroNo, microNo, targetPos;
 unsigned int sgQ, lgQ;
-double completeTime, macroTime, trueTime;
+double completeTime, macroTime, microTime;
 
 vector<int> *waveform; // for holding one event's waveform data
 
@@ -48,17 +48,20 @@ vector<int> *waveform; // for holding one event's waveform data
 // ROOT file directory structure 
 string dirs[4] = {"targetChanger","monitor","detS","scavenger"};
 
-vector<TTree*> orchard; // holds all channel-specific trees
+vector<TTree*> orchard; // holds DPP channel-specific trees
+// so that fillHistos can loop through all the trees and make the same histos
+// for each tree
+
+vector<TTree*> orchardW; // holds waveform-mode channel-specific trees
 // so that fillHistos can loop through all the trees and make the same histos
 // for each tree
 
 vector<vector<TH1I*>> histos; // holds all histograms for the run
 // split into sub-vectors on a per-channel basis
 
-TH1I* DPPWaveform;
+TH1I* waveformH;
 
-TDirectory *DPPWaveformsDir;
-TDirectory *WaveWaveformsDir;
+TDirectory *waveformsDir;
 
 
 // Re-link to an already-existing tree's data so we can read the tree
@@ -69,10 +72,19 @@ void setBranches(TTree* tree)
     tree->SetBranchAddress("evtNo",&evtNo);
     tree->SetBranchAddress("macroTime",&macroTime);
     tree->SetBranchAddress("completeTime",&completeTime);
-    tree->SetBranchAddress("trueTime",&trueTime);
+    tree->SetBranchAddress("microTime",&microTime);
     tree->SetBranchAddress("targetPos",&targetPos);
     tree->SetBranchAddress("sgQ",&sgQ);
     tree->SetBranchAddress("lgQ",&lgQ);
+    tree->SetBranchAddress("waveform",&waveform);
+}
+
+// Re-link to an already-existing tree's data so we can read the tree
+void setBranchesW(TTree* tree)
+{
+    tree->SetBranchAddress("macroNo",&macroNo);
+    tree->SetBranchAddress("evtNo",&evtNo);
+    tree->SetBranchAddress("completeTime",&completeTime);
     tree->SetBranchAddress("waveform",&waveform);
 }
 
@@ -116,16 +128,16 @@ void fillAdvanced(int i)
 
         if (timeDiff < 650000 && timeDiff > 0)
         {
-            TOF->Fill(trueTime);
-            triangle->Fill(trueTime,lgQ);
+            TOF->Fill(microTime);
+            triangle->Fill(microTime,lgQ);
 
-            // convert trueTime into neutron velocity based on flight path distance
-            double velocity = pow(10.,7.)*FLIGHT_DISTANCE/trueTime; // in meters/sec 
+            // convert microTime into neutron velocity based on flight path distance
+            double velocity = pow(10.,7.)*FLIGHT_DISTANCE/microTime; // in meters/sec 
 
             // convert velocity to relativistic kinetic energy
             double rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
 
-            if (trueTime > 90 /* && !gammaInMicro*/) // gate disallowing gammas
+            if (microTime > 90 /* && !gammaInMicro*/) // gate disallowing gammas
             {
                 switch (targetPos)
                 {
@@ -210,7 +222,7 @@ void fillAdvanced(int i)
     bool thirdInMicro = false;
     bool gammaInMicro = false;
 
-    double trueTime = -1;
+    double microTime = -1;
     int microNo = -1;
     int microNoPrev = -1;
     int microNo2Prev = -1;
@@ -346,7 +358,7 @@ void fillAdvanced(int i)
                             microNo3Prev = microNo2Prev;
                             microNo2Prev = microNoPrev;
                             microNoPrev = microNo;
-                            trueTime = fmod(((double)extTime*pow(2,32)+(double)timetag+((double)fineTime*2./1024.)-targetTime+TIME_OFFSET),MICRO_PERIOD);
+                            microTime = fmod(((double)extTime*pow(2,32)+(double)timetag+((double)fineTime*2./1024.)-targetTime+TIME_OFFSET),MICRO_PERIOD);
                             microNo = floor(((double)extTime*pow(2,32)+(double)timetag+((double)fineTime*2./1024.)-targetTime+TIME_OFFSET)/MICRO_PERIOD);
 
                             firstInMicro = false;
@@ -369,20 +381,20 @@ void fillAdvanced(int i)
                                 thirdInMicro = true;
                             }
 
-                            if (trueTime < 100)
+                            if (microTime < 100)
                             {
                                 gammaInMicro = true;
                             }
 
-                            timeDiff << trueTime << " " << timetag << " " << targetTime << endl;
+                            timeDiff << microTime << " " << timetag << " " << targetTime << endl;
 
-                            // convert trueTime into neutron velocity based on flight path distance
-                            double velocity = pow(10.,7.)*FLIGHT_DISTANCE/trueTime; // in meters/sec 
+                            // convert microTime into neutron velocity based on flight path distance
+                            double velocity = pow(10.,7.)*FLIGHT_DISTANCE/microTime; // in meters/sec 
 
                             // convert velocity to relativistic kinetic energy
                             double rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
 
-                            if (trueTime > 100 && chNo != 2 *//* && !gammaInMicro*//*) // gate disallowing gammas and monitors
+                            if (microTime > 100 && chNo != 2 *//* && !gammaInMicro*//*) // gate disallowing gammas and monitors
                             {
                                 switch (targetPos)
                                 {
@@ -430,7 +442,7 @@ void fillAdvanced(int i)
                                 totalRawLog->Fill(TMath::Log10(rKE));
                             }
 
-                            if (trueTime > 50 && chNo == 2) // gate disallowing gammas and non-monitors
+                            if (microTime > 50 && chNo == 2) // gate disallowing gammas and non-monitors
                             {
                                 switch (targetPos)
                                 {
@@ -469,98 +481,98 @@ void fillAdvanced(int i)
                                 switch (chNo)
                                 {
                                     case 2:
-                                        MTOF->Fill(trueTime);
+                                        MTOF->Fill(microTime);
                                         break;
                                     case 4:
-                                        STOF->Fill(trueTime);
+                                        STOF->Fill(microTime);
 
                                         if (firstInMicro)
                                         {
 
-                                            firstSTOF->Fill(trueTime);
+                                            firstSTOF->Fill(microTime);
                                             switch (targetPos)
                                             {
                                                 case 1:
-                                                    firstSTOFblank->Fill(trueTime);
+                                                    firstSTOFblank->Fill(microTime);
                                                     break;
                                                 case 2:
-                                                    firstSTOFcs->Fill(trueTime);
+                                                    firstSTOFcs->Fill(microTime);
                                                     break;
                                                 case 3:
-                                                    firstSTOFcl->Fill(trueTime);
+                                                    firstSTOFcl->Fill(microTime);
                                                     break;
                                                 case 4:
-                                                    firstSTOFsn112->Fill(trueTime);
+                                                    firstSTOFsn112->Fill(microTime);
                                                     break;
                                                 case 5:
-                                                    firstSTOFsnnat->Fill(trueTime);
+                                                    firstSTOFsnnat->Fill(microTime);
                                                     break;
                                                 case 6:
-                                                    firstSTOFsn124->Fill(trueTime);
+                                                    firstSTOFsn124->Fill(microTime);
                                                     break;
                                             }
                                         }
 
                                         else if (secondInMicro)
                                         {
-                                            secondSTOF->Fill(trueTime);
+                                            secondSTOF->Fill(microTime);
                                             switch (targetPos)
                                             {
                                                 case 1:
-                                                    secondSTOFblank->Fill(trueTime);
+                                                    secondSTOFblank->Fill(microTime);
                                                     break;
                                                 case 2:
-                                                    secondSTOFcs->Fill(trueTime);
+                                                    secondSTOFcs->Fill(microTime);
                                                     break;
                                                 case 3:
-                                                    secondSTOFcl->Fill(trueTime);
+                                                    secondSTOFcl->Fill(microTime);
                                                     break;
                                                 case 4:
-                                                    secondSTOFsn112->Fill(trueTime);
+                                                    secondSTOFsn112->Fill(microTime);
                                                     break;
                                                 case 5:
-                                                    secondSTOFsnnat->Fill(trueTime);
+                                                    secondSTOFsnnat->Fill(microTime);
                                                     break;
                                                 case 6:
-                                                    secondSTOFsn124->Fill(trueTime);
+                                                    secondSTOFsn124->Fill(microTime);
                                                     break;
                                             }
                                         }
 
                                         else if (thirdInMicro)
                                         {
-                                            thirdSTOF->Fill(trueTime);
+                                            thirdSTOF->Fill(microTime);
                                             switch (targetPos)
                                             {
                                                 case 1:
-                                                    thirdSTOFblank->Fill(trueTime);
+                                                    thirdSTOFblank->Fill(microTime);
                                                     break;
                                                 case 2:
-                                                    thirdSTOFcs->Fill(trueTime);
+                                                    thirdSTOFcs->Fill(microTime);
                                                     break;
                                                 case 3:
-                                                    thirdSTOFcl->Fill(trueTime);
+                                                    thirdSTOFcl->Fill(microTime);
                                                     break;
                                                 case 4:
-                                                    thirdSTOFsn112->Fill(trueTime);
+                                                    thirdSTOFsn112->Fill(microTime);
                                                     break;
                                                 case 5:
-                                                    thirdSTOFsnnat->Fill(trueTime);
+                                                    thirdSTOFsnnat->Fill(microTime);
                                                     break;
                                                 case 6:
-                                                    thirdSTOFsn124->Fill(trueTime);
+                                                    thirdSTOFsn124->Fill(microTime);
                                                     break;
                                             }
                                         }
 
-                                        triangle->Fill(trueTime,lgQ);
+                                        triangle->Fill(microTime,lgQ);
                                         break;
 
                                     case 6:
-                                        LTOF->Fill(trueTime);
+                                        LTOF->Fill(microTime);
                                         break;
                                     case 7:
-                                        RTOF->Fill(trueTime);
+                                        RTOF->Fill(microTime);
                                 }
                             } 
                         }
@@ -645,15 +657,17 @@ void fillAdvanced(int i)
 // data and produce histograms of these calculated quantities.
 void fillHistos()
 {
+    // fill basic histograms for DPP mode in each channel
+
+    // first loop through all channel-specific DPP-mode trees
     for(int i=0; i<orchard.size(); i++)
     {
+        // create a channel-specific directory for putting histograms inside
         gDirectory->cd("/");
         gDirectory->mkdir(dirs[i].c_str(),dirs[i].c_str());
-
         gDirectory->GetDirectory(dirs[i].c_str())->cd();
 
-        // instantiate histograms
-
+        // instantiate DPP-mode histograms
         TH1I* macroNoH = new TH1I("macroNoH","macroNo",100000,0,100000);
         macroNoH->GetXaxis()->SetTitle("macropulse number of each event");
 
@@ -669,8 +683,8 @@ void fillHistos()
         TH1I* completeTimeH = new TH1I("completeTimeH","completeTime",6000,0,6000000000);
         completeTimeH->GetXaxis()->SetTitle("complete time for each event");
 
-        TH1I* trueTimeH = new TH1I("trueTimeH","trueTime",2000,0,2000);
-        trueTimeH->GetXaxis()->SetTitle("time since start of micro for each event");
+        TH1I* microTimeH = new TH1I("microTimeH","microTime",2000,0,2000);
+        microTimeH->GetXaxis()->SetTitle("time since start of micro for each event");
 
         TH1I* targetPosH = new TH1I("targetPosH","targetPos",6,0,6);
         targetPosH->GetXaxis()->SetTitle("target position of each event");
@@ -681,47 +695,47 @@ void fillHistos()
         TH1I* lgQH = new TH1I("lgQH","lgQ",7000,0,70000);
         lgQH->GetXaxis()->SetTitle("long gate integrated charge for each event");
 
-        gDirectory->mkdir("DPPWaveformsDir","raw DPP waveforms");
-        gDirectory->mkdir("WaveWaveformsDir","concatenated waveform waveforms");
+        // create a subdirectory for holding DPP-mode waveform data
+        gDirectory->mkdir("waveformsDir","raw DPP waveforms");
 
-        // set up tree access
+        // reattach to the channel-specific tree for reading out data
         setBranches(orchard[i]);
-
         int totalEntries = orchard[i]->GetEntries();
         cout << "Populating " << dirs[i] << " histograms..." << endl;
 
+        // loop through the channel-specific tree and populate histos
         for(int j=0; j<totalEntries; j++)
         {
             orchard[i]->GetEntry(j);
-            if(completeTime-macroTime+TIME_OFFSET < 650000 && completeTime-macroTime+TIME_OFFSET > 0)
+            //if(completeTime-macroTime+TIME_OFFSET < 650000 && completeTime-macroTime+TIME_OFFSET > 0)
+            //{
+            macroNoH->Fill(macroNo);
+            microNoH->Fill(microNo);
+            evtNoH->Fill(evtNo);
+            macroTimeH->Fill(macroTime);
+            completeTimeH->Fill(completeTime);
+            microTimeH->Fill(microTime);
+            targetPosH->Fill(targetPos);
+            sgQH->Fill(sgQ);
+            lgQH->Fill(lgQ);
+
+            // if waveform data for this event exist, we want to populate
+            // a histogram to display it
+            if(waveform->size() > 0)
             {
-                macroNoH->Fill(macroNo);
-                microNoH->Fill(microNo);
-                evtNoH->Fill(evtNo);
-                macroTimeH->Fill(macroTime);
-                completeTimeH->Fill(completeTime);
-                trueTimeH->Fill(trueTime);
-                targetPosH->Fill(targetPos);
-                sgQH->Fill(sgQ);
-                lgQH->Fill(lgQ);
+                waveformsDir = (TDirectory*)gDirectory->Get("waveformsDir");
+                waveformsDir->cd();
 
-                //cout << "waveform first element is " << waveform->at(0) << endl;
+                stringstream temp;
+                temp << "macroNo " << macroNo << ", evtNo " << evtNo;
+                waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),waveform->size(),0,waveform->size()*2);
 
-                if(waveform->size() > 0)
+                // loop through waveform data and fill histo
+                for(int k=0; k<waveform->size(); k++)
                 {
-                    DPPWaveformsDir = (TDirectory*)gDirectory->Get("DPPWaveformsDir");
-                    DPPWaveformsDir->cd();
-
-                    stringstream temp;
-                    temp << "macroNo " << macroNo << ", evtNo " << evtNo;
-                    DPPWaveform = new TH1I(temp.str().c_str(),temp.str().c_str(),waveform->size(),0,waveform->size()*2);
-
-                    for(int k=0; k<waveform->size(); k++)
-                    {
-                        DPPWaveform->SetBinContent(k,waveform->at(k));
-                    }
-                    gDirectory->cd("..");
+                    waveformH->SetBinContent(k,waveform->at(k));
                 }
+                gDirectory->cd("..");
             }
         }
     }
@@ -731,6 +745,81 @@ void fillHistos()
 
     // fill ch6 advanced histograms
     fillAdvanced(3);
+
+
+    // fill basic histograms for waveform mode in each channel
+
+    // first loop through all channel-specific waveform-mode trees
+    for(int i=0; i<orchardW.size(); i++)
+    {
+        // create a channel-specific directory for each tree
+        gDirectory->cd("/");
+        dirs[i] = dirs[i] + "WaveformMode";
+        gDirectory->mkdir(dirs[i].c_str(),dirs[i].c_str());
+
+        gDirectory->GetDirectory(dirs[i].c_str())->cd();
+
+        // instantiate histograms inside the channel-specific directory
+        TH1I* macroNoH = new TH1I("macroNoH","macroNo",100000,0,100000);
+        macroNoH->GetXaxis()->SetTitle("macropulse number of each event");
+
+        TH1I* evtNoH = new TH1I("evtNoH","evtNo",2500,0,2500);
+        evtNoH->GetXaxis()->SetTitle("event number of each event");
+
+        TH1I* completeTimeH = new TH1I("completeTimeH","completeTime",6000,0,6000000000);
+        completeTimeH->GetXaxis()->SetTitle("complete time for each event");
+
+        // create subdirectory for holding waveform-mode waveform data
+        gDirectory->mkdir("waveformsDir","raw DPP waveforms");
+        waveformsDir = (TDirectory*)gDirectory->Get("waveformsDir");
+        waveformsDir->cd();
+
+        // fill waveform mode histograms
+        setBranchesW(orchardW[i]);
+        int totalEntries = orchardW[i]->GetEntries();
+        cout << "Populating " << dirs[i] << " histograms..." << endl;
+
+        // create a holder for the time-zero of each macropulse waveform
+        // so we can plot all 11 waveform chunks on the same histogram
+        // initialize to -650000 to ensure that the first event in the waveform
+        // trees is always considered the start of a macropulse waveform
+        double waveformStart = -650000;
+
+        // we need label the number of waveform-mode macropulses to make
+        // uniquely named histograms
+        int waveformNo = 0;
+
+        for(int j=0; j<totalEntries; j++)
+        {
+            //cout << "looping thru waveform mode events, #" << j << endl;
+            //fflush(stdout);
+
+            orchardW[i]->GetEntry(j);
+
+            macroNoH->Fill(macroNo);
+            evtNoH->Fill(evtNo);
+            completeTimeH->Fill(completeTime);
+
+            if(completeTime >= waveformStart+650000)
+            {
+                // new macropulse in waveform mode because no other waveform
+                // data came before it in the last macropulse period
+                // create a new plot to stitch 11 waveforms together
+                stringstream temp;
+                temp << "full waveform " << waveformNo;
+                waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),350000,0,700000);
+
+                // set the start of the macropulse to the first event timer
+                waveformStart = completeTime;
+                waveformNo++;
+            }
+
+            for(int k=0; k<waveform->size(); k++)
+            {
+                waveformH->SetBinContent(k+(completeTime-waveformStart)/2,waveform->at(k));
+            }
+        }
+    }
 }
 
 int main(int argc, char* argv[])
@@ -758,12 +847,15 @@ int main(int argc, char* argv[])
     TTree* ch0TreeW = (TTree*)file->Get("ch0TreeW");
     TTree* ch2TreeW = (TTree*)file->Get("ch2TreeW");
     TTree* ch4TreeW = (TTree*)file->Get("ch4TreeW");
-    TTree* ch6TreeW = (TTree*)file->Get("ch6TreeW");
 
     orchard.push_back(ch0Tree);
     orchard.push_back(ch2Tree);
     orchard.push_back(ch4Tree);
     orchard.push_back(ch6Tree);
+
+    orchardW.push_back(ch0TreeW);
+    orchardW.push_back(ch2TreeW);
+    orchardW.push_back(ch4TreeW);
     
     // prepare the root file with 4 directories, one for each channel
     // these directories will hold basic variable histograms showing the
