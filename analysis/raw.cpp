@@ -230,7 +230,7 @@ void processRun(string evtname)
         // start looping through the evtfile to extract events
         int nE = 0;
 
-        while(!evtfile.eof() /* use to truncate sort */ && nE<50000)
+        while(!evtfile.eof() /* use to truncate sort && nE<1000000*/)
         {
 
             readEvent(evtfile); // extract raw data from event file
@@ -264,14 +264,14 @@ int main(int argc, char* argv[])
     stringstream treeName;
     stringstream fileName;
     treeName << runDir << "-" << runNo; 
-    fileName << analysispath <<"analysis/" << runDir << "/" << treeName.str() << ".root";
+    fileName << analysispath <<"analysis/" << runDir << "/" << treeName.str() << "_raw.root";
 
     file = new TFile(fileName.str().c_str(),"UPDATE");
 
     if(file->Get("tree"))
     {
-        tree = (TTree*)file->Get("tree");
-        cout << "Found previously existing tree - skipping sorting " << treeName << endl;
+        cout << "Found previously existing tree - skipping raw sorting of " << treeName << endl;
+        exit(1);
     }
 
     else
@@ -287,14 +287,13 @@ int main(int argc, char* argv[])
         tree->Branch("sgQ",&ev.sgQ,"sgQ/i");
         tree->Branch("lgQ",&ev.lgQ,"lgQ/i");
         tree->Branch("waveform",&ev.waveform);
+
+        stringstream runName;
+        runName << analysispath <<"output/" << runDir << "/data-" << runNo << ".evt";
+        processRun(runName.str());
+
+        file->Write();
+
+        file->Close();
     }
-
-    stringstream runName;
-    runName << analysispath <<"output/" << runDir << "/data-" << runNo << ".evt";
-    processRun(runName.str());
-
-    file->Write();
-
-    file->Close();
-
 }

@@ -1,4 +1,6 @@
 #include <iostream>
+#include <iomanip>
+#include <fstream>
 #include <string>
 #include <sstream>
 #include "TFile.h"
@@ -12,15 +14,29 @@
 
 using namespace std;
 
+// scavenger event stream
+ofstream scavengerEvents;
+
+// summedDet event stream
+ofstream summedDetEvents;
+
 
 /* Experimental constants */
 
 const double FLIGHT_DISTANCE = 2580; // detector distance from source, in cm
 // 2080 for Neon  
 
-// Time delay of target changer coarse time after real macropulse start time
-const double TIME_OFFSET = 836; // in ns
+// Target changer time delay after the macropulse start time as calculated using
+// the summed detector signals' gamma peaks
+const double MACROPULSE_OFFSET = 840; // in ns
 // 814 for Neon
+
+// Time correction to MACROPULSE_OFFSET for the monitor; takes into account the
+// additional ~10 meters between the summed detector and the extra cable length
+const double MONITOR_OFFSET = 0; // in ns
+
+// Time correction to scavenger times, relative to summed det
+const double SCAVENGER_OFFSET = -12.5; // in ns
 
 // Period of micropulses
 const double MICRO_PERIOD = 1788.820; // in ns
@@ -36,9 +52,9 @@ const string analysispath =  "/media/Drive3/";
 /* event variables */
 
 // variables for holding tree event data to be histogrammed
-unsigned int evtNo, macroNo, microNo, targetPos;
+unsigned int evtNo, macroNo, targetPos;
 unsigned int sgQ, lgQ;
-double completeTime, macroTime, microTime;
+double completeTime, macroTime;
 
 vector<int> *waveform; // for holding one event's waveform data
 
@@ -59,7 +75,13 @@ vector<TTree*> orchardW; // holds waveform-mode channel-specific trees
 vector<vector<TH1I*>> histos; // holds all histograms for the run
 // split into sub-vectors on a per-channel basis
 
-TH1I* waveformH;
+TH1I* waveformH; // holds the current histogram being filled with waveform data
+
+// a small subset of events occur in both channels 4 and 6 in the microTime
+// window of ~275 ns to ~325 ns after a micropulse start. We'd like to plot
+// these on the same axis to make sure they look the same.
+TH1I* waveformCh4;
+TH1I* waveformCh6;
 
 TDirectory *waveformsDir;
 
@@ -68,11 +90,11 @@ TDirectory *waveformsDir;
 void setBranches(TTree* tree)
 {
     tree->SetBranchAddress("macroNo",&macroNo);
-    tree->SetBranchAddress("microNo",&microNo);
+    //tree->SetBranchAddress("microNo",&microNo);
     tree->SetBranchAddress("evtNo",&evtNo);
     tree->SetBranchAddress("macroTime",&macroTime);
     tree->SetBranchAddress("completeTime",&completeTime);
-    tree->SetBranchAddress("microTime",&microTime);
+    //tree->SetBranchAddress("microTime",&microTime);
     tree->SetBranchAddress("targetPos",&targetPos);
     tree->SetBranchAddress("sgQ",&sgQ);
     tree->SetBranchAddress("lgQ",&lgQ);
@@ -90,110 +112,12 @@ void setBranchesW(TTree* tree)
 
 // Populate advanced histograms (TOFs, cross-section, etc) calculated using
 // data from ch4Tree (summed detector signal)
-void fillAdvanced(int i)
+void fillAdvancedHistos(int i)
 {
     gDirectory->cd("/");
     gDirectory->GetDirectory(dirs[i].c_str())->cd();
 
-    TH1I *blankRaw = new TH1I("blank","blank",20000,0,700);
-    TH1I *carbonSRaw = new TH1I("carbonS","carbonS",20000,0,700);
-    TH1I *carbonLRaw = new TH1I("carbonL","carbonL",20000,0,700);
-    TH1I *Sn112Raw = new TH1I("Sn112","Sn112",20000,0,700);
-    TH1I *NatSnRaw = new TH1I("NatSn","NatSn",20000,0,700);
-    TH1I *Sn124Raw = new TH1I("Sn124","Sn124",20000,0,700);
-    TH1I *totalRaw = new TH1I("total","total",20000,0,700);
-
-    TH1I *blankRawLog = new TH1I("blankLog","blank",20000,0,TMath::Log10(700));
-    TH1I *carbonSRawLog = new TH1I("carbonSLog","carbonS",20000,0,TMath::Log10(700));
-    TH1I *carbonLRawLog = new TH1I("carbonLLog","carbonL",20000,0,TMath::Log10(700));
-    TH1I *Sn112RawLog = new TH1I("Sn112Log","Sn112",20000,0,TMath::Log10(700));
-    TH1I *NatSnRawLog = new TH1I("NatSnLog","NatSn",20000,0,TMath::Log10(700));
-    TH1I *Sn124RawLog = new TH1I("Sn124Log","Sn124",20000,0,TMath::Log10(700));
-    TH1I *totalRawLog = new TH1I("totalLog","total",20000,0,TMath::Log10(700));
-
-    TH1I *TOF = new TH1I("TOF","Summed-detector time of flight",10000,-MICRO_PERIOD*1.1,MICRO_PERIOD*1.1);
-    TH2I *triangle = new TH2I("triangle","Pulse integral vs. TOF",500,0,MICRO_PERIOD+1,2000,0,65536);
-
-    // point at the ch4Tree in preparation for reading data
-    setBranches(orchard[i]);
-
-    int totalEntries = orchard[i]->GetEntries();
-    cout << "Populating TOF, cross-section, etc. histograms..." << endl;
-
-    for(int j=0; j<totalEntries; j++)
-    {
-        orchard[i]->GetEntry(j);
-
-        double timeDiff = completeTime-macroTime+TIME_OFFSET;
-
-        if (timeDiff < 650000 && timeDiff > 0)
-        {
-            TOF->Fill(microTime);
-            triangle->Fill(microTime,lgQ);
-
-            // convert microTime into neutron velocity based on flight path distance
-            double velocity = pow(10.,7.)*FLIGHT_DISTANCE/microTime; // in meters/sec 
-
-            // convert velocity to relativistic kinetic energy
-            double rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
-
-            if (microTime > 90 /* && !gammaInMicro*/) // gate disallowing gammas
-            {
-                switch (targetPos)
-                {
-                    case 1:
-                        // BLANK
-                        blankRaw->Fill(rKE);
-                        blankRawLog->Fill(TMath::Log10(rKE));
-                        break;
-
-                    case 2:
-                        // SHORT CARBON
-                        carbonSRaw->Fill(rKE);
-                        carbonSRawLog->Fill(TMath::Log10(rKE));
-                        break;
-
-                    case 3:
-                        // LONG CARBON
-                        carbonLRaw->Fill(rKE);
-                        carbonLRawLog->Fill(TMath::Log10(rKE));
-                        break;
-
-                    case 4:
-                        // Sn112
-                        Sn112Raw->Fill(rKE);
-                        Sn112RawLog->Fill(TMath::Log10(rKE));
-                        break;
-
-                    case 5:
-                        // Natural Sn
-                        NatSnRaw->Fill(rKE);
-                        NatSnRawLog->Fill(TMath::Log10(rKE));
-                        break;
-
-                    case 6:
-                        // Sn124
-                        Sn124Raw->Fill(rKE);
-                        Sn124RawLog->Fill(TMath::Log10(rKE));
-                        break;
-
-                    default:
-                        break;
-                }
-
-                totalRaw->Fill(rKE);
-                totalRawLog->Fill(TMath::Log10(rKE));
-            }
-        }
-    }
-
-    //TH1I *TOF = new TH1I("TTOF","All events time of flight",10000,-MICRO_PERIOD*1.1,MICRO_PERIOD*1.1);
-    
-    /*TH1I *firstSTOF = new TH1I("firstSTOF","first in micro time of flight",10000,-MICRO_PERIOD*1.1,MICRO_PERIOD*1.1);
-    TH1I *secondSTOF = new TH1I("secondSTOF","second in micro time of flight",10000,-MICRO_PERIOD*1.1,MICRO_PERIOD*1.1);
-    TH1I *thirdSTOF = new TH1I("thirdSTOF","third in micro time of flight",10000,-MICRO_PERIOD*1.1,MICRO_PERIOD*1.1);
-
-    TH1I *firstSTOFblank = new TH1I("firstSTOFblank","first in micro time of flight, blank",10000,-MICRO_PERIOD*1.1,MICRO_PERIOD*1.1);
+    /*    TH1I *firstSTOFblank = new TH1I("firstSTOFblank","first in micro time of flight, blank",10000,-MICRO_PERIOD*1.1,MICRO_PERIOD*1.1);
     TH1I *firstSTOFcs = new TH1I("firstSTOFcs","first in micro time of flight, carbon s",10000,-MICRO_PERIOD*1.1,MICRO_PERIOD*1.1);
     TH1I *firstSTOFcl = new TH1I("firstSTOFcl","first in micro time of flight, carbon l",10000,-MICRO_PERIOD*1.1,MICRO_PERIOD*1.1);
     TH1I *firstSTOFsn112 = new TH1I("firstSTOFsn112","first in micro time of flight, sn112",10000,-MICRO_PERIOD*1.1,MICRO_PERIOD*1.1);
@@ -213,442 +137,202 @@ void fillAdvanced(int i)
     TH1I *thirdSTOFsn112 = new TH1I("thirdSTOFsn112","third in micro time of flight, sn112",10000,-MICRO_PERIOD*1.1,MICRO_PERIOD*1.1);
     TH1I *thirdSTOFsnnat = new TH1I("thirdSTOFsnnat","third in micro time of flight, snnat",10000,-MICRO_PERIOD*1.1,MICRO_PERIOD*1.1);
     TH1I *thirdSTOFsn124 = new TH1I("thirdSTOFsn124","third in micro time of flight, sn124",10000,-MICRO_PERIOD*1.1,MICRO_PERIOD*1.1);
-    
+    */
 
-    //TH2I *triangle = new TH2I("triangle","Pulse integral vs. TOF",500,0,MICRO_PERIOD+1,2000,0,65536);
+    TH1I *TOF = new TH1I("TOF","Summed-detector time of flight",1800,-MICRO_PERIOD*1.1,MICRO_PERIOD*1.1);
+    TH2I *triangle = new TH2I("triangle","Pulse integral vs. TOF",1800,0,MICRO_PERIOD+1,2048,0,65536);
 
-    bool firstInMicro = false;
-    bool secondInMicro = false;
-    bool thirdInMicro = false;
+    TH1I* microNoH = new TH1I("microNoH","microNo",360,0,360);
+    microNoH->GetXaxis()->SetTitle("micropulse number of each event");
+
+    TH1I *firstInMicro = new TH1I("firstInMicro","first in micro time of flight",1800,-MICRO_PERIOD*1.1,MICRO_PERIOD*1.1);
+    TH1I *secondInMicro = new TH1I("secondInMicro","second in micro time of flight",1800,-MICRO_PERIOD*1.1,MICRO_PERIOD*1.1);
+    TH1I *thirdInMicro = new TH1I("thirdInMicro","third in micro time of flight",1800,-MICRO_PERIOD*1.1,MICRO_PERIOD*1.1);
+
+    // create cross-section plots
+    TH1I *blankRaw = new TH1I("blank","blank",500,0,700);
+    TH1I *carbonSRaw = new TH1I("carbonS","carbonS",500,0,700);
+    TH1I *carbonLRaw = new TH1I("carbonL","carbonL",500,0,700);
+    TH1I *Sn112Raw = new TH1I("Sn112","Sn112",500,0,700);
+    TH1I *NatSnRaw = new TH1I("NatSn","NatSn",500,0,700);
+    TH1I *Sn124Raw = new TH1I("Sn124","Sn124",500,0,700);
+    TH1I *totalRaw = new TH1I("total","total",500,0,700);
+
+    // create log-scaled cross-section plots
+    TH1I *blankRawLog = new TH1I("blankLog","blank",500,0,TMath::Log10(700));
+    TH1I *carbonSRawLog = new TH1I("carbonSLog","carbonS",500,0,TMath::Log10(700));
+    TH1I *carbonLRawLog = new TH1I("carbonLLog","carbonL",500,0,TMath::Log10(700));
+    TH1I *Sn112RawLog = new TH1I("Sn112Log","Sn112",500,0,TMath::Log10(700));
+    TH1I *NatSnRawLog = new TH1I("NatSnLog","NatSn",500,0,TMath::Log10(700));
+    TH1I *Sn124RawLog = new TH1I("Sn124Log","Sn124",500,0,TMath::Log10(700));
+    TH1I *totalRawLog = new TH1I("totalLog","total",500,0,TMath::Log10(700));
+
+    double microTime;
+    int microNo, prevMicroNo;
+
+    // create variables to gate on whether a micropulse has a gamma at the start
+    // and keep track of the influence of early micropulse events on later ones
+    int orderInMicro = 0;
+    bool isGamma = false;
     bool gammaInMicro = false;
 
-    double microTime = -1;
-    int microNo = -1;
-    int microNoPrev = -1;
-    int microNo2Prev = -1;
-    int microNo3Prev = -1;
-    */
+    // point at correct tree in preparation for reading data
+    setBranches(orchard[i]);
 
-    /*for(int j = 0; j<channelList.size(); j++)
+    // channel-dependent time offset relative to the target changer's macropulse
+    // start time
+    double TIME_OFFSET;
+    int gammaGate[2];
+
+    // adjust time parameters based on channel identity
+    switch(i)
     {
-        // loop through tree once per channel number 
-        cout << "Populating " << dirs[j] << " histograms..." << endl;
-        nE = 0;
+        case 1:
+            // monitor
+            TIME_OFFSET = MACROPULSE_OFFSET+MONITOR_OFFSET;
+            gammaGate[1] = 40;
+            gammaGate[2] = 50;
+            break;
+        case 2:
+            // summed detector
+            TIME_OFFSET = MACROPULSE_OFFSET;
+            gammaGate[1] = 80;
+            gammaGate[2] = 92;
+            break;
+        case 3:
+            // scavenger
+            TIME_OFFSET = MACROPULSE_OFFSET+SCAVENGER_OFFSET;
+            gammaGate[1] = 80;
+            gammaGate[2] = 92;
+            break;
+    }
 
-        gDirectory->cd("/");
-        gDirectory->GetDirectory(dirs[j].c_str())->cd();
+    int totalEntries = orchard[i]->GetEntries();
+    cout << "Populating advanced histograms for channel " << 2*i << endl;
 
-        DPPWaveformsDir = (TDirectory*)gDirectory->Get("DPPWaveformsDir");
-        WaveWaveformsDir = (TDirectory*)gDirectory->Get("WaveWaveformsDir");
+    for(int j=0; j<totalEntries; j++)
+    {
+        orchard[i]->GetEntry(j);
 
-        int targetCounter = 0;
-        targetTime = get<1>(targetTimeList[targetCounter]);
+        double timeDiff = completeTime-macroTime+TIME_OFFSET;
 
-        tree->SetEntryList(channelList[j]);
-        totalEntries = tree->GetEntries();
-
-        rng = new TRandom3();
-
-        double fullTimeP = 0;
-
-        for (int i=0; i<totalEntries; i++)
-
+        // only plot events within the beam-on period for each macropulse, and
+        // throw away events when the macropulse is between target changer
+        // positions
+        if (timeDiff < 650000 && timeDiff > 0 && targetPos != 0)
         {
-            tree->GetEntry(i);
+            // valid event within the beam-on period of each macropulse
+            // calculate the correct micropulse-referenced time and micropulse
+            // number
 
-            if (chNo == chNoList[j])
+            microTime = fmod(timeDiff,MICRO_PERIOD);
+
+            TOF->Fill(microTime);
+            triangle->Fill(microTime,lgQ);
+
+            // convert microTime into neutron velocity based on flight path distance
+            double velocity = pow(10.,7.)*FLIGHT_DISTANCE/microTime; // in meters/sec 
+
+            // convert velocity to relativistic kinetic energy
+            double rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
+
+            // assign a micropulse number to the event
+            prevMicroNo = microNo;
+            microNo = floor(timeDiff/MICRO_PERIOD);
+
+            // assign an ordering of events in each micropulse
+            if (microNo==prevMicroNo)
             {
-                // prepare for filling basic histos
-                fullTime = timetag+pow(2,32)*extTime;
+                // still in same micropulse
+                orderInMicro++;
+            }
 
-                if (chNo == 4 || chNo == 6 || chNo == 7)
+            else
+            {
+                // new micropulse
+                orderInMicro = 1;
+
+                // reset gamma indicator
+                gammaInMicro = false;
+            }
+
+            // now check to see whether event is a gamma
+            if (microTime < gammaGate[1] && microTime > gammaGate[0])
+            {
+                isGamma = true;
+                // indicate that this micro started with a gamma
+                gammaInMicro = true;
+            }
+
+            else
+            {
+                isGamma = false;
+            }
+
+            microNoH->Fill(microNo);
+
+            switch(orderInMicro)
+            {
+                case 1:
+                    firstInMicro->Fill(microTime);
+                    break;
+                case 2:
+                    secondInMicro->Fill(microTime);
+                    break;
+                case 3:
+                    thirdInMicro->Fill(microTime);
+                    break;
+            }
+
+            if (!gammaInMicro) // gate disallowing gammas
+            {
+                switch (targetPos)
                 {
-                    fullTime += fineTime*(2./1024.);
+                    case 1:
+                        // BLANK
+                        blankRaw->Fill(rKE);
+                        //blankRawLog->Fill(TMath::Log10(rKE));
+                        break;
+
+                    case 2:
+                        // SHORT CARBON
+                        carbonSRaw->Fill(rKE);
+                        //carbonSRawLog->Fill(TMath::Log10(rKE));
+                        break;
+
+                    case 3:
+                        // LONG CARBON
+                        carbonLRaw->Fill(rKE);
+                        //carbonLRawLog->Fill(TMath::Log10(rKE));
+                        break;
+
+                    case 4:
+                        // Sn112
+                        Sn112Raw->Fill(rKE);
+                        //Sn112RawLog->Fill(TMath::Log10(rKE));
+                        break;
+
+                    case 5:
+                        // Natural Sn
+                        NatSnRaw->Fill(rKE);
+                        //NatSnRawLog->Fill(TMath::Log10(rKE));
+                        break;
+
+                    case 6:
+                        // Sn124
+                        Sn124Raw->Fill(rKE);
+                        //Sn124RawLog->Fill(TMath::Log10(rKE));
+                        break;
+
+                    default:
+                        break;
                 }
 
-                if (evtType == 1)
-                {
-*/
-                    /*if (fullTime < targetTime-1000000)
-                      {
-                      cout << fullTime << " " << targetTime << endl;
-                      }*/
-/*
-                    while (fullTime-get<1>(targetTimeList[targetCounter+1])+TIME_OFFSET > 0)
-                    {
-                        // if it's been too long since the last target changer event,
-                        // step to the next target changer event - provided
-                        // we haven't reset the time because of a recent switch
-                        // to waveform mode
-
-                        if ((get<1>(targetTimeList[targetCounter]) < get<1>(targetTimeList[targetCounter+1])) || fullTimeP > fullTime)
-                        {
-                            targetCounter++;
-                            targetTime = get<1>(targetTimeList[targetCounter]);
-                            targetPos = get<2>(targetTimeList[targetCounter]);
-                            targetType = get<3>(targetTimeList[targetCounter]);
-                            fill(evtNo.begin(),evtNo.end(),0);
-
-                            fill(waveformStart.begin(),waveformStart.end(),0); // prepare for next waveform mode
-
-                            fullTimeP = fullTime; // update the time of the last event
-
-                        }
-
-                        else
-                        {
-                            break;
-                        }
-                    }
-                    */
-
-                    /*if (chNo==4 && targetCounter > 23388)
-                      {
-                      cout << "fullTime " << fullTime << " targetTime " << targetTime << " fineTime " << fineTime << "target counter " << targetCounter << endl;
-                      abort();
-                      }*/
-
-                    // if event has associated target changer event, fill DPP histo
-        /*
-                    if (fullTime-targetTime+TIME_OFFSET < 650000 && fullTime-targetTime+TIME_OFFSET > 0) 
-                    {
-                        // within macropulse window; fill histos
-                        outMacro = (TH1I*)(gDirectory->Get("outMacro"));
-                        outMacro->Fill(get<0>(targetTimeList[targetCounter]));
-
-                        outEvt = (TH1I*)(gDirectory->Get("outEvt"));
-                        outEvt->Fill(evtNo[chNo]);
-
-                        outExtTime = (TH1I*)(gDirectory->Get("outExtTime"));
-                        outExtTime->Fill(extTime);
-
-                        outTime = (TH1I*)(gDirectory->Get("outTime"));
-                        outTime->Fill(timetag);
-
-                        outSGQ = (TH1I*)(gDirectory->Get("outSGQ"));
-                        outSGQ->Fill(sgQ);
-
-                        outLGQ = (TH1I*)(gDirectory->Get("outLGQ"));
-                        outLGQ->Fill(lgQ);
-
-                        outFT = (TH1I*)(gDirectory->Get("outFT"));
-                        outFT->Fill(fineTime + 16*rng->Rndm());
-                        
-
-                        if (dummyWaveform->size() > 0)
-                        {
-                            DPPWaveformsDir->cd();
-
-                            stringstream temp;
-                            temp << "macroNo " << get<0>(targetTimeList[targetCounter]) << "evtNo " << evtNo[chNo];
-                            DPPWaveform = new TH1I(temp.str().c_str(),temp.str().c_str(),dummyWaveform->size(),0,dummyWaveform->size()*2);
-
-                            for(int i=0;i<dummyWaveform->size();i++)
-                            {
-                                DPPWaveform->SetBinContent(i,dummyWaveform->at(i));
-                            }
-
-                            gDirectory->cd("/");
-                            gDirectory->GetDirectory(dirs[j].c_str())->cd();
-
-                        }
-
-                        if (chNo==2 || chNo==4 || chNo==6 || chNo==7)
-                        {
-                            microNo3Prev = microNo2Prev;
-                            microNo2Prev = microNoPrev;
-                            microNoPrev = microNo;
-                            microTime = fmod(((double)extTime*pow(2,32)+(double)timetag+((double)fineTime*2./1024.)-targetTime+TIME_OFFSET),MICRO_PERIOD);
-                            microNo = floor(((double)extTime*pow(2,32)+(double)timetag+((double)fineTime*2./1024.)-targetTime+TIME_OFFSET)/MICRO_PERIOD);
-
-                            firstInMicro = false;
-                            secondInMicro = false;
-                            thirdInMicro = false;
-                            gammaInMicro = false;
-
-                            if (microNo != microNoPrev)
-                            {
-                                firstInMicro = true;
-                            }
-
-                            if (microNo != microNo2Prev && microNo==microNoPrev)
-                            {
-                                secondInMicro = true;
-                            }
-
-                            if (microNo !=microNo3Prev && microNo==microNoPrev && microNoPrev==microNo2Prev)
-                            {
-                                thirdInMicro = true;
-                            }
-
-                            if (microTime < 100)
-                            {
-                                gammaInMicro = true;
-                            }
-
-                            timeDiff << microTime << " " << timetag << " " << targetTime << endl;
-
-                            // convert microTime into neutron velocity based on flight path distance
-                            double velocity = pow(10.,7.)*FLIGHT_DISTANCE/microTime; // in meters/sec 
-
-                            // convert velocity to relativistic kinetic energy
-                            double rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
-
-                            if (microTime > 100 && chNo != 2 *//* && !gammaInMicro*//*) // gate disallowing gammas and monitors
-                            {
-                                switch (targetPos)
-                                {
-                                    case 1:
-                                        // BLANK
-                                        blankRaw->Fill(rKE);
-                                        blankRawLog->Fill(TMath::Log10(rKE));
-                                        break;
-
-                                    case 2:
-                                        // SHORT CARBON
-                                        carbonSRaw->Fill(rKE);
-                                        carbonSRawLog->Fill(TMath::Log10(rKE));
-                                        break;
-
-                                    case 3:
-                                        // LONG CARBON
-                                        carbonLRaw->Fill(rKE);
-                                        carbonLRawLog->Fill(TMath::Log10(rKE));
-                                        break;
-
-                                    case 4:
-                                        // Sn112
-                                        Sn112Raw->Fill(rKE);
-                                        Sn112RawLog->Fill(TMath::Log10(rKE));
-                                        break;
-
-                                    case 5:
-                                        // Natural Sn
-                                        NatSnRaw->Fill(rKE);
-                                        NatSnRawLog->Fill(TMath::Log10(rKE));
-                                        break;
-
-                                    case 6:
-                                        // Sn124
-                                        Sn124Raw->Fill(rKE);
-                                        Sn124RawLog->Fill(TMath::Log10(rKE));
-                                        break;
-
-                                    default:
-                                        break;
-                                }
-
-                                totalRaw->Fill(rKE);
-                                totalRawLog->Fill(TMath::Log10(rKE));
-                            }
-
-                            if (microTime > 50 && chNo == 2) // gate disallowing gammas and non-monitors
-                            {
-                                switch (targetPos)
-                                {
-                                    case 1:
-                                        // BLANK
-                                        monBlankRaw->Fill(rKE);
-                                        break;
-                                    case 2:
-                                        // SHORT CARBON
-                                        monCarbonSRaw->Fill(rKE);
-                                        break;
-                                    case 3:
-                                        // LONG CARBON
-                                        monCarbonLRaw->Fill(rKE);
-                                        break;
-                                    case 4:
-                                        // Sn112
-                                        monSn112Raw->Fill(rKE);
-                                        break;
-                                    case 5:
-                                        // Natural Sn
-                                        monNatSnRaw->Fill(rKE);
-                                        break;
-                                    case 6:
-                                        // Sn124
-                                        monSn124Raw->Fill(rKE);
-                                        break;
-                                    default:
-                                        break;
-                                }
-                                monTotalRaw->Fill(rKE);
-                            }
-
-                            if (targetPos > 0 *//* && gammaInMicro*//*)
-                            {
-                                switch (chNo)
-                                {
-                                    case 2:
-                                        MTOF->Fill(microTime);
-                                        break;
-                                    case 4:
-                                        STOF->Fill(microTime);
-
-                                        if (firstInMicro)
-                                        {
-
-                                            firstSTOF->Fill(microTime);
-                                            switch (targetPos)
-                                            {
-                                                case 1:
-                                                    firstSTOFblank->Fill(microTime);
-                                                    break;
-                                                case 2:
-                                                    firstSTOFcs->Fill(microTime);
-                                                    break;
-                                                case 3:
-                                                    firstSTOFcl->Fill(microTime);
-                                                    break;
-                                                case 4:
-                                                    firstSTOFsn112->Fill(microTime);
-                                                    break;
-                                                case 5:
-                                                    firstSTOFsnnat->Fill(microTime);
-                                                    break;
-                                                case 6:
-                                                    firstSTOFsn124->Fill(microTime);
-                                                    break;
-                                            }
-                                        }
-
-                                        else if (secondInMicro)
-                                        {
-                                            secondSTOF->Fill(microTime);
-                                            switch (targetPos)
-                                            {
-                                                case 1:
-                                                    secondSTOFblank->Fill(microTime);
-                                                    break;
-                                                case 2:
-                                                    secondSTOFcs->Fill(microTime);
-                                                    break;
-                                                case 3:
-                                                    secondSTOFcl->Fill(microTime);
-                                                    break;
-                                                case 4:
-                                                    secondSTOFsn112->Fill(microTime);
-                                                    break;
-                                                case 5:
-                                                    secondSTOFsnnat->Fill(microTime);
-                                                    break;
-                                                case 6:
-                                                    secondSTOFsn124->Fill(microTime);
-                                                    break;
-                                            }
-                                        }
-
-                                        else if (thirdInMicro)
-                                        {
-                                            thirdSTOF->Fill(microTime);
-                                            switch (targetPos)
-                                            {
-                                                case 1:
-                                                    thirdSTOFblank->Fill(microTime);
-                                                    break;
-                                                case 2:
-                                                    thirdSTOFcs->Fill(microTime);
-                                                    break;
-                                                case 3:
-                                                    thirdSTOFcl->Fill(microTime);
-                                                    break;
-                                                case 4:
-                                                    thirdSTOFsn112->Fill(microTime);
-                                                    break;
-                                                case 5:
-                                                    thirdSTOFsnnat->Fill(microTime);
-                                                    break;
-                                                case 6:
-                                                    thirdSTOFsn124->Fill(microTime);
-                                                    break;
-                                            }
-                                        }
-
-                                        triangle->Fill(microTime,lgQ);
-                                        break;
-
-                                    case 6:
-                                        LTOF->Fill(microTime);
-                                        break;
-                                    case 7:
-                                        RTOF->Fill(microTime);
-                                }
-                            } 
-                        }
-                    }
-
-                    prevTarget=1;
-                }
-
-                else if (evtType == 2)
-                {
-                    WaveWaveformsDir->cd();
-
-                    TH1I* waveformHolder;
-
-                    if (fullTime >= waveformStart[chNo]+650000 || prevTarget==1)
-                    {
-                        // new macropulse in waveform mode - create new plot
-
-                        stringstream temp;
-                        //cout << "waveform mode targetCounter" << targetCounter << " and supposed macropulse number " << get<0>(targetTimeList[targetCounter]) << endl;
-                        temp << "macropulse " << get<0>(targetTimeList[targetCounter]) << " event no " << evtNo[chNo];
-                        waveformStart[chNo] = fullTime;
-
-                        switch (chNo)
-                        {
-                            case 0:
-                                WaveWaveform0 = new TH1I(temp.str().c_str(),temp.str().c_str(),400000,0,800000);
-                                waveformHolder = WaveWaveform0;
-                                break;
-
-                            case 2:
-                                WaveWaveform2 = new TH1I(temp.str().c_str(),temp.str().c_str(),400000,0,800000);
-                                waveformHolder = WaveWaveform2;
-                                break;
-
-                            case 4:
-                                WaveWaveform4 = new TH1I(temp.str().c_str(),temp.str().c_str(),400000,0,800000);
-                                waveformHolder = WaveWaveform4;
-                                break;
-
-                            case 6:
-                                WaveWaveform6 = new TH1I(temp.str().c_str(),temp.str().c_str(),400000,0,800000);
-                                waveformHolder = WaveWaveform6;
-                                break;
-
-                            case 7:
-                                WaveWaveform7 = new TH1I(temp.str().c_str(),temp.str().c_str(),400000,0,800000);
-                                waveformHolder = WaveWaveform7;
-                                break;
-                        }
-                    }
-
-                    for(int i=0;i<dummyWaveform->size();i++)
-                    {
-                        waveformHolder->SetBinContent(i+(fullTime-waveformStart[chNo])/2,dummyWaveform->at(i));
-                    }
-
-                    gDirectory->cd("/");
-                    gDirectory->GetDirectory(dirs[j].c_str())->cd();
-
-                    prevTarget=2;
-                }
-
-                nE++;
-                evtNo[chNo]++;
-
-                if(nE%100==0)
-                {
-                    cout << nE << " events\r";
-                    fflush(stdout);
-                }
+                totalRaw->Fill(rKE);
+                //totalRawLog->Fill(TMath::Log10(rKE));
             }
         }
-        cout << endl;
     }
-    */
 }
 
 
@@ -668,11 +352,8 @@ void fillHistos()
         gDirectory->GetDirectory(dirs[i].c_str())->cd();
 
         // instantiate DPP-mode histograms
-        TH1I* macroNoH = new TH1I("macroNoH","macroNo",100000,0,100000);
+        TH1I* macroNoH = new TH1I("macroNoH","macroNo",150000,0,150000);
         macroNoH->GetXaxis()->SetTitle("macropulse number of each event");
-
-        TH1I* microNoH = new TH1I("microNoH","microNo",360,0,360);
-        microNoH->GetXaxis()->SetTitle("micropulse number of each event");
 
         TH1I* evtNoH = new TH1I("evtNoH","evtNo",2500,0,2500);
         evtNoH->GetXaxis()->SetTitle("event number of each event");
@@ -683,8 +364,8 @@ void fillHistos()
         TH1I* completeTimeH = new TH1I("completeTimeH","completeTime",6000,0,6000000000);
         completeTimeH->GetXaxis()->SetTitle("complete time for each event");
 
-        TH1I* microTimeH = new TH1I("microTimeH","microTime",2000,0,2000);
-        microTimeH->GetXaxis()->SetTitle("time since start of micro for each event");
+        //TH1I* microTimeH = new TH1I("microTimeH","microTime",2000,0,2000);
+        //microTimeH->GetXaxis()->SetTitle("time since start of micro for each event");
 
         TH1I* targetPosH = new TH1I("targetPosH","targetPos",6,0,6);
         targetPosH->GetXaxis()->SetTitle("target position of each event");
@@ -707,21 +388,42 @@ void fillHistos()
         for(int j=0; j<totalEntries; j++)
         {
             orchard[i]->GetEntry(j);
-            //if(completeTime-macroTime+TIME_OFFSET < 650000 && completeTime-macroTime+TIME_OFFSET > 0)
-            //{
+
+            /*// print out first 5000 scavenger events inside the correct time
+            // window (just after the gamma dead time)
+            if(i==2 && j <10000)
+            {
+                summedDetEvents << "summed det event " << j << " completeTime = " << completeTime << endl;
+            }
+
+            // print out first 100 scavenger events inside the correct time
+            // window (gamma dead time)
+            else if(i==3 && microTime<350 && microTime>200)
+            {
+                scavengerEvents << "scavenger event " << j << " completeTime = " << completeTime << endl;
+            }
+
+            else if (j>10000)
+            {
+                break;
+            }*/
+
             macroNoH->Fill(macroNo);
-            microNoH->Fill(microNo);
+            //microNoH->Fill(microNo);
             evtNoH->Fill(evtNo);
             macroTimeH->Fill(macroTime);
             completeTimeH->Fill(completeTime);
-            microTimeH->Fill(microTime);
+            //microTimeH->Fill(microTime);
             targetPosH->Fill(targetPos);
             sgQH->Fill(sgQ);
             lgQH->Fill(lgQ);
 
             // if waveform data for this event exist, we want to populate
             // a histogram to display it
-            if(waveform->size() > 0)
+
+            // only plot 1 out of 10000 waveforms to save space and processing
+            // time
+            if(waveform->size() > 0 && j%10000 == 0)
             {
                 waveformsDir = (TDirectory*)gDirectory->Get("waveformsDir");
                 waveformsDir->cd();
@@ -740,12 +442,11 @@ void fillHistos()
         }
     }
 
-    // fill ch4 advanced histograms
-    fillAdvanced(2);
-
-    // fill ch6 advanced histograms
-    fillAdvanced(3);
-
+    // fill TOF, cross-section, etc. histos for channels 2, 4, 6
+    for(int i=1; i<4; i++)
+    {
+        fillAdvancedHistos(i);
+    }
 
     // fill basic histograms for waveform mode in each channel
 
@@ -822,8 +523,127 @@ void fillHistos()
     }
 }
 
+void matchWaveforms()
+{
+    // we want to pull events from the overlap window where both ch4 and ch6
+    // record the same events (the signal should be identical in both channels)
+    int ch6Entries = orchard[3]->GetEntries();
+    int ch4Entries = orchard[2]->GetEntries();
+
+    TH1I* ch4ch6timeDiff = new TH1I("ch4ch6timeDiff","ch6-ch4 times for same event",300,-1,1);
+
+    cout << "Searching through orchard[3] for events in the overlap region" << endl;
+
+    gDirectory->cd("/");
+
+    // keep track of how many histograms have been drawn; stop looping after a
+    // set number have been filled (i.e. first 50)
+    int plots = 0;
+
+    setBranches(orchard[3]); // pointed at the ch6Tree now
+
+    // keep track of how far we've looped through the ch4 tree so we don't have
+    // to loop from the beginning each time we're looking for a parallel event
+    int currentIndex = 0;
+
+    // loop through the channel-specific tree and populate histos
+    for(int j=0; j<ch6Entries && plots<=1000 /*plot only first 50 */; j++)
+    {
+        orchard[3]->GetEntry(j);
+
+        double ch6timeDiff = completeTime-macroTime+MACROPULSE_OFFSET+SCAVENGER_OFFSET;
+        double ch6microTime = fmod(ch6timeDiff,MICRO_PERIOD);
+        int ch6microNo = floor(ch6timeDiff/MICRO_PERIOD);
+
+        // keep track of this event's macroNo to compare it with events in ch4;
+        // this will help us identify the parallel event in ch4 with the same
+        // timestamp
+        int ch6MacroNo = macroNo;
+
+        if(ch6microTime > 275 && ch6microTime < 325)
+        {
+            stringstream temp;
+            temp << "macroNo " << macroNo << ", scavenger event number " << evtNo;
+            waveformCh6= new TH1I(temp.str().c_str(),temp.str().c_str(),waveform->size(),0,waveform->size()*2);
+
+            // loop through waveform data and fill histo
+            for(int k=0; k<waveform->size(); k++)
+            {
+                waveformCh6->SetBinContent(k,waveform->at(k));
+            }
+
+            // loop through ch4 tree to find the same event (same timestamp and
+            // macropulse as the ch6 event)
+
+            setBranches(orchard[2]); // pointed at the ch6Tree now
+
+            for(int i=currentIndex; i<ch4Entries; i++)
+            {
+                orchard[2]->GetEntry(i);
+
+                if(macroNo == ch6MacroNo)
+                {
+                    // in the correct macropulse - loop through ch4 to find the
+                    // the event whose timestamp matches the one in channel 6
+                    double ch4timeDiff = completeTime-macroTime+MACROPULSE_OFFSET;
+                    double ch4microTime = fmod(ch4timeDiff,MICRO_PERIOD);
+                    int microNo = floor(ch4timeDiff/MICRO_PERIOD);
+
+                    if(microNo == ch6microNo && (ch4microTime >= ch6microTime-5 && ch4microTime <= ch6microTime+5))
+                    {
+                        // found the parallel event in ch4 - same time, same
+                        // micropulse
+                        //
+                        // plot both the ch6 and ch4 events so we can plot the
+                        // histograms together later
+
+                        ch4ch6timeDiff->Fill(ch6microTime-ch4microTime);
+                        cout << "ch4microTime = " << ch4microTime << ", ch4microNo = " << microNo << ", ch6microTime = " << ch6microTime << ", ch6microNo = " << ch6microNo << endl;
+
+                        // clear the histo title stringstream
+                        temp.str("");
+                        temp << "macroNo " << macroNo << ", ch4 event number " << evtNo;
+                        waveformCh4 = new TH1I(temp.str().c_str(),temp.str().c_str(),waveform->size(),0,waveform->size()*2);
+
+                        for(int k=0; k<waveform->size(); k++)
+                        {
+                            waveformCh4->SetBinContent(k,waveform->at(k));
+                        }
+
+                        // Draw both histos on same axes
+                        //waveformCh6->Draw();
+                        //waveformCh4->Draw("same");
+
+                        plots++;
+
+                        break;
+                    }
+                }
+
+                else if (macroNo > ch6MacroNo)
+                {
+                    // went past ch4 macropulse without finding the event
+                    // parallel to ch6
+                    plots++;
+                    break;
+                }
+
+                currentIndex = i;
+            }
+            // point back to ch6 events in preparation for next loop through
+            // ch6Tree
+            setBranches(orchard[3]);
+        }
+    }
+    cout << endl;
+}
+
 int main(int argc, char* argv[])
 {
+    cout.precision(13);
+    // needed to avoid ROOT error for header files being incorrectly brought in
+    // in both resort.cpp and histos.cpp
+    // Look online for more info (I'm not really sure why it's necessary)
     TApplication app("app",&argc,argv);
 
     // read in the raw file name
@@ -831,14 +651,32 @@ int main(int argc, char* argv[])
     string runNo = argv[2];
 
     // Open the raw tree from the initial sort. If it doesn't exist, exit.
- 
     stringstream treeName;
-    stringstream fileName;
+    stringstream fileInName;
+    stringstream fileOutName;
+    stringstream scavengerEventsName;
+    stringstream summedDetEventsName;
 
     treeName << runDir << "-" << runNo; 
-    fileName << analysispath <<"analysis/" << runDir << "/" << treeName.str() << ".root";
 
-    TFile* file = new TFile(fileName.str().c_str(),"UPDATE");
+    scavengerEventsName << analysispath <<"analysis/" << runDir << "/" << treeName.str() << "_scavenger.csv";
+    summedDetEventsName << analysispath <<"analysis/" << runDir << "/" << treeName.str() << "_summedDet.csv";
+
+    scavengerEvents.open(scavengerEventsName.str());
+    summedDetEvents.open(summedDetEventsName.str());
+
+    scavengerEvents.precision(10);
+    summedDetEvents.precision(10);
+
+    fileInName << analysispath <<"analysis/" << runDir << "/" << treeName.str() << "_sorted.root";
+    fileOutName << analysispath <<"analysis/" << runDir << "/" << treeName.str() << "_histos.root";
+
+    TFile* file = new TFile(fileInName.str().c_str(),"READ");
+
+    if(file->Get("ch0Tree"))
+    {
+        cout << "Located channel-specific trees in " << fileInName << "." << endl;
+    }
 
     TTree* ch0Tree = (TTree*)file->Get("ch0Tree");
     TTree* ch2Tree = (TTree*)file->Get("ch2Tree");
@@ -857,13 +695,18 @@ int main(int argc, char* argv[])
     orchardW.push_back(ch2TreeW);
     orchardW.push_back(ch4TreeW);
     
+    // open output file to contain histos
+    TFile* fileOut = new TFile(fileOutName.str().c_str(),"RECREATE");
+
+    // print out waveforms for first 50 events that occur in both ch4 and ch6
+    matchWaveforms();
+
     // prepare the root file with 4 directories, one for each channel
     // these directories will hold basic variable histograms showing the
     // raw data in each tree, plus TOF, x-sections, etc histograms
+//    fillHistos();
 
-    fillHistos();
+    fileOut->Write();
 
-    file->Write();
-
-    file->Close();
+    fileOut->Close();
 }
