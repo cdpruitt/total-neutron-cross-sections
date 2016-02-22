@@ -18,7 +18,7 @@ runlist=false
 runpath=/media/Drive3/output
 analysispath=/media/Drive3/analysis
 
-while getopts "trca" opt; do
+while getopts "trsa" opt; do
     case ${opt} in
         t)
             printf "\nText output enabled (this will slow sorting considerably)\n"
@@ -28,9 +28,9 @@ while getopts "trca" opt; do
             printf "\nRunlist mode enabled. Run directories will be read from ./runsToSort.txt"
             runlist=true
             ;;
-        c)
-            printf "\nCross-section histograms enabled\n"
-            cs=true
+        s)
+            printf "\nSorting a single run: $2 $3\n"
+            single=true
             ;;
         a)
             printf "\nReading all evt files in last run (this will slow sorting\
@@ -41,7 +41,7 @@ while getopts "trca" opt; do
             printf "\nInvalid option: -$OPTARG.\n\nValid options are:"
             printf "\n    -t (text output)"
             printf "\n    -r (use runlist)"
-            printf "\n    -c (produce cross-section plots)"
+            printf "\n    -s (sort a single run using specified filename)"
             printf "\n    -a (if using runlist, read all evt files from last run)\n"
             exit
             ;;
@@ -50,17 +50,25 @@ done
 
 if [ "$runlist" = false ]
 then
-    runDir=$(ls -t $runpath | head -1)
-    runNo=$(ls -t $runpath/$runDir/data-* | head -1 | egrep\
-    -o '[0-9]+' | tail -1)
-    runName="$runpath/$runDir/data-$runNo.evt"
-    printf "\nSorting most recent file $runName\n"
-
-    if [ ! -a $analysispath/$runDir ]
+    if [ "$single" = true ]
     then
-        mkdir $analysispath/$runDir
+        runDir=$2
+        runNo=$3
+        runName="$runpath/$runDir/data-$runNo.evt"
+        printf "\nSorting single file $runName\n"
+    else
+        runDir=$(ls -t $runpath | head -1)
+        runNo=$(ls -t $runpath/$runDir/data-* | head -1 | egrep\
+            -o '[0-9]+' | tail -1)
+        runName="$runpath/$runDir/data-$runNo.evt"
+        printf "\nSorting most recent file $runName\n"
     fi
-    ./raw "$runDir" "$runNo" "$text" "$cs"
+
+    if [ ! -a $analysispath/run$runDir ]
+    then
+        mkdir $analysispath/run$runDir
+    fi
+    ./raw "run$runDir" "$runNo" "$text"
     ./resort "run$runDir" "$runNo"
     ./histos "run$runDir" "$runNo"
 else

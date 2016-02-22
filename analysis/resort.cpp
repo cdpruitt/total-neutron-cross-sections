@@ -27,14 +27,15 @@ double TIME_OFFSET;
 
 // Target changer time delay after the macropulse start time as calculated using
 // the summed detector signals' gamma peaks
-const double MACROPULSE_OFFSET = 951; // in ns
+const double MACROPULSE_OFFSET = 842; // in ns
+// 814 for Neon
 
 // Time correction to MACROPULSE_OFFSET for the monitor; takes into account the
 // additional ~10 meters between the summed detector and the extra cable length
 const double MONITOR_OFFSET = 0; // in ns
 
 // Time delay of scavenger afer summed det
-const double SCAVENGER_OFFSET = 12.4; // in ns
+const double SCAVENGER_OFFSET = -12.51; // in ns
 
 // Period of macropulses
 const double MACRO_PERIOD = 8330000; // in ns
@@ -180,7 +181,7 @@ void processDPPEvent(TTree* tree)
     // calculate the time elapsed since the start of the
     // current macropulse and the time elapsed since the start
     // of the micropulse
-    double timeDiff = completeTime-macroTime-TIME_OFFSET;
+    double timeDiff = completeTime-macroTime;
 
     if (timeDiff > 0 && timeDiff < 650000)
     {
@@ -423,8 +424,63 @@ void processDetEvents()
                 // event the correct time, macropulse no, etc.
 
                 // first calculate this event's time
-                completeTime = (double)extTime*pow(2,32)+timetag+fineTime*(double)2/1024;
-                //cout << completeTime << endl;
+                completeTime = (double)extTime*pow(2,32)+timetag+fineTime*(double)2/1024+TIME_OFFSET;
+
+                /*if(completeTime > 6000000000)
+                {
+                    // because the complete time is > 6 seconds, there must have
+                    // been a period of beam-off. Throw away all events with
+                    // times > 6 seconds and move the tree index forward to
+                    // point at the first event with beam back on, as evidenced
+                    // by a new macropulse trigger
+
+                    error << "At macroNo = " << macroNo;
+                    error << ", beam off period detected (completeTime > 6 seconds). Moving index forward to next DPP period." << endl;
+
+                    // first, point at the next macropulse trigger
+                    if (macroNo+1>=ch0TreeEntries)
+                    {
+                        cout << "Exceeded the last macropulse on ch0Tree. Exiting loop." << endl;
+                        break;
+                    }
+                    prevMacroTime = macroTime;
+                    ch0Tree->GetEntry(macroNo+1);
+
+                    // now move the det tree's index forward until it sees a
+                    // time reset (DPP/waveform mode switch), suggesting that
+                    // the beam is back on and we're in a new DPP period.
+                    do
+                    {
+                        do
+                        {
+                            if (index==totalEntries)
+                            {
+                                cout << "Reached the end of the raw tree; end looping." << endl;
+                                break;
+                            }
+                            index++;
+                            tree->GetEntry(index);
+                        }
+                        while (chNo != detIndex || evtType != 1);
+
+                        if (index==totalEntries)
+                        {
+                            break;
+                        }
+
+                        prevCompleteTime = completeTime;
+                        completeTime = (double)extTime*pow(2,32)+timetag;
+                    }
+                    while (prevCompleteTime < completeTime);
+
+                    if (index==totalEntries)
+                    {
+                        break;
+                    }
+
+                    cout << "Start new DPP period @ macroNo " << macroNo << "\r";
+                    fflush(stdout);
+                }*/
 
                 // now check to see if the event is DPP or waveform mode
                 if (evtType == 1)
@@ -454,6 +510,7 @@ void processDetEvents()
 
                         // update the ch0Tree to point at the new
                         // macropulse
+                        error << endl;
                         do
                         {
                             if (macroNo+1>=ch0TreeEntries)
@@ -464,6 +521,7 @@ void processDetEvents()
 
                             prevMacroTime = macroTime;
                             ch0Tree->GetEntry(macroNo+1);
+                            //error << "macroTime (" << macroTime << ") < prevMacroTime (" << prevMacroTime << "); looping to find next DPP mode period" << endl;
                         }
                         while (prevMacroTime < macroTime);
 
@@ -539,9 +597,11 @@ void processDetEvents()
                                     }
 
                                 prevCompleteTime = completeTime;
-                                completeTime = (double)extTime*pow(2,32)+timetag;
+                                completeTime = (double)extTime*pow(2,32)+timetag+TIME_OFFSET;
+                                //error << "completeTime (" << completeTime << "); macroTime (" << macroTime << "); in a macropulse 'evtNo==1' loop" << endl;
+
                             }
-                            while (prevCompleteTime < completeTime);
+                            while (prevCompleteTime < completeTime || extTime > 0);
 
                             if (index==totalEntries)
                             {
@@ -574,8 +634,9 @@ void processDetEvents()
                             // change
                             double beamAnomalyStart = macroTime;
 
+                            error << endl << "MACRO NO " << macroNo << endl;
                             error << "Macropulse timing anomaly found at macroTime = " << beamAnomalyStart << endl;
-                            error << "prevMacroTime = " << ", macroNo = " << macroNo << ", completeTime = " << completeTime << endl;
+                            error << "prevMacroTime = " << prevMacroTime << ", completeTime = " << completeTime << endl;
 
                             while(!(macroTime-prevMacroTime > 8300000 && macroTime-prevMacroTime < 8360000) && !(macroTime-prevMacroTime > 16600000 && macroTime-prevMacroTime < 17200000) && !(macroTime-prevMacroTime > 24900000 && macroTime-prevMacroTime < 25080000))
                             {
@@ -594,7 +655,7 @@ void processDetEvents()
 
                                 prevMacroTime = macroTime;
                                 ch0Tree->GetEntry(macroNo+1);
-
+                                //error << "macroTime (" << macroTime << "); in macropulse anomaly loop" << endl;
                             };
 
                             error << "Beam anomaly finished; new macroTime is " << macroTime << ", macroNo " << macroNo << ", completeTime = " << completeTime << endl;
@@ -644,8 +705,9 @@ void processDetEvents()
                                     }
 
                                     prevCompleteTime = completeTime;
-                                    completeTime = (double)extTime*pow(2,32)+timetag;
+                                    completeTime = (double)extTime*pow(2,32)+timetag+TIME_OFFSET;
                                 }
+
                                 // keep looping until the timestamps reset to 0 for
                                 // this channel (i.e., new DPP period)
                                 while (prevCompleteTime < completeTime);
@@ -671,9 +733,9 @@ void processDetEvents()
                                 }
                                 while (chNo != detIndex || evtType != 1);
 
-                                completeTime = (double)extTime*pow(2,32)+timetag;
+                                completeTime = (double)extTime*pow(2,32)+timetag+TIME_OFFSET;
                             }
-                            while (completeTime < macroTime-TIME_OFFSET);
+                            while (completeTime < macroTime);
 
                             // now the cleaned tree index is pointing
                             // to the area of good beam, so continue

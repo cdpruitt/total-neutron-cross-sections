@@ -3,12 +3,13 @@ void Plot_Cross()
 
   gROOT->SetStyle("Pub");
 
-  TFile *myfile =new TFile("SummedHistos.root");
+  TFile *myfile =new TFile("/media/Drive3/analysis/run170/run170-0024_cross-sections.root","UPDATE");
   if(!myfile->IsOpen())
     {
       cout << "Can't Open summed file..." << endl;
       return;
     }
+  /*
 
   TCanvas *mycan = new TCanvas("mycan","mycan",1200,600);
   mycan->Divide(3,1);
@@ -59,48 +60,88 @@ void Plot_Cross()
 
   mytex->DrawLatex(5.,max*0.7,"Carbon Long");
 
+*/
 
+/*mycan->cd(3);
+  gPad->SetTopMargin(0.03);
+  gPad->SetRightMargin(0.03);
+  */
 
-  ifstream Data("CarbonData.dat");
-  if(!Data.is_open())
+  ifstream SnData("SnNatData.dat");
+  if(!SnData.is_open())
     {
       cout << "No Previous Data..." << endl;
       return;
     }
 
-  char bogus[200];
-  Data.getline(bogus,200);
+  char dummy[200];
+  SnData.getline(dummy,200);
 
-  float energy[1977] = {0.};
-  float xsection[1977] = {0.};
-  float error[1977] ={0.};
+  vector<float> energy;
+  vector<float> xsection;
+  vector<float> error;
 
   float dum,dum2,dum3;
 
-  for(int i = 0;i<1977;i++)
-    {
-      Data >> dum >> dum2>> dum3;
-      if(Data.eof())break;
-      energy[i] =dum;
-      xsection[i] = dum2;
-      error[i] =dum3;
-    }
+  while(!SnData.eof())
+  {
+      SnData >> dum >> dum2 >> dum3;
 
-  mycan->cd(3);
-  gPad->SetTopMargin(0.03);
-  gPad->SetRightMargin(0.03);
+      energy.push_back(TMath::Log10(dum));
+      xsection.push_back(dum2);
+      error.push_back(dum3);
+  }
 
-  TGraphErrors *mygraph = new TGraphErrors(1977,energy,xsection,0,error);
-  mygraph->Draw("AP");
+  TGraphErrors *SnLitLog = new TGraphErrors(energy.size(),&energy[0],&xsection[0],0,&error[0]);
+  //SnLitLog->Draw("AP");
 
-  mygraph->GetXaxis()->SetTitle("Energy [MeV]");
-  mygraph->GetXaxis()->CenterTitle();
-  mygraph->GetXaxis()->SetRangeUser(0,10.);
+  SnLitLog->GetXaxis()->SetTitle("Energy [MeV] (log10)");
+  SnLitLog->GetXaxis()->CenterTitle();
+  SnLitLog->GetXaxis()->SetRangeUser(0,TMath::Log10(700.));
 
-  mygraph->GetYaxis()->SetTitle("#sigma [b]");
-  mygraph->GetYaxis()->CenterTitle();
-  mygraph->GetYaxis()->SetTitleOffSet(1.5);
+  SnLitLog->GetYaxis()->SetTitle("sigma [b]");
+  SnLitLog->GetYaxis()->CenterTitle();
+  //SnLitLog->GetYaxis()->SetTitleOffSet(1.5);
+  SnLitLog->Write();
 
+  // carbon literature data
+  ifstream carbonData("CarbonData.dat");
+  if(!carbonData.is_open())
+  {
+      cout << "No Previous Data..." << endl;
+      return;
+  }
+
+  carbonData.getline(dummy,200);
+
+  energy.clear();
+  xsection.clear();
+  error.clear();
+  
+  float dum,dum2,dum3;
+
+  while(!carbonData.eof())
+  {
+      carbonData >> dum >> dum2 >> dum3;
+
+      energy.push_back(TMath::Log10(dum));
+      xsection.push_back(dum2);
+      error.push_back(dum3);
+  }
+
+  TGraphErrors *carbonLitLog = new TGraphErrors(energy.size(),&energy[0],&xsection[0],0,&error[0]);
+  carbonLitLog->Draw("AP");
+
+  carbonLitLog->GetXaxis()->SetTitle("Energy [MeV] (log10)");
+  carbonLitLog->GetXaxis()->CenterTitle();
+  carbonLitLog->GetXaxis()->SetRangeUser(0,TMath::Log10(700.));
+
+  carbonLitLog->GetYaxis()->SetTitle("sigma [b]");
+  carbonLitLog->GetYaxis()->CenterTitle();
+  //carbonLitLog->GetYaxis()->SetTitleOffSet(1.5);
+  carbonLitLog->Write();
+
+  myfile->Close();
 
   return;
 }
