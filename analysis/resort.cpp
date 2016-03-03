@@ -131,6 +131,7 @@ void branchW(TTree* tree)
     tree->Branch("macroNo",&ev.macroNo,"macroNo/i");
     tree->Branch("evtNo",&ev.evtNo,"evtNo/i");
     tree->Branch("completeTime",&ev.completeTime,"completeTime/d");
+    tree->Branch("targetPos",&ev.targetPos,"targetPos/i");
     tree->Branch("waveform",&ev.waveform);
 }
 
@@ -264,12 +265,6 @@ void processTargetChanger()
             macroTime = (double)extTime*pow(2,32)+timetag;
             completeTime = macroTime;
 
-            // figure out which target is in the beam during this event
-            targetPos = assignTargetPos(lgQ);
-
-            cout << "Target position = " << targetPos << ", macroNo = " << macroNo << ", macroTime = " << macroTime << "\r";
-            fflush(stdout);
-
             // extract the waveform data for the event
             getWaveform(dummyWaveform);
 
@@ -295,6 +290,9 @@ void processTargetChanger()
                     // NOT the start of a new DPP period (99.8% of the time)
                     evtNo = 0;
                 }
+
+                // figure out which target is in the beam during this event
+                targetPos = assignTargetPos(lgQ);
 
                 // all the variables are updated, so fill the target changer
                 // tree with the event
@@ -341,6 +339,9 @@ void processTargetChanger()
             // before we pull the next event, save this event's type so we can
             // check to see if the new event changes DPP/waveform mode
             prevEvtType = evtType;
+
+            cout << "Target position = " << targetPos << ", macroNo = " << macroNo << ", macroTime = " << macroTime << "\r";
+            fflush(stdout);
         }
         // move to next event in the loop
     }
@@ -374,6 +375,8 @@ void processDetEvents()
         // reset the timestamp holders
         prevMacroTime = 0;
         prevCompleteTime = 0;
+        double extTimePrev = 0;
+        double timetagPrev = 0;
 
         TTree *chTree, *chTreeW;
 
@@ -487,10 +490,16 @@ void processDetEvents()
                 {
                     // DPP mode
 
+                    if(macroNo>=70626 && macroNo<=70628)
+                    {
+                        error << "completeTime = " << completeTime << ", extTime = " << extTime << ", timestamp = " << timetag << ", macroTime = " << macroTime << ", macroNo = " << macroNo << endl;
+                    }
+
                     // check to see if there was a timestamp-reset failure (the
                     // extended timestamp incremented, but the 32-bit timestamp
                     // didn't reset). If so, discard the event and move on.
-                    if (completeTime > pow(2,33)-500 && completeTime < pow(2,33)+500)
+
+                    if (extTime > extTimePrev && timetag > timetagPrev)
                     {
                         error << "Found an event with a timestamp-reset failure (i.e., extTime incremented before timetag was reset to 0). Macrotime = " << macroTime << ", macroNo = " << macroNo << "completeTime = " << completeTime << endl;
                         error << "Skipping to next event..." << endl;
@@ -521,7 +530,7 @@ void processDetEvents()
 
                             prevMacroTime = macroTime;
                             ch0Tree->GetEntry(macroNo+1);
-                            //error << "macroTime (" << macroTime << ") < prevMacroTime (" << prevMacroTime << "); looping to find next DPP mode period" << endl;
+                            error << "macroTime (" << macroTime << ") < prevMacroTime (" << prevMacroTime << "); looping to find next DPP mode period" << endl;
                         }
                         while (prevMacroTime < macroTime);
 
@@ -655,7 +664,7 @@ void processDetEvents()
 
                                 prevMacroTime = macroTime;
                                 ch0Tree->GetEntry(macroNo+1);
-                                //error << "macroTime (" << macroTime << "); in macropulse anomaly loop" << endl;
+                                error << "macroTime (" << macroTime << "); in macropulse anomaly loop" << endl;
                             };
 
                             error << "Beam anomaly finished; new macroTime is " << macroTime << ", macroNo " << macroNo << ", completeTime = " << completeTime << endl;
@@ -764,6 +773,8 @@ void processDetEvents()
                 evtNo++;
                 prevCompleteTime = completeTime;
                 prevEvtType = evtType;
+                extTimePrev = extTime;
+                timetagPrev = timetag;
             }
         }
     }
@@ -786,14 +797,14 @@ int main(int argc, char* argv[])
     stringstream fileOutName;
     stringstream errorName;
 
-    treeName << runDir << "-" << runNo; 
+    treeName << "run" << runDir << "-" << runNo; 
 
     // write out sorting errors to errors.log
-    errorName << analysispath <<  "analysis/" << runDir << "/" << treeName.str() << "_error.log";
+    errorName << analysispath <<  "analysis/run" << runDir << "/" << treeName.str() << "_error.log";
     error.open(errorName.str());
 
-    fileInName << analysispath <<"analysis/" << runDir << "/" << treeName.str() << "_raw.root";
-    fileOutName << analysispath <<"analysis/" << runDir << "/" << treeName.str() << "_sorted.root";
+    fileInName << analysispath <<"analysis/run" << runDir << "/" << treeName.str() << "_raw.root";
+    fileOutName << analysispath <<"analysis/run" << runDir << "/" << treeName.str() << "_sorted.root";
 
     fileOut = new TFile(fileOutName.str().c_str(),"UPDATE");
 

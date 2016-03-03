@@ -54,13 +54,13 @@ then
     then
         runDir=$2
         runNo=$3
-        runName="$runpath/$runDir/data-$runNo.evt"
+        runName="$runpath/run$runDir/data-$runNo.evt"
         printf "\nSorting single file $runName\n"
     else
         runDir=$(ls -t $runpath | head -1)
-        runNo=$(ls -t $runpath/$runDir/data-* | head -1 | egrep\
+        runNo=$(ls -t $runpath/run$runDir/data-* | head -1 | egrep\
             -o '[0-9]+' | tail -1)
-        runName="$runpath/$runDir/data-$runNo.evt"
+        runName="$runpath/run$runDir/data-$runNo.evt"
         printf "\nSorting most recent file $runName\n"
     fi
 
@@ -68,9 +68,9 @@ then
     then
         mkdir $analysispath/run$runDir
     fi
-    ./raw "run$runDir" "$runNo" "$text"
-    ./resort "run$runDir" "$runNo"
-    ./histos "run$runDir" "$runNo"
+    ./raw "$runDir" "$runNo" "$text"
+    ./resort "$runDir" "$runNo"
+    ./histos "$runDir" "$runNo"
 else
     if [ -a ./runsToSort.txt ]
     then
@@ -90,18 +90,18 @@ else
                     runNo=$(echo $f | egrep -o '[0-9]+' | tail -1)
                     runName="$runpath/$runDir/data-$runNo.evt"
                     printf "Sorting $runName\n"
-                    ./raw "run$runDir" "$runNo" "$text" "$cs"
-                    ./resort "run$runDir" "$runNo"
-                    ./histos "run$runDir" "$runNo"
+                    ./raw "$runDir" "$runNo" "$text" "$cs"
+                    ./resort "$runDir" "$runNo"
+                    ./histos "$runDir" "$runNo"
                 done
             else
                 runNo=$(ls -t $runpath/run$runDir/data-* | head -1 | egrep\
                     -o '[0-9]+' | tail -1)
                 runName="$runpath/$runDir/data-$runNo.evt"
                 printf "Sorting $runName\n"
-                ./raw "run$runDir" "$runNo" "$text" "$cs"
-                ./resort "run$runDir" "$runNo"
-                ./histos "run$runDir" "$runNo"
+                ./raw "$runDir" "$runNo" "$text" "$cs"
+                ./resort "$runDir" "$runNo"
+                ./histos "$runDir" "$runNo"
             fi
         done < runsToSort.txt
     fi

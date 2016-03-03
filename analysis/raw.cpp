@@ -263,8 +263,8 @@ int main(int argc, char* argv[])
 
     stringstream treeName;
     stringstream fileName;
-    treeName << runDir << "-" << runNo; 
-    fileName << analysispath <<"analysis/" << runDir << "/" << treeName.str() << "_raw.root";
+    treeName << "run" << runDir << "-" << runNo; 
+    fileName << analysispath <<"analysis/run" << runDir << "/" << treeName.str() << "_raw.root";
 
     file = new TFile(fileName.str().c_str(),"UPDATE");
 
@@ -289,7 +289,7 @@ int main(int argc, char* argv[])
         tree->Branch("waveform",&ev.waveform);
 
         stringstream runName;
-        runName << analysispath <<"output/" << runDir << "/data-" << runNo << ".evt";
+        runName << analysispath <<"output/run" << runDir << "/data-" << runNo << ".evt";
         processRun(runName.str());
 
         file->Write();
