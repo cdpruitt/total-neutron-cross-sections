@@ -1,0 +1,126 @@
+/*****************************************************************************/
+            Total neutron cross-section analysis package
+        (created for LANSCE measurements of Sn112/Sn124 and Ne20)
+
+                     author: Cole D. Pruitt
+                     Radiochemistry Group (Sobotka Lab)
+                     Washington University in St Louis
+                     email: cole.d.pruitt@gmail.com
+
+/*****************************************************************************/
+                               DATA COLLECTION
+
+This package uses the ROOT analysis package (available for download at
+https://root.cern.ch/) to calculate total neutron cross-sections from raw
+digital-pulse-processing (DPP) data. Raw data is produced by a CAEN digitizer
+of the X730 family running custom firmware and acquisition code, commissioned
+from CAEN.
+
+In general, data collection is via three types of channel:
+
+    - a TARGET CHANGER channel (channel 0) that indicates which target is
+    currently in beam while simultaneously providing the beam's time reference.
+    - a MONITOR channel (channel 2) that tracks the beam flux through each
+    target, allowing us to normalize the amount of neutrons each target sees.
+    - one or more DETECTOR channels that record neutron and gamma events after
+    the beam has passed through the target.
+
+Two modes of data are collected for each channel: DPP data (normal events) and
+waveform data (used to correct DPP data in analysis). See notes below for
+details.
+
+Data acquisition is started by running the WashUDAQ code (proprietary - not
+included in this package). Digitizer output is then stored in files of form:
+runX/data-YYYY.evt (with X the number of the run, and YYYY the number of the
+sub-runs that constitute X). Data analysis starts by reading the raw data from
+these .evt files.
+
+/*****************************************************************************/
+                            ANALYSIS WORKFLOW
+
+Analysis workflow in this package is broken up into several subcodes, each of
+which outputs an intermediate step in the analysis. The first code uses the
+raw .evt file output from the digitizer to create an intermediate ROOT file
+that preserves the event data. Subsequent codes take and create progressively
+more advanced ROOT files on the way to producing cross-section histograms.
+
+This broken-up subcode structure allows the user to run the analysis piecewise
+rather than re-running the entire code every time a re-sort is desired, saving
+computation time and assisting in debugging.
+
+Analysis is started by running ./sort.sh (and adding appropriate flags). See
+./sort.sh for a list of the flags and what they do. The file paths for the raw
+data and the ROOT file output is set in the text of this script (edit the
+script directly to change these file paths).
+
+./sort.sh calls, in order:
+        1) raw.cpp
+        2) resort.cpp
+        3) histos.cpp
+
+    1) raw.cpp translates the hexadecimal event data from the digitizer (.evt
+    files) into a single ROOT tree containing all events. This tree is saved in 
+    runX-YYYY_raw.root. No event data is lost in this step.
+
+    2) resort.cpp opens the tree stored in runX-YYYY_raw.root, splits the
+    tree's events into sub-trees based on channel. Then, using the ch0 (target
+    changer) data, it assigns each channel's events to their macropulse. Each
+    event's raw data are converted to an analysis-friendly form (i.e., the 
+    several subtypes of timestamp are summed to one value, a C++ double).
+    
+    These subtrees are saved in runX-YYYY_sorted.root. No event data is lost in
+    this step.
+
+    3) histos.cpp opens the subtrees in runX-YYYY_sorted.root to populate
+    histograms for each channel, including cross-section histograms for the
+    detector channels. Output from this code is NOT reversible back to the raw
+    event data.
+
+After ./sort.sh finishes, histograms from multiple runs can be summed together,
+plotted, and compared with literature cross-sections using SumHistos.cpp
+(this macro still in development).
+
+IMPORTANT: when each code is run, it will not recreate its output file if one
+already exists. For example, ./raw will first check to see if
+'outpath'/analysis/runX/runX-YYYY_raw.root already exists. If it does, ./raw
+will exit and ./sort.sh will proceed to the next piece of the analysis
+workflow, ./resort, which will use the already-existing raw.root output.
+
+To recreate an intermediate ROOT file, just delete it from the output file
+path and rerun the sort code.
+
+/*****************************************************************************/
+                              ADDITIONAL NOTES
+
+    - PHYSICAL CONSTANTS (density of target, molar mass, speed of light, etc.)
+    are used only in the histos.cpp file to produce cross-sections and other
+    derived quantities. They can be edited in the variable instantiations at
+    the top of histos.cpp
+
+    - TWO MODES OF DATA are produced by the digitizer: DPP-mode and
+    waveform-mode.
+
+            - DPP data includes:
+                    channel number,
+                    event type (always DPP), 
+                    timestamps,
+                    integrated charge values from a short and a long gate,
+                    and a short wavelet of raw waveform samples.
+
+            - Waveform data includes
+                    channel number,
+                    event type (always waveform)
+                    timestamps,
+                    a long wavelet of raw waveform samples.
+
+            The DPP data comprises ~99% of the data collected by the digitizer
+            and is the main source of events for computing the cross-section.
+
+            The waveform data comprises the remainder of the data and is used in
+            analysis to calculate a dead-time correction and refine the
+            time accuracy of the DPP data.
+
+            These two modes are filtered into different channel-specific trees
+            in resort.cpp so that their analysis can proceed separately.
+
+/*****************************************************************************/

@@ -15,8 +15,6 @@ fi
 # process script options
 
 runlist=false
-runpath=/media/Drive3/output
-analysispath=/media/Drive3/analysis
 
 while getopts "trsa" opt; do
     case ${opt} in
@@ -50,27 +48,44 @@ done
 
 if [ "$runlist" = false ]
 then
+    # set path to data/analysis depending on run number
+    if [ $2 -lt 6 ]
+    then
+        datapath=/media/cdpruitt/Drive3
+        outpath=/data3
+    elif [ $2 -gt 128 ] && [ $2 -lt 161 ]
+    then
+        datapath=/media/cdpruitt/Drive2
+        outpath=/data2
+    elif [ $2 -gt 160 ] && [ $2 -lt 178 ]
+    then
+        datapath=/media/cdpruitt/Drive3
+        outpath=/data3
+    else
+        printf "\nRun directory outside bounds (runs 128-177) - check run number"
+    fi
+
     if [ "$single" = true ]
     then
         runDir=$2
         runNo=$3
-        runName="$runpath/run$runDir/data-$runNo.evt"
+        runName="$datapath/output/run$runDir/data-$runNo.evt"
         printf "\nSorting single file $runName\n"
     else
-        runDir=$(ls -t $runpath | head -1)
-        runNo=$(ls -t $runpath/run$runDir/data-* | head -1 | egrep\
+        runDir=$(ls -t $datapath/output | head -1)
+        runNo=$(ls -t $datapath/output/run$runDir/data-* | head -1 | egrep\
             -o '[0-9]+' | tail -1)
-        runName="$runpath/run$runDir/data-$runNo.evt"
+        runName="$datapath/output/run$runDir/data-$runNo.evt"
         printf "\nSorting most recent file $runName\n"
     fi
 
-    if [ ! -a $analysispath/run$runDir ]
+    if [ ! -a $outpath/analysis/run$runDir ]
     then
-        mkdir $analysispath/run$runDir
+        mkdir $outpath/analysis/run$runDir
     fi
-    ./raw "$runDir" "$runNo" "$text"
-    ./resort "$runDir" "$runNo"
-    ./histos "$runDir" "$runNo"
+    ./raw "$runDir" "$runNo" "$datapath" "$outpath"
+    ./resort "$runDir" "$runNo" "$outpath"
+    ./histos "$runDir" "$runNo" "$outpath"
 else
     if [ -a ./runsToSort.txt ]
     then
@@ -78,30 +93,47 @@ else
         while read runDir; do
 	    printf "Reading from directory run$runDir\n"
 
-            if [ ! -a $analysispath/run$runDir ]
+            # set path to data/analysis depending on run number
+            if [ $runDir -lt 6 ]
             then
-                mkdir $analysispath/run$runDir
+                datapath=/media/cdpruitt/Drive3
+                outpath=/data3
+            elif [ $runDir -gt 128 ] && [ $runDir -lt 161 ]
+            then
+                datapath=/media/cdpruitt/Drive2
+                outpath=/data2
+            elif [ $runDir -gt 160 ] && [ $runDir -lt 178 ]
+            then
+                datapath=/media/cdpruitt/Drive3
+                outpath=/data3
+            else
+                printf "\nRun directory outside bounds (runs 128-177) - check run number"
+            fi
+
+            if [ ! -a $outpath/analysis/run$runDir ]
+            then
+                mkdir $outpath/analysis/run$runDir
             fi
 
             if [ "$allFiles" = true ]
             then
-                for f in $runpath/run$runDir/data-*;
+                for f in $datapath/output/run$runDir/data-*;
                 do
                     runNo=$(echo $f | egrep -o '[0-9]+' | tail -1)
-                    runName="$runpath/$runDir/data-$runNo.evt"
+                    runName="$datapath/output/run$runDir/data-$runNo.evt"
                     printf "Sorting $runName\n"
-                    ./raw "$runDir" "$runNo" "$text" "$cs"
-                    ./resort "$runDir" "$runNo"
-                    ./histos "$runDir" "$runNo"
+                    ./raw "$runDir" "$runNo" "$datapath" "$outpath"
+                    ./resort "$runDir" "$runNo" "$outpath"
+                    ./histos "$runDir" "$runNo" "$outpath"
                 done
             else
-                runNo=$(ls -t $runpath/run$runDir/data-* | head -1 | egrep\
+                runNo=$(ls -t $datapath/output/run$runDir/data-* | head -1 | egrep\
                     -o '[0-9]+' | tail -1)
-                runName="$runpath/$runDir/data-$runNo.evt"
+                runName="$datapath/output/run$runDir/data-$runNo.evt"
                 printf "Sorting $runName\n"
-                ./raw "$runDir" "$runNo" "$text" "$cs"
-                ./resort "$runDir" "$runNo"
-                ./histos "$runDir" "$runNo"
+                ./raw "$runDir" "$runNo" "$datapath" "$outpath"
+                ./resort "$runDir" "$runNo" "$outpath"
+                ./histos "$runDir" "$runNo" "$outpath"
             fi
         done < runsToSort.txt
     fi
