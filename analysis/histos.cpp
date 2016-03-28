@@ -493,7 +493,6 @@ void calculateCS()
     monCounts.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(6));
     monCounts.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(7));
 
-
     for(int k = 0; k<monCounts.size(); k++)
     {
         cout << "target position " << k << " counts = " << monCounts[k] << endl;
@@ -508,24 +507,70 @@ void calculateCS()
     vector<TH1I*> rawHistos;
     vector<TH1I*> rawLogHistos;
 
-    rawHistos.push_back((TH1I*)gDirectory->Get("blank"));
-    rawHistos.push_back((TH1I*)gDirectory->Get("target1"));
-    rawHistos.push_back((TH1I*)gDirectory->Get("target2"));
-    rawHistos.push_back((TH1I*)gDirectory->Get("target3"));
-    rawHistos.push_back((TH1I*)gDirectory->Get("target4"));
-    rawHistos.push_back((TH1I*)gDirectory->Get("target5"));
+    if (gDirectory->Get("blank"))
+    {
+        rawHistos.push_back((TH1I*)gDirectory->Get("blank"));
+    }
 
+    if (gDirectory->Get("target1"))
+    {
+        rawHistos.push_back((TH1I*)gDirectory->Get("target1"));
+    }
+
+    if (gDirectory->Get("target2"))
+    {
+        rawHistos.push_back((TH1I*)gDirectory->Get("target2"));
+    }
+
+    if (gDirectory->Get("target3"))
+    {
+        rawHistos.push_back((TH1I*)gDirectory->Get("target3"));
+    }
+
+    if (gDirectory->Get("target4"))
+    {
+        rawHistos.push_back((TH1I*)gDirectory->Get("target4"));
+    }
+
+    if (gDirectory->Get("target5"))
+    {
+        rawHistos.push_back((TH1I*)gDirectory->Get("target5"));
+    }
+    
     /*for(int k = 0; k<rawHistos.size(); k++)
     {
         cout << "noG counts " << k << " = " << rawHistos[k]->GetEntries() << endl;
     }*/
 
-    rawLogHistos.push_back((TH1I*)gDirectory->Get("blankLog"));
-    rawLogHistos.push_back((TH1I*)gDirectory->Get("target1Log"));
-    rawLogHistos.push_back((TH1I*)gDirectory->Get("target2Log"));
-    rawLogHistos.push_back((TH1I*)gDirectory->Get("target3Log"));
-    rawLogHistos.push_back((TH1I*)gDirectory->Get("target4Log"));
-    rawLogHistos.push_back((TH1I*)gDirectory->Get("target5Log"));
+    if (gDirectory->Get("blankLog"))
+    {
+        rawLogHistos.push_back((TH1I*)gDirectory->Get("blankLog"));
+    }
+
+    if (gDirectory->Get("target1Log"))
+    {
+        rawLogHistos.push_back((TH1I*)gDirectory->Get("target1Log"));
+    }
+
+    if (gDirectory->Get("target2Log"))
+    {
+        rawLogHistos.push_back((TH1I*)gDirectory->Get("target2Log"));
+    }
+
+    if (gDirectory->Get("target3Log"))
+    {
+        rawLogHistos.push_back((TH1I*)gDirectory->Get("target3Log"));
+    }
+
+    if (gDirectory->Get("target4Log"))
+    {
+        rawLogHistos.push_back((TH1I*)gDirectory->Get("target4Log"));
+    }
+
+    if (gDirectory->Get("target5Log"))
+    {
+        rawLogHistos.push_back((TH1I*)gDirectory->Get("target5Log"));
+    }
 
     // switch to the scavenger directory
     /*gDirectory->cd("/");
@@ -544,6 +589,7 @@ void calculateCS()
 */
     // Loop through the relativistic kinetic energy histograms and use them
     // to populate cross-section and other histograms for each target
+
     for(int i=1; i<=noTargets; i++)
     {
         // Calculate the cross-section for each bin of the energy plots
@@ -566,15 +612,7 @@ void calculateCS()
                 sigma[i][j] = -log((rawHistos[i]->GetBinContent(j)/(double)rawHistos[0]->GetBinContent(j))*(monCounts[0]/(double)monCounts[i]))/((double)targetlength[order[i]]*(double)targetdensity[order[i]]*(double)avo*pow(10.,-24)/(double)targetMolMass[order[i]]); // in barns
                 //cout << "sigma = " << i << ", bin content at " << j << " = " << sigma[i][j] << endl;
             }
-        }
-    }
 
-    for(int i=1; i<=noTargets; i++)
-    {
-        for(int j=0; j<noBins; j++)
-        {
-            // first, test to make sure we're not about to take log of 0 or
-            // divide by 0
             if(rawLogHistos[0]->GetBinContent(j) <= 0 || rawLogHistos[i]->GetBinContent(j) <= 0)
             {
                 sigmaLog[i][j] = 0;
@@ -588,7 +626,6 @@ void calculateCS()
 
                 sigmaLog[i][j] = -log((rawLogHistos[i]->GetBinContent(j)/*+scavLogHistos[i]->GetBinContent(j)*/)/((double)rawLogHistos[0]->GetBinContent(j)/*+scavLogHistos[0]->GetBinContent(j)*/)*(monCounts[0]/(double)monCounts[i]))/((double)targetlength[order[i]]*(double)targetdensity[order[i]]*(double)avo*pow(10.,-24)/(double)targetMolMass[order[i]]); // in barns
             }
-            //cout << "sigmaLog = " << i << ", bin content at " << j << " = " << sigmaLog[i][j] << endl;
         }
     }
 }
@@ -615,7 +652,7 @@ void fillCShistos()
     csHistos.push_back(target2cs);
     csHistos.push_back(target3cs);
     csHistos.push_back(target4cs);
-    //csHistos.push_back(target5cs);
+    csHistos.push_back(target5cs);
 
     for(int i=0; i<csHistos.size(); i++)
     {
@@ -647,7 +684,6 @@ void fillCShistos()
     TH1D *target3csLog = new TH1D("target3csLog","target 3 cross-section",noBins,0,TMath::Log10(700));
     TH1D *target4csLog = new TH1D("target4csLog","target 4 cross-section",noBins,0,TMath::Log10(700));
     TH1D *target5csLog = new TH1D("target5csLog","target 5 cross-section",noBins,0,TMath::Log10(700));
-
     
     // create log-scaled cross-section plots with scavenger added back in
     /*
@@ -667,7 +703,7 @@ void fillCShistos()
     csLogHistos.push_back(target2csLog);
     csLogHistos.push_back(target3csLog);
     csLogHistos.push_back(target4csLog);
-    //csLogHistos.push_back(target5csLog);
+    csLogHistos.push_back(target5csLog);
 
     for(int i=0; i<csLogHistos.size(); i++)
     {
@@ -1107,6 +1143,7 @@ void matchWaveforms()
 
 int main(int argc, char *argv[])
 {
+    cout << endl << "Entering ./histos..." << endl;
     // needed to avoid ROOT error for header files being incorrectly brought in
     // in both resort.cpp and histos.cpp
     // Look online for more info (I'm not really sure why it's necessary)
@@ -1119,19 +1156,19 @@ int main(int argc, char *argv[])
 
     // Open the raw tree from the initial sort. If it doesn't exist, exit.
     stringstream treeName;
-    stringstream scavengerEventsName;
-    stringstream summedDetEventsName;
+    //stringstream scavengerEventsName;
+    //stringstream summedDetEventsName;
 
     treeName << "run" << runDir << "-" << runNo; 
 
-    scavengerEventsName << outpath <<"/analysis/run" << runDir << "/" << treeName.str() << "_scavenger.csv";
-    summedDetEventsName << outpath <<"/analysis/run" << runDir << "/" << treeName.str() << "_summedDet.csv";
+    //scavengerEventsName << outpath <<"/analysis/run" << runDir << "/" << treeName.str() << "_scavenger.csv";
+    //summedDetEventsName << outpath <<"/analysis/run" << runDir << "/" << treeName.str() << "_summedDet.csv";
 
-    scavengerEvents.open(scavengerEventsName.str());
-    summedDetEvents.open(summedDetEventsName.str());
+    //scavengerEvents.open(scavengerEventsName.str());
+    //summedDetEvents.open(summedDetEventsName.str());
 
-    scavengerEvents.precision(10);
-    summedDetEvents.precision(10);
+    //scavengerEvents.precision(10);
+    //summedDetEvents.precision(10);
 
     fileInName << outpath <<"/analysis/run" << runDir << "/" << treeName.str() << "_sorted.root";
     fileOutName << outpath <<"/analysis/run" << runDir << "/" << treeName.str() << "_histos.root";
@@ -1141,7 +1178,7 @@ int main(int argc, char *argv[])
 
     if(file->Get("ch0Tree"))
     {
-        cout << "Located channel-specific trees in " << fileInName << "." << endl;
+        cout << fileInName.str() << " already exists. Skip basic histogram filling and calculate cross-sections." << endl;
     }
 
     TTree* ch0Tree = (TTree*)file->Get("ch0Tree");
@@ -1173,7 +1210,7 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    else if(stoi(runDir)<=151)
+    if(stoi(runDir)<=151)
     {
         // blank, short carbon, long carbon, Sn112, NatSn, Sn124
         order.push_back(0);
@@ -1195,7 +1232,7 @@ int main(int argc, char *argv[])
         order.push_back(2);
     }
 
-    else if(stoi(runDir)>=153 && stoi(runDir)<=172)
+    else if(stoi(runDir)>=153 && stoi(runDir)<=168)
     {
         // blank, Sn112, NatSn, Sn124
         order.push_back(0);
@@ -1204,7 +1241,7 @@ int main(int argc, char *argv[])
         order.push_back(5);
     }
 
-    else if(stoi(runDir)>=173 && stoi(runDir)<=180)
+    else if(stoi(runDir)>=169 && stoi(runDir)<=180)
     {
         // blank, Sn112, NatSn, Sn124, short carbon
         order.push_back(0);

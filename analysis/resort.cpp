@@ -1,5 +1,15 @@
-// Takes a ROOT tree with raw event data and processes it into channel-specific
-// trees useful for analysis
+/******************************************************************************
+                                    RESORT 
+******************************************************************************/
+// This sub-code takes a raw ROOT tree (from ./raw) event data and processes it
+// into channel-specific trees useful for analysis.
+
+// Once the raw tree is opened, target changer events are passed into a
+// target-changer-specific sub-tree and are labeled by macropulse number.
+// Then, we loop through the raw tree again, pulling out events in channels 2
+// (the monitor) and channel 4 (the detector). These events' timestamps are
+// compared to the timestamps in the target changer sub-tree, allowing us to
+// assign events in channels 2 and 4 to the appropriate macropulse.
 
 #include <iostream>
 #include <iomanip>
@@ -12,57 +22,53 @@
 
 using namespace std;
 
-// error log stream
-ofstream error;
-
-
-// EXPERIMENTAL PARAMETERS
-
+/******************************************************************************/
+// DEFINE EXPERIMENTAL CONSTANTS
 
 // channel-specific time offset relative to the macropulse start time
 double TIME_OFFSET;
 
-// Target changer time delay after the macropulse start time as calculated using
-// the summed detector signals' gamma peaks
+// Target changer time delay after the macropulse start time; determined by
+// adjusting until the gamma peaks appear in the right place for the given
+// target distance from the neutron source
 const double MACROPULSE_OFFSET = 842; // in ns
-// 814 for Neon
+// 814 for Ne 
 
 // Time correction to MACROPULSE_OFFSET for the monitor; takes into account the
 // additional ~10 meters between the summed detector and the extra cable length
+// NOTE: currently unused - uncomment to use
 const double MONITOR_OFFSET = 0; // in ns
 
 // Time delay of scavenger afer summed det
 const double SCAVENGER_OFFSET = -12.51; // in ns
 
-// Period of macropulses
-const double MACRO_PERIOD = 8330000; // in ns
+// Beam macropulse period
+const double MACRO_PERIOD = 8333000; // in ns
 
 // Target Changer lgQ gates for setting integral target positions 1-6
 const int tarGate[12] = {5000,7500,11000,13500,17000,20000,23000,27000,29000,33000,35000,39000};
 
 
-
-// TREE VARIABLES
+/******************************************************************************/
+// EVENT VARIABLES
 
 // for holding event data from the raw tree
 unsigned int chNo, evtType, extTime, fineTime, sgQ, lgQ;
 double timetag;
 
 // for holding event data for the new channel-specific trees
-unsigned int evtNo, macroNo,/* microNo,*/ targetPos;
-double completeTime, macroTime /*microTime*/;
+unsigned int evtNo, macroNo, targetPos;
+double completeTime, macroTime;
 vector<int> waveform;
 
 // channel-specific trees' event structure (different from raw tree's)
 struct event
 {
   unsigned int macroNo; // label each event by macropulse
-  //unsigned int microNo; // label each event by micropulse
   unsigned int evtNo; // uniquely label each event in a macropulse
 
   double macroTime; // the event's time-zero reference (the macropulse start)
   double completeTime; // the event's 48-bit timestamp
-  //double microTime; // the event's timestamp relative to the micropulse it's in
 
   unsigned int targetPos; // target position
 
@@ -79,23 +85,24 @@ vector<int> *dummyWaveform;
 // consecutive detector and target changer timestamps.
 double prevMacroTime;
 double prevCompleteTime;
+double extTimePrev = 0;
+double timetagPrev = 0;
+
 int prevEvtType;
 
 // detector index (2 is monitor, 4 is summed detector, 6 is scavenger)
 int detIndex;
 
+/******************************************************************************/
 // TREES
 
-// raw tree
-// tree points at the already-populated TTree 'tree' that was filled in raw.cpp
-// it contains unprocessed events straight from the digitizer's binary output
-// by looping through this tree, we'll segregate each event by channel to
-// perform later analysis (assign TOFs, calculate cross-sections, etc)
+// Create pointer to the already-populated TTree 'tree' from ./raw
+// We will loop through this tree and divide up its contents by channel to
+// perform later analysis (like assigning TOFs, calculating cross-sections, etc)
 TTree *tree;
 
-// channel-specific trees
-// Each channel has a tree for DPP and waveform mode (except for channel 6,
-// which collected no waveform mode data)
+// Create pointers to the to-be-created channel-specific sub-trees.
+// Each channel has a tree for DPP and waveform mode
 TTree* ch0Tree;
 TTree* ch2Tree;
 TTree* ch4Tree;
@@ -105,24 +112,32 @@ TTree* ch2TreeW;
 TTree* ch4TreeW;
 
 
-/************ METHODS *************/
+/******************************************************************************/
+// DEBUGGING
 
-// connect a channel-specific tree to correct variables so we can populate it
+// If errors are encountered during the resort, print them out to an error file
+ofstream error;
+
+
+/******************************************************************************/
+// HELPER METHODS
+
+// Used to connect a channel-specific tree to DPP event variables so we can
+// start populating it with DPP events
 void branch(TTree* tree)
 {
     tree->Branch("macroNo",&ev.macroNo,"macroNo/i");
-    //tree->Branch("microNo",&ev.microNo,"microNo/i");
     tree->Branch("evtNo",&ev.evtNo,"evtNo/i");
     tree->Branch("macroTime",&ev.macroTime,"macroTime/d");
     tree->Branch("completeTime",&ev.completeTime,"completeTime/d");
-    //tree->Branch("microTime",&ev.microTime,"microTime/d");
     tree->Branch("targetPos",&ev.targetPos,"targetPos/i");
     tree->Branch("sgQ",&ev.sgQ,"sgQ/i");
     tree->Branch("lgQ",&ev.lgQ,"lgQ/i");
     tree->Branch("waveform",&ev.waveform);
 }
 
-// connect a channel-specific tree to correct variables so we can populate it
+// Used to connect a channel-specific tree to waveform event variables so we can
+// start populating it with waveform events
 void branchW(TTree* tree)
 {
     tree->Branch("macroNo",&ev.macroNo,"macroNo/i");
@@ -132,19 +147,20 @@ void branchW(TTree* tree)
     tree->Branch("waveform",&ev.waveform);
 }
 
-// add a new event to a channel-specific tree.
+// add an event to a channel-specific tree. This is called in the main event
+// loop once all the event variables have been filled.
 void fillTree(TTree* tree)
 {
     ev.macroNo = macroNo;
-    //ev.microNo = microNo;
     ev.evtNo = evtNo;
     ev.macroTime = macroTime;
     ev.completeTime = completeTime;
-    //ev.microTime = microTime;
     ev.targetPos = targetPos;
     ev.sgQ = sgQ;
     ev.lgQ = lgQ;
 
+    // To save only 1 DPP event's waveform in every 10000 events, uncomment this
+    // (Note - will reduce output tree size by ~half)
     /*if ((int)completeTime%10000 != 0 && evtType==1)
     {
         waveform.clear(); 
@@ -155,8 +171,8 @@ void fillTree(TTree* tree)
     tree->Fill();
 }
 
-// pull an event's waveform data in preparation for storing it in the
-// channel-specific trees
+// access an event's waveform data in preparation for storing it in a
+// channel-specific tree
 void getWaveform(vector<int>* dummyWaveform)
 {
     // empty the stale waveform data
@@ -196,8 +212,13 @@ void processWaveformEvent(TTree* tree)
     // update waveform data
     getWaveform(dummyWaveform);
 
+    // DPP mode is event type 1; waveform mode is event type 2
+    // We need to check and see if this waveform event is the first after a
+    // mode switch
     if (prevEvtType==1)
     {
+        // A mode switch has happened: reset the evtNo so that waveforms in
+        // this macropulse will be labeled 0, 1, 2, etc.
         evtNo=0;
     }
 
@@ -205,8 +226,7 @@ void processWaveformEvent(TTree* tree)
 }
 
 
-
-// using the lgQ from the target changer, assign each macropulse a target
+// Use the lgQ from the target changer to assign each macropulse a target
 // position
 int assignTargetPos(int lgQ)
 {
@@ -229,37 +249,53 @@ int assignTargetPos(int lgQ)
     return 0;
 }
 
+/******************************************************************************/
+// MAIN METHODS (i.e., used to directly process events)
+
+
 // fill the ch0Tree with target changer events so that we have macropulse
-// start times and target positions available for later processing
-// 
-// this is the first channel-specific tree we fill
+// start times and target positions available to assign to the detector
+// channels
+// ch0Tree is the first channel-specific tree we fill
 void processTargetChanger()
 {
     // Populate a tree of only target changer events in preparation
     // for assigning times and target changer positions to the
     // detector channels (ch2, ch4, ch6)
 
-    // set macroNo to 0 for the start of the run
+    // macroNo numbering starts at 0 (start of the sub-run)
     macroNo = 0;
 
     // loop through raw tree to find target changer events
     int totalEntries = tree->GetEntries();
 
-    // only use first 10% of entries (testing purposes)
+    // only use first 10% of entries (for debugging)
+    // uncomment to use
     //totalEntries /= 10;
 
     cout << "Processing target changer events into ch0Tree." << endl;
 
+    // Main loop through the events of the raw tree
     for (int i=0; i<totalEntries; i++)
     {
         tree->GetEntry(i);
 
         if (chNo == 0)
         {
-            // found a target changer event
-            // calculate the time of the start of the macropulse using the
-            // target changer event
+            if (lgQ == 65535)
+            {
+                // ignore target changer events that with off-scale integrated
+                // charge - these are suspected to be retriggers and are NOT
+                // time-correlated with the facility RF time reference.
+                continue;
+            }
+
+            // assign the macropulse time reference (start time) using the
+            // target changer event timestamps
             macroTime = (double)extTime*pow(2,32)+timetag;
+
+            // assign this event's timestamp (because this is a target changer
+            // event, this is the same as the macroTime)
             completeTime = macroTime;
 
             // extract the waveform data for the event
@@ -284,8 +320,15 @@ void processTargetChanger()
 
                 else
                 {
-                    // NOT the start of a new DPP period (99.8% of the time)
+                    // NOT the start of a new DPP period (99.9% of the time)
                     evtNo = 0;
+                }
+
+                if (extTime > extTimePrev && timetag > pow(2,32)-10000)
+                {
+                    error << "Found a target changer event with a timestamp-reset failure (i.e., extTime incremented before timetag was reset to 0). MacroNo = " << macroNo << ", completeTime = " << completeTime << ", extTime = " << extTime << ", extTimePrev = " << extTimePrev << ", timetag = " << timetag << ", timetagPrev = " << timetagPrev << endl;
+                    error << "Skipping to next target changer event..." << endl;
+                    continue;
                 }
 
                 // figure out which target is in the beam during this event
@@ -295,7 +338,7 @@ void processTargetChanger()
                 // tree with the event
                 fillTree(ch0Tree);
 
-                // increment macropulse counter to prepare for next macropulse
+                // increment macropulse counter to prep for next macropulse
                 macroNo++;
             }
 
@@ -333,9 +376,11 @@ void processTargetChanger()
                 fillTree(ch0TreeW);
             }
 
-            // before we pull the next event, save this event's type so we can
-            // check to see if the new event changes DPP/waveform mode
+            // before we pull the next event, save the previous event's data so we can
+            // compare them with the new event's data
             prevEvtType = evtType;
+            extTimePrev = extTime;
+            timetagPrev = timetag;
 
             cout << "Target position = " << targetPos << ", macroNo = " << macroNo << ", macroTime = " << macroTime << "\r";
             fflush(stdout);
@@ -361,24 +406,29 @@ void processDetEvents()
         // The time reference for each detector event will be the macropulse start
         // time (macroTime).
 
-        // each event is uniquely labeled by its channel-specific order in the
-        // macropulse
+        // each event should be uniquely labeled by its channel-specific order
+        // in the macropulse
         // reset event counter in preparation for looping through events
         evtNo = 0; 
 
-        // point to the first macropulse in preparation for reading detector events
+        // point to the first macropulse in preparation for assigning events to
+        // macropulses
         ch0Tree->GetEntry(0);
 
-        // reset the timestamp holders
+        // in preparation for comparing reset the timestamp holders
         prevMacroTime = 0;
         prevCompleteTime = 0;
-        double extTimePrev = 0;
-        double timetagPrev = 0;
+        extTimePrev = 0;
+        timetagPrev = 0;
 
+        // Define 'holders' for the channel-specific trees so that we can
+        // abstract tree processing onto the holders rather then directly on
+        // the trees themselves
         TTree *chTree, *chTreeW;
 
-        // set the time offset to be applied to each channel based on which
-        // channel we're sorting
+        // Each channel has a different time offset; set the time offset we
+        // should apply, depending on channel
+        // Also, assign the correct tree to the 'holders' just defined
         switch(detIndex)
         {
             case 2:
@@ -396,6 +446,9 @@ void processDetEvents()
                 TIME_OFFSET = MACROPULSE_OFFSET+SCAVENGER_OFFSET;
                 // no ch6 waveform tree
                 break;
+            default:
+                cout << "Error: non-existent channel index given by detIndex" << endl;
+                exit(1);
         }
 
         // all the preliminary steps ready:
@@ -412,151 +465,97 @@ void processDetEvents()
         // use to make sure we don't run off the end of the ch0Tree
         int ch0TreeEntries = ch0Tree->GetEntries();
 
+        // Main loop through monitor/detector events
         for (int index = 0; index<totalEntries; index++)
         {
             // pull next event's data from the raw tree
             tree->GetEntry(index);
 
+            // Only process events from the correct channel:
             if (chNo == detIndex)
             {
-                // we've located a detector event from the correct (jth) channel.
+                // we've located a detector event from the correct (detIndex) channel.
+
                 // use its data along with the target changer data to assign this
-                // event the correct time, macropulse no, etc.
+                // event the correct time, macropulse number, etc.
 
                 // first calculate this event's time
                 completeTime = (double)extTime*pow(2,32)+timetag+fineTime*(double)2/1024+TIME_OFFSET;
-
-                /*if(completeTime > 6000000000)
-                {
-                    // because the complete time is > 6 seconds, there must have
-                    // been a period of beam-off. Throw away all events with
-                    // times > 6 seconds and move the tree index forward to
-                    // point at the first event with beam back on, as evidenced
-                    // by a new macropulse trigger
-
-                    error << "At macroNo = " << macroNo;
-                    error << ", beam off period detected (completeTime > 6 seconds). Moving index forward to next DPP period." << endl;
-
-                    // first, point at the next macropulse trigger
-                    if (macroNo+1>=ch0TreeEntries)
-                    {
-                        cout << "Exceeded the last macropulse on ch0Tree. Exiting loop." << endl;
-                        break;
-                    }
-                    prevMacroTime = macroTime;
-                    ch0Tree->GetEntry(macroNo+1);
-
-                    // now move the det tree's index forward until it sees a
-                    // time reset (DPP/waveform mode switch), suggesting that
-                    // the beam is back on and we're in a new DPP period.
-                    do
-                    {
-                        do
-                        {
-                            if (index==totalEntries)
-                            {
-                                cout << "Reached the end of the raw tree; end looping." << endl;
-                                break;
-                            }
-                            index++;
-                            tree->GetEntry(index);
-                        }
-                        while (chNo != detIndex || evtType != 1);
-
-                        if (index==totalEntries)
-                        {
-                            break;
-                        }
-
-                        prevCompleteTime = completeTime;
-                        completeTime = (double)extTime*pow(2,32)+timetag;
-                    }
-                    while (prevCompleteTime < completeTime);
-
-                    if (index==totalEntries)
-                    {
-                        break;
-                    }
-
-                    cout << "Start new DPP period @ macroNo " << macroNo << "\r";
-                    fflush(stdout);
-                }*/
 
                 // now check to see if the event is DPP or waveform mode
                 if (evtType == 1)
                 {
                     // DPP mode
 
-                    if(macroNo>=70626 && macroNo<=70628)
-                    {
-                        error << "completeTime = " << completeTime << ", extTime = " << extTime << ", timestamp = " << timetag << ", macroTime = " << macroTime << ", macroNo = " << macroNo << endl;
-                    }
+                    // Now, it's time to apply some filters to ignore events
+                    // that have problems with their time structure
 
-                    // check to see if there was a timestamp-reset failure (the
+                    // Check to see if there was a timestamp-reset failure (the
                     // extended timestamp incremented, but the 32-bit timestamp
                     // didn't reset). If so, discard the event and move on.
 
-                    if (extTime > extTimePrev && timetag > timetagPrev)
+                    if (extTime > extTimePrev && timetag > pow(2,32)-10000)
                     {
-                        error << "Found an event with a timestamp-reset failure (i.e., extTime incremented before timetag was reset to 0). Macrotime = " << macroTime << ", macroNo = " << macroNo << "completeTime = " << completeTime << endl;
+                        error << endl << "MACRO NO " << macroNo << endl;
+                        error << "Found a detector event with a timestamp-reset failure (i.e., extTime incremented before timetag was reset to 0). completeTime = " << completeTime << endl;
                         error << "Skipping to next event..." << endl;
                         continue;
                     }
 
-                    // Now check to see if we've wrapped around to a new DPP 
-                    // mode period.
+                    // Next, check to see if this is event is the first one
+                    // of a new DPP mode period.
+
                     // When a DPP/waveform mode switch occurs, the timestamps are reset to 0 at
                     // the start of the new mode. To keep track of when a channel switches
-                    // modes, we need to compare consecutive events' timestamps.
+                    // modes, we should compare consecutive events' timestamps.
                     if (completeTime < prevCompleteTime)
                     {
-                        // new DPP mode period, triggered by a
-                        // channel-specific event wrapping back around
-                        // to time zero
+                        // new DPP mode period, triggered by this event's
+                        // timestamp wrapping back around to time zero
 
-                        // update the ch0Tree to point at the new
-                        // macropulse
-                        error << endl;
+                        // move to the next macropulse of the ch0Tree
                         do
                         {
                             if (macroNo+1>=ch0TreeEntries)
                             {
+                                // ran out of new macropulses - start a series
+                                // of breaks to exit the main loop
                                 cout << "Exceeded the last macropulse on ch0Tree. Exiting loop." << endl;
                                 break;
                             }
 
                             prevMacroTime = macroTime;
                             ch0Tree->GetEntry(macroNo+1);
-                            error << "macroTime (" << macroTime << ") < prevMacroTime (" << prevMacroTime << "); looping to find next DPP mode period" << endl;
                         }
                         while (prevMacroTime < macroTime);
 
                         if (macroNo+1>=ch0TreeEntries)
                         {
-                            cout << "Exceeded the last macropulse on ch0Tree. Exiting loop." << endl;
+                            // next break statement, needed to exit the main loop
                             break;
                         }
 
-                        cout << "Start new DPP period @ macroNo " << macroNo << "\r";
-                        fflush(stdout);
                         // ch0Tree is now pointing at the first
                         // macropulse of the next DPP mode period
-
+                        cout << "Start new DPP period @ macroNo " << macroNo << "\r";
+                        fflush(stdout);
+                        
                         // reset the event counter for this channel
                         evtNo = 0;
                     }
 
-                    // check to see if enough time has elapsed such that
-                    // we should update the current macropulse to a new
-                    // one
+                    // check to see if enough time has elapsed that the current
+                    // macropulse has expired (i.e., beam has gone off again)
                     else if (completeTime-macroTime-TIME_OFFSET > 8000000)
                     {
                         // macropulse expired
-                        // time to examine the next macropulse
+                        // time to switch to the next macropulse
 
                         // hold the old macro time so we'll be able to
                         // compare it with the new macro time and make
                         // sure there's still normal beam structure
+                        // (i.e., no beam-off periods or accidental
+                        // re-triggerings)
                         prevMacroTime = macroTime;
 
                         if (macroNo+1>=ch0TreeEntries)
@@ -564,25 +563,20 @@ void processDetEvents()
                             cout << "Exceeded the last macropulse on ch0Tree. Exiting loop." << endl;
                             break;
                         }
-                        // we're not at the end of the run, so we
-                        // should pull the next macropulse to see
-                        // what to do with it
 
+                        // we're not at the end of the run, so proceed to the
+                        // next macropulse on ch0Tree
                         ch0Tree->GetEntry(macroNo+1);
 
-                        //cout << "macropulse expired; new macroTime = " << macroTime << ", macroNo = " << macroNo << endl;
-                        //fflush(stdout);
-
-                        // evtNo was updated when we pulled the next
-                        // macropulse - let's check to see if we've
-                        // reached the end of a DPP period
+                        // If the macropulse was the first macropulse of a new
+                        // DPP mode, then evtNo will have been updated
+                        // to be 1 (otherwise, it's 0).
                         if (evtNo==1)
                         {
                             // new DPP period found because the
                             // macropulse has evtNo==1, so move the
                             // cleaned tree indices forward to the new
                             // DPP period
-
                             do
                             {
                                 do
@@ -604,8 +598,6 @@ void processDetEvents()
 
                                 prevCompleteTime = completeTime;
                                 completeTime = (double)extTime*pow(2,32)+timetag+TIME_OFFSET;
-                                //error << "completeTime (" << completeTime << "); macroTime (" << macroTime << "); in a macropulse 'evtNo==1' loop" << endl;
-
                             }
                             while (prevCompleteTime < completeTime || extTime > 0);
 
@@ -618,21 +610,14 @@ void processDetEvents()
                             fflush(stdout);
                         }
 
-                        // not a new DPP period, so lastly let's check
-                        // to see if there are any beam anomalies (that
-                        // is, the new macropulse is out-of-sync with
-                        // the old one)
-                        else if ((macroTime-prevMacroTime > 8300000 && macroTime-prevMacroTime < 8360000) || (macroTime-prevMacroTime > 16600000 && macroTime-prevMacroTime < 17200000) || (macroTime-prevMacroTime > 24900000 && macroTime-prevMacroTime < 25080000))
+                        // not a new DPP period
+                        // Lastly, let's check to see if there are any beam
+                        // anomalies (that is, the new macropulse is
+                        // out-of-sync with the RF frequency )
+                        else if (!(macroTime-prevMacroTime > MACRO_PERIOD-30000 && macroTime-prevMacroTime < MACRO_PERIOD+30000) && !(macroTime-prevMacroTime > 2*(MACRO_PERIOD-30000) && macroTime-prevMacroTime < 2*(MACRO_PERIOD+30000)) && !(macroTime-prevMacroTime > 3*(MACRO_PERIOD-30000) && macroTime-prevMacroTime < 3*(MACRO_PERIOD+30000)) && !(macroTime-prevMacroTime > 4*(MACRO_PERIOD-30000) && macroTime-prevMacroTime < 4*(MACRO_PERIOD+30000)))
                         {
-                            // no beam anomaly - keep filling the
-                            // channel-specific tree and continue as
-                            // normal
-                        }
-
-                        else
-                        {
-                            // there IS a beam anomaly - cycle through
-                            // the cleaned and ch0Tree until we find
+                            // there is a beam anomaly - cycle through
+                            // the ch0Tree until we find
                             // another period of clean beam
 
                             // keep track of the first macroTime with a beam
@@ -642,16 +627,15 @@ void processDetEvents()
 
                             error << endl << "MACRO NO " << macroNo << endl;
                             error << "Macropulse timing anomaly found at macroTime = " << beamAnomalyStart << endl;
-                            error << "prevMacroTime = " << prevMacroTime << ", completeTime = " << completeTime << endl;
+                            error << "macroTime - prevMacroTime = " << macroTime-prevMacroTime << endl;
+                            error << "Looping through macropulse list..." << endl;
 
-                            while(!(macroTime-prevMacroTime > 8300000 && macroTime-prevMacroTime < 8360000) && !(macroTime-prevMacroTime > 16600000 && macroTime-prevMacroTime < 17200000) && !(macroTime-prevMacroTime > 24900000 && macroTime-prevMacroTime < 25080000))
+                            do
                             {
                                 // update the ch0Tree to point at the
                                 // next macropulse so we can check to
                                 // see if it's out-of-sync with the
                                 // previous macropulse 
-
-                                //cout << "macroNo = " << macroNo << ", macroTime = " << macroTime << ", prevMacroTime = " << prevMacroTime << endl;
 
                                 if (macroNo+1>=ch0TreeEntries)
                                 {
@@ -661,15 +645,16 @@ void processDetEvents()
 
                                 prevMacroTime = macroTime;
                                 ch0Tree->GetEntry(macroNo+1);
-                                error << "macroTime (" << macroTime << "); in macropulse anomaly loop" << endl;
-                            };
+                                error << "macroTime = " << macroTime << "; macroTime-prevMacroTime = " << macroTime-prevMacroTime << endl;
+                            }
+                            while (!(macroTime-prevMacroTime > MACRO_PERIOD-30000 && macroTime-prevMacroTime < MACRO_PERIOD+30000) && !(macroTime-prevMacroTime > 2*(MACRO_PERIOD-30000) && macroTime-prevMacroTime < 2*(MACRO_PERIOD+30000)) && !(macroTime-prevMacroTime > 3*(MACRO_PERIOD-30000) && macroTime-prevMacroTime < 3*(MACRO_PERIOD+30000)) && !(macroTime-prevMacroTime > 4*(MACRO_PERIOD-30000) && macroTime-prevMacroTime < 4*(MACRO_PERIOD+30000)));
 
                             error << "Beam anomaly finished; new macroTime is " << macroTime << ", macroNo " << macroNo << ", completeTime = " << completeTime << endl;
 
-                            // OK - ch0Tree is now in a period of
-                            // good beam. We need to move the cleaned
-                            // tree index forward to point at this new
-                            // area of good beam
+                            // OK - ch0Tree is now pointing at a macropulse in a
+                            // period of good beam. We need to move forward in
+                            // the raw tree to point at the same area of good
+                            // beam
 
                             // Two steps must be taken to make sure
                             // we've moved the channel index far enough
@@ -677,10 +662,10 @@ void processDetEvents()
                             //
                             // 1) if the beam anomaly spanned a
                             // switch from DPP to waveform mode, we
-                            // must first move the cleaned tree index forward to
-                            // the new DPP period
+                            // must first move the raw tree index forward to
+                            // the new DPP mode's events
                             //
-                            // 2) move the cleaned tree index forward until the
+                            // 2) move the raw tree index forward until the
                             // detector events are after the time-zero of the
                             // current macropulse
 
@@ -688,7 +673,7 @@ void processDetEvents()
                             if (beamAnomalyStart > macroTime)
                             {
                                 // beam anomaly DID span a DPP/waveform mode
-                                // change
+                                // move the raw tree forward past mode change
                                 error << "Beam anomaly spanned DPP/waveform mode change; moving the channel index forward to the next DPP mode period." << endl;
                                 do
                                 {
@@ -707,6 +692,8 @@ void processDetEvents()
 
                                     if (index==totalEntries)
                                     {
+                                        // Reached the end of raw tree;
+                                        // end sorting.
                                         break;
                                     }
 
@@ -717,9 +704,9 @@ void processDetEvents()
                                 // keep looping until the timestamps reset to 0 for
                                 // this channel (i.e., new DPP period)
                                 while (prevCompleteTime < completeTime);
-                            }
 
-                            error << "Finished moving channel index forward to the next DPP mode period." << endl;
+                                error << "Finished moving channel index forward to the next DPP mode period." << endl;
+                            }
 
                             // if we've reached the end of the raw tree events,
                             // exit the loop
@@ -743,7 +730,7 @@ void processDetEvents()
                             }
                             while (completeTime < macroTime);
 
-                            // now the cleaned tree index is pointing
+                            // now the raw tree index is pointing
                             // to the area of good beam, so continue
                             // filling the channel-specific tree
                         }
@@ -755,8 +742,9 @@ void processDetEvents()
                         evtNo = 0;
                     }
 
-                    // now all DPP event variables have the correct values; fill the
-                    // tree with an event
+                    // now all DPP event variables have the correct values, and
+                    // we're pointing at the correct macropulse in ch0Tree
+                    // --> fill the channel-specific tree with the event
                     processDPPEvent(chTree);
                 }
 
@@ -768,6 +756,7 @@ void processDetEvents()
 
                 // in preparation for looping to the next event, update counters
                 evtNo++;
+
                 prevCompleteTime = completeTime;
                 prevEvtType = evtType;
                 extTimePrev = extTime;
@@ -777,10 +766,16 @@ void processDetEvents()
     }
 }
 
+/******************************************************************************/
+// MAIN
+
+// Set cout precision to display the entire value of event timestamps
 int main(int argc, char* argv[])
 {
+    cout << endl << "Entering re-sort..." << endl;
 
     cout.precision(13);
+    error.precision(13);
 
     // read in the raw tree name
     string runDir = argv[1];
@@ -797,94 +792,83 @@ int main(int argc, char* argv[])
 
     treeName << "run" << runDir << "-" << runNo; 
 
-    // write out sorting errors to errors.log
+    // Create an error log where sorting errors are recorded
     errorName << outpath <<  "/analysis/run" << runDir << "/" << treeName.str() << "_error.log";
     error.open(errorName.str());
 
+    // Prepare filenames for input file (raw tree) and output file (channel-
+    // specific trees)
     fileInName << outpath <<"/analysis/run" << runDir << "/" << treeName.str() << "_raw.root";
     fileOutName << outpath <<"/analysis/run" << runDir << "/" << treeName.str() << "_sorted.root";
 
+    // Check to see if an output file already exists. If it does, abort sorting
+    // and pass control back up to ./sort.sh
     fileOut = new TFile(fileOutName.str().c_str(),"UPDATE");
-
     if(fileOut->Get("ch0Tree"))
     {
-        cout << "Found previously existing channel-specific sorted trees - skipping channel-specific sorting." << endl;
+        cout << fileOutName.str() << " already exists. Skipping ./resort..." << endl;
+        exit(0);
+    }
+
+    // no pre-existing output file: we'll need to do a new sort on the raw
+    // tree data. So, first create the channel-specific trees:
+    ch0Tree = new TTree("ch0Tree","");
+    branch(ch0Tree);
+
+    ch2Tree = new TTree("ch2Tree","");
+    branch(ch2Tree);
+
+    ch4Tree = new TTree("ch4Tree","");
+    branch(ch4Tree);
+
+    ch6Tree = new TTree("ch6Tree","");
+    branch(ch6Tree);
+
+    ch0TreeW = new TTree("ch0TreeW","");
+    branchW(ch0TreeW);
+
+    ch2TreeW = new TTree("ch2TreeW","");
+    branchW(ch2TreeW);
+
+    ch4TreeW = new TTree("ch4TreeW","");
+    branchW(ch4TreeW);
+
+    file = new TFile(fileInName.str().c_str(),"READ");
+
+    if(!file->Get("tree"))
+    {
+        cout << "Error: failed to find raw tree in " << fileInName.str() << endl;
         exit(1);
     }
 
-    else
-    {
-        // no pre-existing output file: we'll need to do a new sort on the raw
-        // tree data. So, first create the channel-specific trees:
-        ch0Tree = new TTree("ch0Tree","");
-        branch(ch0Tree);
+    tree = (TTree*)file->Get("tree");
 
-        ch2Tree = new TTree("ch2Tree","");
-        branch(ch2Tree);
+    // link the raw tree to our buffer variables
+    tree->SetBranchAddress("chNo",&chNo);
+    tree->SetBranchAddress("evtType",&evtType);
+    tree->SetBranchAddress("timetag",&timetag);
+    tree->SetBranchAddress("extTime",&extTime);
+    tree->SetBranchAddress("sgQ",&sgQ);
+    tree->SetBranchAddress("lgQ",&lgQ);
+    tree->SetBranchAddress("fineTime",&fineTime);
+    tree->SetBranchAddress("waveform",&dummyWaveform);
 
-        ch4Tree = new TTree("ch4Tree","");
-        branch(ch4Tree);
+    // populate target changer events
+    processTargetChanger();
 
-        ch6Tree = new TTree("ch6Tree","");
-        branch(ch6Tree);
+    // Now the macropulse structure is prepared in ch0Tree
+    // link ch0Tree branches to macropulse variables in preparation for
+    // filling ch2, ch4, ch6 trees
+    ch0Tree->SetBranchAddress("macroNo",&macroNo);
+    ch0Tree->SetBranchAddress("evtNo",&evtNo);
+    ch0Tree->SetBranchAddress("macroTime",&macroTime);
+    ch0Tree->SetBranchAddress("targetPos",&targetPos);
 
-        ch0TreeW = new TTree("ch0TreeW","");
-        branchW(ch0TreeW);
+    // loop through raw tree multiple times, once per detector channel, and
+    // populate detector events into channel-specific trees
+    processDetEvents();
 
-        ch2TreeW = new TTree("ch2TreeW","");
-        branchW(ch2TreeW);
+    fileOut->Write();
 
-        ch4TreeW = new TTree("ch4TreeW","");
-        branchW(ch4TreeW);
-
-        file = new TFile(fileInName.str().c_str(),"READ");
-
-        if(file->Get("tree"))
-        {
-            // Found the raw tree; start sorting the raw trees into new trees for
-            // each channel.
-            cout << "Found a raw event tree; creating cleaned subtrees." << endl;
-
-            tree = (TTree*)file->Get("tree");
-
-            // link the raw tree to our buffer variables
-            tree->SetBranchAddress("chNo",&chNo);
-            tree->SetBranchAddress("evtType",&evtType);
-            tree->SetBranchAddress("timetag",&timetag);
-            tree->SetBranchAddress("extTime",&extTime);
-            tree->SetBranchAddress("sgQ",&sgQ);
-            tree->SetBranchAddress("lgQ",&lgQ);
-            tree->SetBranchAddress("fineTime",&fineTime);
-            tree->SetBranchAddress("waveform",&dummyWaveform);
-        }
-
-        else
-        {
-            cout << "Failed to find raw tree - exiting " << fileInName << endl;
-            exit(1);
-        }
-
-        // We need to populate events into two trees for each channel, one for DPP
-        // mode and one for waveform mode (except for ch6, which has no waveform
-        // mode data).
-
-        // populate target changer events
-        processTargetChanger();
-
-        // Now the macropulse structure is prepared in ch0Tree
-        // link ch0Tree branches to macropulse variables in preparation for
-        // filling ch2, ch4, ch6 trees
-        ch0Tree->SetBranchAddress("macroNo",&macroNo);
-        ch0Tree->SetBranchAddress("evtNo",&evtNo);
-        ch0Tree->SetBranchAddress("macroTime",&macroTime);
-        ch0Tree->SetBranchAddress("targetPos",&targetPos);
-
-        // loop through raw tree multiple times, once per detector channel, and
-        // populate detector events into channel-specific trees
-        processDetEvents();
-
-        fileOut->Write();
-
-        fileOut->Close();
-    }
+    fileOut->Close();
 }

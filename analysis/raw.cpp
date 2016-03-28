@@ -1,12 +1,21 @@
-// Reads output from washudaq-X.X and sorts into ROOT and text files
+/******************************************************************************
+                                   raw.cpp
+******************************************************************************/
+
+// This is called by ./sort.sh and is the first subcode for total neutron
+// cross-section analysis. It reads raw hexidecimal data from .evt files
+// and creates a ROOT file, runX-YYYY_raw.root, with one ROOT tree containing
+// all events from the raw file.
 // 
-// The raw event file structure should be as follows:
+// This file expects .evt file data with the following structure:
+//
+//      ---------------------------------------------------------------------------
 //
 //      EVENT HEADER:
 //
 //      Size            |   uint32; number of bytes in the event (self-inclusive)
-//      Event Type      |   uint32; possible values are 1 (DPP data) or 2 (waveform)
-//      Channel         |   uint32; channel number of event, starting with 0
+//      Event Type      |   uint32; possible values are 1 (DPP) or 2 (waveform)
+//      Channel         |   uint32; channel number of event (range: 0-7)
 //      Time Tag        |   uint32; coarse time (2 ns units) of event trigger
 //
 //      (every event has an EVENT HEADER)
@@ -46,6 +55,8 @@
 
 using namespace std;
 
+// To populate events from the raw file into a ROOT tree, we need to provide
+// an event structure, listing all the variables that comprise an event.
 struct event
 {
     unsigned int chNo; // describe data stream origin (i.e., detector, monitor, target changer)
@@ -59,23 +70,27 @@ struct event
     vector<int> waveform; // contains all waveform samples for each event to allow for corrections in analysis
 } ev;
 
-// Buffer variables
+// To parse data from the raw .evt file, we will need buffer (dummy) variables.
+// Data is provided in hexadecimal words (16 bits long) in the .evt files, so
+// we'll use a C++ short to store each word.
 int const BufferWords = 1;
 int const BufferBytes = BufferWords*2;
 unsigned short buffer[BufferWords];
 unsigned short *point;
 
-// data variables to read from input file 
+// Declare event variables (as listed in the program description - see start of file)
 unsigned int size, evtType, chNo, sgQ, lgQ, extTime, fineTime, nSamp, extraSelect, extras1, extras2;
-double timetag;
-vector<int> waveform; // holds waveform samples for each event
+double timetag; // timetag is a 32-bit value, so requires a C++ double
+vector<int> waveform; // holds waveform samples for each event. Samples are 14 bits each.
 
-// Tree definition
+// Declare a ROOT tree for storing events 
 TTree* tree;
 
+// This method is used by processRun() to loop through the raw .evt file, parsing it
+// into individual events.
 void readEvent(ifstream& evtfile)
 {
-    // start reading header
+    // start reading event header (common to all events)
 
     // size is the number of bytes in the event (self-inclusive)
     unsigned short size1 = buffer[0];
@@ -108,7 +123,7 @@ void readEvent(ifstream& evtfile)
 
     if(evtType==1)
     {
-        // DPP EVENT BODY unpacking 
+        // start reading DPP event body data (specific to DPP events)
 
         // EXTRAS is a 32-bit word whose content varies with the value of EXTRA_SELECT.
         // [DEFAULT]    0: extended timestamp (bits 16-31) and baseline*4 (bits 0-15)
@@ -137,6 +152,11 @@ void readEvent(ifstream& evtfile)
                 fineTime = (extras1 & 0x03ff);
                 break;
 
+            // Other cases not implemented in acquisition
+            default:
+                cout << "Error: extraSelect != 2; other values of extraSelect not implemented" << endl;
+                exit(1);
+                break;
         }
 
         // sgQ is the short gate integrated charge, in digitizer units 
@@ -155,6 +175,7 @@ void readEvent(ifstream& evtfile)
         // probe indicates whether an additional analog waveform will be captured along with the
         // input trace. The top bit turns on the analog probe; the bottom two bits describe the
         // probe type.
+        // Note: this is a diagnostic tool for acquisition turned off during production runs
         //probe = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
     }
@@ -172,14 +193,14 @@ void readEvent(ifstream& evtfile)
 
     // read waveform, consisting of nSamp samples
     waveform.clear();
-    
     for(int i=0;i<nSamp;i++)
     {
         waveform.push_back(buffer[0]);
         evtfile.read((char*)buffer,BufferBytes);
     }
 
-    // fill tree w/ event data
+    // In preparation for filling the tree with this event,
+    // fill the event variables with the event data just collected above
     ev.chNo = chNo;
     ev.evtType = evtType;
     ev.extTime = extTime;
@@ -189,13 +210,8 @@ void readEvent(ifstream& evtfile)
     ev.lgQ = lgQ;
     ev.waveform = waveform; 
 
-    // ignore 'junk' macropulse signals with off-scale lgQ
-    // --> not sure what these events are... didn't notice them during the
-    // experiment
-    if (lgQ != 65535 || chNo !=0)
-    {
-        tree->Fill();
-    }
+    // Add event to tree
+    tree->Fill();
 
     // clear all DPP-specific event variables to prepare for next event
     extTime = 0;
@@ -204,20 +220,23 @@ void readEvent(ifstream& evtfile)
     lgQ = 0;
 }
 
+// Once the tree is created and ready to be filled, and the data has been
+// located, main calls this method to loop through a run and pull out events
 void processRun(string evtname)
 {
-    // attempt to process the event file 'evtname' as defined in main()
+    // attempt to open file
     ifstream evtfile;
     evtfile.open(evtname,ios::binary);
-
     if (!evtfile)
     {
+        // failed to open event file; abort sorting script
         cout << "Failed to open " << evtname << ". Please check that the file exists" << endl;
-        abort();
+        exit(1);
     }
 
-    else // successfully opened event file; start processing events
+    else 
     {
+        // successfully opened event file; start processing events
         cout << evtname << " opened successfully. Start reading events..." << endl;
 
         evtfile.read((char*)buffer,BufferBytes);
@@ -252,6 +271,7 @@ void processRun(string evtname)
 
 int main(int argc, char* argv[])
 {
+    cout << endl << "Entering raw sort..." << endl;
     // read in data run location
     string runDir = argv[1];
     string runNo = argv[2];
@@ -270,30 +290,27 @@ int main(int argc, char* argv[])
 
     if(file->Get("tree"))
     {
-        cout << "Found previously existing tree - skipping raw sorting of " << treeName << endl;
-        exit(1);
+        cout << "Found previously existing raw sort " << fileName.str() << ". Skipping raw sort..." << endl;
+        exit(0);
     }
 
-    else
-    {
-        tree = new TTree("tree","");
-        cout << "Created ROOT tree " << treeName.str() << endl;
+    tree = new TTree("tree","");
+    cout << "Created ROOT tree " << treeName.str() << endl;
 
-        tree->Branch("evtType",&ev.evtType,"evtType/i");
-        tree->Branch("chNo",&ev.chNo,"chNo/i");
-        tree->Branch("extTime",&ev.extTime,"extTime/i");
-        tree->Branch("timetag",&ev.timetag,"timetag/d");
-        tree->Branch("fineTime",&ev.fineTime,"fineTime/i");
-        tree->Branch("sgQ",&ev.sgQ,"sgQ/i");
-        tree->Branch("lgQ",&ev.lgQ,"lgQ/i");
-        tree->Branch("waveform",&ev.waveform);
+    tree->Branch("evtType",&ev.evtType,"evtType/i");
+    tree->Branch("chNo",&ev.chNo,"chNo/i");
+    tree->Branch("extTime",&ev.extTime,"extTime/i");
+    tree->Branch("timetag",&ev.timetag,"timetag/d");
+    tree->Branch("fineTime",&ev.fineTime,"fineTime/i");
+    tree->Branch("sgQ",&ev.sgQ,"sgQ/i");
+    tree->Branch("lgQ",&ev.lgQ,"lgQ/i");
+    tree->Branch("waveform",&ev.waveform);
 
-        stringstream runName;
-        runName << analysispath <<"/output/run" << runDir << "/data-" << runNo << ".evt";
-        processRun(runName.str());
+    stringstream runName;
+    runName << analysispath <<"/output/run" << runDir << "/data-" << runNo << ".evt";
+    processRun(runName.str());
 
-        file->Write();
+    file->Write();
 
-        file->Close();
-    }
+    file->Close();
 }

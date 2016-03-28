@@ -244,7 +244,7 @@ void processTargetChanger()
         {
             // found a target changer event
 
-            if (lgQ=65535)
+            if (lgQ == 65535)
             {
                 // ignore target changer events that with off-scale integrated
                 // charge - these are suspected to be retriggers and are NOT
