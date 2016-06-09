@@ -6,6 +6,7 @@
 #include "TFile.h"
 #include "TTree.h"
 #include "TF1.h"
+#include "TF1Convolution.h"
 #include "TH1.h"
 #include "TH2.h"
 #include "TCanvas.h"
@@ -15,6 +16,7 @@
 #include "TROOT.h"
 #include "TApplication.h"
 #include "TMath.h"
+#include "TVirtualFFT.h"
 
 using namespace std;
 
@@ -32,12 +34,12 @@ const int npts = 25;    // number of points per pulse
 
 // set the size of the window (in number of samples) where peak-fitting is done
 // on raw waveforms
-const int PEAKFIT_WINDOW = 20; // in samples
+const int PEAKFIT_WINDOW = 40; // in samples
 
 // Set the offset of the processing window relative to the trigger sample
 // (i.e., -4 means peak fitting includes 4 samples before the trigger when
 // filling the fitting histogram)
-const int PEAKFIT_START = -3; // in samples
+const int PEAKFIT_START = -8; // in samples
 
 // time spacing between samples
 const int SAMPLE_PERIOD = 2; // in ns
@@ -55,20 +57,45 @@ const int WAVEFORM_OFFSET = -960; // in ns
 const int TRIGGER_HOLDOFF = 10; // in samples
 
 // If chi-square of the peak fit is worse than this, try fitting as a double-peak
-const float ERROR_LIMIT = 10.0;
+const float ERROR_LIMIT = 20.0;
+
+// If chi-square of the double peak fit is worse than this, throw trigger away
+// and generate error
+const float ERROR_LIMIT_2 = 50.0;
+
+const double CFD_SCALEDOWN = 2;
+
+const double CFD_DELAY = 3;
+
+const double FERMI_OFFSET = 11.5; // in ns
 
 // Declare a float to hold the calculated baseline value
-float baseline = 14800;
+float baseline = 14830;
 
-const int nParams = 7;   // number of parameters for fit
+const int nParamsOnePeak = 6;
+const int nParamsOnePeakExpBack = 8;
+const int nParamsTwoPeaks = 8;
 
-// Initial single-peak fitting function parameters
-float A_init  = -10;   // amplitude of peak
-float trig_init = 0; // trigger time
-float n_init  = 1.5;   // exponent of monomial
-float d_init  = 3.7;   // decay constant of exponential (in samples)
-float C_init  = baseline;  // background is zero
-float m_init  = 0;   // background is zero
+// Initial fitting function parameters
+float A_init  = -300;     // amplitude of peak
+float B_init  = -300;     // amplitude of peak 2
+float trig1_init = 0;     // first peak trigger time
+float trig2_init = 40;    // second peak trigger time
+float n_init  = 8;        // exponent of peak monomial
+float d_init  = 1.4;      // decay constant of peak exponential
+float C_init  = baseline; // background offset
+float m_init = 0;         // flat baseline
+float E_init  = 0.0;      // previous-peak background: amplitude
+float tE_init = 0; // previous-peak background: time offset
+
+double gammaWindow[2] = {80,100};
+
+int numberGoodFits = 0;
+int numberBadFits = 0;
+
+int numberOnePeakFits = 0;
+int numberOnePeakExpBackFits = 0;
+int numberTwoPeakFits = 0;
 
 /*****************************************************************************/
 // Cross-section calculation variables and parameters
@@ -79,7 +106,7 @@ const double FLIGHT_DISTANCE = 2672; // detector distance from source, in cm
 // 2080 for Neon  
 
 // Period of micropulses
-const double MICRO_PERIOD = 1788.820; // in ns
+const double MICRO_PERIOD = 1788.814; // in ns
 
 // Physical constants
 const double C = 299792458; // speed of light in m/s
@@ -90,10 +117,6 @@ double avo = 6.022*pow(10.,23.); // Avogadro's number, in atoms/mol
 
 
 /* Target data */
-
-// State the number of targets currently being cycled over to indicate how many
-// histograms should be populated
-const int noTargets = 5;
 
 // physical target data, listed in order:
 // {blank, Sn112, Natural Sn, Sn124, short carbon, long carbon} 
@@ -106,6 +129,11 @@ double targetMolMass[6] = {0,12.01,12.01,112,118.7,124}; //g/mol
 
 // density of each target:
 double targetdensity[6] = {0,2.2,2.2,6.89,7.31,7.63}; //g/cm^3
+
+/* Plotting variables */
+const double CS_LOWER_BOUND = 1; // cross-section plots' lower bound, in MeV
+const double CS_UPPER_BOUND = 700; // cross-section plots' upper bound, in MeV
+
 
 // keep track of which order the targets are in, based on which run number we're
 // sorting
@@ -129,12 +157,14 @@ TH1I *target4RawLog;
 TH1I *target5RawLog;
 
 TH1I *TOF;
+TH1I *relativeTriggerSampleHisto;
 
 TH2I *triggerWalk;
 
 TH1I *peakHisto;
 
-TF1 *onePeakFunc;
+TF1 *fittingFunc;
+TF1Convolution *convolvedPeakFunc;
 
 // Set number of bins for energy histograms
 const int noBins = 30;
@@ -149,21 +179,259 @@ double microTime, velocity, rKE;
 
 // Keep track of the number of waveforms collected during each target's period
 // in the beam
-int targetCounts[noTargets] = {0};
+int targetCounts[6] = {0};
 
-// minimum bound on permissible peak-fit parameter values
-float paramMin[nParams] = {0., -6., 0., 2., 14700., -0.5};
 
-// maximum bound on permissible peak-fit parameter values
-float paramMax[nParams] = {-2000., 5., 4., 5., 14950., 0.5}; 
-// (from Bec) digitizer bits : 0 volts = 128
+/**************************** PARAMETER LIMITS *******************************/
+
+// One-peak fitting
+const float onePeakParamMin[nParamsOnePeak] = {-300000., -10., 5, 0.2, 14800., -0.2};
+                                             // A         t1   n    d    C       m
+const float onePeakParamMax[nParamsOnePeak] = {-30.,     2.,   20,   3,   14860., 0.2};
+
+
+// One-peak-plus-exponential-tail fitting
+const float onePeakExpBackParamMin[nParamsOnePeakExpBack] = {-300000., -10., 5, 0.2, 14800., -0.2, -30000, -5};
+                                                          // A         t1    n    d    C       m     E       tE
+const float onePeakExpBackParamMax[nParamsOnePeakExpBack] = {-30.,     6.,   20,   3,   14860., 0.2,  30000,  20};
+
+
+// Two-peak fitting
+const float twoPeakParamMin[nParamsTwoPeaks] = {-300000., -300000., -10., 10, 5, 0.2, 14800., -0.2};
+                                             // A         B         t1    t2  n    d    C       m
+const float twoPeakParamMax[nParamsTwoPeaks] = {-30.,     -30.,     6,    50, 20,   3,   14860., 0.2};
+
+/*****************************************************************************/
 
 // Keep track of sample number where triggers are found
-vector<int> triggerList;
-vector<int> triggerValues;
+vector<double> triggerList;
+vector<double> triggerValues;
 
 float chisqMax = 1.5;
 float chisqThresh = 0.4;
+
+/*****************************************************************************/
+/* Define the peak-fitting functional form here:
+ *
+ *  onePeakForm = A * (t-t0)^n * exp[-((t-t0)^1)/w] + [C + m*(t-t0)]
+ *       + B * (t-t1)^n * exp[-((t-t1)^1)/w]
+ *
+ *  par[0] = A = amplitude of first peak
+ *  par[1] = B = amplitude of second peak
+ *  par[2] = t1 = starting time of first peak
+ *  par[3] = t2 = starting time of second peak
+ *  par[4] = n = polynomial order of peak (rise rate)
+ *  par[5] = w = exponential decay constant of peak (fall rate)
+ *  par[6] = C = baseline offset
+ *  par[7] = m = slope of baseline
+ *
+ *  During the first attempt at fitting, set B = 0 and allow A, t1, C, and m
+ *  to vary. If this produces a satisfactory fit (chi squared < ERROR_LIMIT),
+ *  then we end fitting and accept the fit's trigger time, amplitude, etc for
+ *  this peak.
+ *  If this failes to produce a satisfactory fit, then we reset the parameters
+ *  to their initial states and allow B and t2 to vary as well (i.e., allow
+ *  two peaks in the fit). If this fitting also fails, we skip the peak region
+ *  and indicate an error.
+
+Double_t onePeakForm(Double_t *x, Double_t *par)
+{
+    Double_t fitval;    // fitted value of function
+    Double_t arg1 = 0;   // argument of exponential 1
+    Double_t arg2 = 0;   // argument of exponential 2
+
+    if (par[5]!=0)
+    {
+        arg1 = pow((x[0]-par[2]),2)/par[5];
+        arg2 = pow((x[0]-par[3]),2)/par[5];
+    }
+
+    fitval = par[6] + par[7]*(x[0]-par[2]);
+    fitval += par[0]*pow((x[0]-par[2]),par[4])*exp(-arg1);
+    fitval += par[1]*pow((x[0]-par[3]),par[4])*exp(-arg2);
+
+    // If before first peak start, set to background + peak's gaussian
+    if (x[0]<par[2])
+    {
+        fitval = par[6] + par[7]*(x[0]-par[2]);
+    }
+
+    // If before second peak start, set to background + first peak
+    if (x[0]<par[3] && x[0]>=par[2])
+    {
+        fitval = par[6] + par[7]*(x[0]-par[2]);
+        fitval += par[0]*pow((x[0]-par[2]),par[4])*exp(-arg1);
+    }
+
+    return fitval;
+}
+*/
+
+/*****************************************************************************/
+/* The peak-fitting functional form is defined as a linear background plus
+ * (up to) two peaks, with each peak a convolution of a Maxwell-Boltzmann and a
+ * Gaussian.
+ *
+ * Thus, convolutedPeakFunc =
+ *   Integral (A * (i-t1)^n * exp[-((i-t1)^2)/d + (t-i-t1)^2/(2w^2)]) di
+ * + Integral (B * (i-t2)^n * exp[-((i-t2)^2)/d + (t-i-t2)^2/(2w^2)]) di
+ * + C + m*(t-t0)
+ *
+ * This form is realized as a TF1Convolution of a user-defined function,
+ * fittingFunc, and a generic Gaussian provided by ROOT.
+ *
+ * fittingFunc = Maxwell-Boltzmann-like distribution + background
+ *          = A * (t-t1)^n * exp[-((t-t1)^2)/d] + C + m*(t-t1)
+ *
+ * Two fittingFuncs are present in the final convolutedPeakFunc expression,
+ * and they each have independent amplitudes and time zeroes.
+ *
+ *  par[0] = A = amplitude of first peak
+ *  par[1] = t1 = starting time of first peak
+ *  par[2] = n = polynomial order of peak (rise rate)
+ *  par[3] = d = exponential decay constant of peak (fall rate)
+ *  par[4] = C = baseline offset
+ *  par[5] = m = slope of baseline
+ *
+ *  During the first attempt at fitting, set B = 0 and allow A, t1, C, and m
+ *  to vary. If this produces a satisfactory fit (chi squared < ERROR_LIMIT),
+ *  then we end fitting and accept the fit's trigger time, amplitude, etc for
+ *  this peak.
+ *  If this fails to produce a satisfactory fit, allow B and t2 to vary as well
+ *  (i.e., allow two peaks in the fit). If this fitting also fails, we ignore
+ *  this trigger.
+ */
+
+Double_t onePeakForm(Double_t *x, Double_t *par)
+{
+    Double_t fitval;    // fitted value of function
+
+    if (par[2]==0 || par[3]==0)
+    {
+        cout << "Error: divide by 0 in onePeakForm" << endl;
+        exit(1);
+    }
+
+    // Define exponential*fermi function as peak shape
+    Double_t arg1 = pow((x[0]-par[1]),1)/par[2];
+    Double_t arg2 = pow((x[0]-(par[1]+FERMI_OFFSET)),1)/par[3];
+
+    // Start with linear background
+    fitval = par[4] + par[5]*(x[0]-par[1]);
+
+    // add peak
+    fitval += par[0]*exp(-arg1)/(1+exp(-arg2));
+
+    return fitval;
+}
+
+Double_t onePeakExpBackForm(Double_t *x, Double_t *par)
+{
+    Double_t fitval;    // fitted value of function
+
+    if (par[2]==0 || par[3]==0)
+    {
+        cout << "Error: divide by 0 in onePeakOnExpForm" << endl;
+        exit(1);
+    }
+
+    // Define exponential*fermi function as peak shape
+    Double_t arg1 = pow((x[0]-par[1]),1)/par[2];
+    Double_t arg2 = pow((x[0]-(par[1]+FERMI_OFFSET)),1)/par[3];
+
+    // Define exponential decay as previous peak background
+    Double_t arg3 = pow((x[0]-(par[7])),1)/par[3];
+
+    // Start with linear background
+    fitval = par[4] + par[5]*(x[0]-par[1]);
+
+    // Add exponential background of previous peak
+    fitval += par[6]*exp(-arg3);
+
+    // add peak
+    fitval += par[0]*exp(-arg1)/(1+exp(-arg2));
+
+    return fitval;
+}
+
+Double_t twoPeakForm(Double_t *x, Double_t *par)
+{
+    Double_t fitval;    // fitted value of function
+
+    if (par[4]==0 || par[5]==0)
+    {
+        cout << "Error: divide by 0 in twoPeakForm" << endl;
+        exit(1);
+    }
+
+    // Define exponential*fermi function as peak shape
+    Double_t arg1 = pow((x[0]-par[2]),1)/par[4];
+    Double_t arg2 = pow((x[0]-(par[2]+FERMI_OFFSET)),1)/par[5];
+
+    Double_t arg3 = pow((x[0]-par[3]),1)/par[4];
+    Double_t arg4 = pow((x[0]-(par[3]+FERMI_OFFSET)),1)/par[5];
+
+
+    // Start with linear background
+    fitval = par[6] + par[7]*(x[0]-par[2]);
+
+    // add peaks
+    fitval += par[0]*exp(-arg1)/(1+exp(-arg2));
+    fitval += par[1]*exp(-arg3)/(1+exp(-arg4));
+
+    return fitval;
+}
+
+/*Double_t detForm(Double_t *x, Double_t *par)
+{
+    Double_t fitval;    // fitted value of function
+    Double_t arg = 0;   // argument of exponential
+
+    // Uncomment for 'real' detForm
+    if (par[2]==0)
+    {
+        cout << "Error: divide by 0 in detForm" << endl;
+        exit(1);
+    }
+
+    fitval = par[0]*exp(-pow((x[0]-par[1]),2)/(2*pow(par[2],2)));
+
+    return fitval;
+}*/
+
+/*Double_t cfdForm(Double_t *x, Double_t *par)
+{
+    Double_t fitval;    // fitted value of function
+
+    // uncomment for gaussian peakform definition
+    //fitval = par[0]*exp(-pow((x[0]-par[1]),2)/(2*pow(par[2],2)));
+
+    // uncomment for 'correct' peakform definition
+    Double_t arg1 = 0;   // argument of peak 1 exponential
+    Double_t arg2 = 0;   // argument of peak 2 exponential
+
+    if (par[5]==0)
+    {
+        cout << "Error: divide by 0 in onePeakForm" << endl;
+        exit(1);
+    }
+
+    arg1 = pow((x[0]-par[2]),1)/par[4];
+    arg2 = pow((x[0]-(par[2]+11.5)),1)/par[5];
+
+    // define background
+    fitval = par[6] + par[7]*(x[0]-par[2]);
+
+    // add scaled-down part of CFD form
+    fitval += (par[0]/CFD_SCALEDOWN)*exp(-arg1)/(1+par[1]*exp(-arg2));
+
+    // add delayed part of CFD form
+    arg1 = pow((x[0]-(par[2]+CFD_DELAY)),1)/par[4];
+    arg2 = pow((x[0]-(par[2]+11.5+CFD_DELAY)),1)/par[5];
+    fitval += -par[0]*exp(-arg1)/(1+par[1]*exp(-arg2));
+
+    return fitval;
+}*/
 
 
 /*****************************************************************************/
@@ -347,13 +615,6 @@ void fitDataPulse()
     histParam[j]->Draw();
   }
 
-  TLatex fitfunction;
-  fitfunction.SetTextSize(0.08);
-  fitfunction.SetTextColor(2);
-  fitfunction.DrawLatex(0.1,30,
-			"fitf = A*(t-t0)^n*exp[-(t-t0)/w] + [C+m*(t-t0)]");
-
-
   TCanvas *chisqPlot = new TCanvas("chisqPlot");
   histChisq->Draw();
 
@@ -437,10 +698,10 @@ float calculateBaseline()
         }
     }
 
-    if(baseline < paramMin[4] || baseline > paramMax[4])
+    /*if(baseline < paramMin[6] || baseline > paramMax[6])
     {
         cout << "Baseline outside of bounds: " << baseline << endl;
-    }
+    }*/
 
     return baseline;
 }
@@ -449,7 +710,7 @@ float calculateBaseline()
 /*****************************************************************************/
 // Using the waveform value at time i, check for a peak, and return true if
 // there is
-bool trigger(int i)
+bool isTrigger(int i)
 {
     // Check for triggers using:
     //      - a raw threshold above the baseline
@@ -457,12 +718,11 @@ bool trigger(int i)
     //      - by rejecting triggers if the PREVIOUS point was already above
     //      these thresholds
 
-    if(
-            waveform->at(i) <= baseline-THRESHOLD
-            && (waveform->at(i)-waveform->at(i-1))/(double)SAMPLE_PERIOD <= D_THRESHOLD
+    if((waveform->at(i) <= baseline-THRESHOLD
+       && (waveform->at(i)-waveform->at(i-1))/(double)SAMPLE_PERIOD <= D_THRESHOLD)
 
-            && (waveform->at(i-1) > baseline-THRESHOLD
-            || (waveform->at(i-1)-waveform->at(i-2))/(double)SAMPLE_PERIOD > D_THRESHOLD))
+       && (waveform->at(i-1) > baseline-THRESHOLD
+       || (waveform->at(i-1)-waveform->at(i-2))/(double)SAMPLE_PERIOD > D_THRESHOLD))
     {
         return true;
     }
@@ -473,210 +733,392 @@ bool trigger(int i)
     }
 }
 
+struct fitData
+{
+    double trigger1Time = 0;
+    double trigger2Time = 0;
+    double peak1Amplitude = 0;
+    double peak2Amplitude = 0;
+    double peak1Derivative = 0;
+    double peak2Derivative = 0;
+    double chiSquare = 0;
+    bool goodFit = false;
+
+    void clear()
+    {
+        trigger1Time = 0;
+        trigger2Time = 0;
+        peak1Amplitude = 0;
+        peak2Amplitude = 0;
+        peak1Derivative = 0;
+        peak2Derivative = 0;
+        chiSquare = 0;
+        goodFit = false;
+    }
+} data;
+
+/*double cfd(TF1* fit, double triggerTime)
+{
+    // create scaled-down part of CFD
+    TF1* cfdFunc = new TF1("cfdFunc",cfdForm,SAMPLE_PERIOD*PEAKFIT_START,SAMPLE_PERIOD*(PEAKFIT_START+PEAKFIT_WINDOW),8);
+    cfdFunc->SetParameters(fit->GetParameters());
+
+    return cfdFunc->GetX(baseline,triggerTime-5,triggerTime+5);
+}*/
+
+fitData fitTrigger(int waveformNo, float triggerSample)
+{
+    // A trigger has been detected on the current waveform; fitTrigger attempts
+    // to fit the region around this trigger using a series of progressively
+    // more complicated fitting functions.
+    // If any of these functions fits the waveform to within an error boundary,
+    // fitTrigger accepts it as a good fit and exits.
+
+    // reset fit data
+    data.clear();
+
+    // check to make sure we don't run off the end of the waveform
+    if(triggerSample+PEAKFIT_WINDOW >= waveform->size())
+    {
+        return data;
+    }
+
+    // extract the waveform chunk we'd like to fit
+    stringstream temp;
+    temp << "waveform" << waveformNo << "_peak" << triggerSample;
+
+    peakHisto = new TH1I(temp.str().c_str(),temp.str().c_str(),PEAKFIT_WINDOW,SAMPLE_PERIOD*PEAKFIT_START,SAMPLE_PERIOD*(PEAKFIT_START+PEAKFIT_WINDOW));
+
+    for (int i=0; i<PEAKFIT_WINDOW; i++)
+    {
+        peakHisto->SetBinContent(i,waveform->at(triggerSample+PEAKFIT_START+i));
+    }
+
+    /*************************************************************************/
+    // first, try fitting with one peak
+    fittingFunc = new TF1("fittingFunc",onePeakForm,SAMPLE_PERIOD*PEAKFIT_START,SAMPLE_PERIOD*(PEAKFIT_START+PEAKFIT_WINDOW),nParamsOnePeak);
+    fittingFunc->SetParameters(A_init,trig1_init,n_init,d_init,C_init,m_init);
+
+    // Lock in the shape of the peak (manually chosen to match real peak shape)
+    fittingFunc->FixParameter(2,n_init);
+    fittingFunc->FixParameter(3,d_init);
+
+    // Lock in a constant background
+    fittingFunc->FixParameter(5,m_init);
+
+    // Set parameter boundaries
+    for (int i=0; i<fittingFunc->GetNpar(); i++)
+    {
+        fittingFunc->SetParLimits(i,onePeakParamMin[i],onePeakParamMax[i]);
+    }
+
+    // fit peak 
+    peakHisto->Fit("fittingFunc","RQ");
+
+    if(fittingFunc->GetChisquare() < ERROR_LIMIT)
+    {
+        // Success - we've achieved a good fit with just one peak
+        // Output fit data
+
+        data.peak1Amplitude = fittingFunc->GetMinimum(fittingFunc->GetParameter(1),fittingFunc->GetParameter(1)+10);
+
+        double relativeTriggerSample = fittingFunc->GetX((fittingFunc->GetParameter(4)+data.peak1Amplitude)/2,fittingFunc->GetParameter(1)-10,fittingFunc->GetParameter(1)+20);
+
+        data.trigger1Time = SAMPLE_PERIOD*(triggerSample+relativeTriggerSample);
+        data.peak1Derivative = fittingFunc->Derivative(relativeTriggerSample);
+        data.chiSquare = fittingFunc->GetChisquare();
+        data.goodFit = true;
+
+        relativeTriggerSampleHisto->Fill(relativeTriggerSample);
+
+        //cout << "getX from peakFit = " << relativeTriggerSample << endl;
+        //cout << "derivative = " << data.peak1Derivative << endl;
+
+        //cout << "monomial order = " << fittingFunc->GetParameter(2) << endl;
+
+        numberOnePeakFits++;
+    }
+    /*************************************************************************/
+
+    else
+    {
+        fittingFunc = new TF1("fittingFunc",onePeakExpBackForm,SAMPLE_PERIOD*PEAKFIT_START,SAMPLE_PERIOD*(PEAKFIT_START+PEAKFIT_WINDOW),nParamsOnePeakExpBack);
+        fittingFunc->SetParameters(A_init,trig1_init,n_init,d_init,C_init,m_init,E_init,tE_init);
+
+        // Lock in the shape of the peak (manually chosen to match real peak shape)
+        fittingFunc->FixParameter(2,n_init);
+        fittingFunc->FixParameter(3,d_init);
+
+        // Lock in a constant background
+        fittingFunc->FixParameter(5,m_init);
+
+        // Set parameter boundaries
+        for (int i=0; i<fittingFunc->GetNpar(); i++)
+        {
+            fittingFunc->SetParLimits(i,onePeakExpBackParamMin[i],onePeakExpBackParamMax[i]);
+        }
+
+        // fit peak 
+        peakHisto->Fit("fittingFunc","RQ");
+
+        // see if peak fitting was successful
+        if(fittingFunc->GetChisquare() < ERROR_LIMIT_2)
+        {
+            data.peak1Amplitude = fittingFunc->GetMinimum(fittingFunc->GetParameter(2),fittingFunc->GetParameter(2)+10);
+
+            double relativeTriggerSample = fittingFunc->GetX((fittingFunc->GetParameter(6)+data.peak1Amplitude)/2,fittingFunc->GetParameter(2)-10,fittingFunc->GetParameter(2)+10);
+            data.trigger1Time = SAMPLE_PERIOD*(triggerSample+relativeTriggerSample);
+            data.peak1Derivative = fittingFunc->Derivative(relativeTriggerSample);
+            relativeTriggerSampleHisto->Fill(relativeTriggerSample);
+
+            data.chiSquare = fittingFunc->GetChisquare();
+            data.goodFit = true;
+
+            numberOnePeakExpBackFits++;
+        }
+        /*************************************************************************/
+        else
+        {
+            // failed to fit w/ one peak; try allowing two peaks
+            fittingFunc = new TF1("fittingFunc",twoPeakForm,SAMPLE_PERIOD*PEAKFIT_START,SAMPLE_PERIOD*(PEAKFIT_START+PEAKFIT_WINDOW),nParamsTwoPeaks);
+            fittingFunc->SetParameters(A_init,B_init,trig1_init,trig2_init,n_init,d_init,C_init,m_init);
+
+            // Lock in the shape of the peak (manually chosen to match real peak shape)
+            fittingFunc->FixParameter(4,n_init);
+            fittingFunc->FixParameter(5,d_init);
+
+            // Lock in a constant background
+            fittingFunc->FixParameter(7,m_init);
+
+            // Set parameter boundaries
+            for (int i=0; i<fittingFunc->GetNpar(); i++)
+            {
+                fittingFunc->SetParLimits(i,twoPeakParamMin[i],twoPeakParamMax[i]);
+            }
+
+            // fit peak 
+            peakHisto->Fit("fittingFunc","RQ");
+
+            // see if peak fitting was successful
+            if(fittingFunc->GetChisquare() < ERROR_LIMIT_2)
+            {
+                data.peak1Amplitude = fittingFunc->GetMinimum(fittingFunc->GetParameter(2),fittingFunc->GetParameter(2)+10);
+                data.peak2Amplitude = fittingFunc->GetMinimum(fittingFunc->GetParameter(3),fittingFunc->GetParameter(3)+10);
+
+                double relativeTriggerSample = fittingFunc->GetX((fittingFunc->GetParameter(6)+data.peak1Amplitude)/2,fittingFunc->GetParameter(2)-10,fittingFunc->GetParameter(2)+10);
+                data.trigger1Time = SAMPLE_PERIOD*(triggerSample+relativeTriggerSample);
+                data.peak1Derivative = fittingFunc->Derivative(relativeTriggerSample);
+                relativeTriggerSampleHisto->Fill(relativeTriggerSample);
+
+                relativeTriggerSample = fittingFunc->GetX((fittingFunc->GetParameter(6)+data.peak2Amplitude)/2,fittingFunc->GetParameter(3)-5,fittingFunc->GetParameter(2)+5);
+                data.trigger2Time = SAMPLE_PERIOD*(triggerSample+relativeTriggerSample);
+                data.peak2Derivative = fittingFunc->Derivative(relativeTriggerSample);
+                relativeTriggerSampleHisto->Fill(relativeTriggerSample);
+
+                data.chiSquare = fittingFunc->GetChisquare();
+                data.goodFit = true;
+
+                numberTwoPeakFits++;
+            }
+            /*************************************************************************/
+        }
+    }
+
+    delete peakHisto;
+    delete fittingFunc;
+
+    /*if(data.chiSquare<5)
+      {
+      delete peakHisto;
+      }*/
+
+    // failed to fit
+    return data;
+}
+
+double calculateGammaOffset()
+{
+    double gammaOffset = 0;
+    unsigned int numberOfGammas = 0;
+
+    for(int i=0; i<triggerList.size(); i++)
+    {
+        // Calculate time of flight from trigger time
+        double rawMicroTime = fmod((triggerList[i]+WAVEFORM_OFFSET),MICRO_PERIOD);
+
+        if(rawMicroTime>gammaWindow[0] && rawMicroTime<gammaWindow[1])
+        {
+            gammaOffset+=rawMicroTime;
+            numberOfGammas++;
+        }
+    }
+
+    if(numberOfGammas > 0)
+    {
+        gammaOffset/=numberOfGammas;
+    }
+
+    gammaOffset-=pow(10,7)*FLIGHT_DISTANCE/C;
+    //cout << "gammaOffset = " << gammaOffset << endl;
+
+    return gammaOffset;
+}
+
+void fillTriggerHistos(double triggerTime, double gammaOffset, int waveformNo)
+{
+    // Calculate time of flight from trigger time
+    microTime = fmod((triggerTime+WAVEFORM_OFFSET),MICRO_PERIOD)-gammaOffset;
+
+    microNo = floor((triggerTime+WAVEFORM_OFFSET)/MICRO_PERIOD);
+
+    // convert microTime into neutron velocity based on flight path distance
+    velocity = pow(10.,7.)*FLIGHT_DISTANCE/microTime; // in meters/sec 
+
+    // convert velocity to relativistic kinetic energy
+    rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
+
+    TOF->Fill(microTime);
+
+    triggerWalk->Fill(microTime,waveformNo);
+
+    // Fill target-specific plots
+    switch (targetPos)
+    {
+        case 0:
+            // Target changer is moving - ignore
+            break;
+        case 1:
+            // BLANK
+            blankRaw->Fill(rKE);
+            blankRawLog->Fill(TMath::Log10(rKE));
+            break;
+
+        case 2:
+            // TARGET 1
+            target1Raw->Fill(rKE);
+            target1RawLog->Fill(TMath::Log10(rKE));
+            break;
+
+        case 3:
+            // TARGET 2
+            target2Raw->Fill(rKE);
+            target2RawLog->Fill(TMath::Log10(rKE));
+            break;
+
+        case 4:
+            // TARGET 3
+            target3Raw->Fill(rKE);
+            target3RawLog->Fill(TMath::Log10(rKE));
+            break;
+
+        case 5:
+            // TARGET 4
+            target4Raw->Fill(rKE);
+            target4RawLog->Fill(TMath::Log10(rKE));
+            break;
+
+        case 6:
+            // TARGET 5
+            target5Raw->Fill(rKE);
+            target5RawLog->Fill(TMath::Log10(rKE));
+            break;
+
+        default:
+            cout << "Error - target position outside range 1-6." << endl;
+    }
+}
 
 /*****************************************************************************/
 void processTrigger(int waveformNo, float triggerSample)
 {
+    // Uncomment to use raw trigger sample as trigger time
     //float triggerTime = triggerSample;
+    //fillTriggerHistos(triggerTime);
 
-    // Uncomment to use peak fitting to extract trigger times
-    if(triggerSample+PEAKFIT_WINDOW < waveform->size())
+    // Uncomment to use fitted peak threshold-intercept as trigger time
+    if(fitTrigger(waveformNo, triggerSample).goodFit)
     {
-        stringstream temp;
-        temp << "waveform" << waveformNo << "_peak" << triggerList.size();
-
-        // fill a histogram with peak and surrounding environment
-        peakHisto = new TH1I(temp.str().c_str(),temp.str().c_str(),PEAKFIT_WINDOW,SAMPLE_PERIOD*PEAKFIT_START,SAMPLE_PERIOD*(PEAKFIT_START+PEAKFIT_WINDOW));
-
-        for (int i=0; i<PEAKFIT_WINDOW; i++)
-        {
-            peakHisto->SetBinContent(i,waveform->at(triggerSample+PEAKFIT_START+i));
-        }
-
-        // reset fitting function to initial parameters in preparation for fitting
-        onePeakFunc->SetParameters(A_init,trig_init,n_init,d_init,C_init,m_init);
-
-        onePeakFunc->FixParameter(2,n_init);
-        onePeakFunc->FixParameter(3,d_init);
-
-        // fit peak 
-
-        peakHisto->Fit("onePeakFunc","RQ");
-
-        // get fit information
-        TF1* onePeakFunc = peakHisto->GetFunction("onePeakFunc");
-
-        //cout << onePeakFunc->GetChisquare() << endl;
-
-        if(onePeakFunc->GetChisquare() < ERROR_LIMIT)
-        {
-            // we've achieved a good fit with just one peak
-            // Extract trigger time from fit
-            float triggerTime = triggerSample+onePeakFunc->GetX(baseline-THRESHOLD,onePeakFunc->GetParameter(1),onePeakFunc->GetParameter(1)+10);
-            //cout << "Peak " << triggerList.size() << endl;
-            //cout << "Trigger time = " << triggerTime << ", parameter(1) = " << onePeakFunc->GetParameter(1) << endl << endl;
-
-            // Extract peak amplitude from peak (in ADC units relative to baseline)
-            float peakHeight = onePeakFunc->GetMinimum(PEAKFIT_START,onePeakFunc->GetParameter(1)+10);
-
-            // Calculate derivative of fitted peak at trigger time
-            float derivative = onePeakFunc->Derivative(triggerTime);
-
-            // Calculate time of flight from trigger time
-            microNo = floor((2*triggerTime+WAVEFORM_OFFSET)/MICRO_PERIOD);
-            microTime = fmod((2*triggerTime+WAVEFORM_OFFSET),MICRO_PERIOD);
-
-            // convert microTime into neutron velocity based on flight path distance
-            velocity = pow(10.,7.)*FLIGHT_DISTANCE/microTime; // in meters/sec 
-
-            // convert velocity to relativistic kinetic energy
-            rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
-
-            TOF->Fill(microTime);
-
-            triggerWalk->Fill(triggerTime,derivative);
-
-            // Fill target-specific plots
-
-            switch (targetPos)
-            {
-                case 1:
-                    // BLANK
-                    blankRaw->Fill(rKE);
-                    blankRawLog->Fill(TMath::Log10(rKE));
-                    break;
-
-                case 2:
-                    // TARGET 1
-                    target1Raw->Fill(rKE);
-                    target1RawLog->Fill(TMath::Log10(rKE));
-                    break;
-
-                case 3:
-                    // TARGET 2
-                    target2Raw->Fill(rKE);
-                    target2RawLog->Fill(TMath::Log10(rKE));
-                    break;
-
-                case 4:
-                    // TARGET 3
-                    target3Raw->Fill(rKE);
-                    target3RawLog->Fill(TMath::Log10(rKE));
-                    break;
-
-                case 5:
-                    // TARGET 4
-                    target4Raw->Fill(rKE);
-                    target4RawLog->Fill(TMath::Log10(rKE));
-                    break;
-
-                case 6:
-                    // TARGET 5
-                    target5Raw->Fill(rKE);
-                    target5RawLog->Fill(TMath::Log10(rKE));
-                    break;
-
-                default:
-                    break;
-            }
-        }
-        
-        delete peakHisto;
+        triggerList.push_back(data.trigger1Time);
+        triggerValues.push_back(waveform->at(data.trigger1Time/2));
+        numberGoodFits++;
     }
 
-    triggerList.push_back(triggerSample);
-    triggerValues.push_back(waveform->at(triggerSample));
+    else
+    {
+        numberBadFits++;
+    }
 
-    cout << "Processing trigger " << triggerList.size() << " on waveform " << waveformNo << "\r";
-    fflush(stdout);
+    if(triggerList.size()%1000==0)
+    {
+        cout << "Processing triggers on waveform " << waveformNo << "\r";
+        fflush(stdout);
+    }
 }
-/*****************************************************************************/
-/*  Functional form of fit (six parameters)
- *
- *  fitf = -A * (t-t0)^n * exp[-((t-t0)^1)/w] + [C + m*(t-t0)]
- *
- *  par[0] = A
- *  par[1] = t0
- *  par[2] = n
- *  par[3] = w
- *  par[4] = C
- *  par[5] = m
- *
- *  Hope to keep n, w, C? fixed
- *
- */
 
-// Returns the value of the fitted function at a given time
-Double_t fitf(Double_t *x, Double_t *par)
-{
-    Double_t fitval;    // fitted value of function
-    Double_t arg = 0;   // argument of exponential
-
-    if (par[3]!=0) arg = pow((x[0]-par[1]),1)/par[3];
-    fitval  = exp(-arg); 
-    fitval *= par[0] * pow((x[0]-par[1]),par[2]);
-    fitval += par[4] + par[5]*(x[0]-par[1]);
-    if (x[0]<par[1]) fitval = par[4] + par[5]*(x[0]-par[1]);
-;
-    return fitval;
-}
 
 /*****************************************************************************/
 void processWaveforms()
 {
     // create raw (unnormalized) neutron energy plots
-    blankRaw = new TH1I("blank","blank",noBins,0,700);
-    target1Raw = new TH1I("target1","target1",noBins,0,700);
-    target2Raw = new TH1I("target2","target2",noBins,0,700);
-    target3Raw = new TH1I("target3","target3",noBins,0,700);
-    target4Raw = new TH1I("target4","target4",noBins,0,700);
-    target5Raw = new TH1I("target5","target5",noBins,0,700);
+    blankRaw = new TH1I("blank","blank",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    target1Raw = new TH1I("target1","target1",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    target2Raw = new TH1I("target2","target2",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    target3Raw = new TH1I("target3","target3",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    target4Raw = new TH1I("target4","target4",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    target5Raw = new TH1I("target5","target5",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
 
     // create raw log-scaled neutron energy plots
-    blankRawLog = new TH1I("blankLog","blank",noBins,0,TMath::Log10(700));
-    target1RawLog = new TH1I("target1Log","target1",noBins,0,TMath::Log10(700));
-    target2RawLog = new TH1I("target2Log","target2",noBins,0,TMath::Log10(700));
-    target3RawLog = new TH1I("target3Log","target3",noBins,0,TMath::Log10(700));
-    target4RawLog = new TH1I("target4Log","target4",noBins,0,TMath::Log10(700));
-    target5RawLog = new TH1I("target5Log","target5",noBins,0,TMath::Log10(700));
+    blankRawLog = new TH1I("blankLog","blank",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    target1RawLog = new TH1I("target1Log","target1",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    target2RawLog = new TH1I("target2Log","target2",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    target3RawLog = new TH1I("target3Log","target3",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    target4RawLog = new TH1I("target4Log","target4",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    target5RawLog = new TH1I("target5Log","target5",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
 
-    TOF = new TH1I("TOF","Summed-detector time of flight",1800,0,MICRO_PERIOD*1.05);
+    TOF = new TH1I("TOF","Summed-detector time of flight",ceil(MICRO_PERIOD),0,ceil(MICRO_PERIOD));
 
-    triggerWalk = new TH2I("triggerWalk","Derivative at trigger time vs. peak amplitude",floor(MICRO_PERIOD*1.05),0,MICRO_PERIOD*1.05,200,-200,0);
+    triggerWalk = new TH2I("triggerWalk","trigger time vs. waveform chunk #",200,0,200,1000,0,1000);
 
-    // Define peak-fitting function
-    onePeakFunc = new TF1("onePeakFunc",fitf,SAMPLE_PERIOD*PEAKFIT_START,SAMPLE_PERIOD*(PEAKFIT_START+PEAKFIT_WINDOW),6);
-    onePeakFunc->SetParNames("A","trig","n","d","C","m");
+    relativeTriggerSampleHisto = new TH1I("relativeTriggerSampleHisto","relative trigger time, from start of fitted wavelet",100,PEAKFIT_START*SAMPLE_PERIOD,(PEAKFIT_START+PEAKFIT_WINDOW)*SAMPLE_PERIOD);
 
-    // Set limits on parameter values (defined above)
-    for (int j=0; j<nParams; j++) {
-        onePeakFunc->SetParLimits(j,paramMin[j],paramMax[j]);
-    }
+    //convolvedPeakFunc = new TF1Convolution(fittingFunc,detFunc,SAMPLE_PERIOD*PEAKFIT_START,SAMPLE_PERIOD*(PEAKFIT_START+PEAKFIT_WINDOW),true);
+    //convolvedPeakFunc = new TF1Convolution(fittingFunc,detFunc,SAMPLE_PERIOD*PEAKFIT_START,SAMPLE_PERIOD*(PEAKFIT_START+PEAKFIT_WINDOW),true);
+    //convolvedPeakFunc->SetRange(SAMPLE_PERIOD*PEAKFIT_START,SAMPLE_PERIOD*(PEAKFIT_START+PEAKFIT_WINDOW));
+    //convolvedPeakFunc->SetNofPointsFFT(20000);
+
+    //fittingFunc = new TF1("fitf",*convolvedPeakFunc,SAMPLE_PERIOD*PEAKFIT_START,SAMPLE_PERIOD*(PEAKFIT_START+PEAKFIT_WINDOW),convolvedPeakFunc->GetNpar());
 
     // we'll need to calculate the baseline of each waveform to know when to
     // trigger peaks
     float baseline;
 
     // Loop through all channel-specific trees
-    for(int i = 0; i<orchardW.size(); i++)
+    for(int i=0; i<orchardW.size(); i++)
     {
         // point event variables at the correct tree in preparation for reading
         // data
         setBranchesW(orchardW[i]);
 
-        // Find total number of events to loop over
         int totalEntries = orchardW[i]->GetEntries();
-        cout << "Processing ch. " << 2*i << " waveforms" << endl;
+        cout << "Total waveforms on ch. " << 2*i << ": " << totalEntries << endl;
+
+        TCanvas *mycan = (TCanvas*)gROOT->FindObject("mycan");
+
+        if(!mycan)
+        {
+            mycan = new TCanvas("mycan","mycan");
+        }
 
         // EVENT LOOP for sorting through channel-specific waveforms
         for(int j=0; j<totalEntries; j++)
         {
-            // reset trigger list
             triggerList.clear();
             triggerValues.clear();
 
             // pull individual waveform event
             orchardW[i]->GetEntry(j);
+
+            //cout << "waveform chunk time = " << completeTime << endl;
 
             // calculate the baseline for this waveform
             baseline = calculateBaseline();
@@ -691,19 +1133,38 @@ void processWaveforms()
             for(int k=BASELINE_WINDOW; k<waveform->size(); k++)
             {
                 // Check to see if this point creates a new trigger
-                if(trigger(k))
+                if(isTrigger(k))
                 {
                     // trigger found - plot/fit/extract time
-
                     processTrigger(j, k);
 
                     // shift waveform index ahead by TRIGGER_HOLDOFF to prevent
                     // retriggering
                     k += TRIGGER_HOLDOFF;
                 }
+                /*if(triggerList.size()>10)
+                {
+                    for(int m=0; m<triggerList.size(); m++)
+                    {
+                        cout << "triggerList[" << m << "] = " << triggerList[m] << endl;
+                    }
+                    break;
+                }*/
             }
 
-            stringstream temp;
+            // Use the gamma peaks to find the time offset for this waveform, and
+            // adjust the microTime with this offset
+            double gammaOffset = calculateGammaOffset();
+
+            if(gammaOffset!=0)
+            {
+                for(int m=0; m<triggerList.size(); m++)
+                {
+                    fillTriggerHistos(triggerList[m], gammaOffset, j);
+                }
+            }
+
+            /*stringstream temp;
             temp << "waveform " << j;
             waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),waveform->size()+10,0,2*(waveform->size()+10));
 
@@ -711,8 +1172,7 @@ void processWaveforms()
             {
                 waveformH->SetBinContent(k,waveform->at(k));
             }
-            
-            /*
+
             temp.str("");
             temp << "waveformWrap" << j;
 
@@ -740,25 +1200,18 @@ void processWaveforms()
                 microGraphs[m]->Draw();
                 waveformWrap->Add(microGraphs[m],"l");
             }
+
+            waveformWrap->Write();
             */
-
-            TCanvas *mycan = (TCanvas*)gROOT->FindObject("mycan");
-
-            if(!mycan)
-            {
-                mycan = new TCanvas("mycan","mycan");
-            }
-
-            //waveformWrap->Write();
 
             //gPad->Modified();
             //mycan->Update();
-            
-            /*// Fill trigger histogram
-            for (int l = 0; l<triggerList.size(); l++)
-            {
-                cout << "trigger " << l << " = " << triggerList[l] << ", " << triggerValues[l] << endl;
-            }*/
+
+            // Fill trigger histogram
+            /*for (int l = 0; l<triggerList.size(); l++)
+              {
+              cout << "trigger " << l << " = " << triggerList[l] << ", " << triggerValues[l] << endl;
+              }*/
 
             /*
             temp << "triggers";
@@ -778,15 +1231,20 @@ void processWaveforms()
             triggerH->SetMarkerStyle(29);
             triggerH->SetMarkerSize(2);
             triggerH->SetMarkerColor(2);
-            triggerH->Draw();
             */
+            //triggerH->Draw();
 
             //triggerH->Write();
-            //break;
-
             //cout << "Finished processing waveform " << j << endl << endl;
+
+            /*if(j>1)
+            {
+                break;
+            }*/
         }
     }
+
+    cout << endl;
 }
 
 void calculateCS()
@@ -811,17 +1269,15 @@ void calculateCS()
     rawLogHistos.push_back(target4RawLog);
     rawLogHistos.push_back(target5RawLog);
 
-    for(int k=0; k<noTargets; k++)
+    for(int k=0; k<rawHistos.size(); k++)
     {
         cout << "target position " << k+1 << " counts = " << targetCounts[k] << endl;
     }
 
     // Loop through the relativistic kinetic energy histograms and use them
     // to populate cross-section and other histograms for each target
-    for(int i=0; i<noTargets; i++)
+    for(int i=0; i<order.size(); i++)
     {
-        // Calculate the cross-section for each bin of the energy plots
-        // (number of bins set at top of this file)
         for(int j=0; j<noBins; j++)
         {
             // first, test to make sure we're not about to take log of 0 or
@@ -833,31 +1289,25 @@ void calculateCS()
 
             else
             {
-                // we must have found positive-definite values found for the raw
-                // histogram bins in questions
                 // calculate the cross-section and
-                // fill the relevant csHisto
-                sigma[i][j] = -log((rawHistos[i]->GetBinContent(j)/(double)rawHistos[0]->GetBinContent(j))*(targetCounts[0]/(double)targetCounts[i]))/((double)targetlength[order[i]]*(double)targetdensity[order[i]]*(double)avo*pow(10.,-24)/(double)targetMolMass[order[i]]); // in barns
+                sigma[order[i]][j] = -log((rawHistos[i]->GetBinContent(j)/(double)rawHistos[0]->GetBinContent(j))*(targetCounts[0]/(double)targetCounts[i]))/((double)targetlength[order[i]]*(double)targetdensity[order[i]]*(double)avo*pow(10.,-24)/(double)targetMolMass[order[i]]); // in barns
                 //cout << "sigma = " << i << ", bin content at " << j << " = " << sigma[i][j] << endl;
-
-                // first, test to make sure we're not about to take log of 0 or
-                // divide by 0
-                if(rawLogHistos[0]->GetBinContent(j) <= 0 || rawLogHistos[i]->GetBinContent(j) <= 0)
-                {
-                    sigmaLog[i][j] = 0;
-                }
-
-                else
-                {
-                    // we must have found positive-definite values found for the rawLog
-                    // histogram bins in questions; calculate the cross-section and
-                    // fill the relevant csHisto
-
-                    sigmaLog[i][j] = -log((rawLogHistos[i]->GetBinContent(j))/((double)rawLogHistos[0]->GetBinContent(j))*(targetCounts[0]/(double)targetCounts[i]))/((double)targetlength[order[i]]*(double)targetdensity[order[i]]*(double)avo*pow(10.,-24)/(double)targetMolMass[order[i]]); // in barns
-                }
-                //cout << "sigmaLog = " << i << ", bin content at " << j << " = " << sigmaLog[i][j] << endl;
-
             }
+
+            if(rawLogHistos[0]->GetBinContent(j) <= 0 || rawLogHistos[i]->GetBinContent(j) <= 0)
+            {
+                sigmaLog[i][j] = 0;
+            }
+
+            else
+            {
+                // we must have found positive-definite values found for the rawLog
+                // histogram bins in questions; calculate the cross-section and
+                // fill the relevant csHisto
+
+                sigmaLog[order[i]][j] = -log((rawLogHistos[i]->GetBinContent(j))/((double)rawLogHistos[0]->GetBinContent(j))*(targetCounts[0]/(double)targetCounts[i]))/((double)targetlength[order[i]]*(double)targetdensity[order[i]]*(double)avo*pow(10.,-24)/(double)targetMolMass[order[i]]); // in barns
+            }
+            //cout << "sigmaLog = " << i << ", bin content at " << j << " = " << sigmaLog[i][j] << endl;
         }
     }
 }
@@ -865,39 +1315,39 @@ void calculateCS()
 void fillCShistos()
 {
     // declare the cross-section histograms to be filled
-    TH1D *blankcs = new TH1D("blankcs","blank cross-section",noBins,0,700);
-    TH1D *target1cs = new TH1D("target1cs","target 1 cross-section",noBins,0,700);
-    TH1D *target2cs = new TH1D("target2cs","target 2 cross-section",noBins,0,700);
-    TH1D *target3cs = new TH1D("target3cs","target 3 cross-section",noBins,0,700);
-    TH1D *target4cs = new TH1D("target4cs","target 4 cross-section",noBins,0,700);
-    TH1D *target5cs = new TH1D("target5cs","target 5 cross-section",noBins,0,700);
+    TH1D *blankCS = new TH1D("blankCS","blank cross-section",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *carbonSCS = new TH1D("carbonSCS","target 1 cross-section",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *carbonLCS = new TH1D("carbonLCS","target 2 cross-section",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *Sn112CS = new TH1D("Sn112CS","target 3 cross-section",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *SnNatCS = new TH1D("SnNatCS","target 4 cross-section",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *Sn124CS = new TH1D("Sn124CS","target 5 cross-section",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
 
-    TH1D *blankcsLog = new TH1D("blankcsLog","blank cross-section",noBins,0,TMath::Log10(700));
-    TH1D *target1csLog = new TH1D("target1csLog","target 1 cross-section",noBins,0,TMath::Log10(700));
-    TH1D *target2csLog = new TH1D("target2csLog","target 2 cross-section",noBins,0,TMath::Log10(700));
-    TH1D *target3csLog = new TH1D("target3csLog","target 3 cross-section",noBins,0,TMath::Log10(700));
-    TH1D *target4csLog = new TH1D("target4csLog","target 4 cross-section",noBins,0,TMath::Log10(700));
-    TH1D *target5csLog = new TH1D("target5csLog","target 5 cross-section",noBins,0,TMath::Log10(700));
+    TH1D *blankCSLog = new TH1D("blankCSLog","blank cross-section",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1D *carbonSCSLog = new TH1D("carbonSCSLog","target 1 cross-section",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1D *carbonLCSLog = new TH1D("carbonLCSLog","target 2 cross-section",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1D *Sn112CSLog = new TH1D("Sn112CSLog","target 3 cross-section",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1D *SnNatCSLog = new TH1D("SnNatCSLog","target 4 cross-section",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1D *Sn124CSLog = new TH1D("Sn124CSLog","target 5 cross-section",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
 
     // use holder for cross-section histograms to make looping through
     // histograms easier when we calculate cross-sections below
     vector<TH1D*> csHistos, csLogHistos;
 
-    csHistos.push_back(blankcs);
-    csHistos.push_back(target1cs);
-    csHistos.push_back(target2cs);
-    csHistos.push_back(target3cs);
-    csHistos.push_back(target4cs);
-    csHistos.push_back(target5cs);
+    csHistos.push_back(blankCS);
+    csHistos.push_back(carbonSCS);
+    csHistos.push_back(carbonLCS);
+    csHistos.push_back(Sn112CS);
+    csHistos.push_back(SnNatCS);
+    csHistos.push_back(Sn124CS);
 
-    csLogHistos.push_back(blankcsLog);
-    csLogHistos.push_back(target1csLog);
-    csLogHistos.push_back(target2csLog);
-    csLogHistos.push_back(target3csLog);
-    csLogHistos.push_back(target4csLog);
-    csLogHistos.push_back(target5csLog);
+    csLogHistos.push_back(blankCSLog);
+    csLogHistos.push_back(carbonSCSLog);
+    csLogHistos.push_back(carbonLCSLog);
+    csLogHistos.push_back(Sn112CSLog);
+    csLogHistos.push_back(SnNatCSLog);
+    csLogHistos.push_back(Sn124CSLog);
 
-    for(int i=0; i<noTargets; i++)
+    for(int i=0; i<csHistos.size(); i++)
     {
         for(int j=1; j<noBins; j++)
         {
@@ -939,14 +1389,14 @@ int main(int argc, char* argv[])
 
     TFile* file = new TFile(fileInName.str().c_str(),"READ");
 
-    if(file->Get("ch0TreeW"))
+    if(file->Get("targetChangerTree"))
     {
         cout << "Located waveform trees in " << fileInName << "." << endl;
     }
 
-    TTree* ch0TreeW = (TTree*)file->Get("ch0TreeW");
-    TTree* ch2TreeW = (TTree*)file->Get("ch2TreeW");
-    TTree* ch4TreeW = (TTree*)file->Get("ch4TreeW");
+    TTree* ch0TreeW = (TTree*)file->Get("targetChangerTree");
+    TTree* ch2TreeW = (TTree*)file->Get("ch2ProcessedTreeW");
+    TTree* ch4TreeW = (TTree*)file->Get("ch4ProcessedTreeW");
 
     //orchardW.push_back(ch0TreeW);
     //orchardW.push_back(ch2TreeW);
@@ -964,7 +1414,7 @@ int main(int argc, char* argv[])
         exit(0);
     }
 
-    else if(stoi(runDir)<=151)
+    if(stoi(runDir)<=151)
     {
         // blank, short carbon, long carbon, Sn112, NatSn, Sn124
         order.push_back(0);
@@ -986,7 +1436,7 @@ int main(int argc, char* argv[])
         order.push_back(2);
     }
 
-    else if(stoi(runDir)>=153 && stoi(runDir)<=172)
+    else if(stoi(runDir)>=153 && stoi(runDir)<=168)
     {
         // blank, Sn112, NatSn, Sn124
         order.push_back(0);
@@ -995,7 +1445,7 @@ int main(int argc, char* argv[])
         order.push_back(5);
     }
 
-    else if(stoi(runDir)>=173 && stoi(runDir)<=180)
+    else if(stoi(runDir)>=169 && stoi(runDir)<=180)
     {
         // blank, Sn112, NatSn, Sn124, short carbon
         order.push_back(0);
@@ -1005,12 +1455,18 @@ int main(int argc, char* argv[])
         order.push_back(1);
     }
 
+
     // open output file to contain waveform histos
     TFile* fileOut = new TFile(fileOutName.str().c_str(),"RECREATE");
 
     // Extract triggers from waveforms
     processWaveforms();
 
+    cout << "Number of good fits: " << numberGoodFits << endl;
+    cout << "onePeak = " << numberOnePeakFits << endl; 
+    cout << "onePeakExpBack = " << numberOnePeakExpBackFits << endl; 
+    cout << "twoPeaks = " << numberTwoPeakFits << endl << endl; 
+    cout << "Number of bad fits: " << numberBadFits << endl;
     // Calculate cross-sections from waveforms' trigger time data
     calculateCS();
  

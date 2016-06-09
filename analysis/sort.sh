@@ -23,12 +23,14 @@
 # SECTION 1: recompile analysis code
 
 # Check to see if analysis codes have been modified since last compile
-if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] || [ histos.cpp -nt histos ] || [ waveform.cpp -nt waveform ] || [ SumHistos.cpp -nt SumHistos ]
+if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] || [ histos.cpp -nt histos ] ||
+    [ waveform.cpp -nt waveform ] || [ sumRun.cpp -nt sumRun ] || [ sumAll.cpp -nt sumAll ]
 then
     # sorting code modified
     # recompile to prepare for event sorting
     make
-    if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] || [ histos.cpp -nt histos ] || [ waveform.cpp -nt waveform ] || [ SumHistos.cpp -nt SumHistos ]
+if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] || [ histos.cpp -nt histos ] ||
+    [ waveform.cpp -nt waveform ] || [ sumRun.cpp -nt sumRun ] || [ sumAll.cpp -nt sumAll ]
     then
         # compilation failed - exit
         printf "\nCompilation failed - correct errors before sorting.\n"
@@ -58,14 +60,14 @@ sort ()
     rc=$?; if [[ $rc != 0 ]]; then echo "./resort $runDur $runNo returned $rc, indicating error; exiting"; exit $rc; fi
 
     # Process channel-specific subtrees into histograms in runX-YYYY_histos.root
-    ./histos "$runDir" "$runNo" "$outpath"
+    #./histos "$runDir" "$runNo" "$outpath"
 
     # If ./resort returned an exit status indicating failure, exit the script
     rc=$?; if [[ $rc != 0 ]]; then echo "./histos $runDur $runNo returned $rc, indicating error; exiting"; exit $rc; fi
 
     # Process waveforms from channel-specific subtrees
-    ./waveform "$runDir" "$runNo" "$outpath"
-    rc=$?; if [[ $rc != 0 ]]; then echo "./waveform $runDur $runNo returned $rc, indicating error; exiting"; exit $rc; fi
+    #./waveform "$runDir" "$runNo" "$outpath"
+    #rc=$?; if [[ $rc != 0 ]]; then echo "./waveform $runDur $runNo returned $rc, indicating error; exiting"; exit $rc; fi
 }
 
 prepDir ()
@@ -134,11 +136,11 @@ then
     then
         datapath=/media/cdpruitt/Drive3
         outpath=/data3
-    elif [ $2 -gt 128 ] && [ $2 -lt 161 ]
+    elif [ $2 -gt 128 ] && [ $2 -lt 160 ]
     then
         datapath=/media/cdpruitt/Drive2
         outpath=/data2
-    elif [ $2 -gt 160 ] && [ $2 -lt 178 ]
+    elif [ $2 -gt 159 ] && [ $2 -lt 178 ]
     then
         datapath=/media/cdpruitt/Drive3
         outpath=/data3
@@ -154,7 +156,13 @@ then
     printf "\nSorting single sub-run $runName\n"
 
     # Start sort
-    sort
+    runSize=$(du -k "$runName" | cut -f 1)
+    if [ $runSize -ge 1000000 ]
+    then
+        sort
+    else
+        printf "$runName is less than 1 GB in size; ignoring...\n"
+    fi
 
 # Check to see if the runlist should be used to identify runs to sort
 elif [ "$runlist" = false ]
@@ -193,11 +201,11 @@ then
         then
             datapath=/media/cdpruitt/Drive3
             outpath=/data3
-        elif [ $runDir -gt 128 ] && [ $runDir -lt 161 ]
+        elif [ $runDir -gt 128 ] && [ $runDir -lt 160 ]
         then
             datapath=/media/cdpruitt/Drive2
             outpath=/data2
-        elif [ $runDir -gt 160 ] && [ $runDir -lt 178 ]
+        elif [ $runDir -gt 159 ] && [ $runDir -lt 178 ]
         then
             datapath=/media/cdpruitt/Drive3
             outpath=/data3
@@ -221,11 +229,17 @@ then
                 printf "Starting sort of sub-run $runNo\n"
 
                 # Sort sub-run
-                sort
+                runSize=$(du -k "$runName" | cut -f 1)
+                if [ $runSize -ge 1000000 ]
+                then
+                    sort
+                else
+                    printf "$runName is less than 1 GB in size; ignoring...\n"
+                fi
             done
 
             # Last, sum together histograms from all the runs just sorted
-            ./SumHistos $runDir $outpath
+            ./sumRun $runDir $outpath
         else
             # Sort just the most recent sub-run in the specified run directory
             runNo=$(ls -t $datapath/output/run$runDir/data-* | head -1 | egrep\

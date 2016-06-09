@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
     delete waveformBins;
 
     // Create output file to contain summed histos
-    fileOutName << outpath << "/analysis/run" << runDir << "/" << "total.root";
+    fileOutName << outpath << "/analysis/run" << runDir << "/" << "sum.root";
 
     TFile *outfile = new TFile(fileOutName.str().c_str(),"RECREATE");
 
@@ -293,11 +293,17 @@ int main(int argc, char *argv[])
                 target5csSumWaveformLog->Add(target5LogW,1/(double)(limit+1));
             }
 
+            // Close cross-section.root and waveform.root of subrun
             infile->Close();
             infileWaveform->Close();
-        }
-    }
 
-    outfile->Write();
-    outfile->Close();
+        }
+
+        totalfile
+
+        // Write run histograms to sum.root
+        outfile->Write();
+
+        outfile->Close();
+    }
 }

@@ -12,6 +12,7 @@
 #include "TROOT.h"
 #include "TApplication.h"
 #include "TMath.h"
+#include "TRandom3.h"
 
 using namespace std;
 
@@ -32,7 +33,7 @@ const double FLIGHT_DISTANCE = 2672; // detector distance from source, in cm
 // 2080 for Neon  
 
 // Period of micropulses
-const double MICRO_PERIOD = 1788.820; // in ns
+const double MICRO_PERIOD = 1788.814; // in ns
 
 // Physical constants
 const double C = 299792458; // speed of light in m/s
@@ -44,10 +45,6 @@ double avo = 6.022*pow(10.,23.); // Avogadro's number, in atoms/mol
 
 
 /* Target data */
-
-// State the number of targets currently being cycled over to indicate how many
-// histograms should be populated
-const int noTargets = 4;
 
 // physical target data, listed in order:
 // {blank, Sn112, Natural Sn, Sn124, short carbon, long carbon} 
@@ -67,13 +64,17 @@ double targetdensity[6] = {0,2.2,2.2,6.89,7.31,7.63}; //g/cm^3
 
 // number of bins in the raw energy histograms and in the cross-section
 // histograms
-const int noBins = 1000;
+const int noBins = 200;
 
 // declare arrays to hold the scaled cross-sections of each target; i = target #, j = bin
 double sigma[6][noBins] = {0};
 double sigmaLog[6][noBins] = {0};
 
+const int TOF_RANGE = 1800;
+const int TOF_BINS = 18000;
 
+const double CS_LOWER_BOUND = 1; // cross-section plots' lower bound, in MeV
+const double CS_UPPER_BOUND = 700; // cross-section plots' upper bound, in MeV
 
 /* event variables */
 
@@ -83,7 +84,6 @@ unsigned int sgQ, lgQ;
 double completeTime, macroTime;
 
 vector<int> *waveform; // for holding one event's waveform data
-
 
 
 /* ROOT and organizational variables */
@@ -118,11 +118,9 @@ vector<int> order;
 void setBranches(TTree* tree)
 {
     tree->SetBranchAddress("macroNo",&macroNo);
-    //tree->SetBranchAddress("microNo",&microNo);
     tree->SetBranchAddress("evtNo",&evtNo);
     tree->SetBranchAddress("macroTime",&macroTime);
     tree->SetBranchAddress("completeTime",&completeTime);
-    //tree->SetBranchAddress("microTime",&microTime);
     tree->SetBranchAddress("targetPos",&targetPos);
     tree->SetBranchAddress("sgQ",&sgQ);
     tree->SetBranchAddress("lgQ",&lgQ);
@@ -139,75 +137,148 @@ void setBranchesW(TTree* tree)
     tree->SetBranchAddress("waveform",&waveform);
 }
 
+TH1* logBins(TH1 *inputHisto)
+{
+    string newName;
+    newName = inputHisto->GetName();
+    newName += "Log";
+
+    double newXMin = TMath::Log10(((TAxis*)inputHisto->GetXaxis())->GetXmin());
+    if (newXMin <= 0)
+    {
+        newXMin = 1;
+    }
+    TH1* outputHisto = new TH1D(newName.c_str(),newName.c_str(),noBins, newXMin,
+            TMath::Log10(((TAxis*)inputHisto->GetXaxis())->GetXmax()));
+
+    TAxis* axis = outputHisto->GetXaxis();
+    int nBins = axis->GetNbins();
+
+    double xMin = axis->GetXmin();
+    double xMax = axis->GetXmax();
+
+    double binWidth = (xMax-xMin)/nBins;
+    double *newBins = new double[nBins+1];
+
+    for(int i=0; i<=nBins; i++)
+    {
+        newBins[i] = TMath::Power(10, xMin+i*binWidth);
+    }
+
+    ((TAxis*)outputHisto->GetXaxis())->Set(nBins,newBins);
+    delete newBins;
+
+    return outputHisto;
+}
+
 // Populate advanced histograms (TOFs, cross-section, etc) calculated using
 // data from ch4 and ch6 trees
-void fillAdvancedHistos(int i)
+void fillAdvancedHistos(int detIndex)
 {
     /*************************************************************************/
     // Prepare histograms
 
     // navigate to the correct directory for channel 2*i 
     gDirectory->cd("/");
-    gDirectory->GetDirectory(dirs[i].c_str())->cd();
+    gDirectory->GetDirectory(dirs[detIndex].c_str())->cd();
 
     // Initialize histograms for this channel (to be filled by events after they
     // pass through various energy, time, and charge filters below
 
     // diagnostic histograms
-    TH1I *TOF = new TH1I("TOF","Summed-detector time of flight",1800,0,MICRO_PERIOD*1.05);
-    TH2I *triangle = new TH2I("triangle","Pulse integral vs. TOF",1800,0,MICRO_PERIOD+1,2048,0,65536);
-    TH2I *triangleRKE = new TH2I("triangleRKE","Pulse integral vs. relativistic KE",noBins,0,700,2048,0,65536);
+    TH1I *TOF = new TH1I("TOF","Summed-detector time of flight",1800,0,TOF_RANGE);
+    TH2I *triangle = new TH2I("triangle","Pulse integral vs. TOF",TOF_RANGE,0,MICRO_PERIOD+1,2048,0,65536);
+    TH2I *triangleRKE = new TH2I("triangleRKE","Pulse integral vs. relativistic KE",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND,2048,0,65536);
     TH2I *sgQlgQ = new TH2I("sgQlgQ","short gate Q vs. long gate Q",2048,0,65536,2048,0,65536);
-    TH2I *rKElgQ = new TH2I("lgQrKE","relativistic KE vs. long gate Q",noBins,0,700,2048,0,65536);
+    TH2I *rKElgQ = new TH2I("lgQrKE","relativistic KE vs. long gate Q",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND,2048,0,65536);
     TH1I *microNoH = new TH1I("microNoH","microNo",360,0,360);
     microNoH->GetXaxis()->SetTitle("micropulse number of each event");
 
+    TH1I *blankTOF = new TH1I("blankTOF","blank TOF",TOF_BINS,0,TOF_RANGE);
+    TH1I *target1TOF = new TH1I("target1TOF","target 1 TOF",TOF_BINS,0,TOF_RANGE);
+    TH1I *target2TOF = new TH1I("target2TOF","target 2 TOF",TOF_BINS,0,TOF_RANGE);
+    TH1I *target3TOF = new TH1I("target3TOF","target 3 TOF",TOF_BINS,0,TOF_RANGE);
+    TH1I *target4TOF = new TH1I("target4TOF","target 4 TOF",TOF_BINS,0,TOF_RANGE);
+    TH1I *target5TOF = new TH1I("target5TOF","target 5 TOF",TOF_BINS,0,TOF_RANGE);
+
     // create raw (unnormalized) neutron energy plots
-    TH1I *blankRaw = new TH1I("blank","blank",noBins,0,700);
-    TH1I *target1Raw = new TH1I("target1","target1",noBins,0,700);
-    TH1I *target2Raw = new TH1I("target2","target2",noBins,0,700);
-    TH1I *target3Raw = new TH1I("target3","target3",noBins,0,700);
-    TH1I *target4Raw = new TH1I("target4","target4",noBins,0,700);
-    TH1I *target5Raw = new TH1I("target5","target5",noBins,0,700);
+    TH1I *blankRaw = new TH1I("blank","blank",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1I *target1Raw = new TH1I("target1","target1",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1I *target2Raw = new TH1I("target2","target2",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1I *target3Raw = new TH1I("target3","target3",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1I *target4Raw = new TH1I("target4","target4",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1I *target5Raw = new TH1I("target5","target5",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
 
     // create raw log-scaled neutron energy plots
-    TH1I *blankRawLog = new TH1I("blankLog","blank",noBins,0,TMath::Log10(700));
-    TH1I *target1RawLog = new TH1I("target1Log","target1",noBins,0,TMath::Log10(700));
-    TH1I *target2RawLog = new TH1I("target2Log","target2",noBins,0,TMath::Log10(700));
-    TH1I *target3RawLog = new TH1I("target3Log","target3",noBins,0,TMath::Log10(700));
-    TH1I *target4RawLog = new TH1I("target4Log","target4",noBins,0,TMath::Log10(700));
-    TH1I *target5RawLog = new TH1I("target5Log","target5",noBins,0,TMath::Log10(700));
+    TH1I *blankRawLog = new TH1I("blankLog","blank",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1I *target1RawLog = new TH1I("target1Log","target1",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1I *target2RawLog = new TH1I("target2Log","target2",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1I *target3RawLog = new TH1I("target3Log","target3",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1I *target4RawLog = new TH1I("target4Log","target4",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1I *target5RawLog = new TH1I("target5Log","target5",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+
+    // create corrected (but still flux unnormalized) neutron energy plots
+    TH1I *blankCorrected = new TH1I("blankCorrected","blankCorrected",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1I *target1Corrected = new TH1I("target1Corrected","target1Corrected",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1I *target2Corrected = new TH1I("target2Corrected","target2Corrected",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1I *target3Corrected = new TH1I("target3Corrected","target3Corrected",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1I *target4Corrected = new TH1I("target4Corrected","target4Corrected",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1I *target5Corrected = new TH1I("target5Corrected","target5Corrected",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+
+    // create corrected (but still flux unnormalized) neutron energy plots
+    TH1I *blankCorrectedLog = new TH1I("blankCorrectedLog","blankCorrectedLog",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1I *target1CorrectedLog = new TH1I("target1CorrectedLog","target1CorrectedLog",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1I *target2CorrectedLog = new TH1I("target2CorrectedLog","target2CorrectedLog",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1I *target3CorrectedLog = new TH1I("target3CorrectedLog","target3CorrectedLog",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1I *target4CorrectedLog = new TH1I("target4CorrectedLog","target4CorrectedLog",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1I *target5CorrectedLog = new TH1I("target5CorrectedLog","target5CorrectedLog",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
 
     // create neutron energy plots using only micropulses with no gammas
-    TH1I *noGBlank = new TH1I("noGBlank","no gamma in micro, blank",noBins,0,700);
-    TH1I *noGTarget1 = new TH1I("noGTarget1","no gamma in micro, target 1",noBins,0,700);
-    TH1I *noGTarget2 = new TH1I("noGTarget2","no gamma in micro, target 2",noBins,0,700);
-    TH1I *noGTarget3 = new TH1I("noGTarget3","no gamma in micro, target 3",noBins,0,700);
-    TH1I *noGTarget4 = new TH1I("noGTarget4","no gamma in micro, target 4",noBins,0,700);
-    TH1I *noGTarget5 = new TH1I("noGTarget5","no gamma in micro, target 5",noBins,0,700);
+    TH1I *noGBlank = new TH1I("noGBlank","no gamma in micro, blank",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1I *noGTarget1 = new TH1I("noGTarget1","no gamma in micro, target 1",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1I *noGTarget2 = new TH1I("noGTarget2","no gamma in micro, target 2",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1I *noGTarget3 = new TH1I("noGTarget3","no gamma in micro, target 3",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1I *noGTarget4 = new TH1I("noGTarget4","no gamma in micro, target 4",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1I *noGTarget5 = new TH1I("noGTarget5","no gamma in micro, target 5",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
 
     // create log-scaled neutron energy plots using only micropulses with no gammas
-    TH1I *noGBlankLog = new TH1I("noGBlankLog","no gamma in micro, log E, blank",noBins,0,TMath::Log10(700));
-    TH1I *noGTarget1Log = new TH1I("noGTarget1Log","no gamma in micro, log E, target 1",noBins,0,TMath::Log10(700));
-    TH1I *noGTarget2Log = new TH1I("noGTarget2Log","no gamma in micro, log E, target 2",noBins,0,TMath::Log10(700));
-    TH1I *noGTarget3Log = new TH1I("noGTarget3Log","no gamma in micro, log E, target 3",noBins,0,TMath::Log10(700));
-    TH1I *noGTarget4Log = new TH1I("noGTarget4Log","no gamma in micro, log E, target 4",noBins,0,TMath::Log10(700));
-    TH1I *noGTarget5Log = new TH1I("noGTarget5Log","no gamma in micro, log E, target 5",noBins,0,TMath::Log10(700));
+    TH1I *noGBlankLog = new TH1I("noGBlankLog","no gamma in micro, log E, blank",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1I *noGTarget1Log = new TH1I("noGTarget1Log","no gamma in micro, log E, target 1",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1I *noGTarget2Log = new TH1I("noGTarget2Log","no gamma in micro, log E, target 2",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1I *noGTarget3Log = new TH1I("noGTarget3Log","no gamma in micro, log E, target 3",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1I *noGTarget4Log = new TH1I("noGTarget4Log","no gamma in micro, log E, target 4",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1I *noGTarget5Log = new TH1I("noGTarget5Log","no gamma in micro, log E, target 5",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
 
     // create TOF plots for events that come first, second, or third in their
     // micro
-    TH1I *firstInMicro = new TH1I("firstInMicro","first in micro time of flight",1800,0,MICRO_PERIOD*1.05);
-    TH1I *secondInMicro = new TH1I("secondInMicro","second in micro time of flight",1800,0,MICRO_PERIOD*1.05);
-    TH1I *thirdInMicro = new TH1I("thirdInMicro","third in micro time of flight",1800,0,MICRO_PERIOD*1.05);
+    TH1I *firstInMicro = new TH1I("firstInMicro","first in micro time of flight",1800,0,TOF_RANGE);
+    TH1I *secondInMicro = new TH1I("secondInMicro","second in micro time of flight",1800,0,TOF_RANGE);
+    TH1I *thirdInMicro = new TH1I("thirdInMicro","third in micro time of flight",1800,0,TOF_RANGE);
 
     // create TOF plots for events that come first in their micro, split by
     // target
-    TH1I *fimBlank = new TH1I("fimBlank","first in micro, blank",1800,0,MICRO_PERIOD*1.05);
-    TH1I *fimTarget1 = new TH1I("fimTarget1","first in micro, target 1",1800,0,MICRO_PERIOD*1.05);
-    TH1I *fimTarget2 = new TH1I("fimTarget2","first in micro, target 2",1800,0,MICRO_PERIOD*1.05);
-    TH1I *fimTarget3 = new TH1I("fimTarget3","first in micro, target 3",1800,0,MICRO_PERIOD*1.05);
-    TH1I *fimTarget4 = new TH1I("fimTarget4","first in micro, target 4",1800,0,MICRO_PERIOD*1.05);
-    TH1I *fimTarget5 = new TH1I("fimTarget5","first in micro, target 5",1800,0,MICRO_PERIOD*1.05);
+    TH1I *fimBlank = new TH1I("fimBlank","first in micro, blank",1800,0,TOF_RANGE);
+    TH1I *fimTarget1 = new TH1I("fimTarget1","first in micro, target 1",1800,0,TOF_RANGE);
+    TH1I *fimTarget2 = new TH1I("fimTarget2","first in micro, target 2",1800,0,TOF_RANGE);
+    TH1I *fimTarget3 = new TH1I("fimTarget3","first in micro, target 3",1800,0,TOF_RANGE);
+    TH1I *fimTarget4 = new TH1I("fimTarget4","first in micro, target 4",1800,0,TOF_RANGE);
+    TH1I *fimTarget5 = new TH1I("fimTarget5","first in micro, target 5",1800,0,TOF_RANGE);
+
+    TH1I *fimBlankLog = new TH1I("fimBlankLog","first in micro, blank",1800,0,TMath::Log10(TOF_RANGE));
+    TH1I *fimTarget1Log = new TH1I("fimTarget1Log","first in micro, target 1",1800,0,TMath::Log10(TOF_RANGE));
+    TH1I *fimTarget2Log = new TH1I("fimTarget2Log","first in micro, target 2",1800,0,TMath::Log10(TOF_RANGE));
+    TH1I *fimTarget3Log = new TH1I("fimTarget3Log","first in micro, target 3",1800,0,TMath::Log10(TOF_RANGE));
+    TH1I *fimTarget4Log = new TH1I("fimTarget4Log","first in micro, target 4",1800,0,TMath::Log10(TOF_RANGE));
+    TH1I *fimTarget5Log = new TH1I("fimTarget5Log","first in micro, target 5",1800,0,TMath::Log10(TOF_RANGE));
+
+    /*TH1I *fimBlankLog = (TH1I*)logBins(fimBlank);
+    TH1I *fimTarget1Log = (TH1I*)logBins(fimTarget1);
+    TH1I *fimTarget2Log = (TH1I*)logBins(fimTarget2);
+    TH1I *fimTarget3Log = (TH1I*)logBins(fimTarget3);
+    TH1I *fimTarget4Log = (TH1I*)logBins(fimTarget4);
+    TH1I *fimTarget5Log = (TH1I*)logBins(fimTarget5);
+    */
+
     /*************************************************************************/
 
 
@@ -218,6 +289,8 @@ void fillAdvancedHistos(int i)
     // create TIME VARIABLES used for filling histograms
     double microTime;
     int microNo, prevMicroNo;
+    long totalMicros = 0;
+    vector<long> microsPerTarget(6,0);
 
     // create variables for DESCRIBING MICROPULSE TYPE (i.e., whether a
     // micropulse has a gamma at the start and keep track of the influence of
@@ -235,7 +308,7 @@ void fillAdvancedHistos(int i)
     int gammaGate[2];
 
     // adjust time parameters based on channel identity
-    switch(i)
+    switch(detIndex)
     {
         case 1:
             // monitor
@@ -244,12 +317,12 @@ void fillAdvancedHistos(int i)
             break;
         case 2:
             // summed detector
-            gammaGate[0] = 84;
+            gammaGate[0] = 85;
             gammaGate[1] = 95;
             break;
         case 3:
             // scavenger
-            gammaGate[0] = 84;
+            gammaGate[0] = 85;
             gammaGate[1] = 95;
             break;
     }
@@ -259,26 +332,28 @@ void fillAdvancedHistos(int i)
     // Loop through sorted trees to calculate advanced histogram variables
 
     // point at correct tree in preparation for reading data
-    setBranches(orchard[i]);
+    setBranches(orchard[detIndex]);
 
-    int totalEntries = orchard[i]->GetEntries();
-    cout << "Populating advanced histograms for channel " << 2*i << endl;
+    int totalEntries = orchard[detIndex]->GetEntries();
+
+    // reduce # of total entries for testing purposes
+    //totalEntries /= 2;
+
+    cout << "Populating advanced histograms for channel " << 2*detIndex << endl;
 
     // MAIN LOOP for sorting through channel-specific events
     for(int j=0; j<totalEntries; j++)
     {
-        orchard[i]->GetEntry(j);
+        orchard[detIndex]->GetEntry(j);
 
         // calculate time since start of macro (includes time offsets)
         double timeDiff = completeTime-macroTime;
 
         // GATE: require events to come during the macropulse's beam-on period
         // GATE: discard events during target-changer movement
-        // GATE: target changer is not moving between targets
-        // GATE: discard events with unphysically-high integrated charges
-        // GATE: discard events with inverted hierarchy of integrated charges
+        // GATE: discard events with unphysical integrated charges
         //      (i.e., short gate charge is larger than long gate charge)
-        if (timeDiff < 650000 && timeDiff > 0 && targetPos != 0 && lgQ/(double)sgQ<2.1 && lgQ/(double)sgQ>1.5)
+        if (timeDiff < 650000 && timeDiff > 0 && targetPos != 0 /*&& lgQ/(double)sgQ<2.1 && lgQ/(double)sgQ>1.5*/)
         {
             /*****************************************************************/
             // Calculate event properties
@@ -313,6 +388,7 @@ void fillAdvancedHistos(int i)
 
                 // new micropulse => return gamma indicator to false
                 gammaInMicro = false;
+                totalMicros++;
             }
 
             // check to see whether this event is a gamma
@@ -365,6 +441,9 @@ void fillAdvancedHistos(int i)
                     if(orderInMicro==1)
                     {
                         fimBlank->Fill(microTime);
+                        fimBlankLog->Fill(TMath::Log10(microTime));
+
+                        microsPerTarget[targetPos-1]++;
                     }
 
                     if(!gammaInMicro)
@@ -372,16 +451,22 @@ void fillAdvancedHistos(int i)
                         noGBlank->Fill(rKE);
                         noGBlankLog->Fill(TMath::Log10(rKE));
                     }
+
+                    blankTOF->Fill(microTime);
                     break;
 
                 case 2:
                     // TARGET 1
+
                     target1Raw->Fill(rKE);
                     target1RawLog->Fill(TMath::Log10(rKE));
 
                     if(orderInMicro==1)
                     {
                         fimTarget1->Fill(microTime);
+                        fimTarget1Log->Fill(TMath::Log10(microTime));
+
+                        microsPerTarget[targetPos-1]++;
                     }
 
                     if(!gammaInMicro)
@@ -389,16 +474,22 @@ void fillAdvancedHistos(int i)
                         noGTarget1->Fill(rKE);
                         noGTarget1Log->Fill(TMath::Log10(rKE));
                     }
+
+                    target1TOF->Fill(microTime);
                     break;
 
                 case 3:
                     // TARGET 2
+
                     target2Raw->Fill(rKE);
                     target2RawLog->Fill(TMath::Log10(rKE));
 
                     if(orderInMicro==1)
                     {
                         fimTarget2->Fill(microTime);
+                        fimTarget2Log->Fill(TMath::Log10(microTime));
+
+                        microsPerTarget[targetPos-1]++;
                     }
 
                     if(!gammaInMicro)
@@ -406,16 +497,22 @@ void fillAdvancedHistos(int i)
                         noGTarget2->Fill(rKE);
                         noGTarget2Log->Fill(TMath::Log10(rKE));
                     }
+
+                    target2TOF->Fill(microTime);
                     break;
 
                 case 4:
                     // TARGET 3
+
                     target3Raw->Fill(rKE);
                     target3RawLog->Fill(TMath::Log10(rKE));
 
                     if(orderInMicro==1)
                     {
                         fimTarget3->Fill(microTime);
+                        fimTarget3Log->Fill(TMath::Log10(microTime));
+
+                        microsPerTarget[targetPos-1]++;
                     }
 
                     if(!gammaInMicro)
@@ -423,16 +520,22 @@ void fillAdvancedHistos(int i)
                         noGTarget3->Fill(rKE);
                         noGTarget3Log->Fill(TMath::Log10(rKE));
                     }
+
+                    target3TOF->Fill(microTime);
                     break;
 
                 case 5:
                     // TARGET 4
+
                     target4Raw->Fill(rKE);
                     target4RawLog->Fill(TMath::Log10(rKE));
 
                     if(orderInMicro==1)
                     {
                         fimTarget4->Fill(microTime);
+                        fimTarget4Log->Fill(TMath::Log10(microTime));
+
+                        microsPerTarget[targetPos-1]++;
                     }
 
                     if(!gammaInMicro)
@@ -440,16 +543,22 @@ void fillAdvancedHistos(int i)
                         noGTarget4->Fill(rKE);
                         noGTarget4Log->Fill(TMath::Log10(rKE));
                     }
+
+                    target4TOF->Fill(microTime);
                     break;
 
                 case 6:
                     // TARGET 5
+
                     target5Raw->Fill(rKE);
                     target5RawLog->Fill(TMath::Log10(rKE));
 
                     if(orderInMicro==1)
                     {
                         fimTarget5->Fill(microTime);
+                        fimTarget5Log->Fill(TMath::Log10(microTime));
+
+                        microsPerTarget[targetPos-1]++;
                     }
 
                     if(!gammaInMicro)
@@ -457,6 +566,8 @@ void fillAdvancedHistos(int i)
                         noGTarget5->Fill(rKE);
                         noGTarget5Log->Fill(TMath::Log10(rKE));
                     }
+
+                    target5TOF->Fill(microTime);
                     break;
                     
                 default:
@@ -469,7 +580,164 @@ void fillAdvancedHistos(int i)
 
         // end of main event loop
         /*****************************************************************/
+
+        /*if(macroNo>0)
+        {
+            break;
+        }*/
+
+        if(j%1000==0)
+        {
+            cout << "Processed " << j << " events...\r";
+            fflush(stdout);
+        }
     }
+
+    // create raw log-scaled neutron energy plots
+    TH1I *blankRawLogPerMacro = (TH1I*)blankRawLog->Clone("blankLogPerMacro");
+    TH1I *target1RawLogPerMacro = (TH1I*)target1RawLog->Clone("target1LogPerMacro");
+    TH1I *target2RawLogPerMacro = (TH1I*)target2RawLog->Clone("target2LogPerMacro");
+    TH1I *target3RawLogPerMacro = (TH1I*)target3RawLog->Clone("target3LogPerMacro");
+    TH1I *target4RawLogPerMacro = (TH1I*)target4RawLog->Clone("target4LogPerMacro");
+    TH1I *target5RawLogPerMacro = (TH1I*)target5RawLog->Clone("target5LogPerMacro");
+
+    TH1I* perMacroHistos[6] = {blankRawLogPerMacro, target1RawLogPerMacro,
+                               target2RawLogPerMacro, target3RawLogPerMacro,
+                               target4RawLogPerMacro, target5RawLogPerMacro};
+
+    // Find number of macropulses for each target to use in error calculation
+    gDirectory->cd("/");
+    gDirectory->GetDirectory("targetChanger")->cd();
+
+    vector<long> tarCounts;
+
+    tarCounts.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(2));
+    tarCounts.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(3));
+    tarCounts.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(4));
+    tarCounts.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(5));
+    tarCounts.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(6));
+    tarCounts.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(7));
+
+    // Scale perMacroHistos histogram by number of macropulses in that target
+    for(int i=0; i<6; i++)
+    {
+        if(tarCounts[i]==0)
+        {
+            continue;
+        }
+        perMacroHistos[i]->Scale(pow(10,3)/tarCounts[i]);
+    }
+
+    gDirectory->cd("/");
+    gDirectory->GetDirectory("detS")->cd();
+
+    // create raw log-scaled neutron energy plots
+    TH1I *blankRawLogPerMicro = (TH1I*)blankRawLog->Clone("blankLogPerMicro");
+    TH1I *target1RawLogPerMicro = (TH1I*)target1RawLog->Clone("target1LogPerMicro");
+    TH1I *target2RawLogPerMicro = (TH1I*)target2RawLog->Clone("target2LogPerMicro");
+    TH1I *target3RawLogPerMicro = (TH1I*)target3RawLog->Clone("target3LogPerMicro");
+    TH1I *target4RawLogPerMicro = (TH1I*)target4RawLog->Clone("target4LogPerMicro");
+    TH1I *target5RawLogPerMicro = (TH1I*)target5RawLog->Clone("target5LogPerMicro");
+
+    TH1I* perMicroHistos[6] = {blankRawLogPerMicro, target1RawLogPerMicro,
+                               target2RawLogPerMicro, target3RawLogPerMicro,
+                               target4RawLogPerMicro, target5RawLogPerMicro};
+
+    TH1I *blankTOFCorrected = (TH1I*)blankTOF->Clone("blankTOFCorrected");
+    TH1I *target1TOFCorrected = (TH1I*)target1TOF->Clone("target1TOFCorrected");
+    TH1I *target2TOFCorrected = (TH1I*)target2TOF->Clone("target2TOFCorrected");
+    TH1I *target3TOFCorrected = (TH1I*)target3TOF->Clone("target3TOFCorrected");
+    TH1I *target4TOFCorrected = (TH1I*)target4TOF->Clone("target4TOFCorrected");
+    TH1I *target5TOFCorrected = (TH1I*)target5TOF->Clone("target5TOFCorrected");
+
+    TH1I* TOFCorrectedHistos[6] = {blankTOFCorrected, target1TOFCorrected,
+                                  target2TOFCorrected, target3TOFCorrected,
+                                  target4TOFCorrected, target5TOFCorrected};
+
+    TH1I* energyCorrectedHistos[6] = {blankCorrected, target1Corrected,
+                                  target2Corrected, target3Corrected,
+                                  target4Corrected, target5Corrected};
+
+    TH1I* energyCorrectedLogHistos[6] = {blankCorrectedLog, target1CorrectedLog,
+                                  target2CorrectedLog, target3CorrectedLog,
+                                  target4CorrectedLog, target5CorrectedLog};
+
+    vector<vector<double>> eventsPerBinPerMicro(6,vector<double>(0));
+    vector<vector<double>> deadtimeCorrection(6, vector<double>(0));
+    vector<vector<double>> csCorrection(6, vector<double>(0));
+
+    double deadtime = 186; // in ns
+    TRandom3 *randomizeBin = new TRandom3();
+
+    /*************************************************************************/
+    // Perform 'manual' deadtime correction
+    /*************************************************************************/
+
+    // loop through all TOF histos
+    for(int i=0; i<6; i++)
+    {
+        cout << "microsPerTarget[i] = " << microsPerTarget[i] << endl;
+
+        // loop through all bins
+        for(int j=0; j<TOFCorrectedHistos[i]->GetNbinsX(); j++)
+        {
+            if(microsPerTarget[i] > 0)
+            {
+                eventsPerBinPerMicro[i].push_back(TOFCorrectedHistos[i]->GetBinContent(j)/(double)microsPerTarget[i]);
+            }
+
+            else
+            {
+                eventsPerBinPerMicro[i].push_back(0);
+            }
+
+            deadtimeCorrection[i].push_back(0);
+        }
+
+        // find the fraction of the time that the detector is dead for each bin in the micropulse
+        for(int j=0; j<eventsPerBinPerMicro[i].size(); j++)
+        {
+            int k = j-deadtime*(TOF_BINS/TOF_RANGE);
+            while(k<j)
+            {
+                if(k>=0)
+                {
+                    deadtimeCorrection[i][j] += eventsPerBinPerMicro[i][k];
+                }
+                k++;
+            }
+        }
+
+        for(int j=0; j<TOFCorrectedHistos[i]->GetNbinsX(); j++)
+        {
+            if(deadtimeCorrection[i][j] > 0)
+            {
+                TOFCorrectedHistos[i]->SetBinContent(j,(TOFCorrectedHistos[i]->GetBinContent(j)/(1-deadtimeCorrection[i][j])));
+            }
+
+            // convert microTime into neutron velocity based on flight path distance
+            double velocity = pow(10.,7.)*FLIGHT_DISTANCE/(TOFCorrectedHistos[i]->GetBinCenter(j)+randomizeBin->Uniform(-0.5,0.5)); // in meters/sec 
+
+            // convert velocity to relativistic kinetic energy
+            double rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
+
+            energyCorrectedHistos[i]->Fill(rKE,TOFCorrectedHistos[i]->GetBinContent(j));
+            energyCorrectedLogHistos[i]->Fill(TMath::Log10(rKE),TOFCorrectedHistos[i]->GetBinContent(j));
+
+            //cout << "rKE = " << rKE << ", weight = " << TOFCorrectedHistos[i]->GetBinContent(j) << endl;
+        }
+
+        /*for(int j=0; j<energyCorrectedHistos[i]->GetNbinsX(); j++)
+        {
+            csCorrection[i].push_back(0);
+            csCorrection[i][j]
+
+        }*/
+
+        //cout << deadtimeCorrection[i][150] << endl;
+    }
+    /*************************************************************************/
+
 }
 
 void calculateCS()
@@ -484,7 +752,7 @@ void calculateCS()
     // to normalize flux between all channels, we'll need to keep track of the
     // number of counts that came in through the monitor during that target's
     // beam time
-    vector<int> monCounts;
+    vector<long> monCounts;
 
     monCounts.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(2));
     monCounts.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(3));
@@ -495,7 +763,7 @@ void calculateCS()
 
     for(int k = 0; k<monCounts.size(); k++)
     {
-        cout << "target position " << k << " counts = " << monCounts[k] << endl;
+        cout << "target position " << k << " monitor counts = " << monCounts[k] << endl;
     }
 
     // switch to the detector directory
@@ -507,69 +775,70 @@ void calculateCS()
     vector<TH1I*> rawHistos;
     vector<TH1I*> rawLogHistos;
 
-    if (gDirectory->Get("blank"))
+    if (gDirectory->Get("blankCorrected"))
     {
-        rawHistos.push_back((TH1I*)gDirectory->Get("blank"));
+        rawHistos.push_back((TH1I*)gDirectory->Get("blankCorrected"));
     }
 
-    if (gDirectory->Get("target1"))
+    if (gDirectory->Get("target1Corrected"))
     {
-        rawHistos.push_back((TH1I*)gDirectory->Get("target1"));
+        rawHistos.push_back((TH1I*)gDirectory->Get("target1Corrected"));
     }
 
-    if (gDirectory->Get("target2"))
+    if (gDirectory->Get("target2Corrected"))
     {
-        rawHistos.push_back((TH1I*)gDirectory->Get("target2"));
+        rawHistos.push_back((TH1I*)gDirectory->Get("target2Corrected"));
     }
 
-    if (gDirectory->Get("target3"))
+    if (gDirectory->Get("target3Corrected"))
     {
-        rawHistos.push_back((TH1I*)gDirectory->Get("target3"));
+        rawHistos.push_back((TH1I*)gDirectory->Get("target3Corrected"));
     }
 
-    if (gDirectory->Get("target4"))
+    if (gDirectory->Get("target4Corrected"))
     {
-        rawHistos.push_back((TH1I*)gDirectory->Get("target4"));
+        rawHistos.push_back((TH1I*)gDirectory->Get("target4Corrected"));
     }
 
-    if (gDirectory->Get("target5"))
+    if (gDirectory->Get("target5Corrected"))
     {
-        rawHistos.push_back((TH1I*)gDirectory->Get("target5"));
+        rawHistos.push_back((TH1I*)gDirectory->Get("target5Corrected"));
     }
+
     
     /*for(int k = 0; k<rawHistos.size(); k++)
     {
         cout << "noG counts " << k << " = " << rawHistos[k]->GetEntries() << endl;
     }*/
 
-    if (gDirectory->Get("blankLog"))
+    if (gDirectory->Get("blankCorrectedLog"))
     {
-        rawLogHistos.push_back((TH1I*)gDirectory->Get("blankLog"));
+        rawLogHistos.push_back((TH1I*)gDirectory->Get("blankCorrectedLog"));
     }
 
-    if (gDirectory->Get("target1Log"))
+    if (gDirectory->Get("target1CorrectedLog"))
     {
-        rawLogHistos.push_back((TH1I*)gDirectory->Get("target1Log"));
+        rawLogHistos.push_back((TH1I*)gDirectory->Get("target1CorrectedLog"));
     }
 
-    if (gDirectory->Get("target2Log"))
+    if (gDirectory->Get("target2CorrectedLog"))
     {
-        rawLogHistos.push_back((TH1I*)gDirectory->Get("target2Log"));
+        rawLogHistos.push_back((TH1I*)gDirectory->Get("target2CorrectedLog"));
     }
 
-    if (gDirectory->Get("target3Log"))
+    if (gDirectory->Get("target3CorrectedLog"))
     {
-        rawLogHistos.push_back((TH1I*)gDirectory->Get("target3Log"));
+        rawLogHistos.push_back((TH1I*)gDirectory->Get("target3CorrectedLog"));
     }
 
-    if (gDirectory->Get("target4Log"))
+    if (gDirectory->Get("target4CorrectedLog"))
     {
-        rawLogHistos.push_back((TH1I*)gDirectory->Get("target4Log"));
+        rawLogHistos.push_back((TH1I*)gDirectory->Get("target4CorrectedLog"));
     }
 
-    if (gDirectory->Get("target5Log"))
+    if (gDirectory->Get("target5CorrectedLog"))
     {
-        rawLogHistos.push_back((TH1I*)gDirectory->Get("target5Log"));
+        rawLogHistos.push_back((TH1I*)gDirectory->Get("target5CorrectedLog"));
     }
 
     // switch to the scavenger directory
@@ -588,12 +857,9 @@ void calculateCS()
     //scavLogHistos.push_back((TH1I*)gDirectory->Get("target5Log"));
 */
     // Loop through the relativistic kinetic energy histograms and use them
-    // to populate cross-section and other histograms for each target
-
-    for(int i=1; i<=noTargets; i++)
+    // to populate cross-section for each target
+    for(int i=0; i<order.size(); i++)
     {
-        // Calculate the cross-section for each bin of the energy plots
-        // (number of bins set at top of this file)
         for(int j=0; j<noBins; j++)
         {
             // first, test to make sure we're not about to take log of 0 or
@@ -605,11 +871,10 @@ void calculateCS()
 
             else
             {
-                // we must have found positive-definite values found for the raw
-                // histogram bins in questions
-                // calculate the cross-section and
-                // fill the relevant csHisto
-                sigma[i][j] = -log((rawHistos[i]->GetBinContent(j)/(double)rawHistos[0]->GetBinContent(j))*(monCounts[0]/(double)monCounts[i]))/((double)targetlength[order[i]]*(double)targetdensity[order[i]]*(double)avo*pow(10.,-24)/(double)targetMolMass[order[i]]); // in barns
+                // calculate the cross-section
+                sigma[order[i]][j] = -log((rawHistos[i]->GetBinContent(j)/(double)rawHistos[0]->GetBinContent(j))*(monCounts[0]/(double)monCounts[i]))/((double)targetlength[order[i]]*(double)targetdensity[order[i]]*(double)avo*pow(10.,-24)/(double)targetMolMass[order[i]]); // in barns
+
+                //sigma[order[i]][j] = -log((rawHistos[i]->GetBinContent(j)/(double)rawHistos[0]->GetBinContent(j))*(monCounts[0]/(double)monCounts[i]))/((double)targetlength[order[i]]*(double)targetdensity[order[i]]*(double)avo*pow(10.,-24)/(double)targetMolMass[order[i]]); // in barns
                 //cout << "sigma = " << i << ", bin content at " << j << " = " << sigma[i][j] << endl;
             }
 
@@ -620,11 +885,8 @@ void calculateCS()
 
             else
             {
-                // we must have found positive-definite values found for the rawLog
-                // histogram bins in questions; calculate the cross-section and
-                // fill the relevant csHisto
-
-                sigmaLog[i][j] = -log((rawLogHistos[i]->GetBinContent(j)/*+scavLogHistos[i]->GetBinContent(j)*/)/((double)rawLogHistos[0]->GetBinContent(j)/*+scavLogHistos[0]->GetBinContent(j)*/)*(monCounts[0]/(double)monCounts[i]))/((double)targetlength[order[i]]*(double)targetdensity[order[i]]*(double)avo*pow(10.,-24)/(double)targetMolMass[order[i]]); // in barns
+                // calculate the cross-section
+                sigmaLog[order[i]][j] = -log((rawLogHistos[i]->GetBinContent(j)/*+scavLogHistos[i]->GetBinContent(j)*/)/((double)rawLogHistos[0]->GetBinContent(j)/*+scavLogHistos[0]->GetBinContent(j)*/)*(monCounts[0]/(double)monCounts[i]))/((double)targetlength[order[i]]*(double)targetdensity[order[i]]*(double)avo*pow(10.,-24)/(double)targetMolMass[order[i]]); // in barns
             }
         }
     }
@@ -636,23 +898,23 @@ void fillCShistos()
     TFile *CSfile = new TFile(fileCSName.str().c_str(),"RECREATE");
 
     // declare the cross-section histograms to be filled
-    TH1D *blankcs = new TH1D("blankcs","blank cross-section",noBins,0,700);
-    TH1D *target1cs = new TH1D("target1cs","target 1 cross-section",noBins,0,700);
-    TH1D *target2cs = new TH1D("target2cs","target 2 cross-section",noBins,0,700);
-    TH1D *target3cs = new TH1D("target3cs","target 3 cross-section",noBins,0,700);
-    TH1D *target4cs = new TH1D("target4cs","target 4 cross-section",noBins,0,700);
-    TH1D *target5cs = new TH1D("target5cs","target 5 cross-section",noBins,0,700);
+    TH1D *blankCS = new TH1D("blankCS","blank cross-section",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *carbonSCS = new TH1D("carbonSCS","short carbon cross-section",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *carbonLCS = new TH1D("carbonLCS","long carbon cross-section",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *Sn112CS = new TH1D("Sn112CS","Sn112 cross-section",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *SnNatCS = new TH1D("SnNatCS","SnNat cross-section",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *Sn124CS = new TH1D("Sn124CS","Sn124 cross-section",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
 
     // use holder for cross-section histograms to make looping through
     // histograms easier when we calculate cross-sections below
     vector<TH1D*> csHistos;
 
-    csHistos.push_back(blankcs);
-    csHistos.push_back(target1cs);
-    csHistos.push_back(target2cs);
-    csHistos.push_back(target3cs);
-    csHistos.push_back(target4cs);
-    csHistos.push_back(target5cs);
+    csHistos.push_back(blankCS);
+    csHistos.push_back(carbonSCS);
+    csHistos.push_back(carbonLCS);
+    csHistos.push_back(Sn112CS);
+    csHistos.push_back(SnNatCS);
+    csHistos.push_back(Sn124CS);
 
     for(int i=0; i<csHistos.size(); i++)
     {
@@ -673,37 +935,41 @@ void fillCShistos()
         }
     }
 
-    // create relative cross-section plot for 112Sn/124Sn
-    TH1D *relativeSnCS = (TH1D*)target1cs->Clone("relativeSnCS");
-    relativeSnCS->Divide(target3cs);
-
     // declare the cross-section histograms to be filled
-    TH1D *blankcsLog = new TH1D("blankcsLog","blank cross-section",noBins,0,TMath::Log10(700));
-    TH1D *target1csLog = new TH1D("target1csLog","target 1 cross-section",noBins,0,TMath::Log10(700));
-    TH1D *target2csLog = new TH1D("target2csLog","target 2 cross-section",noBins,0,TMath::Log10(700));
-    TH1D *target3csLog = new TH1D("target3csLog","target 3 cross-section",noBins,0,TMath::Log10(700));
-    TH1D *target4csLog = new TH1D("target4csLog","target 4 cross-section",noBins,0,TMath::Log10(700));
-    TH1D *target5csLog = new TH1D("target5csLog","target 5 cross-section",noBins,0,TMath::Log10(700));
+    TH1D *blankCSLog = (TH1D*)logBins(blankCS);
+    TH1D *carbonSCSLog = (TH1D*)logBins(carbonSCS);
+    TH1D *carbonLCSLog = (TH1D*)logBins(carbonLCS);
+    TH1D *Sn112CSLog = (TH1D*)logBins(Sn112CS);
+    TH1D *SnNatCSLog = (TH1D*)logBins(SnNatCS);
+    TH1D *Sn124CSLog = (TH1D*)logBins(Sn124CS);
+
+    /*TH1D *blankCSLog = new TH1D("blankCSLog","blank cross-section",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1D *carbonSCSLog = new TH1D("carbonSCSLog","short carbon cross-section",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1D *carbonLCSLog = new TH1D("carbonLCSLog","long carbon cross-section",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1D *Sn112CSLog = new TH1D("Sn112CSLog","Sn112 cross-section",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1D *SnNatCSLog = new TH1D("SnNatCSLog","SnNat cross-section",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1D *Sn124CSLog = new TH1D("Sn124CSLog","Sn124 cross-section",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    */
     
     // create log-scaled cross-section plots with scavenger added back in
     /*
-    TH1D *blankScavLog = new TH1D("blankScavLog","blank",noBins,0,TMath::Log10(700));
-    TH1D *target1ScavLog = new TH1D("target1ScavLog","target1",noBins,0,TMath::Log10(700));
-    TH1D *target2ScavLog = new TH1D("target2ScavLog","target2",noBins,0,TMath::Log10(700));
-    TH1D *target3ScavLog = new TH1D("target3ScavLog","target3",noBins,0,TMath::Log10(700));
-    TH1D *target4ScavLog = new TH1D("target4ScavLog","target4",noBins,0,TMath::Log10(700));
-    TH1D *target5ScavLog = new TH1D("target5ScavLog","target5",noBins,0,TMath::Log10(700));
+    TH1D *blankScavLog = new TH1D("blankScavLog","blank",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1D *target1ScavLog = new TH1D("target1ScavLog","target1",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1D *target2ScavLog = new TH1D("target2ScavLog","target2",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1D *target3ScavLog = new TH1D("target3ScavLog","target3",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1D *target4ScavLog = new TH1D("target4ScavLog","target4",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
+    TH1D *target5ScavLog = new TH1D("target5ScavLog","target5",noBins,CS_LOWER_BOUND,TMath::Log10(CS_UPPER_BOUND));
     */
     // use holder for cross-section histograms to make looping through
     // histograms easier when we calculate cross-sections below
     vector<TH1D*> csLogHistos;
 
-    csLogHistos.push_back(blankcsLog);
-    csLogHistos.push_back(target1csLog);
-    csLogHistos.push_back(target2csLog);
-    csLogHistos.push_back(target3csLog);
-    csLogHistos.push_back(target4csLog);
-    csLogHistos.push_back(target5csLog);
+    csLogHistos.push_back(blankCSLog);
+    csLogHistos.push_back(carbonSCSLog);
+    csLogHistos.push_back(carbonLCSLog);
+    csLogHistos.push_back(Sn112CSLog);
+    csLogHistos.push_back(SnNatCSLog);
+    csLogHistos.push_back(Sn124CSLog);
 
     for(int i=0; i<csLogHistos.size(); i++)
     {
@@ -724,10 +990,24 @@ void fillCShistos()
     }
 
     // create relative cross-section plot for 112Sn/124Sn
-    TH1D *relativeSnCSLog = (TH1D*)target1csLog->Clone("relativeSnCSLog");
-    relativeSnCSLog->Divide(target3csLog);
-    relativeSnCSLog->Write();
+    /*TH1D *Sn124_plus_Sn112CSLog = (TH1D*)csLogHistos[5]->Clone("Sn124_plus_Sn112CSLog");
+    Sn124_plus_Sn112CSLog->Add(csLogHistos[3]);
 
+    TH1D *Sn124_minus_Sn112CSLog = (TH1D*)csLogHistos[5]->Clone("Sn124_minus_Sn112CSLog");
+    Sn124_minus_Sn112CSLog->Add(csLogHistos[3],-1);
+
+    // rebin and scale these dummy cross-section plots (124+112 and 124-112)
+    Sn124_plus_Sn112CSLog->Rebin(noBins/(double)20);
+    Sn124_minus_Sn112CSLog->Rebin(noBins/(double)20);
+
+    Sn124_plus_Sn112CSLog->Scale(1/(noBins/(double)20));
+    Sn124_minus_Sn112CSLog->Scale(1/(noBins/(double)20));
+
+    // Divide 124-112 by 124+112 for relative cross-section
+    TH1D *relativeSnCSLog = (TH1D*)Sn124_minus_Sn112CSLog->Clone("relativeSnCSLog");
+    relativeSnCSLog->SetTitle("#frac{#sigma_{^{124}Sn}-#sigma_{^{112}Sn}}{#sigma_{^{124}Sn}+#sigma_{^{112}Sn}}");
+    relativeSnCSLog->Divide(Sn124_plus_Sn112CSLog);
+*/
     ifstream SnData("SnNatData.dat");
     if(!SnData.is_open())
     {
@@ -736,7 +1016,7 @@ void fillCShistos()
     }
 
     char dummy[200];
-    SnData.getline(dummy,200);
+
     SnData.getline(dummy,200);
     SnData.getline(dummy,200);
 
@@ -750,7 +1030,7 @@ void fillCShistos()
     {
         SnData >> dum >> dum2 >> dum3;
 
-        energy.push_back(TMath::Log10(dum));
+        energy.push_back(dum);
         xsection.push_back(dum2);
         error.push_back(dum3);
     }
@@ -758,9 +1038,9 @@ void fillCShistos()
     TGraphErrors *SnLitLog = new TGraphErrors(energy.size(),&energy[0],&xsection[0],0,&error[0]);
     //SnLitLog->Draw("AP");
 
-    SnLitLog->GetXaxis()->SetTitle("Energy [MeV] (log10)");
+    SnLitLog->GetXaxis()->SetTitle("Energy [MeV]");
     SnLitLog->GetXaxis()->CenterTitle();
-    SnLitLog->GetXaxis()->SetRangeUser(0,TMath::Log10(700.));
+    SnLitLog->GetXaxis()->SetRangeUser(CS_LOWER_BOUND,CS_UPPER_BOUND);
 
     SnLitLog->GetYaxis()->SetTitle("sigma [b]");
     SnLitLog->GetYaxis()->CenterTitle();
@@ -776,6 +1056,7 @@ void fillCShistos()
     }
 
     carbonData.getline(dummy,200);
+    carbonData.getline(dummy,200);
 
     energy.clear();
     xsection.clear();
@@ -785,7 +1066,7 @@ void fillCShistos()
     {
         carbonData >> dum >> dum2 >> dum3;
 
-        energy.push_back(TMath::Log10(dum));
+        energy.push_back(dum);
         xsection.push_back(dum2);
         error.push_back(dum3);
     }
@@ -793,9 +1074,9 @@ void fillCShistos()
     TGraphErrors *carbonLitLog = new TGraphErrors(energy.size(),&energy[0],&xsection[0],0,&error[0]);
     //carbonLitLog->Draw("AP");
 
-    carbonLitLog->GetXaxis()->SetTitle("Energy [MeV] (log10)");
+    carbonLitLog->GetXaxis()->SetTitle("Energy [MeV]");
     carbonLitLog->GetXaxis()->CenterTitle();
-    carbonLitLog->GetXaxis()->SetRangeUser(0,TMath::Log10(700.));
+    carbonLitLog->GetXaxis()->SetRangeUser(CS_LOWER_BOUND,CS_UPPER_BOUND);
 
     carbonLitLog->GetYaxis()->SetTitle("sigma [b]");
     carbonLitLog->GetYaxis()->CenterTitle();
@@ -852,6 +1133,9 @@ void fillHistos()
         // reattach to the channel-specific tree for reading out data
         setBranches(orchard[i]);
         int totalEntries = orchard[i]->GetEntries();
+
+        // reduce entries to sort for diagnostic purposes
+        //totalEntries /= 2;
         cout << "Populating " << dirs[i] << " histograms..." << endl;
 
         waveformsDir = (TDirectory*)gDirectory->Get("waveformsDir");
@@ -910,7 +1194,20 @@ void fillHistos()
                     waveformH->SetBinContent(k,waveform->at(k));
                 }
             }
+
+            /*cout << "completeTime = " << completeTime << endl;
+
+            if(macroNo>0)
+            {
+                break;
+            }*/
+            if(j%1000==0)
+            {
+                cout << "Processed " << j << " events...\r";
+                fflush(stdout);
+            }
         }
+        cout << "Processed " << totalEntries << " in " << dirs[i] << " histograms." << endl;
     }
 
     // fill TOF, cross-section, etc. histos for channels 4, 6
@@ -940,20 +1237,14 @@ void fillHistos()
         completeTimeH->GetXaxis()->SetTitle("complete time for each event");
 
         // create subdirectory for holding waveform-mode waveform data
-        gDirectory->mkdir("waveformsDir","raw DPP waveforms");
+        gDirectory->mkdir("waveformsDir","raw waveform-mode waveforms");
         waveformsDir = (TDirectory*)gDirectory->Get("waveformsDir");
         waveformsDir->cd();
 
         // fill waveform mode histograms
         setBranchesW(orchardW[i]);
         int totalEntries = orchardW[i]->GetEntries();
-        cout << "Populating " << dirs[i] << " histograms..." << endl;
-
-        // create a holder for the time-zero of each macropulse waveform
-        // so we can plot all 11 waveform chunks on the same histogram
-        // initialize to -650000 to ensure that the first event in the waveform
-        // trees is always considered the start of a macropulse waveform
-        double waveformStart = -650000;
+        cout << totalEntries << " total waveforms detected in channel " << i*2 << endl;
 
         // we need label the number of waveform-mode macropulses to make
         // uniquely named histograms
@@ -970,23 +1261,21 @@ void fillHistos()
             evtNoH->Fill(evtNo);
             completeTimeH->Fill(completeTime);
 
-            if(completeTime >= waveformStart+650000)
+            if(evtNo==0)
             {
-                // new macropulse in waveform mode because no other waveform
-                // data came before it in the last macropulse period
-                // create a new plot to stitch 11 waveforms together
+                // new macropulse in waveform mode
+                // create a new plot to hold the new waveforms of this macropulse
                 stringstream temp;
                 temp << "full waveform " << waveformNo;
-                waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),350000,0,700000);
+                waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),360000,0,720000);
 
                 // set the start of the macropulse to the first event timer
-                waveformStart = completeTime;
                 waveformNo++;
             }
 
             for(int k=0; k<waveform->size(); k++)
             {
-                waveformH->SetBinContent(k+(completeTime-waveformStart)/2,waveform->at(k));
+                waveformH->SetBinContent(k+floor((fmod(waveform->size()*2,MICRO_PERIOD)+1)*evtNo*MICRO_PERIOD/(double)2),waveform->at(k));
             }
         }
     }
@@ -1176,23 +1465,25 @@ int main(int argc, char *argv[])
 
     TFile* file = new TFile(fileInName.str().c_str(),"READ");
 
-    if(file->Get("ch0Tree"))
+    if(!file->IsOpen())
     {
-        cout << fileInName.str() << " already exists. Skip basic histogram filling and calculate cross-sections." << endl;
+        cout << "Error: failed to open resort.root" << endl;
+        exit(1);
     }
 
-    TTree* ch0Tree = (TTree*)file->Get("ch0Tree");
-    TTree* ch2Tree = (TTree*)file->Get("ch2Tree");
-    TTree* ch4Tree = (TTree*)file->Get("ch4Tree");
-    TTree* ch6Tree = (TTree*)file->Get("ch6Tree");
-    TTree* ch0TreeW = (TTree*)file->Get("ch0TreeW");
-    TTree* ch2TreeW = (TTree*)file->Get("ch2TreeW");
-    TTree* ch4TreeW = (TTree*)file->Get("ch4TreeW");
+    TTree* ch0Tree = (TTree*)file->Get("ch0ProcessedTree");
+    TTree* ch2Tree = (TTree*)file->Get("ch2ProcessedTree");
+    TTree* ch4Tree = (TTree*)file->Get("ch4ProcessedTree");
+    TTree* ch6Tree = (TTree*)file->Get("ch6ProcessedTree");
+    TTree* ch0TreeW = (TTree*)file->Get("ch0ProcessedTreeW");
+    TTree* ch2TreeW = (TTree*)file->Get("ch2ProcessedTreeW");
+    TTree* ch4TreeW = (TTree*)file->Get("ch4ProcessedTreeW");
 
     orchard.push_back(ch0Tree);
     orchard.push_back(ch2Tree);
     orchard.push_back(ch4Tree);
-    orchard.push_back(ch6Tree);
+    // uncomment to include scavenger data
+    //orchard.push_back(ch6Tree);
 
     orchardW.push_back(ch0TreeW);
     orchardW.push_back(ch2TreeW);

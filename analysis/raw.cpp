@@ -2,15 +2,15 @@
                                    raw.cpp
 ******************************************************************************/
 
-// This is called by ./sort.sh and is the first subcode for total neutron
-// cross-section analysis. It reads raw hexidecimal data from .evt files
-// and creates a ROOT file, runX-YYYY_raw.root, with one ROOT tree containing
-// all events from the raw file.
+// This is called by ./sort.sh and is the first step in analyzing the total
+// cross section data.
+// It reads raw hexidecimal data from an .evt file and creates a ROOT file,
+// runX-Y_raw.root (where X is the run number, and Y is the sub-run number),
+// with one ROOT tree containing all events from the input .evt file.
 // 
 // This file expects .evt file data with the following structure:
 //
 //      ---------------------------------------------------------------------------
-//
 //      EVENT HEADER:
 //
 //      Size            |   uint32; number of bytes in the event (self-inclusive)
@@ -18,15 +18,14 @@
 //      Channel         |   uint32; channel number of event (range: 0-7)
 //      Time Tag        |   uint32; coarse time (2 ns units) of event trigger
 //
-//      (every event has an EVENT HEADER)
-//
+//      (in every event, there is an EVENT HEADER)
 //      ---------------------------------------------------------------------------
 //
+//      ---------------------------------------------------------------------------
 //      DPP EVENT BODY:
 //
 //      Extra select    |   uint16; describes the contents of Extras
-//      Extras          |   uint32; additional PSD data (see documentation)
-//      Zero Crossing   |   uint16; interpolated zero-crossing, in picoseconds
+//      Extras          |   uint32; additional PSD data (see DPP Event body section)
 //      Short Gate Q    |   uint16; charge integrated in the short gate
 //      Long Gate Q     |   uint16; charge integrated in the long gate
 //      Baseline        |   uint16; baseline level of ADC
@@ -35,7 +34,8 @@
 //      Num. of samples |   uint32; number of waveform samples collected in Samples
 //      Samples         |   series of uint16 giving raw waveform samples
 //
-//      (events of type 1 have DPP EVENT BODY)
+//      (only events of type 1 have DPP EVENT BODY)
+//      ---------------------------------------------------------------------------
 //
 //      ---------------------------------------------------------------------------
 //
@@ -44,7 +44,8 @@
 //      Num. of samples |   uint32; number of waveform samples to follow (mixed mode)
 //      Samples         |   series of uint16 giving raw waveform samples
 //
-//      (events of type 2 have WAVEFORM EVENT BODY)
+//      (only events of type 2 have WAVEFORM EVENT BODY)
+//      ---------------------------------------------------------------------------
 
 #include <iostream>
 #include <fstream>
@@ -55,75 +56,100 @@
 
 using namespace std;
 
-// To populate events from the raw file into a ROOT tree, we need to provide
-// an event structure, listing all the variables that comprise an event.
-struct event
+const double SAMPLE_PERIOD = 2; // time of one sample, in ns
+
+// To populate events from the raw file into a ROOT tree, we provide
+// an event structure listing all the variables that comprise an event.
+// When a new event is added to the tree, a subset of these variables is
+// included in the new event being saved.
+struct Event
 {
-    unsigned int chNo; // describe data stream origin (i.e., detector, monitor, target changer)
-    unsigned int evtType; // either 1 (DPP) or 2 (waveform)
+    // Event header variables:
+    unsigned int size;    // size of event, in bytes
+    unsigned int evtType; // "event type", either 1 (DPP) or 2 (waveform)
+    unsigned int chNo;    // "channel number" indicates event origin (i.e.,
+                          // detector, monitor, target changer)
+    double timetag;       // "coarse timestamp of event" includes 32 bits of time
+                          // information. Units are the same as the sample period of
+                          // the digitizer (e.g. 2 ns or 5 ns)
 
-    double timetag; // 1 sample granularity, 32 bits
-    unsigned int extTime, fineTime; // provide additional bits of granularity 
+    // Event body variables:
+    unsigned int extraSelect; // indicates the meaning of the "extras" word
+    unsigned int sgQ;     // "short gate integrated charge" provides the charge
+                          // integral over an adjustable range of the event's peak 
+    unsigned int lgQ;     // "long gate integrated charge" provides the charge
+                          // integral over an adjustable range of the event's peak 
+    unsigned int nSamp; // number of samples in the event's waveform
+    vector<int> waveform; // "digital waveform of event" is a series of waveform
+                          // samples for each event
 
-    unsigned int sgQ, lgQ; // integrated charge, from a short gate or a long gate
-
-    vector<int> waveform; // contains all waveform samples for each event to allow for corrections in analysis
+    // Variables extracted from "extras"
+    unsigned int extTime; // "extended timestamp of event" extends timetag with
+                          // 16 additional bits for times greater than 2^32
+                          // sample periods.
+    unsigned int fineTime;// "fine timestamp of event" sub-divides timetag with
+                          // 10 additional bits of time granularity, with units of
+                          // (sample period)/2^10 units.
 } ev;
 
-// To parse data from the raw .evt file, we will need buffer (dummy) variables.
-// Data is provided in hexadecimal words (16 bits long) in the .evt files, so
-// we'll use a C++ short to store each word.
-int const BufferWords = 1;
-int const BufferBytes = BufferWords*2;
-unsigned short buffer[BufferWords];
-unsigned short *point;
+// Raw data is stored as hexadecimal words (16 bits long) in the .evt files
+int const BufferWords = 1; // number of chars per buffer word
+int const BufferBytes = BufferWords*2; // number of bytes per buffer word
 
-// Declare event variables (as listed in the program description - see start of file)
-unsigned int size, evtType, chNo, sgQ, lgQ, extTime, fineTime, nSamp, extraSelect, extras1, extras2;
-double timetag; // timetag is a 32-bit value, so requires a C++ double
-vector<int> waveform; // holds waveform samples for each event. Samples are 14 bits each.
+// track number of processed events of each type
+struct Statistics
+{
+    long numberOfEvents = 0;
+    long numberOfDPPs = 0;
+    long numberOfWaveforms = 0;
 
-// Declare a ROOT tree for storing events 
-TTree* tree;
+    long numberOfCh0Waveforms = 0;
+    long numberOfCh2Waveforms = 0;
+    long numberOfCh4Waveforms = 0;
+} stats;
 
-// This method is used by processRun() to loop through the raw .evt file, parsing it
-// into individual events.
+// extract a single event from the raw event file and fill its data into the
+// tree
 void readEvent(ifstream& evtfile)
 {
-    // start reading event header (common to all events)
+    // clear all DPP-specific event variables to prepare for reading event
+    ev.extTime = 0;
+    ev.fineTime = 0;
+    ev.sgQ = 0;
+    ev.lgQ = 0;
 
-    // size is the number of bytes in the event (self-inclusive)
+    unsigned short buffer[BufferWords];
+
+    // start reading event header (common to all events)
     unsigned short size1 = buffer[0];
     evtfile.read((char*)buffer,BufferBytes);
     unsigned short size2 = buffer[0];
     evtfile.read((char*)buffer,BufferBytes);
-    size = (size2 << 16) | size1;
+    ev.size = (size2 << 16) | size1;
 
-    // evtType is either 1 (DPP mode) or 2 (waveform mode)
     unsigned short evtType1 = buffer[0];
     evtfile.read((char*)buffer,BufferBytes);
     unsigned short evtType2 = buffer[0];
     evtfile.read((char*)buffer,BufferBytes);
-    evtType = (evtType2 << 16) | evtType1;
+    ev.evtType = (evtType2 << 16) | evtType1;
 
-    // chNo ranges from 0-7
     unsigned short chNo1 = buffer[0];
     evtfile.read((char*)buffer,BufferBytes);
     unsigned short chNo2 = buffer[0];
     evtfile.read((char*)buffer,BufferBytes);
-    chNo = (chNo2 << 16) | chNo1;
+    ev.chNo = (chNo2 << 16) | chNo1;
 
-    // timetag is the coarse trigger time for this event, in 2ns increments
     unsigned short timetag1 = buffer[0];
     evtfile.read((char*)buffer,BufferBytes);
     unsigned short timetag2 = buffer[0];
     evtfile.read((char*)buffer,BufferBytes);
-    timetag = (timetag2<< 16) | timetag1;
-    timetag *= 2; // timetag converted from samples to ns
+    ev.timetag = (timetag2<< 16) | timetag1;
+    ev.timetag *= SAMPLE_PERIOD; // timetag converted from samples to ns
+    // finished reading event header
 
-    if(evtType==1)
+    if(ev.evtType==1)
     {
-        // start reading DPP event body data (specific to DPP events)
+        // start reading event data specific to DPP events
 
         // EXTRAS is a 32-bit word whose content varies with the value of EXTRA_SELECT.
         // [DEFAULT]    0: extended timestamp (bits 16-31) and baseline*4 (bits 0-15)
@@ -134,136 +160,140 @@ void readEvent(ifstream& evtfile)
         //              5: CFD positive ZC (bits 16-31) and negative ZC (bits 0-15)
         //              7: fixed value of 0x12345678
 
-        extraSelect = buffer[0];
+        ev.extraSelect = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
 
-        extras1 = buffer[0];
+        unsigned int extras1 = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
 
-        extras2 = buffer[0];
+        unsigned int extras2 = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
 
-        switch(extraSelect)
+        switch(ev.extraSelect)
         {
             case 2:
                 // retrieve extended time from bits 16-31 (extras2)
-                extTime = extras2;
+                ev.extTime = extras2;
                 // retrieve fine time from bits 0:9 (0x03ff)
-                fineTime = (extras1 & 0x03ff);
+                ev.fineTime = (extras1 & 0x03ff);
                 break;
 
-            // Other cases not implemented in acquisition
+            // other cases not currently implemented
             default:
                 cout << "Error: extraSelect != 2; other values of extraSelect not implemented" << endl;
                 exit(1);
                 break;
         }
 
-        // sgQ is the short gate integrated charge, in digitizer units 
-        sgQ = buffer[0];
+        ev.sgQ = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
 
-        // lgQ is the long gate integrated charge, in digitizer units 
-        lgQ = buffer[0];
+        ev.lgQ = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
 
-        // puRej is a pile-up rejection flag (not used in current acquisition
-        // software - discard this data)
+        // "pile-up rejection" flag (not implemented in current acquisition software,
+        // so discard this data)
         //puRej = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
 
-        // probe indicates whether an additional analog waveform will be captured along with the
-        // input trace. The top bit turns on the analog probe; the bottom two bits describe the
+        // "probe" indicates whether an additional diagnostic waveform will be captured along with the
+        // normal waveform. The top bit turns on this probe waveform; the bottom two bits describe the
         // probe type.
-        // Note: this is a diagnostic tool for acquisition turned off during production runs
+        // Note that this is a diagnostic tool for acquisition turned off during production runs
         //probe = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
+
+        stats.numberOfDPPs++;
+    }
+
+    else if (ev.evtType==2)
+    {
+        // waveform mode event
+        stats.numberOfWaveforms++;
+    }
+
+    else
+    {
+        cout << "Error: evtType must be either 1 (DPP mode) or 2 (Waveform mode)." << endl;
+        exit(1);
     }
 
     // the DPP-mode only data has been read out, so now let's read out the data
-    // that's present in both DPP and waveform modes (number of samples and the
-    // waveform data)
+    // that's always present (the number of waveform samples and the waveforms)
 
-    // nSamp is the number of waveform samples that follow (in LIST mode, nSamp = 0)
     unsigned short nSamp1 = buffer[0];
     evtfile.read((char*)buffer,BufferBytes);
     unsigned short nSamp2 = buffer[0];
     evtfile.read((char*)buffer,BufferBytes);
-    nSamp = (nSamp2 << 16) | nSamp1;
+    ev.nSamp = (nSamp2 << 16) | nSamp1;
 
-    // read waveform, consisting of nSamp samples
-    waveform.clear();
-    for(int i=0;i<nSamp;i++)
+    ev.waveform.clear();
+    for(int i=0;i<ev.nSamp;i++)
     {
-        waveform.push_back(buffer[0]);
+        ev.waveform.push_back(buffer[0]);
         evtfile.read((char*)buffer,BufferBytes);
     }
-
-    // In preparation for filling the tree with this event,
-    // fill the event variables with the event data just collected above
-    ev.chNo = chNo;
-    ev.evtType = evtType;
-    ev.extTime = extTime;
-    ev.timetag = timetag;
-    ev.fineTime = fineTime;
-    ev.sgQ = sgQ;
-    ev.lgQ = lgQ;
-    ev.waveform = waveform; 
-
-    // Add event to tree
-    tree->Fill();
-
-    // clear all DPP-specific event variables to prepare for next event
-    extTime = 0;
-    fineTime = 0;
-    sgQ = 0;
-    lgQ = 0;
 }
 
-// Once the tree is created and ready to be filled, and the data has been
-// located, main calls this method to loop through a run and pull out events
-void processRun(string evtname)
+// loop through the specified .evt file and pull out events
+void processRun(string evtname,TTree* tree)
 {
     // attempt to open file
     ifstream evtfile;
     evtfile.open(evtname,ios::binary);
     if (!evtfile)
     {
-        // failed to open event file; abort sorting script
         cout << "Failed to open " << evtname << ". Please check that the file exists" << endl;
         exit(1);
     }
 
     else 
     {
-        // successfully opened event file; start processing events
         cout << evtname << " opened successfully. Start reading events..." << endl;
 
+        unsigned short buffer[BufferWords];
         evtfile.read((char*)buffer,BufferBytes);
 
-        point = buffer;
         // we're now pointing at the first 16-bit word in the data stream
-
         // start looping through the evtfile to extract events
-        int nE = 0;
-
         while(!evtfile.eof() /* use to truncate sort && nE<1000000*/)
         {
+            readEvent(evtfile);
 
-            readEvent(evtfile); // extract raw data from event file
+            // Add event to tree
+            tree->Fill();
 
-            nE++;
+            stats.numberOfEvents++;
 
-            if (nE%10000 == 0)
+            // Update statistics on events
+            if(ev.evtType==2)
             {
-                cout << "Processed " << nE << " events\r";
+                if(ev.chNo==0)
+                {
+                    stats.numberOfCh0Waveforms++;
+                }
+
+                if(ev.chNo==2)
+                {
+                    stats.numberOfCh2Waveforms++;
+                }
+
+                if(ev.chNo==4)
+                {
+                    stats.numberOfCh4Waveforms++;
+                }
+            }
+
+            if (stats.numberOfEvents%10000 == 0)
+            {
+                cout << "Processed " << stats.numberOfEvents << " events\r";
                 fflush(stdout);
             }
         }
 
-        // Input file finished
+        // reached end of input file
         cout << "Finished processing event file" << endl;
-        cout << "Total events: " << nE << endl;
+        cout << "Total events: " << stats.numberOfEvents << endl;
     }
 
     evtfile.close();
@@ -272,13 +302,14 @@ void processRun(string evtname)
 int main(int argc, char* argv[])
 {
     cout << endl << "Entering raw sort..." << endl;
+
     // read in data run location
     string runDir = argv[1];
     string runNo = argv[2];
     string analysispath = argv[3];
     string outpath = argv[4];
 
-    // Create a tree for this run
+    // Create a ROOT tree for this run
     TFile *file;
 
     stringstream treeName;
@@ -290,11 +321,12 @@ int main(int argc, char* argv[])
 
     if(file->Get("tree"))
     {
-        cout << "Found previously existing raw sort " << fileName.str() << ". Skipping raw sort..." << endl;
+        cout << "Found previously existing raw sort " << fileName.str() << ". Skipping raw sort." << endl;
         exit(0);
     }
 
-    tree = new TTree("tree","");
+    // Declare a ROOT tree for storing events 
+    TTree* tree = new TTree("tree","");
     cout << "Created ROOT tree " << treeName.str() << endl;
 
     tree->Branch("evtType",&ev.evtType,"evtType/i");
@@ -308,9 +340,11 @@ int main(int argc, char* argv[])
 
     stringstream runName;
     runName << analysispath <<"/output/run" << runDir << "/data-" << runNo << ".evt";
-    processRun(runName.str());
+    processRun(runName.str(),tree);
+
+    cout << "Total number of DPP-mode events processed = " << stats.numberOfDPPs << endl;
+    cout << "Total number of waveform-mode events processed = " << stats.numberOfWaveforms << endl;
 
     file->Write();
-
     file->Close();
 }
