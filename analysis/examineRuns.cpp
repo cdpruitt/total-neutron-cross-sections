@@ -1,6 +1,8 @@
 // Plotting program for viewing multiple sub-runs in a single canvas (for identifying bad runs)
 //
-// To run, give the following data as arguments to ./examineRuns
+// To run, start ROOT and run the following command (including quotes):
+//
+// .x examineRuns.cpp("filepath","runDir","runSuffix","subDir","histoType")
 //
 // filepath = drive source (i.e., /data3/analysis)
 // runDir = run to sort (i.e., 170)
@@ -71,7 +73,7 @@ void examineRuns(string filePath, string runDir, string runSuffix, string subDir
     for(int i=0; i<CANVAS_WIDTH*CANVAS_HEIGHT; i++)
     {
         fileName.str("");
-        fileName << filePath.c_str() << runDir.c_str() << "/run"
+        fileName << filePath.c_str() << "/run" << runDir.c_str() << "/run"
             << runDir.c_str() << "-" << std::setfill('0') << std::setw(4)
             << i << "_" << runSuffix << ".root";
         fileIn = new TFile(fileName.str().c_str(),"READ");
@@ -90,6 +92,7 @@ void examineRuns(string filePath, string runDir, string runSuffix, string subDir
         }
 
         histoToAdd = (TH1I*)gDirectory->Get(histoType.c_str());
+
         histoToAdd->SetTitleSize(0.5,"t");
         histoToAdd->Draw();
 
@@ -98,6 +101,5 @@ void examineRuns(string filePath, string runDir, string runSuffix, string subDir
         latex.SetTextSize(0.07);
         latex.DrawLatexNDC(0.2,0.05,label.str().c_str());
         latex.Draw();
-
     }
 }

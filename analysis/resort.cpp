@@ -224,7 +224,7 @@ void getWaveform(vector<int>* dummyWaveform)
 
     // fill waveform with wavelet data from an event
     // (the raw tree's branch points to dummyWaveform)
-    for(int k = 0; k<dummyWaveform->size(); k++)
+    for(int k=0; (size_t)k<dummyWaveform->size(); k++)
     {
         rawEvent.waveform->push_back(dummyWaveform->at(k));
     }
@@ -318,8 +318,6 @@ void processTargetChanger(TTree* inputTree, TTree* targetChangerTree, ofstream& 
 {
     // Define dummy variables for comparing the timestamps of consecutive events.
     // This will allow us to track time resets and DPP/waveform mode changes.
-    double prevMacroTime;
-    double prevCompleteTime;
     double extTimePrev = 0;
     double timetagPrev = 0;
     int prevEvtType = 0;
@@ -786,7 +784,6 @@ void processWaveformEvents(vector<TTree*> orchardRawW, vector<TTree*> orchardPro
 
         int totalEntries = orchardRawW[detIndex/2]->GetEntries();
 
-        unsigned int macropulseIndex = 0;
         int prevMacroNo = 0;
 
         targetChangerTree->GetEntry(0);
@@ -795,9 +792,19 @@ void processWaveformEvents(vector<TTree*> orchardRawW, vector<TTree*> orchardPro
         {
             orchardRawW[detIndex/2]->GetEntry(i);
 
+            //error << "waveform evtNo = " << rawEvent.evtNo << endl;
             if(rawEvent.evtNo==0)
             {
-                // Start of new waveform mode period
+                // Start of new waveform mode period:
+                // Move forward to the next mode change in the target changer
+
+                //error << "modeChange == " << tcEvent.modeChange << endl;
+                do
+                {
+                    targetChangerTree->GetEntry(tcEvent.macroNo+1);
+                //    error << "cycling through tcTree, macroNo = " << tcEvent.macroNo << endl;
+
+                } while(tcEvent.modeChange==0 && tcEvent.macroNo+1<targetChangerTree->GetEntries());
 
                 if(tcEvent.macroNo+1>=targetChangerTree->GetEntries())
                 {
@@ -805,19 +812,6 @@ void processWaveformEvents(vector<TTree*> orchardRawW, vector<TTree*> orchardPro
                     break;
                 }
 
-                targetChangerTree->GetEntry(tcEvent.macroNo+1);
-
-                /*while(prevMacroNo==tcEvent.macroNo)
-                {
-                    if(macropulseIndex==orchardProcessedW[0]->GetEntries())
-                    {
-                        // reached end of targetChangerTree
-                        break;
-                    }
-                    orchardProcessedW[0]->GetEntry(macropulseIndex+1);
-                    macropulseIndex++;
-                }*/
-                
                 prevMacroNo=tcEvent.macroNo;
             }
 
@@ -828,6 +822,8 @@ void processWaveformEvents(vector<TTree*> orchardRawW, vector<TTree*> orchardPro
             procEvent.macroNo = tcEvent.macroNo;
             procEvent.macroTime = tcEvent.macroTime;
             procEvent.targetPos = tcEvent.targetPos;
+
+            error << "targ position = " << tcEvent.targetPos << endl;
 
             procEvent.evtNo = rawEvent.evtNo;
             procEvent.waveform = rawEvent.waveform;
@@ -883,7 +879,7 @@ int main(int argc, char* argv[])
 
     // Create the new empty trees
     // Each channel has a separate tree for DPP data and for waveform mode data
-    for(int i=0; i<activeDPPChannels.size(); i++)
+    for(int i=0; (size_t)i<activeDPPChannels.size(); i++)
     {
         orchardRaw.push_back(new TTree((activeDPPChannels[i]+"RawTree").c_str(),""));
         branchRaw(orchardRaw[i]);
@@ -892,7 +888,7 @@ int main(int argc, char* argv[])
         branchProc(orchardProcessed[i]);
     }
 
-    for(int i=0; i<activeWaveformChannels.size(); i++)
+    for(int i=0; (size_t)i<activeWaveformChannels.size(); i++)
     {
         orchardRawW.push_back(new TTree((activeWaveformChannels[i]+"RawTreeW").c_str(),""));
         branchRawW(orchardRawW[i]);

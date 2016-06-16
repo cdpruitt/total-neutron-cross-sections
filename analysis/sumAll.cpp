@@ -16,7 +16,7 @@ using namespace std;
 // Set number of bins for relative cross-section histograms
 int noRelativeBins = 50;
 int noCSBins = 0;
-const double CLIFF_OFFSET = 9.5;
+const double CLIFF_OFFSET = 0;
 
 struct Error
 {
@@ -650,13 +650,13 @@ int main()
     Sn124_minus_Sn112CS->SetDirectory(outfile);
     Sn124_minus_Sn112CS->Add(Sn112CSTotal,-1);
 
-    for(int i = 0; i<Sn124_plus_Sn112CS->GetXaxis()->GetNbins(); i++)
+    /*for(int i = 0; i<Sn124_plus_Sn112CS->GetXaxis()->GetNbins(); i++)
     {
         if(Sn124_plus_Sn112CS->GetBinContent(i) < 0)
         {
             Sn124_plus_Sn112CS->AddBinContent(i,CLIFF_OFFSET);
         }
-    }
+    }*/
 
     //Sn124_plus_Sn112CS->Rebin(Sn124_plus_Sn112CS->GetSize()/(double)50);
     //Sn124_minus_Sn112CS->Rebin(Sn124_minus_Sn112CS->GetSize()/(double)50);
@@ -670,9 +670,9 @@ int main()
 
     relativeSnCS->Divide(Sn124_plus_Sn112CS);
 
-    getStatisticalError(Sn112CSTotalLog, Sn124CSTotalLog);
-    getSystemicError();
-    getTotalError();
+    //getStatisticalError(Sn112CSTotalLog, Sn124CSTotalLog);
+    //getSystemicError();
+    //getTotalError();
 
     
 
@@ -750,6 +750,8 @@ int main()
     }
 
     TGraphErrors* relativeSnCSLogGraph = new TGraphErrors(energy.size(),&energy[0],&xsection[0],0,&error[0]);
+    //TGraph* relativeSnCSLogGraph = new TGraphErrors(energy.size(),&energy[0],&xsection[0],0,&error[0]);
+
     //cout << relativeSnCSLogGraph->
     outfile->cd();
     relativeSnCSLogGraph->Write("relativeGraph");

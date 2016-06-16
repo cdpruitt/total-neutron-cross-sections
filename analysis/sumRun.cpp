@@ -10,17 +10,31 @@
 
 using namespace std;
 
-int noCSBins = 0;
+const double CS_LOWER_BOUND = 1; // cross-section plots' lower bound, in MeV
+const double CS_UPPER_BOUND = 700; // cross-section plots' upper bound, in MeV
+
+int noCSBins = 50;
 
 TH1D* logBins(TH1D *inputHisto)
 {
     string newName;
     newName = inputHisto->GetName();
     newName += "Log";
+
+    double newXMin = (((TAxis*)inputHisto->GetXaxis())->GetXmin());
+    if (newXMin <= 0)
+    {
+        cout << "Error: can't take log of negative energy on cross-section plot" << endl;
+        exit(1);
+    }
+
+    newXMin = TMath::Log10(newXMin);
+
     TH1D* outputHisto = new TH1D(newName.c_str(),newName.c_str(),noCSBins,
             TMath::Log10(((TAxis*)inputHisto->GetXaxis())->GetXmin()),
             TMath::Log10(((TAxis*)inputHisto->GetXaxis())->GetXmax()));
 
+    // Pull bin data from input histo, and map to the log scale:
     TAxis* axis = outputHisto->GetXaxis();
     int nBins = axis->GetNbins();
 
@@ -35,6 +49,7 @@ TH1D* logBins(TH1D *inputHisto)
         newBins[i] = TMath::Power(10, xMin+i*binWidth);
     }
 
+    // Assign the log-scale bins to the new histo
     ((TAxis*)outputHisto->GetXaxis())->Set(nBins,newBins);
     delete newBins;
 
@@ -80,12 +95,12 @@ int main(int argc, char *argv[])
 
     // Create summed histos
     // First, sum DPP-derived cross-sections
-    TH1D *blankCSSum = new TH1D("blankCSSum","blankCSSum",noCSBins,1,700);
-    TH1D *carbonSCSSum = new TH1D("carbonSCSSum","carbonSCSSum",noCSBins,1,700);
-    TH1D *carbonLCSSum = new TH1D("carbonLCSSum","carbonLCSSum",noCSBins,1,700);
-    TH1D *Sn112CSSum = new TH1D("Sn112CSSum","Sn112CSSum",noCSBins,1,700);
-    TH1D *SnNatCSSum = new TH1D("SnNatCSSum","SnNatCSSum",noCSBins,1,700);
-    TH1D *Sn124CSSum = new TH1D("Sn124CSSum","Sn124CSSum",noCSBins,1,700);
+    TH1D *blankCSSum = new TH1D("blankCSSum","blankCSSum",noCSBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *carbonSCSSum = new TH1D("carbonSCSSum","carbonSCSSum",noCSBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *carbonLCSSum = new TH1D("carbonLCSSum","carbonLCSSum",noCSBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *Sn112CSSum = new TH1D("Sn112CSSum","Sn112CSSum",noCSBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *SnNatCSSum = new TH1D("SnNatCSSum","SnNatCSSum",noCSBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *Sn124CSSum = new TH1D("Sn124CSSum","Sn124CSSum",noCSBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
 
     TH1D *blankCSSumLog = logBins(blankCSSum);
     TH1D *carbonSCSSumLog = logBins(carbonSCSSum);
@@ -95,19 +110,19 @@ int main(int argc, char *argv[])
     TH1D *Sn124CSSumLog = logBins(Sn124CSSum);
 
     // Next, sum waveform-derived cross-sections
-    TH1D *blankCSSumWaveform = new TH1D("blankCSSumWaveform","blankCSSumWaveform",noWaveformBins,0,700);
-    TH1D *carbonSCSSumWaveform = new TH1D("carbonSCSSumWaveform","carbonSCSSumWaveform",noWaveformBins,0,700);
-    TH1D *carbonLCSSumWaveform = new TH1D("carbonLCSSumWaveform","carbonLCSSumWaveform",noWaveformBins,0,700);
-    TH1D *Sn112CSSumWaveform = new TH1D("Sn112CSSumWaveform","Sn112CSSumWaveform",noWaveformBins,0,700);
-    TH1D *SnNatCSSumWaveform = new TH1D("SnNatCSSumWaveform","SnNatCSSumWaveform",noWaveformBins,0,700);
-    TH1D *Sn124CSSumWaveform = new TH1D("Sn124CSSumWaveform","Sn124CSSumWaveform",noWaveformBins,0,700);
+    TH1D *blankCSSumWaveform = new TH1D("blankCSSumWaveform","blankCSSumWaveform",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *carbonSCSSumWaveform = new TH1D("carbonSCSSumWaveform","carbonSCSSumWaveform",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *carbonLCSSumWaveform = new TH1D("carbonLCSSumWaveform","carbonLCSSumWaveform",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *Sn112CSSumWaveform = new TH1D("Sn112CSSumWaveform","Sn112CSSumWaveform",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *SnNatCSSumWaveform = new TH1D("SnNatCSSumWaveform","SnNatCSSumWaveform",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *Sn124CSSumWaveform = new TH1D("Sn124CSSumWaveform","Sn124CSSumWaveform",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
 
-    TH1D *blankCSSumWaveformLog = new TH1D("blankCSSumWaveformLog","blankCSSumWaveformLog",noWaveformBins,0,TMath::Log10(700));
-    TH1D *carbonSCSSumWaveformLog = new TH1D("carbonSCSSumWaveformLog","carbonSCSSumWaveformLog",noWaveformBins,0,TMath::Log10(700));
-    TH1D *carbonLCSSumWaveformLog = new TH1D("carbonLCSSumWaveformLog","carbonLCSSumWaveformLog",noWaveformBins,0,TMath::Log10(700));
-    TH1D *Sn112CSSumWaveformLog = new TH1D("Sn112CSSumWaveformLog","Sn112CSSumWaveformLog",noWaveformBins,0,TMath::Log10(700));
-    TH1D *SnNatCSSumWaveformLog = new TH1D("SnNatCSSumWaveformLog","SnNatCSSumWaveformLog",noWaveformBins,0,TMath::Log10(700));
-    TH1D *Sn124CSSumWaveformLog = new TH1D("Sn124CSSumWaveformLog","Sn124CSSumWaveformLog",noWaveformBins,0,TMath::Log10(700));
+    TH1D *blankCSSumWaveformLog = new TH1D("blankCSSumWaveformLog","blankCSSumWaveformLog",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *carbonSCSSumWaveformLog = new TH1D("carbonSCSSumWaveformLog","carbonSCSSumWaveformLog",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *carbonLCSSumWaveformLog = new TH1D("carbonLCSSumWaveformLog","carbonLCSSumWaveformLog",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *Sn112CSSumWaveformLog = new TH1D("Sn112CSSumWaveformLog","Sn112CSSumWaveformLog",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *SnNatCSSumWaveformLog = new TH1D("SnNatCSSumWaveformLog","SnNatCSSumWaveformLog",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1D *Sn124CSSumWaveformLog = new TH1D("Sn124CSSumWaveformLog","Sn124CSSumWaveformLog",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
 
     vector<TH1D*> allHistos;
 
@@ -184,7 +199,7 @@ int main(int argc, char *argv[])
                 TH1D* Sn124CSSumRaw = blankCSSum->Clone("Sn124CsSumRaw");
                 */
 
-                for (int i=0; i<allHistos.size(); i++)
+                for (int i=0; (size_t)i<allHistos.size(); i++)
                 {
                     allHistos[i]->Scale(1/(double)(segment));
                 }

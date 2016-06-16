@@ -10,6 +10,7 @@
 
 # There are four sections to the sort.sh script:
 
+#   0. A list of runs to be excluded from analysis.
 #   1. Check to see if the analysis code has been modified, and recompile if so
 #   2. Define the analysis workflow (./raw -> ./resort -> ./histos)
 #   3. Process this script's flags to determine which/how many runs to analyze
@@ -17,6 +18,26 @@
 
 # Upon failure of a command, the script will be terminated and the reason for
 # failure will be printed to terminal.
+
+################################################################################
+
+# SECTION 0: Create a blacklist for 'bad' runs
+
+declare -a blacklist=("150-0011" "150-0012" "150-0013" "150-0014"
+                      "150-0015" "150-0016" "150-0017" "150-0018"
+                      "150-0019"
+                      
+                      "151-0000"
+                      
+                      "152-0003" "152-0004" "152-0005" "152-0006"
+                      "152-0007" "152-0008" "152-0009" "152-0010"
+                      "152-0011"
+                      
+                      "155-0008"
+                      
+                      "168-0008" "168-0009" "168-0010"
+                      
+                      "170-0003" "170-0021") 
 
 ################################################################################
 
@@ -47,27 +68,37 @@ fi
 # perform analysis on those runs.
 sort ()
 {
+    # Check to make sure that the run to be sorted isn't on the blacklisted
+    # runs list (SECTION 0).
+    #echo "$runDir-$runNo  ${blacklist[0]}"
+    for i in "${blacklist[@]}"
+    do
+        if [[ "$runDir-$runNo" = "$i" ]]
+        then
+            echo "Found sub-run \"$runDir-$runNo\" on blacklist; skipping..."
+            return 1
+        fi
+    done
+
     # Convert selected .evt file to ROOT tree, stored as runX-YYYY_raw.root
     ./raw "$runDir" "$runNo" "$datapath" "$outpath"
-
     # If ./raw returned an exit status indicating failure, exit the script
-    rc=$?; if [[ $rc != 0 ]]; then echo "./raw $runDur $runNo returned $rc, indicating error; exiting"; exit $rc; fi
+    rc=$?; if [[ $rc != 0 ]]; then echo "./raw $runDir $runNo returned $rc, indicating error; exiting"; exit $rc; fi
 
     # Process raw ROOT tree into channel-specific subtrees in runX-YYYY_sorted.root
     ./resort "$runDir" "$runNo" "$outpath"
-
     # If ./resort returned an exit status indicating failure, exit the script
-    rc=$?; if [[ $rc != 0 ]]; then echo "./resort $runDur $runNo returned $rc, indicating error; exiting"; exit $rc; fi
+    rc=$?; if [[ $rc != 0 ]]; then echo "./resort $runDir $runNo returned $rc, indicating error; exiting"; exit $rc; fi
 
     # Process channel-specific subtrees into histograms in runX-YYYY_histos.root
-    #./histos "$runDir" "$runNo" "$outpath"
-
+    ./histos "$runDir" "$runNo" "$outpath"
     # If ./resort returned an exit status indicating failure, exit the script
-    rc=$?; if [[ $rc != 0 ]]; then echo "./histos $runDur $runNo returned $rc, indicating error; exiting"; exit $rc; fi
+    rc=$?; if [[ $rc != 0 ]]; then echo "./histos $runDir $runNo returned $rc, indicating error; exiting"; exit $rc; fi
 
     # Process waveforms from channel-specific subtrees
-    #./waveform "$runDir" "$runNo" "$outpath"
-    #rc=$?; if [[ $rc != 0 ]]; then echo "./waveform $runDur $runNo returned $rc, indicating error; exiting"; exit $rc; fi
+    ./waveform "$runDir" "$runNo" "$outpath"
+    # If ./waveform returned an exit status indicating failure, exit the script
+    rc=$?; if [[ $rc != 0 ]]; then echo "./waveform $runDir $runNo returned $rc, indicating error; exiting"; exit $rc; fi
 }
 
 prepDir ()
@@ -225,8 +256,7 @@ then
             do
                 runNo=$(echo $f | egrep -o '[0-9]+' | tail -1)
                 runName="$datapath/output/run$runDir/data-$runNo.evt"
-                printf "*********************************"
-                printf "Starting sort of sub-run $runNo\n"
+                printf "\n***Starting sort of sub-run $runNo***\n"
 
                 # Sort sub-run
                 runSize=$(du -k "$runName" | cut -f 1)
@@ -245,8 +275,7 @@ then
             runNo=$(ls -t $datapath/output/run$runDir/data-* | head -1 | egrep\
                 -o '[0-9]+' | tail -1)
             runName="$datapath/output/run$runDir/data-$runNo.evt"
-            printf "*********************************"
-            printf "Starting sort of sub-run $runNo\n"
+            printf "\n***Starting sort of sub-run $runNo***\n"
 
             # Sort sub-run
             sort
