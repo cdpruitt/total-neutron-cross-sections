@@ -14,8 +14,7 @@
 using namespace std;
 
 // Set number of bins for relative cross-section histograms
-int noRelativeBins = 50;
-int noCSBins = 0;
+const int NUM_RELATIVE_BINS = 50;
 const double CLIFF_OFFSET = 0;
 
 struct Error
@@ -66,7 +65,6 @@ void getStatisticalError(TH1D* Sn112CSTotal, TH1D* Sn124CSTotal)
 
     while (runList >> runDir)
     {
-
         if (stoi(runDir)<6)
         {
             outPath = "/data3/analysis/run";
@@ -216,7 +214,7 @@ void getStatisticalError(TH1D* Sn112CSTotal, TH1D* Sn124CSTotal)
     cout << "detCountsSn124[10] = " << detCountsSn124[10] << endl;
 
 
-    for(int i=0; i<totalSn112StatError.size(); i++)
+    for(int i=0; (size_t)i<totalSn112StatError.size(); i++)
     {
         totalSn112StatError[i] = pow(
                 ((double)monCountsBlank/(pow(monCountsBlank,2))) +
@@ -279,7 +277,7 @@ void getSystemicError()
 
 void getTotalError()
 {
-    for(int i=0; i<totalSn112Error.size(); i++)
+    for(int i=0; (size_t)i<totalSn112Error.size(); i++)
     {
         totalSn112Error[i] = pow(
                 pow(totalSn112StatError[i],2) +
@@ -305,10 +303,23 @@ TH1D* logBins(TH1D *inputHisto)
     string newName;
     newName = inputHisto->GetName();
     newName += "Log";
-    TH1D* outputHisto = new TH1D(newName.c_str(),newName.c_str(),noCSBins,
+
+    double newXMin = (((TAxis*)inputHisto->GetXaxis())->GetXmin());
+    if (newXMin <= 0)
+    {
+        cout << "Error: can't take log of negative energy on cross-section plot" << endl;
+        exit(1);
+    }
+
+    newXMin = TMath::Log10(newXMin);
+
+    int noBins = ((TAxis*)inputHisto->GetXaxis())->GetNbins();
+
+    TH1D* outputHisto = new TH1D(newName.c_str(),newName.c_str(),noBins,
             TMath::Log10(((TAxis*)inputHisto->GetXaxis())->GetXmin()),
             TMath::Log10(((TAxis*)inputHisto->GetXaxis())->GetXmax()));
 
+    // Pull bin data from input histo, and map to the log scale:
     TAxis* axis = outputHisto->GetXaxis();
     int nBins = axis->GetNbins();
 
@@ -323,6 +334,7 @@ TH1D* logBins(TH1D *inputHisto)
         newBins[i] = TMath::Power(10, xMin+i*binWidth);
     }
 
+    // Assign the log-scale bins to the new histo
     ((TAxis*)outputHisto->GetXaxis())->Set(nBins,newBins);
     delete newBins;
 
@@ -382,16 +394,11 @@ int main()
     fileInName << outPath << runDir << "/" << "sum.root";
 
     infile =  new TFile(fileInName.str().c_str(),"READ");
-    TH1D* csBins = ((TH1D*)infile->Get("blankCSSum"));
-    TH1D* waveformBins = ((TH1D*)infile->Get("blankCSSumWaveform"));
 
     // each histo has N bins + 1 overflow + 1 underflow
     // thus, subtract two to get the number of 'normal' bins for summed histos
-    noCSBins = csBins->GetSize()-2;
-    int noWaveformBins = waveformBins->GetSize()-2;
-
-    delete csBins;
-    delete waveformBins;
+    int noCSBins = ((TH1D*)infile->Get("blankCSSum"))->GetSize()-2;
+    int noWaveformBins = ((TH1D*)infile->Get("blankCSSumWaveform"))->GetSize()-2;
 
     // Find the total number of runs in runList
     int totalRuns = 1;
@@ -427,19 +434,19 @@ int main()
     TH1D *Sn124CSTotalLog = logBins(Sn124CSTotal);
 
     // Next, sum waveform-derived cross-sections
-    TH1D *blankCSTotalWaveform = new TH1D("blankCSTotalWaveform","blankCSTotalWaveform",noWaveformBins,0,700);
-    TH1D *carbonSCSTotalWaveform = new TH1D("carbonSCSTotalWaveform","carbonSCSTotalWaveform",noWaveformBins,0,700);
-    TH1D *carbonLCSTotalWaveform = new TH1D("carbonLCSTotalWaveform","carbonLCSTotalWaveform",noWaveformBins,0,700);
-    TH1D *Sn112CSTotalWaveform = new TH1D("Sn112CSTotalWaveform","Sn112CSTotalWaveform",noWaveformBins,0,700);
-    TH1D *SnNatCSTotalWaveform = new TH1D("SnNatCSTotalWaveform","SnNatCSTotalWaveform",noWaveformBins,0,700);
-    TH1D *Sn124CSTotalWaveform = new TH1D("Sn124CSTotalWaveform","Sn124CSTotalWaveform",noWaveformBins,0,700);
+    TH1D *blankCSTotalWaveform = new TH1D("blankCSTotalWaveform","blankCSTotalWaveform",noWaveformBins,1,700);
+    TH1D *carbonSCSTotalWaveform = new TH1D("carbonSCSTotalWaveform","carbonSCSTotalWaveform",noWaveformBins,1,700);
+    TH1D *carbonLCSTotalWaveform = new TH1D("carbonLCSTotalWaveform","carbonLCSTotalWaveform",noWaveformBins,1,700);
+    TH1D *Sn112CSTotalWaveform = new TH1D("Sn112CSTotalWaveform","Sn112CSTotalWaveform",noWaveformBins,1,700);
+    TH1D *SnNatCSTotalWaveform = new TH1D("SnNatCSTotalWaveform","SnNatCSTotalWaveform",noWaveformBins,1,700);
+    TH1D *Sn124CSTotalWaveform = new TH1D("Sn124CSTotalWaveform","Sn124CSTotalWaveform",noWaveformBins,1,700);
 
-    TH1D *blankCSTotalWaveformLog = new TH1D("blankCSTotalWaveformLog","blankCSTotalWaveformLog",noWaveformBins,0,TMath::Log10(700));
-    TH1D *carbonSCSTotalWaveformLog = new TH1D("carbonSCSTotalWaveformLog","carbonSCSTotalWaveformLog",noWaveformBins,0,TMath::Log10(700));
-    TH1D *carbonLCSTotalWaveformLog = new TH1D("carbonLCSTotalWaveformLog","carbonLCSTotalWaveformLog",noWaveformBins,0,TMath::Log10(700));
-    TH1D *Sn112CSTotalWaveformLog = new TH1D("Sn112CSTotalWaveformLog","Sn112CSTotalWaveformLog",noWaveformBins,0,TMath::Log10(700));
-    TH1D *SnNatCSTotalWaveformLog = new TH1D("SnNatCSTotalWaveformLog","SnNatCSTotalWaveformLog",noWaveformBins,0,TMath::Log10(700));
-    TH1D *Sn124CSTotalWaveformLog = new TH1D("Sn124CSTotalWaveformLog","Sn124CSTotalWaveformLog",noWaveformBins,0,TMath::Log10(700));
+    TH1D *blankCSTotalWaveformLog = logBins(blankCSTotalWaveform);
+    TH1D *carbonSCSTotalWaveformLog = logBins(carbonSCSTotalWaveform);
+    TH1D *carbonLCSTotalWaveformLog = logBins(carbonLCSTotalWaveform);
+    TH1D *Sn112CSTotalWaveformLog = logBins(Sn112CSTotalWaveform);
+    TH1D *SnNatCSTotalWaveformLog = logBins(SnNatCSTotalWaveform);
+    TH1D *Sn124CSTotalWaveformLog = logBins(Sn124CSTotalWaveform);
 
     // Re-open runList from the start
     runList.open("runsToSort.txt");
@@ -703,17 +710,17 @@ int main()
         }
     }
 
-    Sn124_plus_Sn112CS->Rebin(Sn124_plus_Sn112CS->GetSize()/noRelativeBins);
-    Sn124_minus_Sn112CS->Rebin(Sn124_minus_Sn112CS->GetSize()/(double)noRelativeBins);
+    Sn124_plus_Sn112CS->Rebin(Sn124_plus_Sn112CS->GetSize()/NUM_RELATIVE_BINS);
+    Sn124_minus_Sn112CS->Rebin(Sn124_minus_Sn112CS->GetSize()/(double)NUM_RELATIVE_BINS);
 
-    Sn124_plus_Sn112CS->Scale(1/(Sn124_plus_Sn112CS->GetSize()/(double)noRelativeBins));
-    Sn124_minus_Sn112CS->Scale(1/(Sn124_plus_Sn112CS->GetSize()/(double)noRelativeBins));
+    Sn124_plus_Sn112CS->Scale(1/(Sn124_plus_Sn112CS->GetSize()/(double)NUM_RELATIVE_BINS));
+    Sn124_minus_Sn112CS->Scale(1/(Sn124_plus_Sn112CS->GetSize()/(double)NUM_RELATIVE_BINS));
 
-    Sn124_plus_Sn112CSLog->Rebin(Sn124_plus_Sn112CSLog->GetSize()/(double)noRelativeBins);
-    Sn124_minus_Sn112CSLog->Rebin(Sn124_minus_Sn112CSLog->GetSize()/(double)noRelativeBins);
+    Sn124_plus_Sn112CSLog->Rebin(Sn124_plus_Sn112CSLog->GetSize()/(double)NUM_RELATIVE_BINS);
+    Sn124_minus_Sn112CSLog->Rebin(Sn124_minus_Sn112CSLog->GetSize()/(double)NUM_RELATIVE_BINS);
 
-    Sn124_plus_Sn112CSLog->Scale(1/(Sn124_plus_Sn112CSLog->GetSize()/(double)noRelativeBins));
-    Sn124_minus_Sn112CSLog->Scale(1/(Sn124_plus_Sn112CSLog->GetSize()/(double)noRelativeBins));
+    Sn124_plus_Sn112CSLog->Scale(1/(Sn124_plus_Sn112CSLog->GetSize()/(double)NUM_RELATIVE_BINS));
+    Sn124_minus_Sn112CSLog->Scale(1/(Sn124_plus_Sn112CSLog->GetSize()/(double)NUM_RELATIVE_BINS));
 
     TH1D *relativeSnCSLog = (TH1D*)Sn124_minus_Sn112CSLog->Clone("relativeSnCSLog");
     relativeSnCSLog->SetDirectory(outfile);

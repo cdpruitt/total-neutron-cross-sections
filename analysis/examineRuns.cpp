@@ -84,6 +84,7 @@ void examineRuns(string filePath, string runDir, string runSuffix, string subDir
         }
 
         canvas->cd(i+1);
+        gPad->SetLogx();
 
         if(subDir.c_str())
         {

@@ -1,4 +1,3 @@
-#include "TH1.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -10,12 +9,7 @@
 
 using namespace std;
 
-const double CS_LOWER_BOUND = 1; // cross-section plots' lower bound, in MeV
-const double CS_UPPER_BOUND = 700; // cross-section plots' upper bound, in MeV
-
-int noCSBins = 50;
-
-TH1D* logBins(TH1D *inputHisto)
+/*TGraph* logBins(TGraph *inputHisto)
 {
     string newName;
     newName = inputHisto->GetName();
@@ -30,7 +24,9 @@ TH1D* logBins(TH1D *inputHisto)
 
     newXMin = TMath::Log10(newXMin);
 
-    TH1D* outputHisto = new TH1D(newName.c_str(),newName.c_str(),noCSBins,
+    int noBins = ((TAxis*)inputHisto->GetXaxis())->GetNbins();
+
+    TGraph* outputHisto = new TGraph(newName.c_str(),newName.c_str(),noBins,
             TMath::Log10(((TAxis*)inputHisto->GetXaxis())->GetXmin()),
             TMath::Log10(((TAxis*)inputHisto->GetXaxis())->GetXmax()));
 
@@ -54,7 +50,7 @@ TH1D* logBins(TH1D *inputHisto)
     delete newBins;
 
     return outputHisto;
-}
+}*/
 
 int main(int argc, char *argv[])
 {
@@ -74,57 +70,45 @@ int main(int argc, char *argv[])
     // Examine the first sub-run of runDir and find out the correct number of
     // bins to use for the summed histograms
     TFile* infile =  new TFile(fileInName.str().c_str(),"READ");
-    TH1D* csBins = ((TH1D*)infile->Get("carbonSCS"));
 
     TFile* infileWaveform =  new TFile(fileInWaveformName.str().c_str(),"READ");
-    TH1D* waveformBins = ((TH1D*)infileWaveform->Get("carbonSCS"));
+    //int noWaveformBins = ((TGraph*)infileWaveform->Get("carbonSCS"))->GetSize()-2;
 
-    // each histo has N bins + 1 overflow + 1 underflow
-    // thus, subtract two to get the number of 'normal' bins for summed histos
-    noCSBins = csBins->GetSize()-2;
-
-    int noWaveformBins = waveformBins->GetSize()-2;
-
-    delete csBins;
-    delete waveformBins;
-
-    // Create output file to contain summed histos
-    fileOutName << outpath << "/analysis/run" << runDir << "/" << "sum.root";
-
-    TFile *outfile = new TFile(fileOutName.str().c_str(),"RECREATE");
+    vector<vector<double>*> SnNatCrossSections;
+    vector<vector<double>*> SnNatEnergies;
 
     // Create summed histos
     // First, sum DPP-derived cross-sections
-    TH1D *blankCSSum = new TH1D("blankCSSum","blankCSSum",noCSBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    TH1D *carbonSCSSum = new TH1D("carbonSCSSum","carbonSCSSum",noCSBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    TH1D *carbonLCSSum = new TH1D("carbonLCSSum","carbonLCSSum",noCSBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    TH1D *Sn112CSSum = new TH1D("Sn112CSSum","Sn112CSSum",noCSBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    TH1D *SnNatCSSum = new TH1D("SnNatCSSum","SnNatCSSum",noCSBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    TH1D *Sn124CSSum = new TH1D("Sn124CSSum","Sn124CSSum",noCSBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    /*TGraph *blankCSSum = new TGraph("blankCSSum","blankCSSum",noCSBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TGraph *carbonSCSSum = new TGraph("carbonSCSSum","carbonSCSSum",noCSBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TGraph *carbonLCSSum = new TGraph("carbonLCSSum","carbonLCSSum",noCSBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TGraph *Sn112CSSum = new TGraph("Sn112CSSum","Sn112CSSum",noCSBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TGraph *SnNatCSSum = new TGraph("SnNatCSSum","SnNatCSSum",noCSBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TGraph *Sn124CSSum = new TGraph("Sn124CSSum","Sn124CSSum",noCSBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
 
-    TH1D *blankCSSumLog = logBins(blankCSSum);
-    TH1D *carbonSCSSumLog = logBins(carbonSCSSum);
-    TH1D *carbonLCSSumLog = logBins(carbonLCSSum);
-    TH1D *Sn112CSSumLog = logBins(Sn112CSSum);
-    TH1D *SnNatCSSumLog = logBins(SnNatCSSum);
-    TH1D *Sn124CSSumLog = logBins(Sn124CSSum);
+    TGraph *blankCSSumLog = logBins(blankCSSum);
+    TGraph *carbonSCSSumLog = logBins(carbonSCSSum);
+    TGraph *carbonLCSSumLog = logBins(carbonLCSSum);
+    TGraph *Sn112CSSumLog = logBins(Sn112CSSum);
+    TGraph *SnNatCSSumLog = logBins(SnNatCSSum);
+    TGraph *Sn124CSSumLog = logBins(Sn124CSSum);
 
     // Next, sum waveform-derived cross-sections
-    TH1D *blankCSSumWaveform = new TH1D("blankCSSumWaveform","blankCSSumWaveform",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    TH1D *carbonSCSSumWaveform = new TH1D("carbonSCSSumWaveform","carbonSCSSumWaveform",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    TH1D *carbonLCSSumWaveform = new TH1D("carbonLCSSumWaveform","carbonLCSSumWaveform",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    TH1D *Sn112CSSumWaveform = new TH1D("Sn112CSSumWaveform","Sn112CSSumWaveform",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    TH1D *SnNatCSSumWaveform = new TH1D("SnNatCSSumWaveform","SnNatCSSumWaveform",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    TH1D *Sn124CSSumWaveform = new TH1D("Sn124CSSumWaveform","Sn124CSSumWaveform",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TGraph *blankCSSumWaveform = new TGraph("blankCSSumWaveform","blankCSSumWaveform",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TGraph *carbonSCSSumWaveform = new TGraph("carbonSCSSumWaveform","carbonSCSSumWaveform",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TGraph *carbonLCSSumWaveform = new TGraph("carbonLCSSumWaveform","carbonLCSSumWaveform",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TGraph *Sn112CSSumWaveform = new TGraph("Sn112CSSumWaveform","Sn112CSSumWaveform",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TGraph *SnNatCSSumWaveform = new TGraph("SnNatCSSumWaveform","SnNatCSSumWaveform",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TGraph *Sn124CSSumWaveform = new TGraph("Sn124CSSumWaveform","Sn124CSSumWaveform",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
 
-    TH1D *blankCSSumWaveformLog = new TH1D("blankCSSumWaveformLog","blankCSSumWaveformLog",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    TH1D *carbonSCSSumWaveformLog = new TH1D("carbonSCSSumWaveformLog","carbonSCSSumWaveformLog",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    TH1D *carbonLCSSumWaveformLog = new TH1D("carbonLCSSumWaveformLog","carbonLCSSumWaveformLog",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    TH1D *Sn112CSSumWaveformLog = new TH1D("Sn112CSSumWaveformLog","Sn112CSSumWaveformLog",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    TH1D *SnNatCSSumWaveformLog = new TH1D("SnNatCSSumWaveformLog","SnNatCSSumWaveformLog",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    TH1D *Sn124CSSumWaveformLog = new TH1D("Sn124CSSumWaveformLog","Sn124CSSumWaveformLog",noWaveformBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TGraph *blankCSSumWaveformLog = logBins(blankCSSumWaveform);
+    TGraph *carbonSCSSumWaveformLog = logBins(carbonSCSSumWaveform);
+    TGraph *carbonLCSSumWaveformLog = logBins(carbonLCSSumWaveform);
+    TGraph *Sn112CSSumWaveformLog = logBins(Sn112CSSumWaveform);
+    TGraph *SnNatCSSumWaveformLog = logBins(SnNatCSSumWaveform);
+    TGraph *Sn124CSSumWaveformLog = logBins(Sn124CSSumWaveform);
 
-    vector<TH1D*> allHistos;
+    vector<TGraph*> allHistos;
 
     allHistos.push_back(blankCSSum);
     allHistos.push_back(carbonSCSSum);
@@ -153,11 +137,12 @@ int main(int argc, char *argv[])
     allHistos.push_back(Sn112CSSumWaveformLog);
     allHistos.push_back(SnNatCSSumWaveformLog);
     allHistos.push_back(Sn124CSSumWaveformLog);
+    */
 
     // Loop through all sub-runs and add their histos together
 
     // sub-run number of last run to sum over
-    int limit = 25;
+    int limit = 24;
     for(int segment = 0; segment<=limit; segment++)
     {
         // We need to form the proper name for the sub-run we want to open:
@@ -177,8 +162,7 @@ int main(int argc, char *argv[])
         {
             // There's some error in the sub-run file number; write outfile and exit
             cout << "Segment number too large!" << endl;
-            outfile->Write();
-            outfile->Close();
+            break;
             exit(1);
         }
 
@@ -186,182 +170,183 @@ int main(int argc, char *argv[])
         if(!infile->IsOpen())
         {
             cout << "Can't open root file run " << runDir << " segment = " << segment << endl;
-
-            if (segment>0)
-            {
-
-                /*TH1D* blankCSSumRaw = blankCSSum->Clone("blankCSSumRaw");
-                TH1D* Sn112CSSumRaw = blankCSSum->Clone("Sn112CsSumRaw");
-                TH1D* Sn124CSSumRaw = blankCSSum->Clone("Sn124CsSumRaw");
-
-                TH1D* blankCSSumRaw = blankCSSum->Clone("blankCSSumRaw");
-                TH1D* Sn112CSSumRaw = blankCSSum->Clone("Sn112CsSumRaw");
-                TH1D* Sn124CSSumRaw = blankCSSum->Clone("Sn124CsSumRaw");
-                */
-
-                for (int i=0; (size_t)i<allHistos.size(); i++)
-                {
-                    allHistos[i]->Scale(1/(double)(segment));
-                }
-            }
-
-            outfile->Write();
-            outfile->Close();
-            exit(0);
+            continue;
         }
 
+        // Successfully found the sub-run of interest
         cout << "Adding run " << runDir << " segment " << segment <<endl;
 
+        TGraph * SnNat = (TGraph*)infile->Get("NatSn");
+        if(SnNat)
+        {
+            int numPoints = SnNat->GetN();
+            SnNatCrossSections.push_back(new vector<double>);
+            SnNatEnergies.push_back(new vector<double>);
+
+            for(int i=0; i<numPoints; i++)
+            {
+                SnNatCrossSections.back()->push_back(0);
+                SnNatEnergies.back()->push_back(0);
+                SnNat->GetPoint(i,SnNatEnergies[segment]->at(i),SnNatCrossSections[segment]->at(i));
+            }
+        }
+
+        //SnNat->Write();
 
         /****************** SUM HISTOGRAMS ******************/
 
         /************** normal cross-section histos ************/
-        TH1D * blank = ((TH1D*)infile->Get("blankCS"));
+        /*TGraph * blank = ((TGraph*)infile->Get("blankCS"));
         if (blank)
         {
             blankCSSum->Add(blank);
         }
 
-        TH1D * carbonS = (TH1D*)infile->Get("carbonSCS");
+        TGraph * carbonS = (TGraph*)infile->Get("carbonSCS");
         if (carbonS)
         {
             carbonSCSSum->Add(carbonS);
         }
 
-        TH1D * carbonL = (TH1D*)infile->Get("carbonLCS");
+        TGraph * carbonL = (TGraph*)infile->Get("carbonLCS");
         if (carbonL)
         {
             carbonLCSSum->Add(carbonL);
         }
 
-        TH1D * Sn112 = (TH1D*)infile->Get("Sn112CS");
+        TGraph * Sn112 = (TGraph*)infile->Get("Sn112CS");
         if (Sn112)
         {
             Sn112CSSum->Add(Sn112);
         }
 
-        TH1D * SnNat = (TH1D*)infile->Get("SnNatCS");
+        TGraph * SnNat = (TGraph*)infile->Get("SnNatCS");
         if (SnNat)
         {
             SnNatCSSum->Add(SnNat);
         }
 
-        TH1D * Sn124 = (TH1D*)infile->Get("Sn124CS");
+        TGraph * Sn124 = (TGraph*)infile->Get("Sn124CS");
         if (Sn124)
         {
             Sn124CSSum->Add(Sn124);
         }
+        */
 
         /************* LOG-SCALE cross-section histos **************/
-        TH1D * blankLog = ((TH1D*)infile->Get("blankCSLog"));
+        /*TGraph * blankLog = ((TGraph*)infile->Get("blankCSLog"));
         if (blankLog)
         {
             blankCSSumLog->Add(blankLog);
         }
 
-        TH1D * carbonSLog = (TH1D*)infile->Get("carbonSCSLog");
+        TGraph * carbonSLog = (TGraph*)infile->Get("carbonSCSLog");
         if (carbonSLog)
         {
             carbonSCSSumLog->Add(carbonSLog);
         }
 
-        TH1D * carbonLLog = (TH1D*)infile->Get("carbonLCSLog");
+        TGraph * carbonLLog = (TGraph*)infile->Get("carbonLCSLog");
         if (carbonLLog)
         {
             carbonLCSSumLog->Add(carbonLLog);
         }
 
-        TH1D * Sn112Log = (TH1D*)infile->Get("Sn112CSLog");
+        TGraph * Sn112Log = (TGraph*)infile->Get("Sn112CSLog");
         if (Sn112Log)
         {
             Sn112CSSumLog->Add(Sn112Log);
         }
 
-        TH1D * SnNatLog = (TH1D*)infile->Get("SnNatCSLog");
+        TGraph * SnNatLog = (TGraph*)infile->Get("SnNatCSLog");
         if (SnNatLog)
         {
             SnNatCSSumLog->Add(SnNatLog);
         }
 
-        TH1D * Sn124Log = (TH1D*)infile->Get("Sn124CSLog");
+        TGraph * Sn124Log = (TGraph*)infile->Get("Sn124CSLog");
         if (Sn124Log)
         {
             Sn124CSSumLog->Add(Sn124Log);
         }
+        */
 
         /************* WAVEFORM-DERIVED cross-section histos **************/
-        TH1D * blankW = ((TH1D*)infileWaveform->Get("blankCS"));
+        /*TGraph * blankW = ((TGraph*)infileWaveform->Get("blankCS"));
         if (blankW)
         {
             blankCSSumWaveform->Add(blankW);
         }
 
-        TH1D * carbonSW = (TH1D*)infileWaveform->Get("carbonSCS");
+        TGraph * carbonSW = (TGraph*)infileWaveform->Get("carbonSCS");
         if (carbonSW)
         {
             carbonSCSSumWaveform->Add(carbonSW);
         }
 
-        TH1D * carbonLW = (TH1D*)infileWaveform->Get("carbonLCS");
+        TGraph * carbonLW = (TGraph*)infileWaveform->Get("carbonLCS");
         if (carbonLW)
         {
             carbonLCSSumWaveform->Add(carbonLW);
         }
 
-        TH1D * Sn112W = (TH1D*)infileWaveform->Get("Sn112CS");
+        TGraph * Sn112W = (TGraph*)infileWaveform->Get("Sn112CS");
         if (Sn112W)
         {
             Sn112CSSumWaveform->Add(Sn112W);
         }
 
-        TH1D * SnNatW = (TH1D*)infileWaveform->Get("SnNatCS");
+        TGraph * SnNatW = (TGraph*)infileWaveform->Get("SnNatCS");
         if (SnNatW)
         {
             SnNatCSSumWaveform->Add(SnNatW);
         }
 
-        TH1D * Sn124W = (TH1D*)infileWaveform->Get("Sn124CS");
+        TGraph * Sn124W = (TGraph*)infileWaveform->Get("Sn124CS");
         if (Sn124W)
         {
             Sn124CSSumWaveform->Add(Sn124W);
         }
+        */
 
         /********** LOG-SCALE WAVEFORM-DERIVED cross-section histos ***********/
-        TH1D * blankLogW = ((TH1D*)infileWaveform->Get("blankCSLog"));
+        /*TGraph * blankLogW = ((TGraph*)infileWaveform->Get("blankCSLog"));
+
         if (blankLogW)
         {
             blankCSSumWaveformLog->Add(blankLogW);
         }
 
-        TH1D * carbonSLogW = (TH1D*)infileWaveform->Get("carbonSCSLog");
+        TGraph * carbonSLogW = (TGraph*)infileWaveform->Get("carbonSCSLog");
         if (carbonSLogW)
         {
             carbonSCSSumWaveformLog->Add(carbonSLogW);
         }
 
-        TH1D * carbonLLogW = (TH1D*)infileWaveform->Get("carbonLCSLog");
+        TGraph * carbonLLogW = (TGraph*)infileWaveform->Get("carbonLCSLog");
         if (carbonLLogW)
         {
             carbonLCSSumWaveformLog->Add(carbonLLogW);
         }
 
-        TH1D * Sn112LogW = (TH1D*)infileWaveform->Get("Sn112CSLog");
+        TGraph * Sn112LogW = (TGraph*)infileWaveform->Get("Sn112CSLog");
         if (Sn112LogW)
         {
             Sn112CSSumWaveformLog->Add(Sn112LogW);
         }
 
-        TH1D * SnNatLogW = (TH1D*)infileWaveform->Get("SnNatCSLog");
+        TGraph * SnNatLogW = (TGraph*)infileWaveform->Get("SnNatCSLog");
         if (SnNatLogW)
         {
             SnNatCSSumWaveformLog->Add(SnNatLogW);
         }
 
-        TH1D * Sn124LogW = (TH1D*)infileWaveform->Get("Sn124CSLog");
+        TGraph * Sn124LogW = (TGraph*)infileWaveform->Get("Sn124CSLog");
         if (Sn124LogW)
         {
             Sn124CSSumWaveformLog->Add(Sn124LogW);
         }
+        */
 
         // Close the sub-run input files
         infile->Close();
@@ -369,6 +354,30 @@ int main(int argc, char *argv[])
 
         // End of loop - move to next sub-run
     }
+
+    // Create output file to contain summed histos
+    fileOutName << outpath << "/analysis/run" << runDir << "/" << "sum.root";
+
+    TFile *outfile = new TFile(fileOutName.str().c_str(),"RECREATE");
+
+    vector<double> SnNatSum(SnNatEnergies[0]->size(), 0);
+
+    for(int i=0; i<SnNatCrossSections.size(); i++)
+    {
+        for(int j=0; j<SnNatEnergies[0]->size(); j++)
+        {
+            SnNatSum[j] += SnNatCrossSections[i]->at(j);
+        }
+    }
+
+    // normalize by the total number of graphs
+    for(int i=0; i<SnNatSum.size(); i++)
+    {
+        SnNatSum[i] /= SnNatCrossSections.size();
+    }
+
+    TGraph* SnNatGraph = new TGraph(SnNatSum.size(),&SnNatEnergies.back()->at(0),&SnNatSum[0]);
+    SnNatGraph->Write();
 
     // Write run histograms to sum.root
     outfile->Write();

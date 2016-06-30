@@ -21,23 +21,10 @@
 
 ################################################################################
 
-# SECTION 0: Create a blacklist for 'bad' runs
+# SECTION 0: Read in the blacklist to skip 'bad' runs
 
-declare -a blacklist=("150-0011" "150-0012" "150-0013" "150-0014"
-                      "150-0015" "150-0016" "150-0017" "150-0018"
-                      "150-0019"
-                      
-                      "151-0000"
-                      
-                      "152-0003" "152-0004" "152-0005" "152-0006"
-                      "152-0007" "152-0008" "152-0009" "152-0010"
-                      "152-0011"
-                      
-                      "155-0008"
-                      
-                      "168-0008" "168-0009" "168-0010"
-                      
-                      "170-0003" "170-0021") 
+declare -a blacklist
+mapfile -t blacklist < blacklist.txt
 
 ################################################################################
 
@@ -70,15 +57,14 @@ sort ()
 {
     # Check to make sure that the run to be sorted isn't on the blacklisted
     # runs list (SECTION 0).
-    #echo "$runDir-$runNo  ${blacklist[0]}"
-    for i in "${blacklist[@]}"
+    while read l
     do
-        if [[ "$runDir-$runNo" = "$i" ]]
+        if [[ "$runDir-$runNo" = "$l" ]]
         then
-            echo "Found sub-run \"$runDir-$runNo\" on blacklist; skipping..."
+            echo "Found sub-run "$l" on blacklist; skipping..."
             return 1
         fi
-    done
+    done < blacklist.txt
 
     # Convert selected .evt file to ROOT tree, stored as runX-YYYY_raw.root
     ./raw "$runDir" "$runNo" "$datapath" "$outpath"
@@ -96,9 +82,9 @@ sort ()
     rc=$?; if [[ $rc != 0 ]]; then echo "./histos $runDir $runNo returned $rc, indicating error; exiting"; exit $rc; fi
 
     # Process waveforms from channel-specific subtrees
-    ./waveform "$runDir" "$runNo" "$outpath"
+    #./waveform "$runDir" "$runNo" "$outpath"
     # If ./waveform returned an exit status indicating failure, exit the script
-    rc=$?; if [[ $rc != 0 ]]; then echo "./waveform $runDir $runNo returned $rc, indicating error; exiting"; exit $rc; fi
+    #rc=$?; if [[ $rc != 0 ]]; then echo "./waveform $runDir $runNo returned $rc, indicating error; exiting"; exit $rc; fi
 }
 
 prepDir ()
