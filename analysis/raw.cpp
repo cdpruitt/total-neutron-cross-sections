@@ -48,6 +48,7 @@
 //      ---------------------------------------------------------------------------
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <string>
 #include <sstream>
@@ -95,29 +96,6 @@ struct Event
     // (sample period)/2^10 units.
 } ev;
 
-// If enabled, organize formatted text output by channel number:
-struct TextOutput {
-    ofstream targetChanger;
-    ofstream monitor;
-    ofstream detectorT;
-
-    // print left and right detector channels independently (for diagnostics
-    // only)
-    ofstream detectorL;
-    ofstream detectorR;
-
-    // conglomerate of all channels
-    ofstream total;
-
-} textOutput;
-
-struct RunInfo {
-    string runNo;
-    string runDir;
-    string outPath;
-    string analysisPath;
-} runInfo;
-
 // Raw data is stored as hexadecimal words (16 bits long) in the .evt files
 int const BufferWords = 1; // number of chars per buffer word
 int const BufferBytes = BufferWords*2; // number of bytes per buffer word
@@ -128,7 +106,6 @@ struct Statistics
     long numberOfEvents = 0;
     long numberOfDPPs = 0;
     long numberOfWaveforms = 0;
-
     long numberOfCh0Waveforms = 0;
     long numberOfCh2Waveforms = 0;
     long numberOfCh4Waveforms = 0;
@@ -262,408 +239,49 @@ void readEvent(ifstream& evtfile)
         evtfile.read((char*)buffer,BufferBytes);
         ev.waveform.push_back(buffer[0]);
     }
-}
 
-// Pretty-print event data into a text file
-void printEvent(Event event, TextOutput& text)
-{
-    ofstream* out;
 
-    // segregate text output by channel
-    switch(event.chNo)
+    // Update statistics on events
+
+    stats.numberOfEvents++;
+    if(ev.evtType==2)
     {
-        case 0:
-            out = &text.targetChanger;
-            break;
-        case 2:
-            out = &text.monitor;
-            break;
-        case 4:
-            out = &text.detectorT;
-            break;
-        case 6:
-            out = &text.detectorL;
-            break;
-        case 7:
-            out = &text.detectorR;
-            break;
-    }
-
-    // Print event's header data (i.e., data that exist in both DPP and waveform mode)
-    *out << setfill('*') << setw(63) << "*" << endl;
-    *out << "| EVENT " << left << setfill(' ') << setw(54) << stats.numberOfEvents << "|" << endl;
-    *out << "|" << right << setfill('-') << setw(62) << "|" << endl;
-    //*out << "| run " << runInfo.runDir << "-" << runInfo.runNo << ", macro " << left << setfill(' ') << setw(44) << "|" << endl;
-    *out << "| channel " << event.chNo;
-
-    if(event.evtType==1)
-    {
-        *out << left << setfill(' ') << setw(51) << ", DPP mode" << "|" << endl;
-    }
-
-    else if (event.evtType==2)
-    {
-        *out << left << setfill(' ') << setw(51) << ", waveform mode " << "|" << endl;
-    }
-
-    else
-    {
-        *out << left << setfill(' ') << setw(50) << ", ERROR DETERMINING MODE" << " |" << endl;
-        cout << "Error: event type value out-of-range (DPP=1, waveform=2)" << endl;
-        //cout << "Event number = " << event.evtNo[chNo] << endl;
-    }
-
-    stringstream temp; // used for formatting strings with units
-    temp << event.size << " bytes";
-    *out << "| size = " << left << setfill(' ') << setw(53) << temp.str() << "|" << endl;
-
-    temp.str("");
-    temp << event.timetag << " ns";
-    *out << "| timetag = " << left << setw(50) << temp.str() << "|" << endl;
-
-    *out << "|" << right << setfill('-') << setw(62) << "|" << endl;
-
-    // Print event's body data (DPP-mode/waveform-mode dependent)
-    if(event.evtType==1)
-    {
-        // DPP mode
-        // Determine meaning of 'extras' word based on extraSelect:
-        switch(event.extraSelect)
+        if(ev.chNo==0)
         {
-            /*case 0: 
-                // Extended timestamp + baseline
-                temp.str("");
-                temp << event.extTime << " *8.59 s";
-                *out << "| extended time stamp = " << left << setfill(' ') << setw(38) << temp.str() << "|" << endl;
-
-                // readout gives baseline*4, and we want just baseline
-                *out << "| baseline = " << left << setfill(' ') << setw(49) << event.baseline << "|" << endl;
-                break;
-
-            case 1:
-                // Extended timestamp + configuration file flags
-                temp << event.extras2 << " *8.59 s";
-                *out << "| extended time stamp = " << left << setfill(' ') << setw(34) << temp.str() << "|" << endl;
-                // extract flags from bits 10:15 (0xfc00)
-                *out << "| flags = " << left << setfill(' ') << setw(49) << (event.extras1 & 0xfc00) << "|" << endl;
-                break; 
-                */
-
-            case 2:
-                // Extended timestamp + configuration file flags + fine timestamp
-                temp.str("");
-                temp << event.extTime << " *8.59 s";
-                *out << "| extended time stamp = " << left << setfill(' ') << setw(38) << temp.str() << "|" << endl;
-                // extract flags from bits 10:15 (0xfc00)
-                *out << "| flags = " << left << setfill(' ') << setw(52) << (event.flags & 0xfc00) << "|" << endl;
-                *out << "| fine time stamp = " << left << setfill(' ') << setw(42) << event.fineTime << "|" << endl;
-                break;
-
-            /*case 3:
-                // Maximum amplitude of pulse
-                *out << "| maximum amplitude of pulse = " << left << setfill(' ') << setw(49) << event.extras1 << "|" << endl;
-                break;
-
-            case 5:
-                // Positive zero-crossing and negative zero-crossing (for manual
-                // constant fraction discimination calculation)
-                *out << "| PZC = " << left << setfill(' ') << setw(54) << event.extras2 << "|" << endl;
-                *out << "| NZC = " << left << setfill(' ') << setw(54) << event.extras1 << "|" << endl;
-                break;
-
-            case 7:
-                // fixed value of 0x12345678 (for diagnostics)
-                const unsigned int extras = (extras2 << 16) | extras1;
-                *out << "| Fixed value of 305419896 (0x12345678) outputted: " << left << setfill(' ') << setw(17) << event.extras << "|" << endl;
-                break;
-                */
+            stats.numberOfCh0Waveforms++;
         }
 
-        *out << "| short gate charge = " << left << setw(40) << event.sgQ << "|" << endl;
-        *out << "| long gate charge = " << left << setw(41) << event.lgQ << "|" << endl;
-
-        // Pile-up detection not operational in current washudaq - ignore it.
-        //out << "| pile-up detected = " << left << setw(40) << puRej << " |" << endl;
-
-        temp.str("");
-        temp << event.nSamp << " samples";
-        *out << "| waveform length = " << left << setw(41) << temp.str() << " |" << endl;
-        *out << "|" << right << setfill('-') << setw(62) << "|" << endl;
-
-        if(event.nSamp > 0)
-            // print wavelet data
+        if(ev.chNo==2)
         {
-            *out << left << setfill(' ') << setw(62) << "| Waveform samples" << "|" << endl;
-            *out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
-
-            for(std::vector<int>::size_type i = 0; i != event.waveform.size(); i++)
-            {
-                if(i%100 == 0 && i>0)
-                {
-                    *out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
-                }
-
-                if(i%10 == 0)
-                {
-                    temp.str("");
-                    temp << "|";
-                }
-
-                temp << right << setfill(' ') << setw(6) << event.waveform[i];
-
-                if(i%10==9 || i==event.nSamp-1)
-                {
-                    *out << left << setw(62) << temp.str() << "|" << endl;
-                } 
-            }
-
-            *out << "|" << right << setfill('-') << setw(62) << "|" << endl;
+            stats.numberOfCh2Waveforms++;
         }
 
-        /*if((probe & 0x8000)==0x8000)
+        if(ev.chNo==4)
         {
-            // print analog probe data
-            out << "| Analog probe enabled" << right << setfill(' ') << setw(41) << "|" << endl;
-
-            temp.str("");
-            temp << nSamp << " samples";
-            out << "| waveform length = " << left << setw(41) << temp.str() << " |" << endl;
-            out << "|" << right << setfill('-') << setw(62) << "|" << endl;
-
-            if((probe & 0x0003)==0x0002)
-            {
-                // analog probe is CFD
-                if(anSamp > 0)
-                {
-                    out << left << setfill(' ') << setw(62) << "| CFD samples" << "|" << endl;
-                    out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
-
-                    for(std::vector<int>::size_type i = 0; i != anProbe.size(); i++)
-                    {
-                        if(i%100 == 0 && i>0)
-                        {
-                            out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
-                        }
-
-                        if(i%10 == 0)
-                        {
-                            temp.str("");
-                            temp << "|";
-                        }
-
-                        temp << right << setfill(' ') << setw(6) << anProbe[i];
-
-                        if(i%10==9 || i==anSamp-1)
-                        {
-                            out << left << setw(62) << temp.str() << "|" << endl;
-                        } 
-
-                    }
-
-                    // done with this event; increment the wavelet counter to get ready for the next
-                    // wavelet.
-                    //nCFDs++;
-                }
-            }
-
-            if((probe & 0x0003)==0x0001)
-            {
-                // analog probe is baseline
-                if(anSamp > 0)
-                {
-
-                    out << left << setfill(' ') << setw(62) << "| Baseline samples" << "|" << endl;
-                    out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
-
-                    for(int i=0;i<anSamp;i++)
-                    {
-                        //listBaselines[nBaselines]->SetBinContent(i,buffer[0]);
-
-                        if(i%100 == 0 && i>0)
-                        {
-                            out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
-                        }
-
-                        if(i%10 == 0)
-                        {
-                            temp.str("");
-                            temp << "|";
-                        }
-
-                        temp << right << setfill(' ') << setw(6) << buffer[0];
-
-                        if(i%10==9 || i==anSamp-1)
-                        {
-                            out << left << setw(62) << temp.str() << "|" << endl;
-                        } 
-                    }
-                }
-            }
+            stats.numberOfCh4Waveforms++;
         }
-
-        else
-        {
-            out << "| Analog probe disabled" << right << setfill(' ') << setw(40) << "|" << endl;
-            out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
-            out << setfill('*') << setw(63) << "*" << endl;
-        }
-        */
     }
-
-    else if(event.evtType==2)
-    {
-        stringstream temp;
-        temp << event.nSamp << " samples";
-        *out << "| waveform length = " << left << setfill(' ') << setw(41) << temp.str() << " |" << endl;
-        *out << "|" << right << setfill('-') << setw(62) << "|" << endl;
-
-        for(int i=0;i<event.nSamp;i++)
-        {
-
-            if(event.nSamp>1000 && (i%1000 == 0))
-            {
-                *out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
-                stringstream temp;
-                temp << "Samples " << i << "-" << i+1000;
-                *out << "| " << left << setw(60) << temp.str() << "|" << endl;
-            }
-
-            if(i%100 == 0)
-            {
-                *out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
-            }
-
-            if(i%10 == 0)
-            {
-                *out << "|";
-            } 
-
-            *out << right << setfill(' ') << setw(6) << event.waveform[i];
-
-            if(i%10 == 9)
-            {
-                *out << " |" << endl;
-            } 
-        }
-
-        *out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
-    }
-
-    else
-    {
-        cout << "ERROR: unknown value for event type" << endl;
-        return;
-    }
-    *out << endl;
-}
-
-// loop through the specified .evt file and pull out events
-void processRun(string evtname,TTree* tree, bool produceText)
-{
-    // attempt to open file
-    ifstream evtfile;
-    evtfile.open(evtname,ios::binary);
-    if (!evtfile)
-    {
-        cout << "Failed to open " << evtname << ". Please check that the file exists" << endl;
-        exit(1);
-    }
-
-    else 
-    {
-        cout << evtname << " opened successfully. Start reading events..." << endl;
-
-        if(produceText)
-        {
-            // produce a formatted text file to display ran event data
-            textOutput.total.open("textSort/allChannels.txt");
-            textOutput.targetChanger.open("textSort/targetChanger.txt");
-            textOutput.monitor.open("textSort/monitor.txt");
-            textOutput.detectorL.open("textSort/detectorL.txt");
-            textOutput.detectorR.open("textSort/detectorR.txt");
-            textOutput.detectorT.open("textSort/detectorT.txt");
-        }
-
-        // we're now pointing at the first 16-bit word in the data stream
-        // start looping through the evtfile to extract events
-        while(!evtfile.eof() /* use to truncate sort && stats.numberOfEvents<1000000*/)
-        {
-            readEvent(evtfile);
-            if(produceText)
-            {
-                printEvent(ev, textOutput);
-            }
-
-            // Add event to tree
-            tree->Fill();
-
-            stats.numberOfEvents++;
-
-            // Update statistics on events
-            if(ev.evtType==2)
-            {
-                if(ev.chNo==0)
-                {
-                    stats.numberOfCh0Waveforms++;
-                }
-
-                if(ev.chNo==2)
-                {
-                    stats.numberOfCh2Waveforms++;
-                }
-
-                if(ev.chNo==4)
-                {
-                    stats.numberOfCh4Waveforms++;
-                }
-            }
-
-            if (stats.numberOfEvents%10000 == 0)
-            {
-                cout << "Processed " << stats.numberOfEvents << " events\r";
-                fflush(stdout);
-            }
-        }
-
-        // reached end of input file
-        cout << "Finished processing event file" << endl;
-        cout << "Total events: " << stats.numberOfEvents << endl;
-    }
-
-    evtfile.close();
 }
 
 int main(int argc, char* argv[])
 {
     cout << endl << "Entering raw sort..." << endl;
 
-    // read in data run location
-    runInfo.runDir = argv[1];
-    runInfo.runNo = argv[2];
-    runInfo.analysisPath = argv[3];
-    runInfo.outPath = argv[4];
-    bool produceText = stoi(argv[5]);
+    string inFileName = argv[1];
+    string outFileName = argv[2];
 
-    // Create a ROOT tree for this run
-    TFile *file;
+    // Open a ROOT file to store the event data
+    TFile *outFile;
+    outFile = new TFile(outFileName.c_str(),"UPDATE");
 
-    stringstream treeName;
-    stringstream fileName;
-    treeName << "run" << runInfo.runDir << "-" << runInfo.runNo; 
-    fileName << runInfo.outPath <<"/analysis/run" << runInfo.runDir << "/" << treeName.str() << "_raw.root";
-
-    file = new TFile(fileName.str().c_str(),"UPDATE");
-
-    if(file->Get("tree"))
+    if(outFile->Get("tree"))
     {
-        cout << "Found previously existing raw sort " << fileName.str() << ". Skipping raw sort." << endl;
+        cout << "Found previously existing raw sort " << outFileName << ". Skipping raw sort." << endl;
         exit(0);
     }
 
-    // Declare a ROOT tree for storing events 
+    // Create a ROOT tree for storing events 
     TTree* tree = new TTree("tree","");
-    cout << "Created ROOT tree " << treeName.str() << endl;
-
     tree->Branch("evtType",&ev.evtType,"evtType/i");
     tree->Branch("chNo",&ev.chNo,"chNo/i");
     tree->Branch("extTime",&ev.extTime,"extTime/i");
@@ -673,14 +291,41 @@ int main(int argc, char* argv[])
     tree->Branch("lgQ",&ev.lgQ,"lgQ/i");
     tree->Branch("waveform",&ev.waveform);
 
-    stringstream runName;
-    runName << runInfo.analysisPath <<"/output/run" << runInfo.runDir << "/data-" << runInfo.runNo << ".evt";
+    // attempt to open input file
+    ifstream inFile;
+    inFile.open(inFileName,ios::binary);
+    if (!inFile)
+    {
+        cout << "Failed to open " << inFileName << ". Please check that the file exists" << endl;
+        exit(1);
+    }
 
-    processRun(runName.str(),tree, produceText);
+    cout << inFileName << " opened successfully. Start reading events..." << endl;
 
+    // we're now pointing at the first 16-bit word in the data stream
+    // start looping through the evtfile to extract events
+    while(!inFile.eof() /* use to truncate sort && stats.numberOfEvents<1000000*/)
+    {
+        readEvent(inFile);
+
+        // Add event to tree
+        tree->Fill();
+
+        if (stats.numberOfEvents%10000 == 0)
+        {
+            cout << "Processed " << stats.numberOfEvents << " events\r";
+            fflush(stdout);
+        }
+    }
+
+    // reached end of input file
+    cout << "Finished processing event file" << endl;
+    cout << "Total events: " << stats.numberOfEvents << endl;
     cout << "Total number of DPP-mode events processed = " << stats.numberOfDPPs << endl;
     cout << "Total number of waveform-mode events processed = " << stats.numberOfWaveforms << endl;
 
-    file->Write();
-    file->Close();
+    inFile.close();
+
+    outFile->Write();
+    outFile->Close();
 }

@@ -21,24 +21,19 @@
 
 ################################################################################
 
-# SECTION 0: Read in the blacklist to skip 'bad' runs
-
-declare -a blacklist
-mapfile -t blacklist < blacklist.txt
-
 ################################################################################
 
 # SECTION 1: recompile analysis code
 
 # Check to see if analysis codes have been modified since last compile
-if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] || [ histos.cpp -nt histos ] ||
-    [ waveform.cpp -nt waveform ] || [ sumRun.cpp -nt sumRun ]
+if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] || [ histos.cpp -nt histos ]
+    #|| [ waveform.cpp -nt waveform ] || [ sumRun.cpp -nt sumRun ]
 then
     # sorting code modified
     # recompile to prepare for event sorting
     make
-if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] || [ histos.cpp -nt histos ] ||
-    [ waveform.cpp -nt waveform ] || [ sumRun.cpp -nt sumRun ]
+if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] || [ histos.cpp -nt histos ]
+    #|| [ waveform.cpp -nt waveform ] || [ sumRun.cpp -nt sumRun ]
     then
         # compilation failed - exit
         printf "\nCompilation failed - correct errors before sorting.\n"
@@ -55,47 +50,49 @@ fi
 # perform analysis on those runs.
 sort ()
 {
-    # Check to make sure that the run to be sorted isn't on the blacklisted
-    # runs list (SECTION 0).
-    while read l
-    do
-        if [[ "$runDir-$runNo" = "$l" ]]
-        then
-            echo "Found sub-run "$l" on blacklist; skipping..."
-            #return 1
-        fi
-    done < blacklist.txt
+    # Check to make sure that the run to be sorted isn't blacklisted
+    if [ -s blacklist.txt ]
+    then
+        while read l
+        do
+            if [[ "$runNumber-$subrunNo" = "$l" ]]
+            then
+                echo "Found sub-run "$l" on blacklist; skipping..."
+                return 1
+            fi
+        done < blacklist.txt
+    fi
 
     # Convert selected .evt file to ROOT tree, stored as runX-YYYY_raw.root
-    ./raw "$runDir" "$runNo" "$datapath" "$outpath" "$produceText"
+    ./raw "$inputFileName" "$outputFileName" 
     # If ./raw returned an exit status indicating failure, exit the script
-    rc=$?; if [[ $rc != 0 ]]; then echo "./raw $runDir $runNo returned $rc, indicating error; exiting"; exit $rc; fi
+    rc=$?; if [[ $rc != 0 ]]; then echo "./raw $runNumber $subrunNo returned $rc, indicating error; exiting"; exit $rc; fi
 
     # Process raw ROOT tree into channel-specific subtrees in runX-YYYY_sorted.root
-    ./resort "$runDir" "$runNo" "$outpath"
+    ./resort "$runNumber" "$subrunNo" "$outpath"
     # If ./resort returned an exit status indicating failure, exit the script
-    rc=$?; if [[ $rc != 0 ]]; then echo "./resort $runDir $runNo returned $rc, indicating error; exiting"; exit $rc; fi
+    rc=$?; if [[ $rc != 0 ]]; then echo "./resort $runNumber $subrunNo returned $rc, indicating error; exiting"; exit $rc; fi
 
     # Process channel-specific subtrees into histograms in runX-YYYY_histos.root
-    ./histos "$runDir" "$runNo" "$outpath"
+    ./histos "$runNumber" "$subrunNo" "$outpath"
     # If ./resort returned an exit status indicating failure, exit the script
-    rc=$?; if [[ $rc != 0 ]]; then echo "./histos $runDir $runNo returned $rc, indicating error; exiting"; exit $rc; fi
+    rc=$?; if [[ $rc != 0 ]]; then echo "./histos $runNumber $subrunNo returned $rc, indicating error; exiting"; exit $rc; fi
 
     # Process waveforms from channel-specific subtrees
     if [ "$waveform" = true ]
     then
-        ./waveform "$runDir" "$runNo" "$outpath"
+        ./waveform "$runNumber" "$subrunNo" "$outpath"
         # If ./waveform returned an exit status indicating failure, exit the script
-        rc=$?; if [[ $rc != 0 ]]; then echo "./waveform $runDir $runNo returned $rc, indicating error; exiting"; exit $rc; fi
+        rc=$?; if [[ $rc != 0 ]]; then echo "./waveform $runNumber $subrunNo returned $rc, indicating error; exiting"; exit $rc; fi
     fi
 }
 
 prepDir ()
 {
     # If the analysis directory in outpath doesn't exist yet, make it
-    if [ ! -d $outpath/analysis/run$runDir ]
+    if [ ! -d $outpath/analysis/run$runNumber ]
     then
-        mkdir $outpath/analysis/run$runDir
+        mkdir $outpath/analysis/run$runNumber
     fi
 }
 
@@ -109,8 +106,11 @@ runlist=false
 # Default is not to produce text output of raw run data
 produceText=0
 
+# Default is for absolute filepath NOT to be given by used
+givenFile=false
+
 # Parse runtime flags
-while getopts "trsaw" opt; do
+while getopts "trsawf" opt; do
     case ${opt} in
         t)
             # Have ./raw produce text output
@@ -137,6 +137,11 @@ while getopts "trsaw" opt; do
             printf "\nPerforming waveform fit in addition to DPP analysis.\n"
             waveform=true
             ;;
+        f)
+            # Complete path to event file given as argument
+            printf "\nReading single file given by user...\n"
+            givenFile=true
+            ;;
 
         \?)
             # Flags unrecognized - exit script and give user help text
@@ -154,11 +159,18 @@ done
 
 # SECTION 4: perform analysis on specified runs
 
-# Sort only a single sub-run, listed as arguments to this script
-if [ "$single" = true ]
+# Sort a run with a specific filename
+if [ "$givenFile" = true ]
 then
-    runDir=$2
-    runNo=$3
+    inputFileName=$2
+    outputFileName=$3
+    sort
+
+# Sort only a single sub-run, listed as arguments to this script
+elif [ "$single" = true ]
+then
+    runNumber=$2
+    subrunNo=$3
 
     # set file path to fine this run number's data
     if [ "$2" -lt 6 ]
@@ -181,7 +193,7 @@ then
     # Prepare analysis directory
     prepDir
 
-    runName="$datapath/output/run$runDir/data-$runNo.evt"
+    runName="$datapath/output/run$runNumber/data-$subrunNo.evt"
     printf "\nSorting single sub-run $runName\n"
 
     # Start sort
@@ -205,10 +217,10 @@ then
     outpath=/data3
 
     # Find highest-numbered run directory in datapath
-    runDir=$(ls -t $datapath/output | head -1)
-    runNo=$(ls -t $datapath/output/run$runDir/data-* | head -1 | egrep\
+    runNumber=$(ls -t $datapath/output | head -1)
+    subrunNo=$(ls -t $datapath/output/run$runNumber/data-* | head -1 | egrep\
         -o '[0-9]+' | tail -1)
-    runName="$datapath/output/run$runDir/data-$runNo.evt"
+    runName="$datapath/output/run$runNumber/data-$subrunNo.evt"
     printf "\nSorting most recent run $runName\n"
 
     # Prepare analysis directory
@@ -222,19 +234,19 @@ elif [ -a ./runsToSort.txt ]
 then
     # The runlist exists - use it to identify runs to sort
     printf "\n"
-    while read runDir; do
-        printf "Reading from directory run$runDir\n"
+    while read runNumber; do
+        printf "Reading from directory run$runNumber\n"
 
         # set path to data/analysis depending on run number
-        if [ $runDir -lt 6 ]
+        if [ $runNumber -lt 6 ]
         then
             datapath=/media/cdpruitt/Drive3
             outpath=/data3
-        elif [ $runDir -gt 127 ] && [ $runDir -lt 160 ]
+        elif [ $runNumber -gt 127 ] && [ $runNumber -lt 160 ]
         then
             datapath=/media/cdpruitt/Drive2
             outpath=/data2
-        elif [ $runDir -gt 159 ] && [ $runDir -lt 178 ]
+        elif [ $runNumber -gt 159 ] && [ $runNumber -lt 178 ]
         then
             datapath=/media/cdpruitt/Drive3
             outpath=/data3
@@ -250,11 +262,11 @@ then
         if [ "$allFiles" = true ]
         then
             # Sort all sub-runs in the specified run directory
-            for f in $datapath/output/run$runDir/data-*;
+            for f in $datapath/output/run$runNumber/data-*;
             do
-                runNo=$(echo $f | egrep -o '[0-9]+' | tail -1)
-                runName="$datapath/output/run$runDir/data-$runNo.evt"
-                printf "\n***Starting sort of sub-run $runNo***\n"
+                subrunNo=$(echo $f | egrep -o '[0-9]+' | tail -1)
+                runName="$datapath/output/run$runNumber/data-$subrunNo.evt"
+                printf "\n***Starting sort of sub-run $subrunNo***\n"
 
                 # Sort sub-run
                 runSize=$(du -k "$runName" | cut -f 1)
@@ -267,13 +279,13 @@ then
             done
 
             # Last, sum together histograms from all the runs just sorted
-            ./sumRun $runDir $outpath
+            ./sumRun $runNumber $outpath
         else
             # Sort just the most recent sub-run in the specified run directory
-            runNo=$(ls -t $datapath/output/run$runDir/data-* | head -1 | egrep\
+            subrunNo=$(ls -t $datapath/output/run$runNumber/data-* | head -1 | egrep\
                 -o '[0-9]+' | tail -1)
-            runName="$datapath/output/run$runDir/data-$runNo.evt"
-            printf "\n***Starting sort of sub-run $runNo***\n"
+            runName="$datapath/output/run$runNumber/data-$subrunNo.evt"
+            printf "\n***Starting sort of sub-run $subrunNo***\n"
 
             # Sort sub-run
             sort
