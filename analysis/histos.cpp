@@ -16,6 +16,8 @@
 
 using namespace std;
 
+ofstream monitorCounts;
+
 // scavenger event stream
 ofstream scavengerEvents;
 
@@ -40,36 +42,32 @@ const double C = 299792458; // speed of light in m/s
 
 const double NEUTRON_MASS = 939.56536; // in MeV/c^2
 
-double AVOGADROS_NUMBER = 6.022*pow(10.,23.); // in atoms/mol
+const double AVOGADROS_NUMBER = 6.02214*pow(10.,23.); // in atoms/mol
 
+const double PI = 3.14159265;
 
 
 /* Target data */
 
-const int NUM_TARGETS = 6;
+const int NUMBER_OF_TARGETS = 6;
 
-const string targetNames[NUM_TARGETS] = {"blank", "shortCarbon", "longCarbon", "Sn112", "NatSn", "Sn124"}; 
+const vector<string> targetNames = {"blankDPP", "shortCarbonDPP", "longCarbonDPP", "Sn112DPP", "NatSnDPP", "Sn124DPP"}; 
 
 // physical target data, listed in order of target names above:
-const double targetlength[NUM_TARGETS] =  {0, 1.37,  2.74,  1.365, 1.370, 1.370}; // cm
-const double targetMolMass[NUM_TARGETS] = {0, 12.01, 12.01, 112,   118.7, 124}; // g/mol
-const double targetdensity[NUM_TARGETS] = {0, 2.2,   2.2,   6.89,  7.31,  7.63}; // g/cm^3
-
+const double targetLength[NUMBER_OF_TARGETS] =  {0, 1.366,  2.737,  1.369, 1.373, 1.371}; // in cm
+const double targetDiameter[NUMBER_OF_TARGETS] =  {0.827, 0.826,  0.827, 0.825, 0.827, 0.827}; // in cm
+const double targetMass[NUMBER_OF_TARGETS] = {0, 1.2363,  2.4680,  4.9749,  5.3286,  5.5505}; // in grams
+const double targetMolMass[NUMBER_OF_TARGETS] = {0, 12.01, 12.01, 112,   118.7, 124}; // in g/mol
 
 /* Plotting data*/
 
 // number of bins in the raw energy histograms and in the cross-section
 // histograms
-const int NUM_ENERGY_BINS = 360;
+const int NUMBER_ENERGY_BINS = 90;
 
 // declare arrays to hold the scaled cross-sections of each target; i = target #, j = bin
 vector<vector<double>*> sigma;
-vector<vector<double>*> sigmaLog;
-
-int energyCSBinRatio = NUM_ENERGY_BINS/NUM_ENERGY_BINS;
-
 vector<double> sigmaXAxis;
-vector<double> sigmaXAxisLog;
 
 const int TOF_RANGE = 1800; // in ns
 const int TOF_BINS = 18000;
@@ -117,12 +115,12 @@ vector<int> order;
 struct Plots
 {
     vector<TH1I*> energyHistos;
-    vector<TH1I*> energyHistosLog;
+    //vector<TH1I*> energyHistosLog;
     vector<TH1I*> correctedEnergyHistos;
-    vector<TH1I*> correctedEnergyHistosLog;
+    //vector<TH1I*> correctedEnergyHistosLog;
 
     vector<TGraph*> CSGraphs;
-    vector<TGraph*> CSGraphsLog;
+    //vector<TGraph*> CSGraphsLog;
 
 } plots;
 
@@ -150,7 +148,7 @@ void setBranchesW(TTree* tree)
 }
 
 // Create a copy of an input histogram and re-bin it to the log scale
-TH1* logBins(TH1 *inputHisto)
+/*TH1* logBins(TH1 *inputHisto)
 {
     string newName;
     newName = inputHisto->GetName();
@@ -190,7 +188,7 @@ TH1* logBins(TH1 *inputHisto)
     delete newBins;
 
     return outputHisto;
-}
+}*/
 
 double tofToRKE(double TOF)
 {
@@ -286,16 +284,18 @@ TH1* timeBinsToRKEBins(TH1 *inputHisto)
     }
 
     // Downscale bins to desired granularity
-    vector<double> scaledEnergyBins = scaleBins(unscaledEnergyBins, nUnscaledEnergyBins, TOF_BINS/NUM_ENERGY_BINS);
+    vector<double> scaledEnergyBins = scaleBins(unscaledEnergyBins, nUnscaledEnergyBins, TOF_BINS/NUMBER_ENERGY_BINS);
+    // n bins are defined n+1 points (like fence sections and fence posts)
+    scaledEnergyBins.push_back(newXMax);
 
     TH1* outputHisto = new TH1D(newName.c_str(),
                                 newName.c_str(),
-                                floor(nUnscaledEnergyBins/(TOF_BINS/NUM_ENERGY_BINS)),
+                                floor(nUnscaledEnergyBins/(TOF_BINS/NUMBER_ENERGY_BINS)),
                                 newXMin,
                                 newXMax);
 
     // Assign the remapped bins to the new histo
-    ((TAxis*)outputHisto->GetXaxis())->Set(floor(nUnscaledEnergyBins/(TOF_BINS/NUM_ENERGY_BINS)),
+    ((TAxis*)outputHisto->GetXaxis())->Set(floor(nUnscaledEnergyBins/(TOF_BINS/NUMBER_ENERGY_BINS)),
 &scaledEnergyBins[0]);
 
     return outputHisto;
@@ -318,9 +318,10 @@ void fillAdvancedHistos(int detIndex)
     // diagnostic histograms
     TH1I *TOF = new TH1I("TOF","Summed-detector time of flight",TOF_BINS,0,TOF_RANGE);
     TH2I *triangle = new TH2I("triangle","Pulse integral vs. TOF",TOF_RANGE,0,MICRO_PERIOD+1,2048,0,65536);
-    TH2I *triangleRKE = new TH2I("triangleRKE","Pulse integral vs. relativistic KE",NUM_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND,2048,0,65536);
+    TH2I *triangleRKE = new TH2I("triangleRKE","Pulse integral vs. relativistic KE",NUMBER_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND,2048,0,65536);
     TH2I *sgQlgQ = new TH2I("sgQlgQ","short gate Q vs. long gate Q",2048,0,65536,2048,0,65536);
-    TH2I *rKElgQ = new TH2I("lgQrKE","relativistic KE vs. long gate Q",NUM_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND,2048,0,65536);
+    TH1I *QRatio = new TH1I("QRatio","short gate Q/long gate Q",1000,0,1);
+    TH2I *rKElgQ = new TH2I("lgQrKE","relativistic KE vs. long gate Q",500,ENERGY_LOWER_BOUND,100,2048,0,65536);
     TH1I *microNoH = new TH1I("microNoH","microNo",360,0,360);
     microNoH->GetXaxis()->SetTitle("micropulse number of each event");
 
@@ -340,12 +341,13 @@ void fillAdvancedHistos(int detIndex)
     plots.energyHistos.push_back((TH1I*)timeBinsToRKEBins(target5TOF));
 
     // create raw log-scaled neutron energy plots
-    plots.energyHistosLog.push_back((TH1I*)logBins(plots.energyHistos[0]));
+    /*plots.energyHistosLog.push_back((TH1I*)logBins(plots.energyHistos[0]));
     plots.energyHistosLog.push_back((TH1I*)logBins(plots.energyHistos[1]));  
     plots.energyHistosLog.push_back((TH1I*)logBins(plots.energyHistos[2]));
     plots.energyHistosLog.push_back((TH1I*)logBins(plots.energyHistos[3]));
     plots.energyHistosLog.push_back((TH1I*)logBins(plots.energyHistos[4]));
     plots.energyHistosLog.push_back((TH1I*)logBins(plots.energyHistos[5]));
+    */
 
     // create corrected (but still flux unnormalized) neutron energy plots
     plots.correctedEnergyHistos.push_back((TH1I*)plots.energyHistos[0]->Clone("blankCorrected"));
@@ -355,29 +357,21 @@ void fillAdvancedHistos(int detIndex)
     plots.correctedEnergyHistos.push_back((TH1I*)plots.energyHistos[4]->Clone("target4Corrected"));
     plots.correctedEnergyHistos.push_back((TH1I*)plots.energyHistos[5]->Clone("target5Corrected"));
 
-    // create corrected (but still flux unnormalized) log-scaled neutron energy plots
-    plots.correctedEnergyHistosLog.push_back((TH1I*)plots.energyHistosLog[0]->Clone("blankCorrectedLog"));
-    plots.correctedEnergyHistosLog.push_back((TH1I*)plots.energyHistosLog[1]->Clone("target1CorrectedLog"));
-    plots.correctedEnergyHistosLog.push_back((TH1I*)plots.energyHistosLog[2]->Clone("target2CorrectedLog"));
-    plots.correctedEnergyHistosLog.push_back((TH1I*)plots.energyHistosLog[3]->Clone("target3CorrectedLog"));
-    plots.correctedEnergyHistosLog.push_back((TH1I*)plots.energyHistosLog[4]->Clone("target4CorrectedLog"));
-    plots.correctedEnergyHistosLog.push_back((TH1I*)plots.energyHistosLog[5]->Clone("target5CorrectedLog"));
-
     // create neutron energy plots using only micropulses with no gammas
-    TH1I *noGBlank = new TH1I("noGBlank","no gamma in micro, blank",NUM_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND);
-    TH1I *noGTarget1 = new TH1I("noGTarget1","no gamma in micro, target 1",NUM_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND);
-    TH1I *noGTarget2 = new TH1I("noGTarget2","no gamma in micro, target 2",NUM_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND);
-    TH1I *noGTarget3 = new TH1I("noGTarget3","no gamma in micro, target 3",NUM_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND);
-    TH1I *noGTarget4 = new TH1I("noGTarget4","no gamma in micro, target 4",NUM_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND);
-    TH1I *noGTarget5 = new TH1I("noGTarget5","no gamma in micro, target 5",NUM_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND);
+    TH1I *noGBlank = new TH1I("noGBlank","no gamma in micro, blank",NUMBER_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND);
+    TH1I *noGTarget1 = new TH1I("noGTarget1","no gamma in micro, target 1",NUMBER_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND);
+    TH1I *noGTarget2 = new TH1I("noGTarget2","no gamma in micro, target 2",NUMBER_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND);
+    TH1I *noGTarget3 = new TH1I("noGTarget3","no gamma in micro, target 3",NUMBER_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND);
+    TH1I *noGTarget4 = new TH1I("noGTarget4","no gamma in micro, target 4",NUMBER_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND);
+    TH1I *noGTarget5 = new TH1I("noGTarget5","no gamma in micro, target 5",NUMBER_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND);
 
     // create log-scaled neutron energy plots using only micropulses with no gammas
-    TH1I *noGBlankLog = new TH1I("noGBlankLog","no gamma in micro, log E, blank",NUM_ENERGY_BINS,TMath::Log10(ENERGY_LOWER_BOUND),TMath::Log10(ENERGY_UPPER_BOUND));
-    TH1I *noGTarget1Log = new TH1I("noGTarget1Log","no gamma in micro, log E, target 1",NUM_ENERGY_BINS,TMath::Log10(ENERGY_LOWER_BOUND),TMath::Log10(ENERGY_UPPER_BOUND));
-    TH1I *noGTarget2Log = new TH1I("noGTarget2Log","no gamma in micro, log E, target 2",NUM_ENERGY_BINS,TMath::Log10(ENERGY_LOWER_BOUND),TMath::Log10(ENERGY_UPPER_BOUND));
-    TH1I *noGTarget3Log = new TH1I("noGTarget3Log","no gamma in micro, log E, target 3",NUM_ENERGY_BINS,TMath::Log10(ENERGY_LOWER_BOUND),TMath::Log10(ENERGY_UPPER_BOUND));
-    TH1I *noGTarget4Log = new TH1I("noGTarget4Log","no gamma in micro, log E, target 4",NUM_ENERGY_BINS,TMath::Log10(ENERGY_LOWER_BOUND),TMath::Log10(ENERGY_UPPER_BOUND));
-    TH1I *noGTarget5Log = new TH1I("noGTarget5Log","no gamma in micro, log E, target 5",NUM_ENERGY_BINS,TMath::Log10(ENERGY_LOWER_BOUND),TMath::Log10(ENERGY_UPPER_BOUND));
+    TH1I *noGBlankLog = new TH1I("noGBlankLog","no gamma in micro, log E, blank",NUMBER_ENERGY_BINS,TMath::Log10(ENERGY_LOWER_BOUND),TMath::Log10(ENERGY_UPPER_BOUND));
+    TH1I *noGTarget1Log = new TH1I("noGTarget1Log","no gamma in micro, log E, target 1",NUMBER_ENERGY_BINS,TMath::Log10(ENERGY_LOWER_BOUND),TMath::Log10(ENERGY_UPPER_BOUND));
+    TH1I *noGTarget2Log = new TH1I("noGTarget2Log","no gamma in micro, log E, target 2",NUMBER_ENERGY_BINS,TMath::Log10(ENERGY_LOWER_BOUND),TMath::Log10(ENERGY_UPPER_BOUND));
+    TH1I *noGTarget3Log = new TH1I("noGTarget3Log","no gamma in micro, log E, target 3",NUMBER_ENERGY_BINS,TMath::Log10(ENERGY_LOWER_BOUND),TMath::Log10(ENERGY_UPPER_BOUND));
+    TH1I *noGTarget4Log = new TH1I("noGTarget4Log","no gamma in micro, log E, target 4",NUMBER_ENERGY_BINS,TMath::Log10(ENERGY_LOWER_BOUND),TMath::Log10(ENERGY_UPPER_BOUND));
+    TH1I *noGTarget5Log = new TH1I("noGTarget5Log","no gamma in micro, log E, target 5",NUMBER_ENERGY_BINS,TMath::Log10(ENERGY_LOWER_BOUND),TMath::Log10(ENERGY_UPPER_BOUND));
 
     // create TOF plots for events that come first, second, or third in their
     // micro
@@ -469,12 +463,14 @@ void fillAdvancedHistos(int detIndex)
         // calculate time since start of macro (includes time offsets)
         double timeDiff = completeTime-macroTime;
 
-        // GATE: require events to come during the macropulse's beam-on period
-        // GATE: discard events during target-changer movement
-        // GATE: discard events with unphysical integrated charges
-        // GATE: discard events with lgQ>=65500 or sgQ>=32750
-        //      (i.e., short gate charge is larger than long gate charge)
-        if (timeDiff < 650000 && timeDiff > 0 && targetPos != 0 && lgQ<65500 && sgQ<32750 /*&& lgQ/(double)sgQ<2.1 && lgQ/(double)sgQ>1.5*/)
+        // Apply gates:
+        if (timeDiff < 650000 && timeDiff > 0           // require events to come during the macropulse's beam-on period
+         && targetPos != 0                              // discard events during target-changer movement
+         && lgQ<65500 && sgQ<32750                      // discard events with unphysically-large integrated charges
+         && lgQ>sgQ                                     // discard events with short gate charge is larger than long gate charge
+         //&& (sgQ/(double)lgQ<0.25 || sgQ/(double)lgQ>0.35)  // discard events outside accepted range of sgQ/lgQ
+         //&& lgQ>100                                     // discard gammas at lowest range of energy
+         )
         {
             /*****************************************************************/
             // Calculate event properties
@@ -488,7 +484,6 @@ void fillAdvancedHistos(int detIndex)
 
             microNo = floor(timeDiff/MICRO_PERIOD);
             microTime = fmod(timeDiff,MICRO_PERIOD);
-
             
             // convert microTime into neutron velocity based on flight path distance
             double velocity = pow(10.,7.)*FLIGHT_DISTANCE/microTime; // in meters/sec 
@@ -498,7 +493,7 @@ void fillAdvancedHistos(int detIndex)
 
             // GATE: discard events with too low of an integrated charge for their energy
             //if (lgQ>500*exp(-(microTime-100)/87))
-            //if (lgQ>10*rKE)
+            //if (lgQ<(1200/50.0)*rKE)
             {
                 // tag this event by its order in the micropulse
                 if (microNo==prevMicroNo)
@@ -536,6 +531,7 @@ void fillAdvancedHistos(int detIndex)
                 TOF->Fill(microTime);
                 triangle->Fill(microTime,lgQ);
                 sgQlgQ->Fill(sgQ,lgQ);
+                QRatio->Fill(sgQ/(double)lgQ);
                 rKElgQ->Fill(rKE,lgQ);
                 triangleRKE->Fill(microTime,rKE);
                 microNoH->Fill(microNo);
@@ -557,10 +553,10 @@ void fillAdvancedHistos(int detIndex)
                 /*****************************************************************/
                 // Fill target-specific plots
 
-                if (targetPos>0 && targetPos<NUM_TARGETS)
+                if (targetPos>0 && targetPos<=NUMBER_OF_TARGETS)
                 {
                     plots.energyHistos[targetPos-1]->Fill(rKE);
-                    plots.energyHistosLog[targetPos-1]->Fill(rKE);
+                    //plots.energyHistosLog[targetPos-1]->Fill(rKE);
                 }
 
                 switch (targetPos)
@@ -710,16 +706,18 @@ void fillAdvancedHistos(int detIndex)
     }
 
     // create raw log-scaled neutron energy plots
-    TH1I *blankRawLogPerMacro = (TH1I*)plots.energyHistosLog[0]->Clone("blankLogPerMacro");
+    /*TH1I *blankRawLogPerMacro = (TH1I*)plots.energyHistosLog[0]->Clone("blankLogPerMacro");
     TH1I *target1RawLogPerMacro = (TH1I*)plots.energyHistosLog[1]->Clone("target1LogPerMacro");
     TH1I *target2RawLogPerMacro = (TH1I*)plots.energyHistosLog[2]->Clone("target2LogPerMacro");
     TH1I *target3RawLogPerMacro = (TH1I*)plots.energyHistosLog[3]->Clone("target3LogPerMacro");
     TH1I *target4RawLogPerMacro = (TH1I*)plots.energyHistosLog[4]->Clone("target4LogPerMacro");
     TH1I *target5RawLogPerMacro = (TH1I*)plots.energyHistosLog[5]->Clone("target5LogPerMacro");
+    */
 
-    TH1I* perMacroHistos[6] = {blankRawLogPerMacro, target1RawLogPerMacro,
+    /*TH1I* perMacroHistos[6] = {blankRawLogPerMacro, target1RawLogPerMacro,
                                target2RawLogPerMacro, target3RawLogPerMacro,
                                target4RawLogPerMacro, target5RawLogPerMacro};
+                               */
 
     // Find number of macropulses for each target to use in error calculation
     gDirectory->cd("/");
@@ -734,6 +732,7 @@ void fillAdvancedHistos(int detIndex)
     tarCounts.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(6));
     tarCounts.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(7));
 
+    /*
     // Scale perMacroHistos histogram by number of macropulses in that target
     for(int i=0; i<6; i++)
     {
@@ -743,6 +742,7 @@ void fillAdvancedHistos(int detIndex)
         }
         perMacroHistos[i]->Scale(pow(10,3)/tarCounts[i]);
     }
+    */
 
     gDirectory->cd("/");
     gDirectory->GetDirectory("detS")->cd();
@@ -856,11 +856,11 @@ void fillAdvancedHistos(int detIndex)
             double rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
 
             plots.correctedEnergyHistos[i]->Fill(rKE,TOFCorrectedHistos[i]->GetBinContent(j));
-            plots.correctedEnergyHistosLog[i]->Fill(rKE,TOFCorrectedHistos[i]->GetBinContent(j));
+            //plots.correctedEnergyHistosLog[i]->Fill(rKE,TOFCorrectedHistos[i]->GetBinContent(j));
 
             TOFCorrectedHistos[i]->SetBinError(j,pow(TOFCorrectedHistos[i]->GetBinContent(j),0.5));
             plots.correctedEnergyHistos[i]->SetBinError(j,pow(plots.correctedEnergyHistos[i]->GetBinContent(j),0.5));
-            plots.correctedEnergyHistosLog[i]->SetBinError(j,pow(plots.correctedEnergyHistosLog[i]->GetBinContent(j),0.5));
+            //plots.correctedEnergyHistosLog[i]->SetBinError(j,pow(plots.correctedEnergyHistosLog[i]->GetBinContent(j),0.5));
 
             /*if(j%100==0 && i==3)
             {
@@ -912,6 +912,7 @@ void calculateCS()
     {
         monCounts.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(i));
         cout << "target position " << i << " monitor counts = " << monCounts[i-2] << endl;
+        monitorCounts << monCounts[i-2] << endl;
     }
 
     // switch to the detector directory
@@ -939,68 +940,62 @@ void calculateCS()
     // Loop through the relativistic kinetic energy histograms and use them
     // to populate cross-section for each target
 
-    int numberOfBins = ((TAxis*)plots.energyHistos[0]->GetXaxis())->GetNbins();
-
-    for(int i=0; (size_t)i<order.size(); i++)
+    if(!(plots.energyHistos.size()>0))
     {
-        sigma.push_back(new vector<double>);
-        sigmaLog.push_back(new vector<double>);
+        plots.energyHistos.push_back((TH1I*)gDirectory->Get("blankTOFRKE"));
+        plots.energyHistos.push_back((TH1I*)gDirectory->Get("target1TOFRKE"));
+        plots.energyHistos.push_back((TH1I*)gDirectory->Get("target2TOFRKE"));
+        plots.energyHistos.push_back((TH1I*)gDirectory->Get("target3TOFRKE"));
+        plots.energyHistos.push_back((TH1I*)gDirectory->Get("target4TOFRKE"));
+        plots.energyHistos.push_back((TH1I*)gDirectory->Get("target5TOFRKE"));
     }
 
-    for(int i=0; (size_t)i<order.size(); i++)
+    int numberOfBins = ((TAxis*)plots.energyHistos[0]->GetXaxis())->GetNbins();
+
+    for(int i=0; i<NUMBER_OF_TARGETS; i++)
+    {
+        sigma.push_back(new vector<double>);
+    }
+
+    for(int i=0; i<NUMBER_OF_TARGETS; i++)
     {
         for(int j=0; j<numberOfBins; j++)
         {
             // first, test to make sure we're not about to take log of 0 or
             // divide by 0
-            if(plots.energyHistos[0]->GetBinContent(j) <= 0 || plots.energyHistos[i]->GetBinContent(j) <= 0)
+            if(plots.correctedEnergyHistos[0]->GetBinContent(j) <= 0 || plots.correctedEnergyHistos[i]->GetBinContent(j) <= 0)
             {
                 sigma[order[i]]->push_back(0);
             }
 
             else
             {
-                // calculate the cross-section
-                sigma[order[i]]->push_back(-log((plots.energyHistos[i]->GetBinContent(j)/(double)plots.energyHistos[0]->GetBinContent(j))*(monCounts[0]/(double)monCounts[i]))/((double)targetlength[order[i]]*(double)targetdensity[order[i]]*(double)AVOGADROS_NUMBER*pow(10.,-24)/(double)targetMolMass[order[i]])); // in barns
-            }
-
-            if(plots.energyHistosLog[0]->GetBinContent(j) <= 0 || plots.energyHistosLog[i]->GetBinContent(j) <= 0)
-            {
-                sigmaLog[i]->push_back(0);
-            }
-
-            else
-            {
-                // calculate the cross-section
-                sigmaLog[order[i]]->push_back(-log((plots.energyHistosLog[i]->GetBinContent(j))/((double)plots.energyHistosLog[0]->GetBinContent(j))*(monCounts[0]/(double)monCounts[i]))/((double)targetlength[order[i]]*(double)targetdensity[order[i]]*(double)AVOGADROS_NUMBER*pow(10.,-24)/(double)targetMolMass[order[i]])); // in barns
+                // calculate the cross section
+                sigma[order[i]]->push_back(
+                        -log(
+                             ((double)plots.correctedEnergyHistos[i]->GetBinContent(j) // counts in target
+                                     /plots.correctedEnergyHistos[0]->GetBinContent(j) // counts in blank
+                             )
+                            *(monCounts[0]/(double)monCounts[i]
+                             )
+                            )
+                            /
+                             (targetMass[order[i]]
+                             *AVOGADROS_NUMBER
+                             *pow(10.,-24) // convert cm^2 to barns 
+                             /
+                              ((pow(targetDiameter[order[i]]/2,2)*PI // area of cylinder end
+                              *(double)targetMolMass[order[i]])
+                              )
+                             )
+                );
             }
 
             if(i==0)
             {
-                sigmaXAxis.push_back(plots.energyHistos[0]->GetBinCenter(j));
-                sigmaXAxisLog.push_back(plots.energyHistosLog[0]->GetBinCenter(j));
+                sigmaXAxis.push_back(plots.correctedEnergyHistos[0]->GetBinCenter(j));
             }
         }
-
-        /*
-        // downscale the sigma array into the correct number of cross-section bins
-        double binWidth = (ENERGY_UPPER_BOUND-ENERGY_LOWER_BOUND)/NUM_ENERGY_BINS;
-        double binWidthLog = (TMath::Log10(ENERGY_UPPER_BOUND)-TMath::Log10(ENERGY_LOWER_BOUND))/NUM_ENERGY_BINS;
-
-        for(int k=0; k<NUM_ENERGY_BINS; k++)
-        {
-            sigmaXAxis[k] = ENERGY_LOWER_BOUND+binWidth*(k);
-            sigmaLogXAxis[k] = TMath::Power(10,TMath::Log10(ENERGY_LOWER_BOUND)+binWidthLog*k);
-
-            for(int l=0; l<energyCSBinRatio; l++)
-            {
-                sigma[order[i]][k] += sigma[order[i]][k*energyCSBinRatio+l];
-                sigmaLog[order[i]][k] += sigmaLog[order[i]][k*energyCSBinRatio+l];
-            }
-            sigma[order[i]][k] /= energyCSBinRatio;
-            sigmaLog[order[i]][k] /= energyCSBinRatio;
-        }
-        */
     }
 }
 
@@ -1009,19 +1004,19 @@ void fillCSGraphs()
     // remake the cross-section histogram file
     TFile *CSfile = new TFile(fileCSName.str().c_str(),"RECREATE");
 
-    for(int i=0; i<order.size(); i++)
+    for(int i=0; i<NUMBER_OF_TARGETS; i++)
     {
         plots.CSGraphs.push_back(new TGraphErrors(sigmaXAxis.size(),&sigmaXAxis[0],&(sigma[order[i]]->at(0))));
         plots.CSGraphs[i]->SetNameTitle(targetNames[order[i]].c_str(),targetNames[order[i]].c_str());
         plots.CSGraphs[i]->Write();
 
-        plots.CSGraphsLog.push_back(new TGraphErrors(sigmaXAxisLog.size(),&sigmaXAxisLog[0],&(sigmaLog[order[i]]->at(0))));
-        plots.CSGraphsLog[i]->SetNameTitle((targetNames[order[i]]+"Log").c_str(),(targetNames[order[i]]+"Log").c_str());
-        plots.CSGraphsLog[i]->Write();
+        //plots.CSGraphsLog.push_back(new TGraphErrors(sigmaXAxisLog.size(),&sigmaXAxisLog[0],&(sigmaLog[order[i]]->at(0))));
+        //plots.CSGraphsLog[i]->SetNameTitle((targetNames[order[i]]+"Log").c_str(),(targetNames[order[i]]+"Log").c_str());
+        //plots.CSGraphsLog[i]->Write();
 
-        //plots.CSGraphsLog.push_back(logBins(plots.CSGraphs[i]new TGraphErrors(NUM_ENERGY_BINS,&sigma[i],&sigmaXAxis));
+        //plots.CSGraphsLog.push_back(logBins(plots.CSGraphs[i]new TGraphErrors(NUMBER_ENERGY_BINS,&sigma[i],&sigmaXAxis));
 
-        /*for(int j=0; j<NUM_ENERGY_BINS; j++)
+        /*for(int j=0; j<NUMBER_ENERGY_BINS; j++)
         {
             // first, test to make sure we're not about to take log of 0 or
             // divide by 0
@@ -1038,7 +1033,7 @@ void fillCSGraphs()
             }
         }
 
-        for(int j=0; j<NUM_ENERGY_BINS; j++)
+        for(int j=0; j<NUMBER_ENERGY_BINS; j++)
         {
             // first, test to make sure we're not about to take log of 0 or
             // divide by 0
@@ -1064,11 +1059,11 @@ void fillCSGraphs()
     Sn124_minus_Sn112CSLog->Add(plots.CSGraphsLog[3],-1);
 
     // rebin and scale these dummy cross-section plots (124+112 and 124-112)
-    Sn124_plus_Sn112CSLog->Rebin(NUM_ENERGY_BINS/(double)20);
-    Sn124_minus_Sn112CSLog->Rebin(NUM_ENERGY_BINS/(double)20);
+    Sn124_plus_Sn112CSLog->Rebin(NUMBER_ENERGY_BINS/(double)20);
+    Sn124_minus_Sn112CSLog->Rebin(NUMBER_ENERGY_BINS/(double)20);
 
-    Sn124_plus_Sn112CSLog->Scale(1/(NUM_ENERGY_BINS/(double)20));
-    Sn124_minus_Sn112CSLog->Scale(1/(NUM_ENERGY_BINS/(double)20));
+    Sn124_plus_Sn112CSLog->Scale(1/(NUMBER_ENERGY_BINS/(double)20));
+    Sn124_minus_Sn112CSLog->Scale(1/(NUMBER_ENERGY_BINS/(double)20));
 
     // Divide 124-112 by 124+112 for relative cross-section
     TH1D *relativeSnCSLog = (TH1D*)Sn124_minus_Sn112CSLog->Clone("relativeSnCSLog");
@@ -1505,7 +1500,7 @@ int main(int argc, char *argv[])
     // Look online for more info (I'm not really sure why it's necessary)
     //TApplication app("app",&argc,argv);
 
-    if(TOF_BINS%NUM_ENERGY_BINS!=0)
+    if(TOF_BINS%NUMBER_ENERGY_BINS!=0)
     {
         cout << "Error: number of TOF bins must be a multiple of the number of energy bins." << endl;
         exit(1);
@@ -1531,6 +1526,12 @@ int main(int argc, char *argv[])
 
     //scavengerEvents.precision(10);
     //summedDetEvents.precision(10);
+
+    // report the number of counts in the monitor paddle for each target (diagnostic)
+    stringstream monitorCountsName;
+    monitorCountsName << outpath <<  "/analysis/run" << runDir << "/" << treeName.str() << "_monitorCounts.log";
+    monitorCounts.open(monitorCountsName.str());
+    monitorCounts.precision(13);
 
     fileInName << outpath <<"/analysis/run" << runDir << "/" << treeName.str() << "_sorted.root";
     fileOutName << outpath <<"/analysis/run" << runDir << "/" << treeName.str() << "_histos.root";
@@ -1641,13 +1642,13 @@ int main(int argc, char *argv[])
     fillCSGraphs();
 
     // Modify plots
-    for(int i=0; i<NUM_TARGETS; i++)
+    /*for(int i=0; i<NUMBER_OF_TARGETS; i++)
     {
         plots.energyHistos[i]->GetXaxis()->SetRangeUser(0,700);
-        plots.energyHistosLog[i]->GetXaxis()->SetRangeUser(0,700);
+        //plots.energyHistosLog[i]->GetXaxis()->SetRangeUser(0,700);
         plots.correctedEnergyHistos[i]->GetXaxis()->SetRangeUser(0,700);
-        plots.correctedEnergyHistosLog[i]->GetXaxis()->SetRangeUser(0,700);
-    }
+        //plots.correctedEnergyHistosLog[i]->GetXaxis()->SetRangeUser(0,700);
+    }*/
 
     // print out waveforms for first 50 events that occur in both ch4 and ch6
     //matchWaveforms();

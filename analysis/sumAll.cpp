@@ -1,4 +1,3 @@
-#include "TH1.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -8,18 +7,27 @@
 #include "TGraph.h"
 #include "TGraphErrors.h"
 #include "TMath.h"
-#include <vector>
-#include <cmath>
 
 using namespace std;
 
+const int NUMBER_OF_TARGETS = 6;
+const int MAX_SUBRUN_NUMBER = 30;
+const double ARTIFICIAL_OFFSET = 0.0;
+
+const vector<string> targetNames = {"blankDPP", "shortCarbonDPP", "longCarbonDPP", "Sn112DPP", "NatSnDPP", "Sn124DPP"}; 
+const vector<string> targetNamesWaveform = {"blankWaveform", "shortCarbonWaveform", "longCarbonWaveform", "Sn112Waveform", "NatSnWaveform", "Sn124Waveform"}; 
+
 // Set number of bins for relative cross-section histograms
 const int NUM_RELATIVE_BINS = 50;
-const double CLIFF_OFFSET = 0;
 
-struct Error
+struct Plots
 {
-} error;
+    vector<TGraph*> CSGraphs;
+    vector<TGraph*> CSGraphsWaveform;
+
+    vector<TGraph*> relativeCSGraphs;
+    vector<TGraph*> relativeCSGraphsWaveform;
+} plots;
 
 long monCountsBlank;
 long monCountsSn124;
@@ -51,7 +59,7 @@ vector<double> totalRelError (200);
 
 TFile* infile;
 
-void getStatisticalError(TH1D* Sn112CSTotal, TH1D* Sn124CSTotal)
+/*void getStatisticalError(TH1D* Sn112CSTotal, TH1D* Sn124CSTotal)
 {
     // Get monCounts, raw target counts from _histos.root files
     // Calculate statistical error from histogram counts
@@ -200,10 +208,10 @@ void getStatisticalError(TH1D* Sn112CSTotal, TH1D* Sn124CSTotal)
         }
     }
 
-    /*monCountsBlankError = pow(monCountsBlank,0.5);
+    *//*monCountsBlankError = pow(monCountsBlank,0.5);
     monCountsSn112Error = pow(monCountsSn112,0.5);
     monCountsSn124Error = pow(monCountsSn124,0.5);
-    */
+    *//*
 
     cout << "monCountsBlank = " <<  monCountsBlank << endl;
     cout << "monCountsSn112 = " <<  monCountsSn112 << endl;
@@ -221,28 +229,28 @@ void getStatisticalError(TH1D* Sn112CSTotal, TH1D* Sn124CSTotal)
                 ((double)monCountsSn112/(pow(monCountsSn112,2))) +
                 ((double)detCountsBlank[i]/(pow(detCountsBlank[i],2))) +
                 ((double)detCountsSn112[i]/(pow(detCountsSn112[i],2)))
-                ,0.5)/*/exp(abs(Sn112CSTotal->GetBinContent(i)))*/;
+                ,0.5)*//*/exp(abs(Sn112CSTotal->GetBinContent(i)))*//*;
 
         totalSn124StatError[i] = pow(
                 ((double)monCountsBlank/(pow(monCountsBlank,2))) +
                 ((double)monCountsSn124/(pow(monCountsSn124,2))) +
                 ((double)detCountsBlank[i]/(pow(detCountsBlank[i],2))) +
                 ((double)detCountsSn124[i]/(pow(detCountsSn124[i],2)))
-                ,0.5)/*/exp(abs(Sn124CSTotal->GetBinContent(i)))*/;
+                ,0.5)*//*/exp(abs(Sn124CSTotal->GetBinContent(i)))*//*;
 
-        /*totalRelStatError[i] = pow(
+        *//*totalRelStatError[i] = pow(
                 pow(totalSn112Error[i],2) +
                 pow(totalSn124Error[i],2)
                 ,0.5);
-                */
+                *//*
     }
 
     cout << totalSn112StatError[10] << endl;
 
-        /*detCountsBlankpush_back(pow(detCountsBlank[i],0.5));
+        *//*detCountsBlankpush_back(pow(detCountsBlank[i],0.5));
         detCountsSn112push_back(pow(detCountsSn112[i],0.5));
         detCountsSn124push_back(pow(detCountsSn124[i],0.5));
-        */
+        *//*
 }
 
 void getSystemicError()
@@ -297,497 +305,229 @@ void getTotalError()
     cout << totalSn124Error[10] << endl;
     cout << totalRelError[10] << endl;
 }
+*/
 
-TH1D* logBins(TH1D *inputHisto)
+
+// Extract each point from a graph and store their positions in two vectors,
+// xValues and yValues
+void extractGraphData(
+        TGraph* graph,
+        vector<double>* xValues,
+        vector<double>* yValues)
 {
-    string newName;
-    newName = inputHisto->GetName();
-    newName += "Log";
+    int numPoints = graph->GetN();
+    yValues->resize(numPoints);
+    xValues->resize(numPoints);
 
-    double newXMin = (((TAxis*)inputHisto->GetXaxis())->GetXmin());
-    if (newXMin <= 0)
+    for(int k=0; k<numPoints; k++)
     {
-        cout << "Error: can't take log of negative energy on cross-section plot" << endl;
-        exit(1);
+        graph->GetPoint(k,xValues->at(k),yValues->at(k));
     }
-
-    newXMin = TMath::Log10(newXMin);
-
-    int noBins = ((TAxis*)inputHisto->GetXaxis())->GetNbins();
-
-    TH1D* outputHisto = new TH1D(newName.c_str(),newName.c_str(),noBins,
-            TMath::Log10(((TAxis*)inputHisto->GetXaxis())->GetXmin()),
-            TMath::Log10(((TAxis*)inputHisto->GetXaxis())->GetXmax()));
-
-    // Pull bin data from input histo, and map to the log scale:
-    TAxis* axis = outputHisto->GetXaxis();
-    int nBins = axis->GetNbins();
-
-    double xMin = axis->GetXmin();
-    double xMax = axis->GetXmax();
-
-    double binWidth = (xMax-xMin)/nBins;
-    double *newBins = new double[nBins+1];
-
-    for(int i=0; i<=nBins; i++)
-    {
-        newBins[i] = TMath::Power(10, xMin+i*binWidth);
-    }
-
-    // Assign the log-scale bins to the new histo
-    ((TAxis*)outputHisto->GetXaxis())->Set(nBins,newBins);
-    delete newBins;
-
-    return outputHisto;
 }
 
 int main()
 {
-    // Declare stringstreams needed to open and access runs
-    stringstream fileInName;
-    stringstream fileInWaveformName;
-    stringstream fileOutName;
+    // Find the total number of runs to read in
+    int totalRuns = 0;
+    string runNumber;
+    ifstream runList;
 
-    // Open the runList to see which runs should be added to the total
-
-    ifstream runList("runsToSort.txt");
-    if(!runList.is_open())
-    {
-        cout << "Could not find runs list... exiting." << endl;
-        exit(1);
-    }
-
-    // Examine the first run of runlist and find out the correct number of
-    // bins to use for the summed histograms
-    if(runList.eof())
-    {
-        cout << "Error: empty runList file" << endl;
-        exit(1);
-    }
-
-    string runDir;
-    string outPath;
-
-    runList >> runDir;
-
-    if (stoi(runDir)<6)
-    {
-        outPath = "/data3/analysis/run";
-    }
-
-    else if (stoi(runDir)>128 && stoi(runDir)<160)
-    {
-        outPath = "/data2/analysis/run";
-    }
-
-    else if (stoi(runDir)>159 && stoi(runDir)<178)
-    {
-        outPath = "/data3/analysis/run";
-    }
-
-    else
-    {
-        cout << "Run directory outside bounds (runs 128-177) - check run number" << endl;
-        exit(1);
-    }
-
-    fileInName << outPath << runDir << "/" << "sum.root";
-
-    infile =  new TFile(fileInName.str().c_str(),"READ");
-
-    // each histo has N bins + 1 overflow + 1 underflow
-    // thus, subtract two to get the number of 'normal' bins for summed histos
-    int noCSBins = ((TH1D*)infile->Get("blankCSSum"))->GetSize()-2;
-    int noWaveformBins = ((TH1D*)infile->Get("blankCSSumWaveform"))->GetSize()-2;
-
-    // Find the total number of runs in runList
-    int totalRuns = 1;
-
-    while(runList >> runDir)
+    runList.open("runsToSort.txt");
+    while(runList >> runNumber)
     {
         totalRuns++;
     }
-
     cout << "Total runs in runlist: " << totalRuns << endl << endl;
-
     runList.close();
 
-    // Create output file to contain summed histos
-    fileOutName << "/data3/analysis/total.root";
+    // Create vectors for holding cross section data:
+    // CrossSections[target number]->at(subrun number)->at(data point)
+    vector<vector<vector<double>*>*> crossSections;
+    vector<vector<vector<double>*>*> crossSectionsWaveform;
 
-    TFile *outfile = new TFile(fileOutName.str().c_str(),"RECREATE");
+    // Create vectors for holding cross section average over all subruns:
+    // CrossSectionsAvg[target number]->at(data point)
+    vector<vector<double>*> crossSectionsAvg;
+    vector<vector<double>*> crossSectionsWaveformAvg;
 
-    // Create summed histos
-    // First, sum DPP-derived cross-sections
-    TH1D *blankCSTotal = new TH1D("blankCSTotal","blankCSTotal",noCSBins,1,700);
-    TH1D *carbonSCSTotal = new TH1D("carbonSCSTotal","carbonSCSTotal",noCSBins,1,700);
-    TH1D *carbonLCSTotal = new TH1D("carbonLCSTotal","carbonLCSTotal",noCSBins,1,700);
-    TH1D *Sn112CSTotal = new TH1D("Sn112CSTotal","Sn112CSTotal",noCSBins,1,700);
-    TH1D *SnNatCSTotal = new TH1D("SnNatCSTotal","SnNatCSTotal",noCSBins,1,700);
-    TH1D *Sn124CSTotal = new TH1D("Sn124CSTotal","Sn124CSTotal",noCSBins,1,700);
+    // Create vector for holding the energies were the cross sections
+    // were calculated
+    vector<vector<vector<double>*>*> energies;
+    vector<vector<vector<double>*>*> energiesWaveform;
 
-    TH1D *blankCSTotalLog = logBins(blankCSTotal);
-    TH1D *carbonSCSTotalLog = logBins(carbonSCSTotal);
-    TH1D *carbonLCSTotalLog = logBins(carbonLCSTotal);
-    TH1D *Sn112CSTotalLog = logBins(Sn112CSTotal);
-    TH1D *SnNatCSTotalLog = logBins(SnNatCSTotal);
-    TH1D *Sn124CSTotalLog = logBins(Sn124CSTotal);
-
-    // Next, sum waveform-derived cross-sections
-    TH1D *blankCSTotalWaveform = new TH1D("blankCSTotalWaveform","blankCSTotalWaveform",noWaveformBins,1,700);
-    TH1D *carbonSCSTotalWaveform = new TH1D("carbonSCSTotalWaveform","carbonSCSTotalWaveform",noWaveformBins,1,700);
-    TH1D *carbonLCSTotalWaveform = new TH1D("carbonLCSTotalWaveform","carbonLCSTotalWaveform",noWaveformBins,1,700);
-    TH1D *Sn112CSTotalWaveform = new TH1D("Sn112CSTotalWaveform","Sn112CSTotalWaveform",noWaveformBins,1,700);
-    TH1D *SnNatCSTotalWaveform = new TH1D("SnNatCSTotalWaveform","SnNatCSTotalWaveform",noWaveformBins,1,700);
-    TH1D *Sn124CSTotalWaveform = new TH1D("Sn124CSTotalWaveform","Sn124CSTotalWaveform",noWaveformBins,1,700);
-
-    TH1D *blankCSTotalWaveformLog = logBins(blankCSTotalWaveform);
-    TH1D *carbonSCSTotalWaveformLog = logBins(carbonSCSTotalWaveform);
-    TH1D *carbonLCSTotalWaveformLog = logBins(carbonLCSTotalWaveform);
-    TH1D *Sn112CSTotalWaveformLog = logBins(Sn112CSTotalWaveform);
-    TH1D *SnNatCSTotalWaveformLog = logBins(SnNatCSTotalWaveform);
-    TH1D *Sn124CSTotalWaveformLog = logBins(Sn124CSTotalWaveform);
-
-    // Re-open runList from the start
-    runList.open("runsToSort.txt");
-
-    // Main loop over runList
-    while (runList >> runDir)
+    // Prep vectors for filling
+    for(int i=0; i<NUMBER_OF_TARGETS; i++)
     {
-        // Open the run's summed histos file
-        fileInName.str("");
+        crossSections.push_back(new vector<vector<double>*>);
+        crossSectionsWaveform.push_back(new vector<vector<double>*>);
 
-        if (stoi(runDir)<6)
+        crossSectionsAvg.push_back(new vector<double>);
+        crossSectionsWaveformAvg.push_back(new vector<double>);
+
+        energies.push_back(new vector<vector<double>*>);
+        energiesWaveform.push_back(new vector<vector<double>*>);
+    }
+
+    // Loop through all listed runs and extract cross section data
+    runList.open("runsToSort.txt");
+    int i = 0;
+    while (runList >> runNumber)
+    {
+        // Determine correct drive to find run
+        string driveName;
+        if (stoi(runNumber)<6)
         {
-            outPath = "/data3/analysis/run";
+            driveName = "/data3/analysis/run";
         }
-
-        else if (stoi(runDir)>128 && stoi(runDir)<160)
+        else if (stoi(runNumber)>127 && stoi(runNumber)<160)
         {
-            outPath = "/data2/analysis/run";
+            driveName = "/data2/analysis/run";
         }
-
-        else if (stoi(runDir)>159 && stoi(runDir)<178)
+        else if (stoi(runNumber)>159 && stoi(runNumber)<178)
         {
-            outPath = "/data3/analysis/run";
+            driveName = "/data3/analysis/run";
         }
-
         else
         {
             cout << "Run directory outside bounds (runs 128-177) - check run number" << endl;
             exit(1);
         }
 
-        fileInName << outPath << runDir << "/" << "sum.root";
-        infile =  new TFile(fileInName.str().c_str());
+        // Open run
+
+        TFile* infile;
+
+        stringstream infileName;
+        infileName << driveName << runNumber << "/" << "sum.root";
+        infile = new TFile(infileName.str().c_str());
 
         if(!infile->IsOpen())
         {
-            cout << "Can't open sum.root file of run" << runDir << endl;
-            outfile->Write();
-            outfile->Close();
+            cout << "Can't open sum.root file of run" << runNumber << endl;
             exit(1);
         }
 
-        cout << "Adding run" << runDir << endl;
+        cout << "Adding run" << runNumber << endl;
 
-
-        /****************** SUM HISTOGRAMS ******************/
-
-        /************** normal cross-section histos ************/
-        TH1D * blank = ((TH1D*)infile->Get("blankCSSum"));
-        if (blank)
+        // Pull out the cross section data
+        for(int j=1; (size_t)j<targetNames.size(); j++)
         {
-            blankCSTotal->Add(blank,1/(double)totalRuns);
-        }
+            TGraph * graph = (TGraph*)infile->Get(targetNames[j].c_str());
+            energies[j]->push_back(new vector<double>);
+            crossSections[j]->push_back(new vector<double>);
+            extractGraphData(graph,energies[j]->back(),crossSections[j]->back());
 
-        TH1D * carbonS = (TH1D*)infile->Get("carbonSCSSum");
-        if (carbonS)
-        {
-            carbonSCSTotal->Add(carbonS,1/(double)totalRuns);
-        }
-
-        TH1D * carbonL = (TH1D*)infile->Get("carbonLCSSum");
-        if (carbonL)
-        {
-            carbonLCSTotal->Add(carbonL,1/(double)totalRuns);
-        }
-
-        TH1D * Sn112 = (TH1D*)infile->Get("Sn112CSSum");
-        if (Sn112)
-        {
-            Sn112CSTotal->Add(Sn112,1/(double)totalRuns);
-        }
-
-        TH1D * SnNat = (TH1D*)infile->Get("SnNatCSSum");
-        if (SnNat)
-        {
-            SnNatCSTotal->Add(SnNat,1/(double)totalRuns);
-        }
-
-        TH1D * Sn124 = (TH1D*)infile->Get("Sn124CSSum");
-        if (Sn124)
-        {
-            Sn124CSTotal->Add(Sn124,1/(double)totalRuns);
-        }
-
-        /************* LOG-SCALE cross-section histos **************/
-        TH1D * blankLog = ((TH1D*)infile->Get("blankCSSumLog"));
-        if (blankLog)
-        {
-            blankCSTotalLog->Add(blankLog,1/(double)totalRuns);
-        }
-
-        TH1D * carbonSLog = (TH1D*)infile->Get("carbonSCSSumLog");
-        if (carbonSLog)
-        {
-            carbonSCSTotalLog->Add(carbonSLog,1/(double)totalRuns);
-        }
-
-        TH1D * carbonLLog = (TH1D*)infile->Get("carbonLCSSumLog");
-        if (carbonLLog)
-        {
-            carbonLCSTotalLog->Add(carbonLLog,1/(double)totalRuns);
-        }
-
-        TH1D * Sn112Log = (TH1D*)infile->Get("Sn112CSSumLog");
-        if (Sn112Log)
-        {
-            Sn112CSTotalLog->Add(Sn112Log,1/(double)totalRuns);
-        }
-
-        TH1D * SnNatLog = (TH1D*)infile->Get("SnNatCSSumLog");
-        if (SnNatLog)
-        {
-            SnNatCSTotalLog->Add(SnNatLog,1/(double)totalRuns);
-        }
-
-        TH1D * Sn124Log = (TH1D*)infile->Get("Sn124CSSumLog");
-        if (Sn124Log)
-        {
-            Sn124CSTotalLog->Add(Sn124Log,1/(double)totalRuns);
-        }
-
-        /************* WAVEFORM-DERIVED cross-section histos **************/
-        TH1D * blankW = ((TH1D*)infile->Get("blankCSSumWaveform"));
-        if (blankW)
-        {
-            blankCSTotalWaveform->Add(blankW,1/(double)totalRuns);
-        }
-
-        TH1D * carbonSW = (TH1D*)infile->Get("carbonSCSSumWaveform");
-        if (carbonSW)
-        {
-            carbonSCSTotalWaveform->Add(carbonSW,1/(double)totalRuns);
-        }
-
-        TH1D * carbonLW = (TH1D*)infile->Get("carbonLCSSumWaveform");
-        if (carbonLW)
-        {
-            carbonLCSTotalWaveform->Add(carbonLW,1/(double)totalRuns);
-        }
-
-        TH1D * Sn112W = (TH1D*)infile->Get("Sn112CSSumWaveform");
-        if (Sn112W)
-        {
-            Sn112CSTotalWaveform->Add(Sn112W,1/(double)totalRuns);
-        }
-
-        TH1D * SnNatW = (TH1D*)infile->Get("SnNatCSSumWaveform");
-        if (SnNatW)
-        {
-            SnNatCSTotalWaveform->Add(SnNatW,1/(double)totalRuns);
-        }
-
-        TH1D * Sn124W = (TH1D*)infile->Get("Sn124CSSumWaveform");
-        if (Sn124W)
-        {
-            Sn124CSTotalWaveform->Add(Sn124W,1/(double)totalRuns);
-        }
-
-        /********** LOG-SCALE WAVEFORM-DERIVED cross-section histos ***********/
-        TH1D * blankLogW = ((TH1D*)infile->Get("blankCSSumWaveformLog"));
-        if (blankLogW)
-        {
-            blankCSTotalWaveformLog->Add(blankLogW,1/(double)totalRuns);
-        }
-
-        TH1D * carbonSLogW = (TH1D*)infile->Get("carbonSCSSumWaveformLog");
-        if (carbonSLogW)
-        {
-            carbonSCSTotalWaveformLog->Add(carbonSLogW,1/(double)totalRuns);
-        }
-
-        TH1D * carbonLLogW = (TH1D*)infile->Get("carbonLCSSumWaveformLog");
-        if (carbonLLogW)
-        {
-            carbonLCSTotalWaveformLog->Add(carbonLLogW,1/(double)totalRuns);
-        }
-
-        TH1D * Sn112LogW = (TH1D*)infile->Get("Sn112CSSumWaveformLog");
-        if (Sn112LogW)
-        {
-            Sn112CSTotalWaveformLog->Add(Sn112LogW,1/(double)totalRuns);
-        }
-
-        TH1D * SnNatLogW = (TH1D*)infile->Get("SnNatCSSumWaveformLog");
-        if (SnNatLogW)
-        {
-            SnNatCSTotalWaveformLog->Add(SnNatLogW,1/(double)totalRuns);
-        }
-
-        TH1D * Sn124LogW = (TH1D*)infile->Get("Sn124CSSumWaveformLog");
-        if (Sn124LogW)
-        {
-            Sn124CSTotalWaveformLog->Add(Sn124LogW,1/(double)totalRuns);
+            TGraph * graphWaveform = (TGraph*)infile->Get(targetNamesWaveform[j].c_str());
+            energiesWaveform[j]->push_back(new vector<double>);
+            crossSectionsWaveform[j]->push_back(new vector<double>);
+            extractGraphData(graphWaveform,energiesWaveform[j]->back(),crossSectionsWaveform[j]->back());
         }
 
         // Close the sub-run input files
         infile->Close();
 
         // End of loop - move to next sub-run
+        i++;
+    }
+
+    // Create output file to contain summed histos
+    stringstream outfileName;
+    outfileName << "/data3/analysis/total.root";
+    TFile *outfile = new TFile(outfileName.str().c_str(),"RECREATE");
+
+    // sum all subruns and compute average
+    for(int i=1; (size_t)i<energies.size(); i++)
+    {
+        crossSectionsAvg[i]->resize(energies[1]->at(0)->size());
+        for(int j=0; (size_t)j<energies[1]->size(); j++)
+        {
+            for(int k=0; (size_t)k<energies[1]->at(0)->size(); k++)
+            {
+                crossSectionsAvg[i]->at(k) += ARTIFICIAL_OFFSET+crossSections[i]->at(j)->at(k);
+            }
+        }
+
+        for(int k=0; (size_t)k<energies[1]->at(0)->size(); k++)
+        {
+            crossSectionsAvg[i]->at(k) /= energies[1]->size();
+        }
+
+        // create new graphs to display the average
+        TGraph* graph = new TGraph(energies[i]->at(0)->size(),&energies[i]->at(0)->at(0),&crossSectionsAvg[i]->at(0));
+        graph->SetNameTitle(targetNames[i].c_str(),targetNames[i].c_str());
+        graph->Write();
+        plots.CSGraphs.push_back(graph);
+    }
+
+    // sum all subruns and compute average
+    for(int i=1; (size_t)i<energiesWaveform.size(); i++)
+    {
+        crossSectionsWaveformAvg[i]->resize(energiesWaveform[1]->at(0)->size());
+        for(int j=0; (size_t)j<energiesWaveform[1]->size(); j++)
+        {
+            for(int k=0; (size_t)k<energiesWaveform[1]->at(0)->size(); k++)
+            {
+                crossSectionsWaveformAvg[i]->at(k) += ARTIFICIAL_OFFSET+crossSectionsWaveform[i]->at(j)->at(k);
+            }
+        }
+
+        for(int k=0; (size_t)k<energiesWaveform[1]->at(0)->size(); k++)
+        {
+            crossSectionsWaveformAvg[i]->at(k) /= energiesWaveform[1]->size();
+        }
+
+        // create new graphs to display the average
+        TGraph* graph = new TGraph(energiesWaveform[i]->at(0)->size(),&energiesWaveform[i]->at(0)->at(0),&crossSectionsWaveformAvg[i]->at(0));
+        graph->SetNameTitle(targetNamesWaveform[i].c_str(),targetNamesWaveform[i].c_str());
+        graph->Write();
+        plots.CSGraphs.push_back(graph);
     }
 
     // create relative cross-section plot for 112Sn/124Sn
-    TH1D *Sn124_plus_Sn112CS = (TH1D*)Sn124CSTotal->Clone("Sn124_plus_Sn112CS");
-    Sn124_plus_Sn112CS->SetDirectory(outfile);
-    Sn124_plus_Sn112CS->Add(Sn112CSTotal);
+    vector<double> Sn124PlusSn112CSData; 
+    vector<double> Sn124MinusSn112CSData; 
+    vector<double> Sn124Sn112relativeCSData; 
 
-    TH1D *Sn124_minus_Sn112CS = (TH1D*)Sn124CSTotal->Clone("Sn124_minus_Sn112CS");
-    Sn124_minus_Sn112CS->SetDirectory(outfile);
-    Sn124_minus_Sn112CS->Add(Sn112CSTotal,-1);
+    Sn124PlusSn112CSData.resize(crossSectionsAvg[1]->size());
+    Sn124MinusSn112CSData.resize(crossSectionsAvg[1]->size());
+    Sn124Sn112relativeCSData.resize(crossSectionsAvg[1]->size());
 
-    /*for(int i = 0; i<Sn124_plus_Sn112CS->GetXaxis()->GetNbins(); i++)
+    for(int i=1; (size_t)i<Sn124PlusSn112CSData.size(); i++)
     {
-        if(Sn124_plus_Sn112CS->GetBinContent(i) < 0)
-        {
-            Sn124_plus_Sn112CS->AddBinContent(i,CLIFF_OFFSET);
-        }
-    }*/
+        Sn124PlusSn112CSData[i] = crossSectionsAvg[5]->at(i) + crossSectionsAvg[3]->at(i);
+        Sn124MinusSn112CSData[i] = crossSectionsAvg[5]->at(i) - crossSectionsAvg[3]->at(i);
+        Sn124Sn112relativeCSData[i] =
+            (crossSectionsAvg[5]->at(i) - crossSectionsAvg[3]->at(i))/
+            (crossSectionsAvg[5]->at(i) + crossSectionsAvg[3]->at(i));
+    }
 
-    //Sn124_plus_Sn112CS->Rebin(Sn124_plus_Sn112CS->GetSize()/(double)50);
-    //Sn124_minus_Sn112CS->Rebin(Sn124_minus_Sn112CS->GetSize()/(double)50);
+    TGraph *Sn124PlusSn112CS =
+        new TGraph(Sn124PlusSn112CSData.size(),
+                  &energies[1]->at(0)->at(0),
+                  &Sn124PlusSn112CSData[0]);
+    Sn124PlusSn112CS->Write();
 
-    //Sn124_plus_Sn112CS->Scale(1/(Sn124_plus_Sn112CS->GetSize()/(double)50));
-    //Sn124_minus_Sn112CS->Scale(1/(Sn124_plus_Sn112CS->GetSize()/(double)50));
+    TGraph *Sn124MinusSn112CS =
+        new TGraph(Sn124MinusSn112CSData.size(),
+                  &energies[1]->at(0)->at(0),
+                  &Sn124MinusSn112CSData[0]);
+    Sn124MinusSn112CS->Write();
 
-    TH1D *relativeSnCS = (TH1D*)Sn124_minus_Sn112CS->Clone("relativeSnCS");
-    relativeSnCS->SetDirectory(outfile);
-    relativeSnCS->SetTitle("#frac{#sigma_{^{124}Sn}-#sigma_{^{112}Sn}}{#sigma_{^{124}Sn}+#sigma_{^{112}Sn}}");
-
-    relativeSnCS->Divide(Sn124_plus_Sn112CS);
+    TGraph *Sn124Sn112relativeCS =
+        new TGraph(Sn124Sn112relativeCSData.size(),
+                &energies[1]->at(0)->at(0),
+                &Sn124Sn112relativeCSData[0]);
+    Sn124Sn112relativeCS->SetTitle("#frac{#sigma_{^{124}Sn}-#sigma_{^{112}Sn}}{#sigma_{^{124}Sn}+#sigma_{^{112}Sn}}");
+    Sn124Sn112relativeCS->Write();
 
     //getStatisticalError(Sn112CSTotalLog, Sn124CSTotalLog);
     //getSystemicError();
     //getTotalError();
 
-    
-
-    relativeSnCS->GetXaxis()->SetRangeUser(3,300);
-
-    // create relative cross-section plot for 112Sn/124Sn
-    TH1D *Sn124_plus_Sn112CSLog = (TH1D*)Sn124CSTotalLog->Clone("Sn124_plus_Sn112CSLog");
-    Sn124_plus_Sn112CSLog->SetDirectory(outfile);
-    Sn124_plus_Sn112CSLog->Add(Sn112CSTotalLog);
-
-    TH1D *Sn124_minus_Sn112CSLog = (TH1D*)Sn124CSTotalLog->Clone("Sn124_minus_Sn112CSLog");
-    Sn124_minus_Sn112CSLog->SetDirectory(outfile);
-    Sn124_minus_Sn112CSLog->Add(Sn112CSTotalLog,-1);
-
-    for(int i = 0; i<Sn124_plus_Sn112CS->GetXaxis()->GetNbins(); i++)
-    {
-        if(Sn124_plus_Sn112CS->GetBinContent(i) < 0)
-        {
-            Sn124_plus_Sn112CS->AddBinContent(i,CLIFF_OFFSET);
-        }
-    }
-
-    for(int i = 0; i<Sn124_plus_Sn112CSLog->GetXaxis()->GetNbins(); i++)
-    {
-        if(Sn124_plus_Sn112CSLog->GetBinContent(i) < 0)
-        {
-            Sn124_plus_Sn112CSLog->AddBinContent(i,CLIFF_OFFSET);
-        }
-    }
-
-    Sn124_plus_Sn112CS->Rebin(Sn124_plus_Sn112CS->GetSize()/NUM_RELATIVE_BINS);
-    Sn124_minus_Sn112CS->Rebin(Sn124_minus_Sn112CS->GetSize()/(double)NUM_RELATIVE_BINS);
-
-    Sn124_plus_Sn112CS->Scale(1/(Sn124_plus_Sn112CS->GetSize()/(double)NUM_RELATIVE_BINS));
-    Sn124_minus_Sn112CS->Scale(1/(Sn124_plus_Sn112CS->GetSize()/(double)NUM_RELATIVE_BINS));
-
-    Sn124_plus_Sn112CSLog->Rebin(Sn124_plus_Sn112CSLog->GetSize()/(double)NUM_RELATIVE_BINS);
-    Sn124_minus_Sn112CSLog->Rebin(Sn124_minus_Sn112CSLog->GetSize()/(double)NUM_RELATIVE_BINS);
-
-    Sn124_plus_Sn112CSLog->Scale(1/(Sn124_plus_Sn112CSLog->GetSize()/(double)NUM_RELATIVE_BINS));
-    Sn124_minus_Sn112CSLog->Scale(1/(Sn124_plus_Sn112CSLog->GetSize()/(double)NUM_RELATIVE_BINS));
-
-    TH1D *relativeSnCSLog = (TH1D*)Sn124_minus_Sn112CSLog->Clone("relativeSnCSLog");
-    relativeSnCSLog->SetDirectory(outfile);
-    relativeSnCSLog->SetTitle("#frac{#sigma_{^{124}Sn}-#sigma_{^{112}Sn}}{#sigma_{^{124}Sn}+#sigma_{^{112}Sn}}");
-
-    relativeSnCSLog->Divide(Sn124_plus_Sn112CSLog);
-    relativeSnCSLog->GetXaxis()->SetRangeUser(3,300);
-
-    for (int nBins = 0; nBins<relativeSnCSLog->GetNbinsX(); nBins++)
-    {
-        relativeSnCSLog->SetBinError(nBins,totalRelError[nBins]);
-        //cout << totalRelError[nBins] << endl;
-    }
-
-    vector<double> energy;
+    /*vector<double> energy;
     vector<double> xsection;
     vector<double> error;
-
-    for(int j=0; j<relativeSnCSLog->GetNbinsX(); j++)
-    {
-        if(j==30 || j==31 || j==32)
-        {
-            continue;
-        }
-
-        if(relativeSnCSLog->GetXaxis()->GetBinCenter(j)<3 || relativeSnCSLog->GetXaxis()->GetBinCenter(j)>300)
-        {
-            continue;
-        }
-
-        energy.push_back(relativeSnCSLog->GetXaxis()->GetBinCenter(j));
-        xsection.push_back(relativeSnCSLog->GetBinContent(j));
-        error.push_back((totalRelError[4*j]+totalRelError[4*j+1]+totalRelError[4*j+2]+totalRelError[4*j+3])/4);
-    }
-
-    TGraphErrors* relativeSnCSLogGraph = new TGraphErrors(energy.size(),&energy[0],&xsection[0],0,&error[0]);
-    //TGraph* relativeSnCSLogGraph = new TGraphErrors(energy.size(),&energy[0],&xsection[0],0,&error[0]);
-
-    //cout << relativeSnCSLogGraph->
-    outfile->cd();
-    relativeSnCSLogGraph->Write("relativeGraph");
-
-    //relativeSnCSLog->SetBinContent(23,0);
-    //relativeSnCSLog->SetBinContent(24,0);
-
-    // create relative cross-section plot for 112Sn/124Sn using waveform data
-    TH1D *Sn124_plus_Sn112CS_W = (TH1D*)Sn124CSTotalWaveform->Clone("Sn124_plus_Sn112CS_W");
-    Sn124_plus_Sn112CS_W->SetDirectory(outfile);
-    Sn124_plus_Sn112CS_W->Add(Sn112CSTotalWaveform);
-
-    TH1D *Sn124_minus_Sn112CS_W = (TH1D*)Sn124CSTotalWaveform->Clone("Sn124_minus_Sn112CS_W");
-    Sn124_minus_Sn112CS_W->SetDirectory(outfile);
-    Sn124_minus_Sn112CS_W->Add(Sn112CSTotalWaveform,-1);
-
-    //Sn124_plus_Sn112CS_W->Rebin(Sn124_plus_Sn112CS_W->GetSize()/(double)50);
-    //Sn124_minus_Sn112CS_W->Rebin(Sn124_minus_Sn112CS_W->GetSize()/(double)50);
-
-    //Sn124_plus_Sn112CS_W->Scale(1/(Sn124_plus_Sn112CS_W->GetSize()/(double)50));
-    //Sn124_minus_Sn112CS_W->Scale(1/(Sn124_plus_Sn112CS_W->GetSize()/(double)50));
-
-    TH1D *relativeSnCS_W = (TH1D*)Sn124_minus_Sn112CS_W->Clone("relativeSnCS_W");
-    relativeSnCS_W->SetDirectory(outfile);
-    relativeSnCS_W->SetTitle("#frac{#sigma_{^{124}Sn}-#sigma_{^{112}Sn}}{#sigma_{^{124}Sn}+#sigma_{^{112}Sn}}");
-    relativeSnCS_W->Divide(Sn124_plus_Sn112CS_W);
-
-    relativeSnCS_W->GetXaxis()->SetRangeUser(3,100);
-
+    */
 
     // Write run histograms to sum.root
     outfile->Write();

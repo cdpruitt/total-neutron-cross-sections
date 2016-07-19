@@ -32,13 +32,13 @@ mapfile -t blacklist < blacklist.txt
 
 # Check to see if analysis codes have been modified since last compile
 if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] || [ histos.cpp -nt histos ] ||
-    [ waveform.cpp -nt waveform ] || [ sumRun.cpp -nt sumRun ] || [ sumAll.cpp -nt sumAll ]
+    [ waveform.cpp -nt waveform ] || [ sumRun.cpp -nt sumRun ]
 then
     # sorting code modified
     # recompile to prepare for event sorting
     make
 if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] || [ histos.cpp -nt histos ] ||
-    [ waveform.cpp -nt waveform ] || [ sumRun.cpp -nt sumRun ] || [ sumAll.cpp -nt sumAll ]
+    [ waveform.cpp -nt waveform ] || [ sumRun.cpp -nt sumRun ]
     then
         # compilation failed - exit
         printf "\nCompilation failed - correct errors before sorting.\n"
@@ -62,12 +62,12 @@ sort ()
         if [[ "$runDir-$runNo" = "$l" ]]
         then
             echo "Found sub-run "$l" on blacklist; skipping..."
-            return 1
+            #return 1
         fi
     done < blacklist.txt
 
     # Convert selected .evt file to ROOT tree, stored as runX-YYYY_raw.root
-    ./raw "$runDir" "$runNo" "$datapath" "$outpath"
+    ./raw "$runDir" "$runNo" "$datapath" "$outpath" "$produceText"
     # If ./raw returned an exit status indicating failure, exit the script
     rc=$?; if [[ $rc != 0 ]]; then echo "./raw $runDir $runNo returned $rc, indicating error; exiting"; exit $rc; fi
 
@@ -82,9 +82,12 @@ sort ()
     rc=$?; if [[ $rc != 0 ]]; then echo "./histos $runDir $runNo returned $rc, indicating error; exiting"; exit $rc; fi
 
     # Process waveforms from channel-specific subtrees
-    #./waveform "$runDir" "$runNo" "$outpath"
-    # If ./waveform returned an exit status indicating failure, exit the script
-    #rc=$?; if [[ $rc != 0 ]]; then echo "./waveform $runDir $runNo returned $rc, indicating error; exiting"; exit $rc; fi
+    if [ "$waveform" = true ]
+    then
+        ./waveform "$runDir" "$runNo" "$outpath"
+        # If ./waveform returned an exit status indicating failure, exit the script
+        rc=$?; if [[ $rc != 0 ]]; then echo "./waveform $runDir $runNo returned $rc, indicating error; exiting"; exit $rc; fi
+    fi
 }
 
 prepDir ()
@@ -103,13 +106,16 @@ prepDir ()
 # Default state is that runs will NOT be read from a text file that lists them
 runlist=false
 
+# Default is not to produce text output of raw run data
+produceText=0
+
 # Parse runtime flags
-while getopts "trsa" opt; do
+while getopts "trsaw" opt; do
     case ${opt} in
         t)
-            # Have ./raw produce text output (currently disabled)
+            # Have ./raw produce text output
             printf "\nText output enabled (this will slow sorting considerably)\n"
-            text=true
+            produceText=1
             ;;
         r)
             # Read runs to be sorted from the text file runsToSort.txt
@@ -126,6 +132,12 @@ while getopts "trsa" opt; do
             printf "\nReading all evt files in specified run (this will slow sorting considerably)\n"
             allFiles=true
             ;;
+        w)
+            # Perform a waveform fit in addition to DPP analysis
+            printf "\nPerforming waveform fit in addition to DPP analysis.\n"
+            waveform=true
+            ;;
+
         \?)
             # Flags unrecognized - exit script and give user help text
             printf "\nInvalid option: -$OPTARG.\n\nValid options are:"
@@ -149,15 +161,15 @@ then
     runNo=$3
 
     # set file path to fine this run number's data
-    if [ $2 -lt 6 ]
+    if [ "$2" -lt 6 ]
     then
         datapath=/media/cdpruitt/Drive3
         outpath=/data3
-    elif [ $2 -gt 128 ] && [ $2 -lt 160 ]
+    elif [ "$2" -gt 127 ] && [ "$2" -lt 160 ]
     then
         datapath=/media/cdpruitt/Drive2
         outpath=/data2
-    elif [ $2 -gt 159 ] && [ $2 -lt 178 ]
+    elif [ "$2" -gt 159 ] && [ "$2" -lt 178 ]
     then
         datapath=/media/cdpruitt/Drive3
         outpath=/data3
@@ -174,7 +186,7 @@ then
 
     # Start sort
     runSize=$(du -k "$runName" | cut -f 1)
-    if [ $runSize -ge 1000000 ]
+    if [ "$runSize" -ge 10000 ]
     then
         sort
     else
@@ -218,7 +230,7 @@ then
         then
             datapath=/media/cdpruitt/Drive3
             outpath=/data3
-        elif [ $runDir -gt 128 ] && [ $runDir -lt 160 ]
+        elif [ $runDir -gt 127 ] && [ $runDir -lt 160 ]
         then
             datapath=/media/cdpruitt/Drive2
             outpath=/data2

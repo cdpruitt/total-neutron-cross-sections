@@ -124,6 +124,10 @@ double avo = 6.022*pow(10.,23.); // Avogadro's number, in atoms/mol
 
 /* Target data */
 
+const int NUMBER_OF_TARGETS = 6;
+
+const vector<string> targetNamesWaveform = {"blankWaveform", "shortCarbonWaveform", "longCarbonWaveform", "Sn112Waveform", "NatSnWaveform", "Sn124Waveform"}; 
+
 // physical target data, listed in order:
 // {blank, Sn112, Natural Sn, Sn124, short carbon, long carbon} 
 
@@ -132,30 +136,24 @@ double targetMolMass[6] = {0,12.01,12.01,112,118.7,124}; //g/mol
 double targetdensity[6] = {0,2.2,2.2,6.89,7.31,7.63}; //g/cm^3
 
 /* Plotting variables */
-const double CS_LOWER_BOUND = 1; // cross-section plots' lower bound, in MeV
-const double CS_UPPER_BOUND = 700; // cross-section plots' upper bound, in MeV
+const double ENERGY_LOWER_BOUND = 1; // cross-section plots' lower bound, in MeV
+const double ENERGY_UPPER_BOUND = 500; // cross-section plots' upper bound, in MeV
 
 // keep track of which order the targets are in, based on which run number we're
 // sorting
 vector<int> order;
 
-// Declare histograms to hold raw neutron energies, calculated from trigger
-// times of waveform peaks
-TH1I *blankRaw;
-TH1I *target1Raw;
-TH1I *target2Raw;
-TH1I *target3Raw;
-TH1I *target4Raw;
-TH1I *target5Raw;
+const int TOF_RANGE = 1800; // in ns
+const int TOF_BINS = 18000;
 
-TH1I *blankRawLog;
-TH1I *target1RawLog;
-TH1I *target2RawLog;
-TH1I *target3RawLog;
-TH1I *target4RawLog;
-TH1I *target5RawLog;
+struct Plots
+{
+    vector<TH1I*> TOFHistos;
+    vector<TH1I*> energyHistos;
+    vector<TH1I*> correctedEnergyHistos;
+    vector<TGraph*> CSGraphs;
+} plots;
 
-TH1I *TOF;
 TH1I *relativeTriggerSampleHisto;
 
 TH2I *triggerWalk;
@@ -166,11 +164,12 @@ TF1 *fittingFunc;
 TF1Convolution *convolvedPeakFunc;
 
 // Set number of bins for energy histograms
-const int noBins = 30;
+const int NUMBER_ENERGY_BINS = 50;
 
-// declare arrays to hold the scaled cross-sections of each target; i = target #, j = bin
-double sigma[6][noBins] = {{0}};
-double sigmaLog[6][noBins] = {{0}};
+// declare vectors to hold the scaled cross-sections of each target; i = target #, j = bin
+vector<vector<double>*> sigma;
+
+vector<double> sigmaXAxis;
 
 // Declare variables to be used for calculating neutron TOFs
 int microNo;
@@ -452,50 +451,6 @@ void setBranchesW(TTree* tree)
     tree->SetBranchAddress("completeTime",&completeTime);
     tree->SetBranchAddress("targetPos",&targetPos);
     tree->SetBranchAddress("waveform",&waveform);
-}
-
-/*****************************************************************************/
-// Create a copy of an input histogram and re-bin it to the log scale
-TH1* logBins(TH1 *inputHisto)
-{
-    string newName;
-    newName = inputHisto->GetName();
-    newName += "Log";
-
-    double newXMin = (((TAxis*)inputHisto->GetXaxis())->GetXmin());
-    if (newXMin <= 0)
-    {
-        cout << "Error: can't take log of negative energy on cross-section plot" << endl;
-        exit(1);
-    }
-
-    newXMin = TMath::Log10(newXMin);
-
-    // Pull bin data from input histo, and map to the log scale:
-    TAxis* axis = inputHisto->GetXaxis();
-    int nBins = axis->GetNbins();
-
-    TH1* outputHisto = new TH1D(newName.c_str(),newName.c_str(),nBins, newXMin,
-            TMath::Log10(((TAxis*)inputHisto->GetXaxis())->GetXmax()));
-
-    TAxis* newAxis = outputHisto->GetXaxis();
-
-    double xMin = newAxis->GetXmin();
-    double xMax = newAxis->GetXmax();
-
-    double binWidth = (xMax-xMin)/nBins;
-    double *newBins = new double[nBins+1];
-
-    for(int i=0; i<=nBins; i++)
-    {
-        newBins[i] = TMath::Power(10, xMin+i*binWidth);
-    }
-
-    // Assign the log-scale bins to the new histo
-    ((TAxis*)outputHisto->GetXaxis())->Set(nBins,newBins);
-    delete newBins;
-
-    return outputHisto;
 }
 
 /*****************************************************************************/
@@ -855,54 +810,12 @@ void fillTriggerHistos(double triggerTime, double gammaOffset, int waveformNo)
     // convert velocity to relativistic kinetic energy
     rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
 
-    TOF->Fill(microTime);
-
     triggerWalk->Fill(microTime,waveformNo);
 
-    // Fill target-specific plots
-    switch (targetPos)
+    if (targetPos>0 && targetPos<=NUMBER_OF_TARGETS)
     {
-        case 0:
-            // Target changer is moving - ignore
-            break;
-        case 1:
-            // BLANK
-            blankRaw->Fill(rKE);
-            blankRawLog->Fill(rKE);
-            break;
-
-        case 2:
-            // TARGET 1
-            target1Raw->Fill(rKE);
-            target1RawLog->Fill(rKE);
-            break;
-
-        case 3:
-            // TARGET 2
-            target2Raw->Fill(rKE);
-            target2RawLog->Fill(rKE);
-            break;
-
-        case 4:
-            // TARGET 3
-            target3Raw->Fill(rKE);
-            target3RawLog->Fill(rKE);
-            break;
-
-        case 5:
-            // TARGET 4
-            target4Raw->Fill(rKE);
-            target4RawLog->Fill(rKE);
-            break;
-
-        case 6:
-            // TARGET 5
-            target5Raw->Fill(rKE);
-            target5RawLog->Fill(rKE);
-            break;
-
-        default:
-            cout << "Error - target position outside range 1-6." << endl;
+        plots.TOFHistos[targetPos-1]->Fill(microTime);
+        plots.energyHistos[targetPos-1]->Fill(rKE);
     }
 }
 
@@ -935,39 +848,146 @@ void processTrigger(int waveformNo, float triggerSample)
 
 
 /*****************************************************************************/
+double tofToRKE(double TOF)
+{
+    double velocity = pow(10.,7.)*FLIGHT_DISTANCE/TOF; // in meters/sec 
+    
+    if (velocity>C)
+    {
+        return -1;
+    }
+
+    // convert velocity to relativistic kinetic energy
+    double RKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
+    if(RKE<0)
+    {
+        return -1;
+    }
+    return RKE;
+}
+
+vector<double> scaleBins(vector<double> inputBins, int nInputBins, int scaledown)
+{
+    vector<double> outputBins((int)floor(nInputBins/scaledown));
+    for(int i=0; i<nInputBins; i++)
+    {
+        if(i>floor(nInputBins/scaledown)*scaledown)
+        {
+            break;
+        }
+        outputBins[(int)floor(i/scaledown)] += inputBins[i];
+    }
+
+    for(int i=0; i<nInputBins/scaledown; i++)
+    {
+        outputBins[i] /= scaledown;
+    }
+
+    return outputBins;
+}
+
+// Map an input histogram with bins in the time domain to equivalent bins in the relativistic
+// kinetic energy domain
+TH1* timeBinsToRKEBins(TH1 *inputHisto)
+{
+    string newName;
+    newName = inputHisto->GetName();
+    newName += "RKE";
+
+    TAxis* oldAxis = inputHisto->GetXaxis();
+    int nOldBins = oldAxis->GetNbins();
+
+    double minimumTime = (((TAxis*)inputHisto->GetXaxis())->GetXmin());
+    int minimumBin = 0;
+
+    for(int i=0; i<nOldBins; i++)
+    {
+        if(tofToRKE(minimumTime)>0 && tofToRKE(minimumTime)<ENERGY_UPPER_BOUND)
+        {
+            break;
+        }
+
+        minimumTime = inputHisto->GetBinCenter(i);
+        minimumBin = i;
+    }
+
+    int nUnscaledEnergyBins = nOldBins-minimumBin;
+    double tentativeEnergy = tofToRKE(minimumTime);
+    if(tentativeEnergy==-1)
+    {
+        cout << "Error: energy of old min time " << minimumTime << " was not finite: " << tentativeEnergy << " (MeV)" << endl;
+        exit(1);
+    }
+
+    double newXMax = tentativeEnergy;
+
+    double oldXMax = (((TAxis*)inputHisto->GetXaxis())->GetXmax());
+
+    tentativeEnergy = tofToRKE(oldXMax);
+    if(tentativeEnergy==-1)
+    {
+        cout << "Error: energy of old max time " << oldXMax << " was not finite: " << tentativeEnergy << " (MeV)" << endl;
+        exit(1);
+    }
+
+    double newXMin = tentativeEnergy;
+
+    // Remap bins from old histo to new histo
+    vector<double> unscaledEnergyBins(nUnscaledEnergyBins);
+
+    // Reorder bins to go from lowest energy (shortest time) to highest energy (longest time)
+    for(int i=0; i<unscaledEnergyBins.size(); i++)
+    {
+        unscaledEnergyBins[i] = tofToRKE(oldAxis->GetBinCenter(nOldBins-i-1));
+    }
+
+    // Downscale bins to desired granularity
+    vector<double> scaledEnergyBins = scaleBins(unscaledEnergyBins, nUnscaledEnergyBins, TOF_BINS/NUMBER_ENERGY_BINS);
+    // n bins are defined n+1 points (like fence sections and fence posts)
+    scaledEnergyBins.push_back(newXMax);
+
+    int nScaledEnergyBins = floor(nUnscaledEnergyBins/(TOF_BINS/NUMBER_ENERGY_BINS));
+
+    TH1* outputHisto = new TH1D(newName.c_str(),
+                                newName.c_str(),
+                                nScaledEnergyBins,
+                                newXMin,
+                                newXMax);
+
+    // Assign the remapped bins to the new histo
+    ((TAxis*)outputHisto->GetXaxis())->Set(nScaledEnergyBins,
+&scaledEnergyBins[0]);
+
+    return outputHisto;
+}
+
 void processWaveforms()
 {
-    // create raw (unnormalized) neutron energy plots
-    blankRaw = new TH1I("blank","blank",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    target1Raw = new TH1I("target1","target1",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    target2Raw = new TH1I("target2","target2",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    target3Raw = new TH1I("target3","target3",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    target4Raw = new TH1I("target4","target4",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    target5Raw = new TH1I("target5","target5",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
+    TH1I *blankTOF = new TH1I("blankTOF","blank TOF",TOF_BINS,0,TOF_RANGE);
+    TH1I *target1TOF = new TH1I("target1TOF","target 1 TOF",TOF_BINS,0,TOF_RANGE);
+    TH1I *target2TOF = new TH1I("target2TOF","target 2 TOF",TOF_BINS,0,TOF_RANGE);
+    TH1I *target3TOF = new TH1I("target3TOF","target 3 TOF",TOF_BINS,0,TOF_RANGE);
+    TH1I *target4TOF = new TH1I("target4TOF","target 4 TOF",TOF_BINS,0,TOF_RANGE);
+    TH1I *target5TOF = new TH1I("target5TOF","target 5 TOF",TOF_BINS,0,TOF_RANGE);
 
-    // create raw log-scaled neutron energy plots
-    //blankRawLog = new TH1I("blankLog","blank",noBins,TMath::Log10(CS_LOWER_BOUND),TMath::Log10(CS_UPPER_BOUND));
-    //target1RawLog = new TH1I("target1Log","target1",noBins,TMath::Log10(CS_LOWER_BOUND),TMath::Log10(CS_UPPER_BOUND));
-    //target2RawLog = new TH1I("target2Log","target2",noBins,TMath::Log10(CS_LOWER_BOUND),TMath::Log10(CS_UPPER_BOUND));
-    //target3RawLog = new TH1I("target3Log","target3",noBins,TMath::Log10(CS_LOWER_BOUND),TMath::Log10(CS_UPPER_BOUND));
-    //target4RawLog = new TH1I("target4Log","target4",noBins,TMath::Log10(CS_LOWER_BOUND),TMath::Log10(CS_UPPER_BOUND));
-    //target5RawLog = new TH1I("target5Log","target5",noBins,TMath::Log10(CS_LOWER_BOUND),TMath::Log10(CS_UPPER_BOUND));
-
-    // declare the cross-section histograms to be filled
-    blankRawLog = (TH1I*)logBins(blankRaw);
-    target1RawLog = (TH1I*)logBins(target1Raw);
-    target2RawLog = (TH1I*)logBins(target2Raw);
-    target3RawLog = (TH1I*)logBins(target3Raw);
-    target4RawLog = (TH1I*)logBins(target4Raw);
-    target5RawLog = (TH1I*)logBins(target5Raw);
-
-    TOF = new TH1I("TOF","Summed-detector time of flight",ceil(MICRO_PERIOD),0,ceil(MICRO_PERIOD));
+    plots.TOFHistos.push_back(blankTOF);
+    plots.TOFHistos.push_back(target1TOF);
+    plots.TOFHistos.push_back(target2TOF);
+    plots.TOFHistos.push_back(target3TOF);
+    plots.TOFHistos.push_back(target4TOF);
+    plots.TOFHistos.push_back(target5TOF);
 
     triggerWalk = new TH2I("triggerWalk","trigger time vs. waveform chunk #",200,0,200,1000,0,1000);
 
     relativeTriggerSampleHisto = new TH1I("relativeTriggerSampleHisto","relative trigger time, from start of fitted wavelet",100,PEAKFIT_OFFSET*SAMPLE_PERIOD,(PEAKFIT_OFFSET+PEAKFIT_WINDOW)*SAMPLE_PERIOD);
 
-    //convolvedPeakFunc = new TF1Convolution(fittingFunc,detFunc,SAMPLE_PERIOD*PEAKFIT_OFFSET,SAMPLE_PERIOD*(PEAKFIT_OFFSET+PEAKFIT_WINDOW),true);
+    // create raw (unnormalized) neutron energy plots
+    for(int i=0; i<NUMBER_OF_TARGETS; i++)
+    {
+        plots.energyHistos.push_back((TH1I*)timeBinsToRKEBins(plots.TOFHistos[i])); 
+    }
+
+        //convolvedPeakFunc = new TF1Convolution(fittingFunc,detFunc,SAMPLE_PERIOD*PEAKFIT_OFFSET,SAMPLE_PERIOD*(PEAKFIT_OFFSET+PEAKFIT_WINDOW),true);
     //convolvedPeakFunc = new TF1Convolution(fittingFunc,detFunc,SAMPLE_PERIOD*PEAKFIT_OFFSET,SAMPLE_PERIOD*(PEAKFIT_OFFSET+PEAKFIT_WINDOW),true);
     //convolvedPeakFunc->SetRange(SAMPLE_PERIOD*PEAKFIT_OFFSET,SAMPLE_PERIOD*(PEAKFIT_OFFSET+PEAKFIT_WINDOW));
     //convolvedPeakFunc->SetNofPointsFFT(20000);
@@ -1135,136 +1155,53 @@ void processWaveforms()
 
 void calculateCS()
 {
-
-    // holds the raw target-specific energy histograms in preparation for populating
-    // cross-sections
-    vector<TH1I*> rawHistos;
-    vector<TH1I*> rawLogHistos;
-
-    rawHistos.push_back(blankRaw);
-    rawHistos.push_back(target1Raw);
-    rawHistos.push_back(target2Raw);
-    rawHistos.push_back(target3Raw);
-    rawHistos.push_back(target4Raw);
-    rawHistos.push_back(target5Raw);
-
-    rawLogHistos.push_back(blankRawLog);
-    rawLogHistos.push_back(target1RawLog);
-    rawLogHistos.push_back(target2RawLog);
-    rawLogHistos.push_back(target3RawLog);
-    rawLogHistos.push_back(target4RawLog);
-    rawLogHistos.push_back(target5RawLog);
-
-    for(int k=0; (size_t)k<rawHistos.size(); k++)
+    for(int k=0; (size_t)k<plots.energyHistos.size(); k++)
     {
         cout << "target position " << k+1 << " counts = " << targetCounts[k] << endl;
     }
 
     // Loop through the relativistic kinetic energy histograms and use them
     // to populate cross-section and other histograms for each target
+
+    int numberOfBins = ((TAxis*)plots.energyHistos[0]->GetXaxis())->GetNbins();
+
     for(int i=0; (size_t)i<order.size(); i++)
     {
-        for(int j=0; j<noBins; j++)
+        sigma.push_back(new vector<double>);
+    }
+
+    for(int i=0; (size_t)i<order.size(); i++)
+    {
+        for(int j=0; j<numberOfBins; j++)
         {
             // first, test to make sure we're not about to take log of 0 or
             // divide by 0
-            if(rawHistos[0]->GetBinContent(j) <= 0 || rawHistos[i]->GetBinContent(j) <= 0)
+            if(plots.energyHistos[0]->GetBinContent(j) <= 0 || plots.energyHistos[i]->GetBinContent(j) <= 0)
             {
-                sigma[i][j] = 0;
+                sigma[order[i]]->push_back(0);
             }
 
             else
             {
-                // calculate the cross-section and
-                sigma[order[i]][j] = -log((rawHistos[i]->GetBinContent(j)/(double)rawHistos[0]->GetBinContent(j))*(targetCounts[0]/(double)targetCounts[i]))/((double)targetlength[order[i]]*(double)targetdensity[order[i]]*(double)avo*pow(10.,-24)/(double)targetMolMass[order[i]]); // in barns
-                //cout << "sigma = " << i << ", bin content at " << j << " = " << sigma[i][j] << endl;
+                // calculate the cross section and
+                sigma[order[i]]->push_back(-log((plots.energyHistos[i]->GetBinContent(j)/(double)plots.energyHistos[0]->GetBinContent(j))*(targetCounts[0]/(double)targetCounts[i]))/((double)targetlength[order[i]]*(double)targetdensity[order[i]]*(double)avo*pow(10.,-24)/(double)targetMolMass[order[i]])); // in barns
             }
 
-            if(rawLogHistos[0]->GetBinContent(j) <= 0 || rawLogHistos[i]->GetBinContent(j) <= 0)
+            if(i==0)
             {
-                sigmaLog[i][j] = 0;
+                sigmaXAxis.push_back(plots.energyHistos[0]->GetBinCenter(j));
             }
-
-            else
-            {
-                // we must have found positive-definite values found for the rawLog
-                // histogram bins in questions; calculate the cross-section and
-                // fill the relevant csHisto
-
-                sigmaLog[order[i]][j] = -log((rawLogHistos[i]->GetBinContent(j))/((double)rawLogHistos[0]->GetBinContent(j))*(targetCounts[0]/(double)targetCounts[i]))/((double)targetlength[order[i]]*(double)targetdensity[order[i]]*(double)avo*pow(10.,-24)/(double)targetMolMass[order[i]]); // in barns
-            }
-            //cout << "sigmaLog = " << i << ", bin content at " << j << " = " << sigmaLog[i][j] << endl;
         }
     }
 }
 
-void fillCShistos()
+void fillCSGraphs()
 {
-    // declare the cross-section histograms to be filled
-    TH1D *blankCS = new TH1D("blankCS","blank cross-section",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    TH1D *carbonSCS = new TH1D("carbonSCS","target 1 cross-section",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    TH1D *carbonLCS = new TH1D("carbonLCS","target 2 cross-section",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    TH1D *Sn112CS = new TH1D("Sn112CS","target 3 cross-section",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    TH1D *SnNatCS = new TH1D("SnNatCS","target 4 cross-section",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-    TH1D *Sn124CS = new TH1D("Sn124CS","target 5 cross-section",noBins,CS_LOWER_BOUND,CS_UPPER_BOUND);
-
-    // use holder for cross-section histograms to make looping through
-    // histograms easier when we calculate cross-sections below
-    vector<TH1D*> csHistos;
-
-    csHistos.push_back(blankCS);
-    csHistos.push_back(carbonSCS);
-    csHistos.push_back(carbonLCS);
-    csHistos.push_back(Sn112CS);
-    csHistos.push_back(SnNatCS);
-    csHistos.push_back(Sn124CS);
-
-    // declare the cross-section histograms to be filled
-    TH1D *blankCSLog = (TH1D*)logBins(blankCS);
-    TH1D *carbonSCSLog = (TH1D*)logBins(carbonSCS);
-    TH1D *carbonLCSLog = (TH1D*)logBins(carbonLCS);
-    TH1D *Sn112CSLog = (TH1D*)logBins(Sn112CS);
-    TH1D *SnNatCSLog = (TH1D*)logBins(SnNatCS);
-    TH1D *Sn124CSLog = (TH1D*)logBins(Sn124CS);
-
-    // use holder for cross-section histograms to make looping through
-    // histograms easier when we calculate cross-sections below
-    vector<TH1D*> csLogHistos;
-
-    csLogHistos.push_back(blankCSLog);
-    csLogHistos.push_back(carbonSCSLog);
-    csLogHistos.push_back(carbonLCSLog);
-    csLogHistos.push_back(Sn112CSLog);
-    csLogHistos.push_back(SnNatCSLog);
-    csLogHistos.push_back(Sn124CSLog);
-
-
-    /*TH1D *blankCSLog = new TH1D("blankCSLog","blank cross-section",noBins,TMath::Log10(CS_LOWER_BOUND),TMath::Log10(CS_UPPER_BOUND));
-    TH1D *carbonSCSLog = new TH1D("carbonSCSLog","target 1 cross-section",noBins,TMath::Log10(CS_LOWER_BOUND),TMath::Log10(CS_UPPER_BOUND));
-    TH1D *carbonLCSLog = new TH1D("carbonLCSLog","target 2 cross-section",noBins,TMath::Log10(CS_LOWER_BOUND),TMath::Log10(CS_UPPER_BOUND));
-    TH1D *Sn112CSLog = new TH1D("Sn112CSLog","target 3 cross-section",noBins,TMath::Log10(CS_LOWER_BOUND),TMath::Log10(CS_UPPER_BOUND));
-    TH1D *SnNatCSLog = new TH1D("SnNatCSLog","target 4 cross-section",noBins,TMath::Log10(CS_LOWER_BOUND),TMath::Log10(CS_UPPER_BOUND));
-    TH1D *Sn124CSLog = new TH1D("Sn124CSLog","target 5 cross-section",noBins,TMath::Log10(CS_LOWER_BOUND),TMath::Log10(CS_UPPER_BOUND));
-    */
-
-    for(int i=0; (size_t)i<csHistos.size(); i++)
+    for(int i=0; i<order.size(); i++)
     {
-        for(int j=1; j<noBins; j++)
-        {
-            // first, test to make sure we're not about to take log of 0 or
-            // divide by 0
-            if(sigma[i][j] == 0)
-            {
-                continue;
-            }
-
-            else
-            {
-                //cout << "i = " << i << ", j = " << j << ", sigma[i][j] = " << sigma[i][j] << endl;
-                csHistos[i]->SetBinContent(j,sigma[i][j]);
-                csLogHistos[i]->SetBinContent(j,sigmaLog[i][j]);
-            }
-        }
+        plots.CSGraphs.push_back(new TGraphErrors(sigmaXAxis.size(),&sigmaXAxis[0],&(sigma[order[i]]->at(0))));
+        plots.CSGraphs[i]->SetNameTitle(targetNamesWaveform[order[i]].c_str(),targetNamesWaveform[order[i]].c_str());
+        plots.CSGraphs[i]->Write();
     }
 }
 
@@ -1355,7 +1292,6 @@ int main(int argc, char* argv[])
         order.push_back(1);
     }
 
-
     // open output file to contain waveform histos
     TFile* fileOut = new TFile(fileOutName.str().c_str(),"RECREATE");
 
@@ -1372,7 +1308,7 @@ int main(int argc, char* argv[])
     calculateCS();
  
     // Plot cross-sections
-    fillCShistos();
+    fillCSGraphs();
 
     fileOut->Write();
     file->Close();

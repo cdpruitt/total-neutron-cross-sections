@@ -1,6 +1,6 @@
 /******************************************************************************
-                                   raw.cpp
-******************************************************************************/
+  raw.cpp
+ ******************************************************************************/
 
 // This is called by ./sort.sh and is the first step in analyzing the total
 // cross section data.
@@ -68,29 +68,55 @@ struct Event
     unsigned int size;    // size of event, in bytes
     unsigned int evtType; // "event type", either 1 (DPP) or 2 (waveform)
     unsigned int chNo;    // "channel number" indicates event origin (i.e.,
-                          // detector, monitor, target changer)
+    // detector, monitor, target changer)
     double timetag;       // "coarse timestamp of event" includes 32 bits of time
-                          // information. Units are the same as the sample period of
-                          // the digitizer (e.g. 2 ns or 5 ns)
+    // information. Units are the same as the sample period of
+    // the digitizer (e.g. 2 ns or 5 ns)
 
     // Event body variables:
-    unsigned int extraSelect; // indicates the meaning of the "extras" word
+    unsigned int extraSelect; // indicates the meaning of the "extras" words
     unsigned int sgQ;     // "short gate integrated charge" provides the charge
-                          // integral over an adjustable range of the event's peak 
+    // integral over an adjustable range of the event's peak 
     unsigned int lgQ;     // "long gate integrated charge" provides the charge
-                          // integral over an adjustable range of the event's peak 
+    // integral over an adjustable range of the event's peak 
     unsigned int nSamp; // number of samples in the event's waveform
     vector<int> waveform; // "digital waveform of event" is a series of waveform
-                          // samples for each event
+    // samples for each event
 
     // Variables extracted from "extras"
+
+    unsigned int baseline;
+    unsigned int flags;
     unsigned int extTime; // "extended timestamp of event" extends timetag with
-                          // 16 additional bits for times greater than 2^32
-                          // sample periods.
+    // 16 additional bits for times greater than 2^32
+    // sample periods.
     unsigned int fineTime;// "fine timestamp of event" sub-divides timetag with
-                          // 10 additional bits of time granularity, with units of
-                          // (sample period)/2^10 units.
+    // 10 additional bits of time granularity, with units of
+    // (sample period)/2^10 units.
 } ev;
+
+// If enabled, organize formatted text output by channel number:
+struct TextOutput {
+    ofstream targetChanger;
+    ofstream monitor;
+    ofstream detectorT;
+
+    // print left and right detector channels independently (for diagnostics
+    // only)
+    ofstream detectorL;
+    ofstream detectorR;
+
+    // conglomerate of all channels
+    ofstream total;
+
+} textOutput;
+
+struct RunInfo {
+    string runNo;
+    string runDir;
+    string outPath;
+    string analysisPath;
+} runInfo;
 
 // Raw data is stored as hexadecimal words (16 bits long) in the .evt files
 int const BufferWords = 1; // number of chars per buffer word
@@ -121,28 +147,29 @@ void readEvent(ifstream& evtfile)
     unsigned short buffer[BufferWords];
 
     // start reading event header (common to all events)
+
+    evtfile.read((char*)buffer,BufferBytes);
     unsigned short size1 = buffer[0];
     evtfile.read((char*)buffer,BufferBytes);
     unsigned short size2 = buffer[0];
-    evtfile.read((char*)buffer,BufferBytes);
     ev.size = (size2 << 16) | size1;
 
+    evtfile.read((char*)buffer,BufferBytes);
     unsigned short evtType1 = buffer[0];
     evtfile.read((char*)buffer,BufferBytes);
     unsigned short evtType2 = buffer[0];
-    evtfile.read((char*)buffer,BufferBytes);
     ev.evtType = (evtType2 << 16) | evtType1;
 
+    evtfile.read((char*)buffer,BufferBytes);
     unsigned short chNo1 = buffer[0];
     evtfile.read((char*)buffer,BufferBytes);
     unsigned short chNo2 = buffer[0];
-    evtfile.read((char*)buffer,BufferBytes);
     ev.chNo = (chNo2 << 16) | chNo1;
 
+    evtfile.read((char*)buffer,BufferBytes);
     unsigned short timetag1 = buffer[0];
     evtfile.read((char*)buffer,BufferBytes);
     unsigned short timetag2 = buffer[0];
-    evtfile.read((char*)buffer,BufferBytes);
     ev.timetag = (timetag2<< 16) | timetag1;
     ev.timetag *= SAMPLE_PERIOD; // timetag converted from samples to ns
     // finished reading event header
@@ -160,36 +187,38 @@ void readEvent(ifstream& evtfile)
         //              5: CFD positive ZC (bits 16-31) and negative ZC (bits 0-15)
         //              7: fixed value of 0x12345678
 
+        evtfile.read((char*)buffer,BufferBytes);
         ev.extraSelect = buffer[0];
-        evtfile.read((char*)buffer,BufferBytes);
 
+        evtfile.read((char*)buffer,BufferBytes);
         unsigned int extras1 = buffer[0];
-        evtfile.read((char*)buffer,BufferBytes);
 
-        unsigned int extras2 = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
+        unsigned int extras2 = buffer[0];
 
         switch(ev.extraSelect)
         {
             case 2:
                 // retrieve extended time from bits 16-31 (extras2)
                 ev.extTime = extras2;
+                // retrieve configuration file flags from bits 10:15 (0xfc00)
+                ev.flags = (extras1 & 0xfc00);
                 // retrieve fine time from bits 0:9 (0x03ff)
                 ev.fineTime = (extras1 & 0x03ff);
                 break;
 
-            // other cases not currently implemented
+                // other cases not currently implemented
             default:
                 cout << "Error: extraSelect != 2; other values of extraSelect not implemented" << endl;
                 exit(1);
                 break;
         }
 
+        evtfile.read((char*)buffer,BufferBytes);
         ev.sgQ = buffer[0];
-        evtfile.read((char*)buffer,BufferBytes);
 
-        ev.lgQ = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
+        ev.lgQ = buffer[0];
 
         // "pile-up rejection" flag (not implemented in current acquisition software,
         // so discard this data)
@@ -221,22 +250,315 @@ void readEvent(ifstream& evtfile)
     // the DPP-mode only data has been read out, so now let's read out the data
     // that's always present (the number of waveform samples and the waveforms)
 
+    evtfile.read((char*)buffer,BufferBytes);
     unsigned short nSamp1 = buffer[0];
     evtfile.read((char*)buffer,BufferBytes);
     unsigned short nSamp2 = buffer[0];
-    evtfile.read((char*)buffer,BufferBytes);
     ev.nSamp = (nSamp2 << 16) | nSamp1;
 
     ev.waveform.clear();
-    for(int i=0;i<ev.nSamp;i++)
+    for(int i=0;(size_t)i<ev.nSamp;i++)
     {
-        ev.waveform.push_back(buffer[0]);
         evtfile.read((char*)buffer,BufferBytes);
+        ev.waveform.push_back(buffer[0]);
     }
 }
 
+// Pretty-print event data into a text file
+void printEvent(Event event, TextOutput& text)
+{
+    ofstream* out;
+
+    // segregate text output by channel
+    switch(event.chNo)
+    {
+        case 0:
+            out = &text.targetChanger;
+            break;
+        case 2:
+            out = &text.monitor;
+            break;
+        case 4:
+            out = &text.detectorT;
+            break;
+        case 6:
+            out = &text.detectorL;
+            break;
+        case 7:
+            out = &text.detectorR;
+            break;
+    }
+
+    // Print event's header data (i.e., data that exist in both DPP and waveform mode)
+    *out << setfill('*') << setw(63) << "*" << endl;
+    *out << "| EVENT " << left << setfill(' ') << setw(54) << stats.numberOfEvents << "|" << endl;
+    *out << "|" << right << setfill('-') << setw(62) << "|" << endl;
+    //*out << "| run " << runInfo.runDir << "-" << runInfo.runNo << ", macro " << left << setfill(' ') << setw(44) << "|" << endl;
+    *out << "| channel " << event.chNo;
+
+    if(event.evtType==1)
+    {
+        *out << left << setfill(' ') << setw(51) << ", DPP mode" << "|" << endl;
+    }
+
+    else if (event.evtType==2)
+    {
+        *out << left << setfill(' ') << setw(51) << ", waveform mode " << "|" << endl;
+    }
+
+    else
+    {
+        *out << left << setfill(' ') << setw(50) << ", ERROR DETERMINING MODE" << " |" << endl;
+        cout << "Error: event type value out-of-range (DPP=1, waveform=2)" << endl;
+        //cout << "Event number = " << event.evtNo[chNo] << endl;
+    }
+
+    stringstream temp; // used for formatting strings with units
+    temp << event.size << " bytes";
+    *out << "| size = " << left << setfill(' ') << setw(53) << temp.str() << "|" << endl;
+
+    temp.str("");
+    temp << event.timetag << " ns";
+    *out << "| timetag = " << left << setw(50) << temp.str() << "|" << endl;
+
+    *out << "|" << right << setfill('-') << setw(62) << "|" << endl;
+
+    // Print event's body data (DPP-mode/waveform-mode dependent)
+    if(event.evtType==1)
+    {
+        // DPP mode
+        // Determine meaning of 'extras' word based on extraSelect:
+        switch(event.extraSelect)
+        {
+            /*case 0: 
+                // Extended timestamp + baseline
+                temp.str("");
+                temp << event.extTime << " *8.59 s";
+                *out << "| extended time stamp = " << left << setfill(' ') << setw(38) << temp.str() << "|" << endl;
+
+                // readout gives baseline*4, and we want just baseline
+                *out << "| baseline = " << left << setfill(' ') << setw(49) << event.baseline << "|" << endl;
+                break;
+
+            case 1:
+                // Extended timestamp + configuration file flags
+                temp << event.extras2 << " *8.59 s";
+                *out << "| extended time stamp = " << left << setfill(' ') << setw(34) << temp.str() << "|" << endl;
+                // extract flags from bits 10:15 (0xfc00)
+                *out << "| flags = " << left << setfill(' ') << setw(49) << (event.extras1 & 0xfc00) << "|" << endl;
+                break; 
+                */
+
+            case 2:
+                // Extended timestamp + configuration file flags + fine timestamp
+                temp.str("");
+                temp << event.extTime << " *8.59 s";
+                *out << "| extended time stamp = " << left << setfill(' ') << setw(38) << temp.str() << "|" << endl;
+                // extract flags from bits 10:15 (0xfc00)
+                *out << "| flags = " << left << setfill(' ') << setw(52) << (event.flags & 0xfc00) << "|" << endl;
+                *out << "| fine time stamp = " << left << setfill(' ') << setw(42) << event.fineTime << "|" << endl;
+                break;
+
+            /*case 3:
+                // Maximum amplitude of pulse
+                *out << "| maximum amplitude of pulse = " << left << setfill(' ') << setw(49) << event.extras1 << "|" << endl;
+                break;
+
+            case 5:
+                // Positive zero-crossing and negative zero-crossing (for manual
+                // constant fraction discimination calculation)
+                *out << "| PZC = " << left << setfill(' ') << setw(54) << event.extras2 << "|" << endl;
+                *out << "| NZC = " << left << setfill(' ') << setw(54) << event.extras1 << "|" << endl;
+                break;
+
+            case 7:
+                // fixed value of 0x12345678 (for diagnostics)
+                const unsigned int extras = (extras2 << 16) | extras1;
+                *out << "| Fixed value of 305419896 (0x12345678) outputted: " << left << setfill(' ') << setw(17) << event.extras << "|" << endl;
+                break;
+                */
+        }
+
+        *out << "| short gate charge = " << left << setw(40) << event.sgQ << "|" << endl;
+        *out << "| long gate charge = " << left << setw(41) << event.lgQ << "|" << endl;
+
+        // Pile-up detection not operational in current washudaq - ignore it.
+        //out << "| pile-up detected = " << left << setw(40) << puRej << " |" << endl;
+
+        temp.str("");
+        temp << event.nSamp << " samples";
+        *out << "| waveform length = " << left << setw(41) << temp.str() << " |" << endl;
+        *out << "|" << right << setfill('-') << setw(62) << "|" << endl;
+
+        if(event.nSamp > 0)
+            // print wavelet data
+        {
+            *out << left << setfill(' ') << setw(62) << "| Waveform samples" << "|" << endl;
+            *out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
+
+            for(std::vector<int>::size_type i = 0; i != event.waveform.size(); i++)
+            {
+                if(i%100 == 0 && i>0)
+                {
+                    *out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
+                }
+
+                if(i%10 == 0)
+                {
+                    temp.str("");
+                    temp << "|";
+                }
+
+                temp << right << setfill(' ') << setw(6) << event.waveform[i];
+
+                if(i%10==9 || i==event.nSamp-1)
+                {
+                    *out << left << setw(62) << temp.str() << "|" << endl;
+                } 
+            }
+
+            *out << "|" << right << setfill('-') << setw(62) << "|" << endl;
+        }
+
+        /*if((probe & 0x8000)==0x8000)
+        {
+            // print analog probe data
+            out << "| Analog probe enabled" << right << setfill(' ') << setw(41) << "|" << endl;
+
+            temp.str("");
+            temp << nSamp << " samples";
+            out << "| waveform length = " << left << setw(41) << temp.str() << " |" << endl;
+            out << "|" << right << setfill('-') << setw(62) << "|" << endl;
+
+            if((probe & 0x0003)==0x0002)
+            {
+                // analog probe is CFD
+                if(anSamp > 0)
+                {
+                    out << left << setfill(' ') << setw(62) << "| CFD samples" << "|" << endl;
+                    out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
+
+                    for(std::vector<int>::size_type i = 0; i != anProbe.size(); i++)
+                    {
+                        if(i%100 == 0 && i>0)
+                        {
+                            out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
+                        }
+
+                        if(i%10 == 0)
+                        {
+                            temp.str("");
+                            temp << "|";
+                        }
+
+                        temp << right << setfill(' ') << setw(6) << anProbe[i];
+
+                        if(i%10==9 || i==anSamp-1)
+                        {
+                            out << left << setw(62) << temp.str() << "|" << endl;
+                        } 
+
+                    }
+
+                    // done with this event; increment the wavelet counter to get ready for the next
+                    // wavelet.
+                    //nCFDs++;
+                }
+            }
+
+            if((probe & 0x0003)==0x0001)
+            {
+                // analog probe is baseline
+                if(anSamp > 0)
+                {
+
+                    out << left << setfill(' ') << setw(62) << "| Baseline samples" << "|" << endl;
+                    out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
+
+                    for(int i=0;i<anSamp;i++)
+                    {
+                        //listBaselines[nBaselines]->SetBinContent(i,buffer[0]);
+
+                        if(i%100 == 0 && i>0)
+                        {
+                            out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
+                        }
+
+                        if(i%10 == 0)
+                        {
+                            temp.str("");
+                            temp << "|";
+                        }
+
+                        temp << right << setfill(' ') << setw(6) << buffer[0];
+
+                        if(i%10==9 || i==anSamp-1)
+                        {
+                            out << left << setw(62) << temp.str() << "|" << endl;
+                        } 
+                    }
+                }
+            }
+        }
+
+        else
+        {
+            out << "| Analog probe disabled" << right << setfill(' ') << setw(40) << "|" << endl;
+            out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
+            out << setfill('*') << setw(63) << "*" << endl;
+        }
+        */
+    }
+
+    else if(event.evtType==2)
+    {
+        stringstream temp;
+        temp << event.nSamp << " samples";
+        *out << "| waveform length = " << left << setfill(' ') << setw(41) << temp.str() << " |" << endl;
+        *out << "|" << right << setfill('-') << setw(62) << "|" << endl;
+
+        for(int i=0;i<event.nSamp;i++)
+        {
+
+            if(event.nSamp>1000 && (i%1000 == 0))
+            {
+                *out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
+                stringstream temp;
+                temp << "Samples " << i << "-" << i+1000;
+                *out << "| " << left << setw(60) << temp.str() << "|" << endl;
+            }
+
+            if(i%100 == 0)
+            {
+                *out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
+            }
+
+            if(i%10 == 0)
+            {
+                *out << "|";
+            } 
+
+            *out << right << setfill(' ') << setw(6) << event.waveform[i];
+
+            if(i%10 == 9)
+            {
+                *out << " |" << endl;
+            } 
+        }
+
+        *out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
+    }
+
+    else
+    {
+        cout << "ERROR: unknown value for event type" << endl;
+        return;
+    }
+    *out << endl;
+}
+
 // loop through the specified .evt file and pull out events
-void processRun(string evtname,TTree* tree)
+void processRun(string evtname,TTree* tree, bool produceText)
 {
     // attempt to open file
     ifstream evtfile;
@@ -251,14 +573,26 @@ void processRun(string evtname,TTree* tree)
     {
         cout << evtname << " opened successfully. Start reading events..." << endl;
 
-        unsigned short buffer[BufferWords];
-        evtfile.read((char*)buffer,BufferBytes);
+        if(produceText)
+        {
+            // produce a formatted text file to display ran event data
+            textOutput.total.open("textSort/allChannels.txt");
+            textOutput.targetChanger.open("textSort/targetChanger.txt");
+            textOutput.monitor.open("textSort/monitor.txt");
+            textOutput.detectorL.open("textSort/detectorL.txt");
+            textOutput.detectorR.open("textSort/detectorR.txt");
+            textOutput.detectorT.open("textSort/detectorT.txt");
+        }
 
         // we're now pointing at the first 16-bit word in the data stream
         // start looping through the evtfile to extract events
-        while(!evtfile.eof() /* use to truncate sort && nE<1000000*/)
+        while(!evtfile.eof() /* use to truncate sort && stats.numberOfEvents<1000000*/)
         {
             readEvent(evtfile);
+            if(produceText)
+            {
+                printEvent(ev, textOutput);
+            }
 
             // Add event to tree
             tree->Fill();
@@ -304,18 +638,19 @@ int main(int argc, char* argv[])
     cout << endl << "Entering raw sort..." << endl;
 
     // read in data run location
-    string runDir = argv[1];
-    string runNo = argv[2];
-    string analysispath = argv[3];
-    string outpath = argv[4];
+    runInfo.runDir = argv[1];
+    runInfo.runNo = argv[2];
+    runInfo.analysisPath = argv[3];
+    runInfo.outPath = argv[4];
+    bool produceText = stoi(argv[5]);
 
     // Create a ROOT tree for this run
     TFile *file;
 
     stringstream treeName;
     stringstream fileName;
-    treeName << "run" << runDir << "-" << runNo; 
-    fileName << outpath <<"/analysis/run" << runDir << "/" << treeName.str() << "_raw.root";
+    treeName << "run" << runInfo.runDir << "-" << runInfo.runNo; 
+    fileName << runInfo.outPath <<"/analysis/run" << runInfo.runDir << "/" << treeName.str() << "_raw.root";
 
     file = new TFile(fileName.str().c_str(),"UPDATE");
 
@@ -339,8 +674,9 @@ int main(int argc, char* argv[])
     tree->Branch("waveform",&ev.waveform);
 
     stringstream runName;
-    runName << analysispath <<"/output/run" << runDir << "/data-" << runNo << ".evt";
-    processRun(runName.str(),tree);
+    runName << runInfo.analysisPath <<"/output/run" << runInfo.runDir << "/data-" << runInfo.runNo << ".evt";
+
+    processRun(runName.str(),tree, produceText);
 
     cout << "Total number of DPP-mode events processed = " << stats.numberOfDPPs << endl;
     cout << "Total number of waveform-mode events processed = " << stats.numberOfWaveforms << endl;
