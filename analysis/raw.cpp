@@ -94,6 +94,8 @@ struct Event
     unsigned int fineTime;// "fine timestamp of event" sub-divides timetag with
     // 10 additional bits of time granularity, with units of
     // (sample period)/2^10 units.
+    unsigned int PZC; // positive zero-crossing (for manual CFD calculation)
+    unsigned int NZC; // negative zero-crossing (for manual CFD calculation)
 } ev;
 
 // Raw data is stored as hexadecimal words (16 bits long) in the .evt files
@@ -184,9 +186,14 @@ void readEvent(ifstream& evtfile)
                 ev.fineTime = (extras1 & 0x03ff);
                 break;
 
+                case 5:
+                // retrieve positive and negative zero-crossings
+                ev.PZC = extras2;
+                ev.NZC = extras1;
+
                 // other cases not currently implemented
             default:
-                cout << "Error: extraSelect != 2; other values of extraSelect not implemented" << endl;
+                cout << "Error: encountered unimplemented value of extraSelect" << endl;
                 exit(1);
                 break;
         }
