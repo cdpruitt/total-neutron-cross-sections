@@ -1,5 +1,5 @@
 /******************************************************************************
-  raw.cpp
+  text.cpp
  ******************************************************************************/
 
 // This is called by ./sort.sh and is the first step in analyzing the total
@@ -52,8 +52,7 @@
 #include <fstream>
 #include <string>
 #include <sstream>
-#include "TFile.h"
-#include "TTree.h"
+#include <vector>
 
 using namespace std;
 
@@ -112,12 +111,11 @@ struct TextOutput {
 
 } textOutput;
 
-struct RunInfo {
-    string runName;
-    string runNumber;
-    string subrunNumber;
-    string outPath;
-} runInfo;
+const string targetChangerName = "textOutput/targetChanger.txt";
+const string monitorName = "textOutput/monitor.txt";
+const string detectorTName = "textOutput/detectorT.txt";
+const string detectorLName = "textOutput/detectorL.txt";
+const string detectorRName = "textOutput/detectorR.txt";
 
 // Raw data is stored as hexadecimal words (16 bits long) in the .evt files
 int const BufferWords = 1; // number of chars per buffer word
@@ -262,10 +260,30 @@ void readEvent(ifstream& evtfile)
         evtfile.read((char*)buffer,BufferBytes);
         ev.waveform.push_back(buffer[0]);
     }
+
+    // Update statistics on events
+    stats.numberOfEvents++;
+    if(ev.evtType==2)
+    {
+        if(ev.chNo==0)
+        {
+            stats.numberOfCh0Waveforms++;
+        }
+
+        if(ev.chNo==2)
+        {
+            stats.numberOfCh2Waveforms++;
+        }
+
+        if(ev.chNo==4)
+        {
+            stats.numberOfCh4Waveforms++;
+        }
+    }
 }
 
 // Pretty-print event data into a text file
-void printEvent(Event event, TextOutput& text)
+void printEvent(Event& event, TextOutput& text)
 {
     ofstream* out;
 
@@ -557,130 +575,53 @@ void printEvent(Event event, TextOutput& text)
     *out << endl;
 }
 
-// loop through the specified .evt file and pull out events
-void processRun(string evtname,TTree* tree, bool produceText)
+int main(int argc, char* argv[])
 {
-    // attempt to open file
-    ifstream evtfile;
-    evtfile.open(evtname,ios::binary);
-    if (!evtfile)
+    cout << endl << "Entering ./text..." << endl;
+
+    string inFileName = argv[1];
+
+    // attempt to open input file
+    ifstream inFile;
+    inFile.open(inFileName,ios::binary);
+    if (!inFile)
     {
-        cout << "Failed to open " << evtname << ". Please check that the file exists" << endl;
+        cout << "Failed to open " << inFileName << ". Please check that the file exists" << endl;
         exit(1);
     }
 
-    else 
-    {
-        cout << evtname << " opened successfully. Start reading events..." << endl;
+    cout << inFileName << " opened successfully. Start reading events..." << endl;
 
-        if(produceText)
+    textOutput.targetChanger.open(targetChangerName);
+    textOutput.monitor.open(monitorName);
+    textOutput.detectorT.open(detectorTName);
+    textOutput.detectorL.open(detectorLName);
+    textOutput.detectorR.open(detectorRName);
+
+    // we're now pointing at the first 16-bit word in the data stream
+    // start looping through the evtfile to extract events
+    while(!inFile.eof() /* use to truncate sort && stats.numberOfEvents<1000000*/)
+    {
+        readEvent(inFile);
+        printEvent(ev, textOutput);
+
+        if (stats.numberOfEvents%10000 == 0)
         {
-            // produce a formatted text file to display ran event data
-            textOutput.total.open("textSort/allChannels.txt");
-            textOutput.targetChanger.open("textSort/targetChanger.txt");
-            textOutput.monitor.open("textSort/monitor.txt");
-            textOutput.detectorL.open("textSort/detectorL.txt");
-            textOutput.detectorR.open("textSort/detectorR.txt");
-            textOutput.detectorT.open("textSort/detectorT.txt");
+            cout << "Processed " << stats.numberOfEvents << " events\r";
+            fflush(stdout);
         }
-
-        // we're now pointing at the first 16-bit word in the data stream
-        // start looping through the evtfile to extract events
-        while(!evtfile.eof() /* use to truncate sort && stats.numberOfEvents<1000000*/)
-        {
-            readEvent(evtfile);
-            if(produceText)
-            {
-                printEvent(ev, textOutput);
-            }
-
-            // Add event to tree
-            tree->Fill();
-
-            stats.numberOfEvents++;
-
-            // Update statistics on events
-            if(ev.evtType==2)
-            {
-                if(ev.chNo==0)
-                {
-                    stats.numberOfCh0Waveforms++;
-                }
-
-                if(ev.chNo==2)
-                {
-                    stats.numberOfCh2Waveforms++;
-                }
-
-                if(ev.chNo==4)
-                {
-                    stats.numberOfCh4Waveforms++;
-                }
-            }
-
-            if (stats.numberOfEvents%10000 == 0)
-            {
-                cout << "Processed " << stats.numberOfEvents << " events\r";
-                fflush(stdout);
-            }
-        }
-
-        // reached end of input file
-        cout << "Finished processing event file" << endl;
-        cout << "Total events: " << stats.numberOfEvents << endl;
     }
 
-    evtfile.close();
-}
-
-int main(int argc, char* argv[])
-{
-    cout << endl << "Entering raw sort..." << endl;
-
-    // read in run location and metadata
-    runInfo.runName = argv[1];
-    runInfo.outPath = argv[2];
-    bool produceText = stoi(argv[3]);
-    if(argv[4])
-    {
-        runInfo.runNumber = argv[4];
-        runInfo.subrunNumber = argv[5];
-    }
-
-    // Create a ROOT tree for this run
-    TFile *file;
-
-    stringstream treeName;
-    stringstream fileName;
-    treeName << "run" << runInfo.runNumber << "-" << runInfo.subrunNumber; 
-    fileName << runInfo.outPath <<"/analysis/run" << runInfo.runNumber << "/" << treeName.str() << "_raw.root";
-
-    file = new TFile(fileName.str().c_str(),"UPDATE");
-
-    if(file->Get("tree"))
-    {
-        cout << "Found previously existing raw sort " << fileName.str() << ". Skipping raw sort." << endl;
-        exit(0);
-    }
-
-    // Declare a ROOT tree for storing events 
-    TTree* tree = new TTree("tree","");
-    cout << "Created ROOT tree " << treeName.str() << endl;
-
-    tree->Branch("evtType",&ev.evtType,"evtType/i");
-    tree->Branch("chNo",&ev.chNo,"chNo/i");
-    tree->Branch("extTime",&ev.extTime,"extTime/i");
-    tree->Branch("timetag",&ev.timetag,"timetag/d");
-    tree->Branch("fineTime",&ev.fineTime,"fineTime/i");
-    tree->Branch("sgQ",&ev.sgQ,"sgQ/i");
-    tree->Branch("lgQ",&ev.lgQ,"lgQ/i");
-    tree->Branch("waveform",&ev.waveform);
-
-    processRun(runInfo.runName,tree, produceText);
-
+    // reached end of input file
+    cout << "Finished processing event file" << endl;
+    cout << "Total events: " << stats.numberOfEvents << endl;
     cout << "Total number of DPP-mode events processed = " << stats.numberOfDPPs << endl;
     cout << "Total number of waveform-mode events processed = " << stats.numberOfWaveforms << endl;
 
-    file->Write();
-    file->Close();
+    inFile.close();
+    textOutput.targetChanger.close();
+    textOutput.monitor.close();
+    textOutput.detectorT.close();
+    textOutput.detectorL.close();
+    textOutput.detectorR.close();
 }

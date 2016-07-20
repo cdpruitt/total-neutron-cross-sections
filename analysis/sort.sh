@@ -63,6 +63,13 @@ sort ()
         done < blacklist.txt
     fi
 
+    # Produce pretty-formatted text file listing a run's event data
+    if [ "$produceText" = true ]
+    then
+        ./text $inputFileName
+        exit
+    fi
+
     # Convert selected .evt file to ROOT tree, stored as runX-YYYY_raw.root
     ./raw "$inputFileName" "$outputFileName" 
     # If ./raw returned an exit status indicating failure, exit the script
@@ -115,7 +122,7 @@ while getopts "trsawf" opt; do
         t)
             # Have ./raw produce text output
             printf "\nText output enabled (this will slow sorting considerably)\n"
-            produceText=1
+            produceText=true
             ;;
         r)
             # Read runs to be sorted from the text file runsToSort.txt
