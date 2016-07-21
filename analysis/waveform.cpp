@@ -101,14 +101,12 @@ const double FERMI_OFFSET = 11.5; // in ns
 // counting gamma rays)
 const double GAMMA_WINDOW[2] = {80,100};
 
-struct Statistics {
-    int numberGoodFits = 0;
-    int numberBadFits = 0;
-    int numberOnePeakFits = 0;
-    int numberOnePeakExpBackFits = 0; // Successfully fit as one peak riding on
-                                      // an exponential tail
-    int numberTwoPeakFits = 0;        // Successfully fit as two peaks
-} stats;
+int numberGoodFits = 0;
+int numberBadFits = 0;
+int numberOnePeakFits = 0;
+int numberOnePeakExpBackFits = 0; // Successfully fit as one peak riding on
+// an exponential tail
+int numberTwoPeakFits = 0;        // Successfully fit as two peaks
 
 /*****************************************************************************/
 // Cross-section calculation variables and parameters
@@ -669,7 +667,7 @@ fitData fitTrigger(int waveformNo, float triggerSample)
 
         //cout << "monomial order = " << fittingFunc->GetParameter(2) << endl;
 
-        stats.numberOnePeakFits++;
+        numberOnePeakFits++;
     }
     /*************************************************************************/
 
@@ -707,7 +705,7 @@ fitData fitTrigger(int waveformNo, float triggerSample)
             data.chiSquare = fittingFunc->GetChisquare();
             data.goodFit = true;
 
-            stats.numberOnePeakExpBackFits++;
+            numberOnePeakExpBackFits++;
         }
         /*************************************************************************/
         else
@@ -751,7 +749,7 @@ fitData fitTrigger(int waveformNo, float triggerSample)
                 data.chiSquare = fittingFunc->GetChisquare();
                 data.goodFit = true;
 
-                stats.numberTwoPeakFits++;
+                numberTwoPeakFits++;
             }
             /*************************************************************************/
         }
@@ -831,12 +829,12 @@ void processTrigger(int waveformNo, float triggerSample)
     {
         triggerList.push_back(data.trigger1Time);
         triggerValues.push_back(waveform->at(data.trigger1Time/2));
-        stats.numberGoodFits++;
+        numberGoodFits++;
     }
 
     else
     {
-        stats.numberBadFits++;
+        numberBadFits++;
     }
 
     if(triggerList.size()%1000==0)
@@ -1298,11 +1296,11 @@ int main(int argc, char* argv[])
     // Extract triggers from waveforms
     processWaveforms();
 
-    cout << "Number of good fits: " << stats.numberGoodFits << endl;
-    cout << "onePeak = " << stats.numberOnePeakFits << endl; 
-    cout << "onePeakExpBack = " << stats.numberOnePeakExpBackFits << endl; 
-    cout << "twoPeaks = " << stats.numberTwoPeakFits << endl << endl; 
-    cout << "Number of bad fits: " << stats.numberBadFits << endl;
+    cout << "Number of good fits: " << numberGoodFits << endl;
+    cout << "onePeak = " << numberOnePeakFits << endl; 
+    cout << "onePeakExpBack = " << numberOnePeakExpBackFits << endl; 
+    cout << "twoPeaks = " << numberTwoPeakFits << endl << endl; 
+    cout << "Number of bad fits: " << numberBadFits << endl;
 
     // Calculate cross-sections from waveforms' trigger time data
     calculateCS();

@@ -1,6 +1,6 @@
 OBJECTS = 
 ALLOBJECTS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
-CFLAGS= -c -O0 -I$(shell root-config --incdir) -std=c++11 -Wall -Wextra -ggdb
+CFLAGS= -c -O2 -I$(shell root-config --incdir) -std=c++11 -Wall -Wextra -ggdb
 COMPILER= clang++ 
 LINKOPTION = $(shell root-config --libs)
 

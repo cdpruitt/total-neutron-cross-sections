@@ -103,15 +103,12 @@ int const BufferWords = 1; // number of chars per buffer word
 int const BufferBytes = BufferWords*2; // number of bytes per buffer word
 
 // track number of processed events of each type
-struct Statistics
-{
-    long numberOfEvents = 0;
-    long numberOfDPPs = 0;
-    long numberOfWaveforms = 0;
-    long numberOfCh0Waveforms = 0;
-    long numberOfCh2Waveforms = 0;
-    long numberOfCh4Waveforms = 0;
-} stats;
+long numberOfEvents = 0;
+long numberOfDPPs = 0;
+long numberOfWaveforms = 0;
+long numberOfCh0Waveforms = 0;
+long numberOfCh2Waveforms = 0;
+long numberOfCh4Waveforms = 0;
 
 // extract a single event from the raw event file and fill its data into the
 // tree
@@ -216,13 +213,13 @@ void readEvent(ifstream& evtfile)
         //probe = buffer[0];
         evtfile.read((char*)buffer,BufferBytes);
 
-        stats.numberOfDPPs++;
+        numberOfDPPs++;
     }
 
     else if (ev.evtType==2)
     {
         // waveform mode event
-        stats.numberOfWaveforms++;
+        numberOfWaveforms++;
     }
 
     else
@@ -250,22 +247,22 @@ void readEvent(ifstream& evtfile)
 
     // Update statistics on events
 
-    stats.numberOfEvents++;
+    numberOfEvents++;
     if(ev.evtType==2)
     {
         if(ev.chNo==0)
         {
-            stats.numberOfCh0Waveforms++;
+            numberOfCh0Waveforms++;
         }
 
         if(ev.chNo==2)
         {
-            stats.numberOfCh2Waveforms++;
+            numberOfCh2Waveforms++;
         }
 
         if(ev.chNo==4)
         {
-            stats.numberOfCh4Waveforms++;
+            numberOfCh4Waveforms++;
         }
     }
 }
@@ -311,25 +308,25 @@ int main(int argc, char* argv[])
 
     // we're now pointing at the first 16-bit word in the data stream
     // start looping through the evtfile to extract events
-    while(!inFile.eof() /* use to truncate sort && stats.numberOfEvents<1000000*/)
+    while(!inFile.eof() /* use to truncate sort && numberOfEvents<1000000*/)
     {
         readEvent(inFile);
 
         // Add event to tree
         tree->Fill();
 
-        if (stats.numberOfEvents%10000 == 0)
+        if (numberOfEvents%10000 == 0)
         {
-            cout << "Processed " << stats.numberOfEvents << " events\r";
+            cout << "Processed " << numberOfEvents << " events\r";
             fflush(stdout);
         }
     }
 
     // reached end of input file
     cout << "Finished processing event file" << endl;
-    cout << "Total events: " << stats.numberOfEvents << endl;
-    cout << "Total number of DPP-mode events processed = " << stats.numberOfDPPs << endl;
-    cout << "Total number of waveform-mode events processed = " << stats.numberOfWaveforms << endl;
+    cout << "Total events: " << numberOfEvents << endl;
+    cout << "Total number of DPP-mode events processed = " << numberOfDPPs << endl;
+    cout << "Total number of waveform-mode events processed = " << numberOfWaveforms << endl;
 
     inFile.close();
 
