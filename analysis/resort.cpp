@@ -742,7 +742,7 @@ void processDPPEvents(vector<TTree*> orchardRaw, vector<TTree*> orchardProcessed
             procEvent.targetPos = tcEvent.targetPos;
             procEvent.sgQ = rawEvent.sgQ;
             procEvent.lgQ = rawEvent.lgQ;
-            //procEvent.waveform = rawEvent.waveform;
+            procEvent.waveform = rawEvent.waveform;
 
             // only add events that come while beam is on, during the macropulse 
             double timeDiff = procEvent.completeTime-tcEvent.macroTime;
@@ -837,30 +837,31 @@ void processWaveformEvents(vector<TTree*> orchardRawW, vector<TTree*> orchardPro
 
 int main(int argc, char* argv[])
 {
-    /**************************************************************************
-                        Check to see if a sort is necessary
-    **************************************************************************/
-
     cout << endl << "Entering re-sort..." << endl;
 
-    string runDir = argv[1];
-    string runNo = argv[2];
-    string outpath = argv[3];
+    string inFileName = argv[1];
+    inFileName += "raw.root";
 
-    TFile *fileOut;
+    string outFileName = argv[1];
+    outFileName += "resort.root";
 
-    stringstream treeName;
-    treeName << "run" << runDir << "-" << runNo; 
+    string tempFileName = argv[1];
+    tempFileName += "temp.root";
 
-    stringstream fileOutName;
-    fileOutName << outpath <<"/analysis/run" << runDir << "/" << treeName.str() << "_sorted.root";
-    fileOut = new TFile(fileOutName.str().c_str(),"UPDATE");
+    string errorFileName = argv[1];
+    errorFileName += "error.txt";
 
-    // Check to see if sorted trees already exist in the output file. If they
-    // do, exit - our job is already done.
-    if(fileOut->Get("targetChangerTree"))
+    // Open a temporary file (automatically deleted at the end of program) to
+    // store temporary trees
+    TFile *tempFile;
+    tempFile = new TFile(tempFileName.c_str(),"RECREATE");
+
+    // Open a ROOT file to store the event data
+    TFile *outFile;
+    outFile = new TFile(outFileName.c_str(),"UPDATE");
+    if(outFile->Get("ch4ProcessedTree"))
     {
-        cout << fileOutName.str() << " already exists. Skipping ./resort..." << endl;
+        cout << "Found previously existing file " << outFileName << ". Skipping resort..." << endl;
         exit(0);
     }
 
@@ -882,6 +883,7 @@ int main(int argc, char* argv[])
     {
         orchardRaw.push_back(new TTree((activeDPPChannels[i]+"RawTree").c_str(),""));
         branchRaw(orchardRaw[i]);
+        orchardRaw[i]->SetDirectory(tempFile);
 
         orchardProcessed.push_back(new TTree((activeDPPChannels[i]+"ProcessedTree").c_str(),""));
         branchProc(orchardProcessed[i]);
@@ -891,6 +893,7 @@ int main(int argc, char* argv[])
     {
         orchardRawW.push_back(new TTree((activeWaveformChannels[i]+"RawTreeW").c_str(),""));
         branchRawW(orchardRawW[i]);
+        orchardRawW[i]->SetDirectory(tempFile);
 
         orchardProcessedW.push_back(new TTree((activeWaveformChannels[i]+"ProcessedTreeW").c_str(),""));
         branchProcW(orchardProcessedW[i]);
@@ -908,27 +911,22 @@ int main(int argc, char* argv[])
     cout.precision(13);
 
     // Access the input file containing the raw events tree
-    TFile *fileIn;
-    stringstream fileInName;
-    fileInName << outpath <<"/analysis/run" << runDir << "/" << treeName.str() << "_raw.root";
-    fileIn = new TFile(fileInName.str().c_str(),"READ");
+    TFile* inFile = new TFile(inFileName.c_str(),"READ");
 
-    if(!fileIn->Get("tree"))
+    if(!inFile->Get("tree"))
     {
-        cout << "Error: failed to find raw tree in " << fileInName.str() << endl;
+        cout << "Error: failed to find raw tree in " << inFileName << endl;
         exit(1);
     }
 
     // Access the input file tree
     TTree *inputTree;
-    inputTree = (TTree*)fileIn->Get("tree");
+    inputTree = (TTree*)inFile->Get("tree");
 
     // Create an error log where sorting errors can be recorded for review
-    ofstream error;
-    stringstream errorName;
-    errorName << outpath <<  "/analysis/run" << runDir << "/" << treeName.str() << "_error.log";
-    error.open(errorName.str());
-    error.precision(13);
+    ofstream errorFile;
+    errorFile.open(errorFileName);
+    errorFile.precision(13);
 
     // link the tree from the input file to our event variables
     inputTree->SetBranchAddress("chNo",&rawEvent.chNo);
@@ -951,12 +949,14 @@ int main(int argc, char* argv[])
     // Next, extract target changer events from the input tree and add to the
     // target changer trees (DPP and waveform), assigning a macropulse to each
     // target changer event. 
-    processTargetChanger(inputTree, targetChangerTree, error);
+    processTargetChanger(inputTree, targetChangerTree, errorFile);
 
     // Last, now that the macropulse structure is assigned by the target changer
     // events, we can assign detector events to the correct macropulse.
-    processDPPEvents(orchardRaw, orchardProcessed, targetChangerTree, error);
-    processWaveformEvents(orchardRawW, orchardProcessedW, targetChangerTree, error);
+    processDPPEvents(orchardRaw, orchardProcessed, targetChangerTree, errorFile);
+    processWaveformEvents(orchardRawW, orchardProcessedW, targetChangerTree, errorFile);
+
+
 
     cout << "Total number of DPP-mode events processed = " << numberOfDPPs << endl;
     cout << "Total number of waveform-mode events processed = " << numberOfWaveforms << endl;
@@ -969,30 +969,7 @@ int main(int argc, char* argv[])
                                  Clean up and exit
     ***************************************************************************/
 
-    // Delete raw trees
-    for(vector<TTree*>::iterator orchardRawIterator = orchardRaw.begin();
-            orchardRawIterator != orchardRaw.end();
-            orchardRawIterator++)
-    {
-        delete *orchardRawIterator;
-    }
-
-    for(vector<TTree*>::iterator orchardRawWIterator = orchardRawW.begin();
-            orchardRawWIterator != orchardRawW.end();
-            orchardRawWIterator++)
-    {
-        delete *orchardRawWIterator;
-    }
-
-    /*gDirectory->Delete("ch0RawTree;*");
-    gDirectory->Delete("ch2RawTree;*");
-    gDirectory->Delete("ch4RawTree;*");
-    gDirectory->Delete("ch6RawTree;*");
-    gDirectory->Delete("ch0RawTreeW;*");
-    gDirectory->Delete("ch0RawTreeW;*");
-    gDirectory->Delete("ch0RawTreeW;*");
-    */
-
-    fileOut->Write();
-    fileOut->Close();
+    tempFile->DeleteAll();
+    outFile->Write();
+    outFile->Close();
 }

@@ -1,10 +1,10 @@
 OBJECTS = 
 ALLOBJECTS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
-CFLAGS= -c -O2 -I$(shell root-config --incdir) -std=c++11 -Wall -Wextra -ggdb
+CFLAGS= -c -O0 -I$(shell root-config --incdir) -std=c++11 -Wall -Wextra -ggdb
 COMPILER= clang++ 
 LINKOPTION = $(shell root-config --libs)
 
-all: raw resort histos waveform sumRun sumAll plotMonitor text
+all: raw resort histos waveform DPPwaveform sumRun sumAll plotMonitor text
 
 raw: raw.o $(OBJECTS)
 	$(COMPILER) -o raw raw.o $(OBJECTS) $(LINKOPTION)
@@ -29,6 +29,9 @@ sumAll: sumAll.o $(OBJECTS)
 
 waveform: waveform.o $(OBJECTS)
 	$(COMPILER) -o waveform waveform.o $(OBJECTS) $(LINKOPTION)
+
+DPPwaveform: DPPwaveform.o $(OBJECTS)
+	$(COMPILER) -o DPPwaveform DPPwaveform.o $(OBJECTS) $(LINKOPTION)
 
 text: text.o $(OBJECTS)
 	$(COMPILER) -o text text.o $(OBJECTS) $(LINKOPTION)

@@ -112,7 +112,7 @@ long numberOfCh4Waveforms = 0;
 
 // extract a single event from the raw event file and fill its data into the
 // tree
-void readEvent(ifstream& evtfile)
+int readEvent(ifstream& evtfile)
 {
     // clear all DPP-specific event variables to prepare for reading event
     ev.extTime = 0;
@@ -191,8 +191,7 @@ void readEvent(ifstream& evtfile)
                 // other cases not currently implemented
             default:
                 cout << "Error: encountered unimplemented value of extraSelect" << endl;
-                exit(1);
-                break;
+                return 1;
         }
 
         evtfile.read((char*)buffer,BufferBytes);
@@ -225,7 +224,7 @@ void readEvent(ifstream& evtfile)
     else
     {
         cout << "Error: evtType must be either 1 (DPP mode) or 2 (Waveform mode)." << endl;
-        exit(1);
+        return 1;
     }
 
     // the DPP-mode only data has been read out, so now let's read out the data
@@ -265,6 +264,7 @@ void readEvent(ifstream& evtfile)
             numberOfCh4Waveforms++;
         }
     }
+    return 0;
 }
 
 int main(int argc, char* argv[])
@@ -276,8 +276,8 @@ int main(int argc, char* argv[])
 
     // Open a ROOT file to store the event data
     TFile *outFile;
+    outFileName = outFileName + "raw.root";
     outFile = new TFile(outFileName.c_str(),"UPDATE");
-
     if(outFile->Get("tree"))
     {
         cout << "Found previously existing raw sort " << outFileName << ". Skipping raw sort." << endl;
@@ -310,7 +310,11 @@ int main(int argc, char* argv[])
     // start looping through the evtfile to extract events
     while(!inFile.eof() /* use to truncate sort && numberOfEvents<1000000*/)
     {
-        readEvent(inFile);
+        if(readEvent(inFile))
+        {
+            // readEvent returned an error; end sort
+            break;
+        }
 
         // Add event to tree
         tree->Fill();

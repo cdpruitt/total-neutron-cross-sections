@@ -18,17 +18,6 @@ using namespace std;
 
 ofstream monitorCounts;
 
-// scavenger event stream
-ofstream scavengerEvents;
-
-// summedDet event stream
-ofstream summedDetEvents;
-
-// fileIn/fileOut names to be accessed to open files
-stringstream fileInName, fileOutName, fileCSName;
-
-
-
 /* Experimental constants */
 
 const double FLIGHT_DISTANCE = 2672; // detector distance from source, in cm
@@ -950,6 +939,16 @@ void calculateCS()
         plots.energyHistos.push_back((TH1I*)gDirectory->Get("target5TOFRKE"));
     }
 
+    if(!(plots.correctedEnergyHistos.size()>0))
+    {
+        plots.correctedEnergyHistos.push_back((TH1I*)gDirectory->Get("blankCorrected"));
+        plots.correctedEnergyHistos.push_back((TH1I*)gDirectory->Get("target1Corrected"));
+        plots.correctedEnergyHistos.push_back((TH1I*)gDirectory->Get("target2Corrected"));
+        plots.correctedEnergyHistos.push_back((TH1I*)gDirectory->Get("target3Corrected"));
+        plots.correctedEnergyHistos.push_back((TH1I*)gDirectory->Get("target4Corrected"));
+        plots.correctedEnergyHistos.push_back((TH1I*)gDirectory->Get("target5Corrected"));
+    }
+
     int numberOfBins = ((TAxis*)plots.energyHistos[0]->GetXaxis())->GetNbins();
 
     for(int i=0; i<NUMBER_OF_TARGETS; i++)
@@ -999,10 +998,10 @@ void calculateCS()
     }
 }
 
-void fillCSGraphs()
+void fillCSGraphs(string CSFileName)
 {
     // remake the cross-section histogram file
-    TFile *CSfile = new TFile(fileCSName.str().c_str(),"RECREATE");
+    TFile *CSfile = new TFile(CSFileName.c_str(),"RECREATE");
 
     for(int i=0; i<NUMBER_OF_TARGETS; i++)
     {
@@ -1208,25 +1207,6 @@ void fillHistos()
         {
             orchard[i]->GetEntry(j);
 
-            /*// print out first 5000 scavenger events inside the correct time
-            // window (just after the gamma dead time)
-            if(i==2 && j <10000)
-            {
-                summedDetEvents << "summed det event " << j << " completeTime = " << completeTime << endl;
-            }
-
-            // print out first 100 scavenger events inside the correct time
-            // window (gamma dead time)
-            else if(i==3 && microTime<350 && microTime>200)
-            {
-                scavengerEvents << "scavenger event " << j << " completeTime = " << completeTime << endl;
-            }
-
-            else if (j>10000)
-            {
-                break;
-            }*/
-
             if(lgQ!=65535 && sgQ!=32767)
             {
                 macroNoH->Fill(macroNo);
@@ -1278,7 +1258,7 @@ void fillHistos()
 
     // fill basic histograms for waveform mode in each channel
 
-    // first loop through all channel-specific waveform-mode trees
+    // loop through all channel-specific waveform-mode trees
     for(int i=0; (size_t)i<orchardW.size(); i++)
     {
         // create a channel-specific directory for each tree
@@ -1295,7 +1275,7 @@ void fillHistos()
         TH1I* evtNoH = new TH1I("evtNoH","evtNo",2500,0,2500);
         evtNoH->GetXaxis()->SetTitle("event number of each event");
 
-        TH1I* completeTimeH = new TH1I("completeTimeH","completeTime",6000,0,6000000000);
+        TH1I* completeTimeH = new TH1I("completeTimeH","completeTime",6000,0,60000000);
         completeTimeH->GetXaxis()->SetTitle("complete time for each event");
 
         // create subdirectory for holding waveform-mode waveform data
@@ -1343,7 +1323,7 @@ void fillHistos()
     }
 }
 
-void matchWaveforms()
+/*void matchWaveforms()
 {
     // we want to pull events from the overlap window where both ch4 and ch6
     // record the same events (the signal should be identical in both channels)
@@ -1373,7 +1353,7 @@ void matchWaveforms()
     //int offset = 0;
 
     // loop through the channel-specific tree and populate histos
-    for(int j=0; j<ch6Entries && plots<=10000 /*plot only first 50 */; j++)
+    for(int j=0; j<ch6Entries && plots<=10000 plot only first 50; j++)
     {
         orchard[3]->GetEntry(j);
 
@@ -1491,67 +1471,50 @@ void matchWaveforms()
     //offset /= (double)plots;
     //cout << offset << endl;
 }
+*/
 
 int main(int argc, char *argv[])
 {
     cout << endl << "Entering ./histos..." << endl;
-    // needed to avoid ROOT error for header files being incorrectly brought in
-    // in both resort.cpp and histos.cpp
-    // Look online for more info (I'm not really sure why it's necessary)
-    //TApplication app("app",&argc,argv);
-
+    
     if(TOF_BINS%NUMBER_ENERGY_BINS!=0)
     {
         cout << "Error: number of TOF bins must be a multiple of the number of energy bins." << endl;
         exit(1);
     }
 
-    // read in the raw file name
-    string runDir = argv[1];
-    string runNo = argv[2];
-    string outpath = argv[3];
+    string inFileName = argv[1];
+    inFileName += "resort.root";
 
-    // Open the raw tree from the initial sort. If it doesn't exist, exit.
-    stringstream treeName;
-    //stringstream scavengerEventsName;
-    //stringstream summedDetEventsName;
+    string outFileName = argv[1];
+    outFileName += "histos.root";
 
-    treeName << "run" << runDir << "-" << runNo; 
+    string CSFileName = argv[1];
+    CSFileName += "cross-sections.root";
 
-    //scavengerEventsName << outpath <<"/analysis/run" << runDir << "/" << treeName.str() << "_scavenger.csv";
-    //summedDetEventsName << outpath <<"/analysis/run" << runDir << "/" << treeName.str() << "_summedDet.csv";
-
-    //scavengerEvents.open(scavengerEventsName.str());
-    //summedDetEvents.open(summedDetEventsName.str());
-
-    //scavengerEvents.precision(10);
-    //summedDetEvents.precision(10);
+    string runNumber = argv[2];
 
     // report the number of counts in the monitor paddle for each target (diagnostic)
-    stringstream monitorCountsName;
-    monitorCountsName << outpath <<  "/analysis/run" << runDir << "/" << treeName.str() << "_monitorCounts.log";
+    /*stringstream monitorCountsName;
+    monitorCountsName << outpath <<  "/analysis/run" << runNumber << "/" << treeName.str() << "_monitorCounts.log";
     monitorCounts.open(monitorCountsName.str());
     monitorCounts.precision(13);
+    */
 
-    fileInName << outpath <<"/analysis/run" << runDir << "/" << treeName.str() << "_sorted.root";
-    fileOutName << outpath <<"/analysis/run" << runDir << "/" << treeName.str() << "_histos.root";
-    fileCSName << outpath <<"/analysis/run" << runDir << "/" << treeName.str() << "_cross-sections.root";
-
-    TFile* file = new TFile(fileInName.str().c_str(),"READ");
-
-    if(!file->IsOpen())
+    TFile* inFile = new TFile(inFileName.c_str(),"READ");
+    if(!inFile->IsOpen())
     {
         cout << "Error: failed to open resort.root" << endl;
         exit(1);
     }
 
-    TTree* ch0Tree = (TTree*)file->Get("ch0ProcessedTree");
-    TTree* ch2Tree = (TTree*)file->Get("ch2ProcessedTree");
-    TTree* ch4Tree = (TTree*)file->Get("ch4ProcessedTree");
-    //TTree* ch6Tree = (TTree*)file->Get("ch6ProcessedTree");
-    TTree* ch0TreeW = (TTree*)file->Get("ch0ProcessedTreeW");
-    TTree* ch2TreeW = (TTree*)file->Get("ch2ProcessedTreeW");
-    TTree* ch4TreeW = (TTree*)file->Get("ch4ProcessedTreeW");
+    TTree* ch0Tree = (TTree*)inFile->Get("ch0ProcessedTree");
+    TTree* ch2Tree = (TTree*)inFile->Get("ch2ProcessedTree");
+    TTree* ch4Tree = (TTree*)inFile->Get("ch4ProcessedTree");
+    //TTree* ch6Tree = (TTree*)inFile->Get("ch6ProcessedTree");
+    TTree* ch0TreeW = (TTree*)inFile->Get("ch0ProcessedTreeW");
+    TTree* ch2TreeW = (TTree*)inFile->Get("ch2ProcessedTreeW");
+    TTree* ch4TreeW = (TTree*)inFile->Get("ch4ProcessedTreeW");
 
     orchard.push_back(ch0Tree);
     orchard.push_back(ch2Tree);
@@ -1569,13 +1532,13 @@ int main(int argc, char *argv[])
     // Targets are labeled by number as follows:
     // blank = 0, sc = 1, lc = 2, Sn112 = 3, NatSn = 4, Sn124 = 5
 
-    if(stoi(runDir)<=5)
+    if(stoi(runNumber)<=5)
     {
         cout << "Neon run - stopping sort." << endl;
         exit(0);
     }
 
-    if(stoi(runDir)<=151)
+    if(stoi(runNumber)<=151)
     {
         // blank, short carbon, long carbon, Sn112, NatSn, Sn124
         order.push_back(0);
@@ -1586,7 +1549,7 @@ int main(int argc, char *argv[])
         order.push_back(5);
     }
 
-    else if(stoi(runDir)==152)
+    else if(stoi(runNumber)==152)
     {
         // blank, Sn112, NatSn, Sn124, short carbon, long carbon
         order.push_back(0);
@@ -1597,7 +1560,7 @@ int main(int argc, char *argv[])
         order.push_back(2);
     }
 
-    else if(stoi(runDir)>=153 && stoi(runDir)<=168)
+    else if(stoi(runNumber)>=153 && stoi(runNumber)<=168)
     {
         // blank, Sn112, NatSn, Sn124
         order.push_back(0);
@@ -1606,7 +1569,7 @@ int main(int argc, char *argv[])
         order.push_back(5);
     }
 
-    else if(stoi(runDir)>=169 && stoi(runDir)<=180)
+    else if(stoi(runNumber)>=169 && stoi(runNumber)<=180)
     {
         // blank, Sn112, NatSn, Sn124, short carbon
         order.push_back(0);
@@ -1620,26 +1583,26 @@ int main(int argc, char *argv[])
     cout.precision(13);
     
     // open output file to contain histos
-    TFile* fileOut = new TFile(fileOutName.str().c_str(),"READ");
-    if(!fileOut->IsOpen())
+    TFile* outFile = new TFile(outFileName.c_str(),"READ");
+    if(!outFile->IsOpen())
     {
         // No histogram file - need to create it and fill it before moving on to
         // cross-section histos
-        TFile* fileOut = new TFile(fileOutName.str().c_str(),"CREATE");
+        TFile* outFile = new TFile(outFileName.c_str(),"CREATE");
 
         // prepare the root file with 4 directories, one for each channel
         // these directories will hold basic variable histograms showing the
         // raw data in each tree, plus TOF, x-sections, etc histograms
         fillHistos();
-        fileOut->Write();
-        file->Close();
+        outFile->Write();
+        inFile->Close();
     }
 
     // Calculate cross-sections using channels 2, 4, and 6
     calculateCS();
 
     // Fill cross-section histograms using calculated cross-section data
-    fillCSGraphs();
+    fillCSGraphs(CSFileName);
 
     // Modify plots
     /*for(int i=0; i<NUMBER_OF_TARGETS; i++)
@@ -1653,5 +1616,6 @@ int main(int argc, char *argv[])
     // print out waveforms for first 50 events that occur in both ch4 and ch6
     //matchWaveforms();
         
-    fileOut->Close();
+    inFile->Close();
+    outFile->Close();
 }
