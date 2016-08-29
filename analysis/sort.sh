@@ -26,14 +26,12 @@
 # SECTION 1: recompile analysis code
 
 # Check to see if analysis codes have been modified since last compile
-if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] || [ histos.cpp -nt histos ]
-    #|| [ waveform.cpp -nt waveform ] || [ sumRun.cpp -nt sumRun ]
+if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] || [ histos.cpp -nt histos ] || [ waveform.cpp -nt waveform ] || [ sumRun.cpp -nt sumRun ]
 then
     # sorting code modified
     # recompile to prepare for event sorting
     make
-if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] || [ histos.cpp -nt histos ]
-    #|| [ waveform.cpp -nt waveform ] || [ sumRun.cpp -nt sumRun ]
+if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] || [ histos.cpp -nt histos ] || [ waveform.cpp -nt waveform ] || [ sumRun.cpp -nt sumRun ]
     then
         # compilation failed - exit
         printf "\nCompilation failed - correct errors before sorting.\n"
@@ -90,12 +88,6 @@ sort ()
     # If ./resort returned an exit status indicating failure, exit the script
     rc=$?; if [[ $rc != 0 ]]; then echo "./resort $outputDirectoryName
     returned $rc, indicating error; exiting"; exit $rc; fi
-    
-    # Process channel-specific subtrees into histograms in runX-YYYY_histos.root
-    ./histos "$outputDirectoryName" "$runNumber"
-    # If ./resort returned an exit status indicating failure, exit the script
-    rc=$?; if [[ $rc != 0 ]]; then echo "./histos $outputDirectoryName
-    returned $rc, indicating error; exiting"; exit $rc; fi
 
     # Process waveforms from channel-specific subtrees
     if [ "$waveform" = true ]
@@ -114,7 +106,17 @@ sort ()
         rc=$?; if [[ $rc != 0 ]]; then echo "./DPPwaveform $outputDirectoryName
         returned $rc, indicating error; exiting"; exit $rc; fi
     fi
-}
+    
+    if [ "$overwriteHistos" = true ]
+    then
+        rm $outputDirectoryName"/histos.root"
+    fi
+    # Process channel-specific subtrees into histograms in runX-YYYY_histos.root
+    ./histos "$outputDirectoryName" "$runNumber"
+    # If ./resort returned an exit status indicating failure, exit the script
+    rc=$?; if [[ $rc != 0 ]]; then echo "./histos $outputDirectoryName
+    returned $rc, indicating error; exiting"; exit $rc; fi
+    }
 
 ################################################################################
 
@@ -130,7 +132,7 @@ produceText=0
 givenFile=false
 
 # Parse runtime flags
-while getopts "trsawdf" opt; do
+while getopts "trsawdfo" opt; do
     case ${opt} in
         t)
             # Have ./raw produce text output
@@ -169,6 +171,12 @@ while getopts "trsawdf" opt; do
             givenFile=true
             ;;
 
+        o)  # Overwrite existing histogram files (saves the user from having to
+            # manually delete them)
+            printf "\nOverwriting existing histogram files...\n"
+            overwriteHistos=true
+            ;;
+
         \?)
             # Flags unrecognized - exit script and give user help text
             printf "\nInvalid option: -$OPTARG.\n\nValid options are:"
@@ -179,6 +187,7 @@ while getopts "trsawdf" opt; do
             printf "\n    -f (sort a single run by explicitly giving input filename)\n"
             printf "\n    -w (fit waveform-mode data and produce cross-sections)\n"
             printf "\n    -d (fit DPP-mode waveforms and produce cross-sections)\n"
+            printf "\o    -o (overwrite existing histogram files)\n"
 
             exit
             ;;

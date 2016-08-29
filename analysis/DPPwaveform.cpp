@@ -25,7 +25,7 @@ using namespace std;
 
 const int SAMPLE_PERIOD = 2;   // digitizer sample length, in ns
 //const int ADC_RANGE  = 16383;  // Range of ADC voltage steps (internal units)
-const int THRESHOLD = 25;      // displacement from baseline needed to trigger
+const int THRESHOLD = 100;      // displacement from baseline needed to trigger
                                // software threshold
 const int DERIVATIVE_THRESHOLD = -10; // derivative needed to trigger software
                                       // threshold
@@ -157,7 +157,7 @@ TF1 *fittingFunc;
 TF1Convolution *convolvedPeakFunc;
 
 // Set number of bins for energy histograms
-const int NUMBER_ENERGY_BINS = 50;
+const int NUMBER_ENERGY_BINS = 100;
 
 // declare vectors to hold the scaled cross-sections of each target; i = target #, j = bin
 vector<vector<double>*> sigma;
@@ -941,7 +941,7 @@ void processWaveforms()
     plots.TOFHistos.push_back(target4TOF);
     plots.TOFHistos.push_back(target5TOF);
 
-    triggerWalk = new TH2I("triggerWalk","trigger time vs. waveform chunk #",200,0,200,1000,0,1000);
+    triggerWalk = new TH2I("triggerWalk","trigger time vs. waveform chunk #",180,0,1800,10000,0,100000000);
 
     relativeTriggerSampleHisto = new TH1I("relativeTriggerSampleHisto","relative trigger time, from start of fitted wavelet",100,PEAKFIT_OFFSET*SAMPLE_PERIOD,(PEAKFIT_OFFSET+PEAKFIT_WINDOW)*SAMPLE_PERIOD);
 
@@ -998,7 +998,7 @@ void processWaveforms()
 
                     // shift waveform index ahead by TRIGGER_HOLDOFF to prevent
                     // retriggering
-                    //k += TRIGGER_HOLDOFF;
+                    k += TRIGGER_HOLDOFF;
                 }
                 /*if(triggerList.size()>10)
                 {

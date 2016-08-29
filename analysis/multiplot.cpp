@@ -1,4 +1,4 @@
-// Plotting program for viewing multiple sub-runs in a single canvas (for identifying bad runs)
+// Plotting program for viewing multiple graphs in a single canvas (for identifying bad runs)
 //
 // To run, start ROOT and run the following command (including quotes):
 //
@@ -10,12 +10,11 @@
 // subDir = directory within ROOT file to look for plots (i.e., detS)
 // histoType = name of histogram to plot (i.e., target1CS)
 
-void examineRuns(string filePath, string run, string fileType, string subDir, string histoType)
+void multiplot()
 {
     const unsigned int CANVAS_WIDTH = 6;
     const unsigned int CANVAS_HEIGHT = 4;
 
-    //gROOT->SetStyle("Plain");
     gStyle->SetOptStat(0);
     TStyle * Sty = (TStyle*)gROOT->FindObject("MyStyle");
     if(!Sty)      
@@ -59,14 +58,14 @@ void examineRuns(string filePath, string run, string fileType, string subDir, st
     gROOT->ForceStyle();
 
     // Create canvas
-    TCanvas *canvas = new TCanvas("mycan","mycan",1800,900);
+Canvas *canvas = new TCanvas("mycan","mycan",1800,900);
     canvas->Divide(CANVAS_WIDTH,CANVAS_HEIGHT,0.0001,0.0001);
 
     // Access existing histograms
     TFile* fileIn;
     stringstream fileName;
 
-    TH1I* histoToAdd;
+    TGraphErrors* histoToAdd;
     TLatex latex;
     stringstream label;
 

@@ -124,6 +124,8 @@ double avo = 6.022*pow(10.,23.); // Avogadro's number, in atoms/mol
 
 const int NUMBER_OF_TARGETS = 6;
 
+const vector<string> positionNames = {"blank", "target1", "target2", "target3", "target4", "target5"}; 
+
 const vector<string> targetNamesWaveform = {"blankWaveform", "shortCarbonWaveform", "longCarbonWaveform", "Sn112Waveform", "NatSnWaveform", "Sn124Waveform"}; 
 
 // physical target data, listed in order:
@@ -144,11 +146,19 @@ vector<int> order;
 const int TOF_RANGE = 1800; // in ns
 const int TOF_BINS = 18000;
 
+// experimentally-determined  digitizer deadtime
+const int DEADTIME_PERIOD = 183;
+
+// total number of micropulses processed per target (for performing dead time
+// calculation)
+vector<long> microsPerTarget(6,0);
+
 struct Plots
 {
     vector<TH1I*> TOFHistos;
     vector<TH1I*> energyHistos;
-    vector<TH1I*> correctedEnergyHistos;
+    vector<TH1I*> deadtimeHistos;
+
     vector<TGraph*> CSGraphs;
 } plots;
 
@@ -162,7 +172,7 @@ TF1 *fittingFunc;
 TF1Convolution *convolvedPeakFunc;
 
 // Set number of bins for energy histograms
-const int NUMBER_ENERGY_BINS = 50;
+const int NUMBER_ENERGY_BINS = 200;
 
 // declare vectors to hold the scaled cross-sections of each target; i = target #, j = bin
 vector<vector<double>*> sigma;
@@ -823,6 +833,7 @@ void processTrigger(int waveformNo, float triggerSample)
     // Uncomment to use raw trigger sample as trigger time
     //float triggerTime = triggerSample;
     //fillTriggerHistos(triggerTime);
+    //triggerList.push_back(triggerSample);
 
     // Uncomment to use fitted peak threshold-intercept as trigger time
     if(fitTrigger(waveformNo, triggerSample).goodFit)
@@ -1004,7 +1015,7 @@ void processWaveforms()
         setBranchesW(orchardW[i]);
 
         int totalEntries = orchardW[i]->GetEntries();
-        cout << "Total waveforms on ch. " << 2*i << ": " << totalEntries << endl;
+        cout << "Total waveforms = " << totalEntries << endl;
 
         TCanvas *mycan = (TCanvas*)gROOT->FindObject("mycan");
 
@@ -1021,6 +1032,11 @@ void processWaveforms()
 
             // pull individual waveform event
             orchardW[i]->GetEntry(j);
+
+            if (targetPos == 0)
+            {
+                continue;
+            }
 
             //cout << "waveform chunk time = " << completeTime << endl;
 
@@ -1075,9 +1091,9 @@ void processWaveforms()
             for(int k=0; k<waveform->size(); k++)
             {
                 waveformH->SetBinContent(k,waveform->at(k));
-            }
+            }*/
 
-            temp.str("");
+            /*temp.str("");
             temp << "waveformWrap" << j;
 
             waveformWrap = new TMultiGraph(temp.str().c_str(), temp.str().c_str());
@@ -1148,14 +1164,103 @@ void processWaveforms()
         }
     }
 
+    for(int k=0; (size_t)k<plots.energyHistos.size(); k++)
+    {
+        cout << "target position " << k+1 << " counts = " << targetCounts[k] << endl;
+    }
+
     cout << endl;
+}
+
+void calculateDeadtime()
+{
+    setBranchesW(orchardW[0]);
+
+    int totalEntries = orchardW[0]->GetEntries();
+    cout << "Total waveforms on ch. " << ": " << totalEntries << endl;
+
+    for(int i=0; i<totalEntries; i++)
+    {
+        orchardW[0]->GetEntry(i);
+
+        if(targetPos==0)
+        {
+            continue;
+        }
+        microsPerTarget[targetPos-1] += 2*waveform->size()/(double)MICRO_PERIOD;
+    }
+
+    vector<vector<double>> eventsPerBinPerMicro(6,vector<double>(0));
+
+    // "deadtimeFraction" records the fraction of time that the detector is dead, for
+    // neutrons of a certain energy. It is target-dependent.
+    vector<vector<double>> deadtimeFraction(6, vector<double>(0));
+
+    // connect to TOF histos, if not already connected
+    if(plots.TOFHistos.size()==0)
+    {
+        for(int i=0; i<NUMBER_OF_TARGETS; i++)
+        {
+            string temp = positionNames[i] + "TOF";
+            plots.TOFHistos.push_back((TH1I*)gDirectory->Get(temp.c_str()));
+        }
+    }
+
+    // Calculate deadtime:
+    // for each target,
+    for(int i=0; i<NUMBER_OF_TARGETS; i++)
+    {
+        cout << "microsPerTarget[i] = " << microsPerTarget[i] << endl;
+
+        //plots.correctedEnergyHistos[i]->Sumw2();
+
+        // for each bin,
+        for(int j=0; j<plots.TOFHistos[i]->GetNbinsX(); j++)
+        {
+            if(microsPerTarget[i] > 0)
+            {
+                eventsPerBinPerMicro[i].push_back(plots.TOFHistos[i]->GetBinContent(j)/(double)microsPerTarget[i]);
+            }
+
+            else
+            {
+                eventsPerBinPerMicro[i].push_back(0);
+            }
+
+            deadtimeFraction[i].push_back(0);
+        }
+
+        // find the fraction of the time that the detector is dead for each bin in the micropulse
+        for(int j=1; (size_t)j<eventsPerBinPerMicro[i].size(); j++)
+        {
+            deadtimeFraction[i][j] = deadtimeFraction[i][j-1]+(1-deadtimeFraction[i][j-1])*eventsPerBinPerMicro[i][j];
+            if(j>(TOF_BINS/TOF_RANGE)*DEADTIME_PERIOD)
+            {
+                deadtimeFraction[i][j] -= (1-deadtimeFraction[i][j-(TOF_BINS/TOF_RANGE)*DEADTIME_PERIOD])*eventsPerBinPerMicro[i][j-(TOF_BINS/TOF_RANGE)*DEADTIME_PERIOD];
+            }
+        }
+
+        string temp;
+        temp = "deadtime" + targetNamesWaveform[i];
+        plots.deadtimeHistos.push_back(new TH1I(temp.c_str(),temp.c_str(),TOF_BINS,0,TOF_RANGE));
+        for(int j=0; (size_t)j<deadtimeFraction[0].size(); j++)
+        {
+            plots.deadtimeHistos.back()->SetBinContent(j,1000000*deadtimeFraction[i][j]);
+        }
+        plots.deadtimeHistos.back()->Write();
+    }
 }
 
 void calculateCS()
 {
-    for(int k=0; (size_t)k<plots.energyHistos.size(); k++)
+    // connect to energy histos, if not already connected
+    if(plots.energyHistos.size()==0)
     {
-        cout << "target position " << k+1 << " counts = " << targetCounts[k] << endl;
+        for(int i=0; i<NUMBER_OF_TARGETS; i++)
+        {
+            string temp = positionNames[i] + "TOFRKE";
+            plots.energyHistos.push_back((TH1I*)gDirectory->Get(temp.c_str()));
+        }
     }
 
     // Loop through the relativistic kinetic energy histograms and use them
@@ -1287,16 +1392,31 @@ int main(int argc, char* argv[])
     }
 
     // open output file to contain waveform histos
-    TFile* outFile = new TFile(outFileName.c_str(),"RECREATE");
+    TFile* outFile = new TFile(outFileName.c_str(),"READ");
+    if(!outFile->IsOpen())
+    {
+        // No waveform file - need to create it and fill it before moving on to
+        // cross-section histos
+        TFile* outFile = new TFile(outFileName.c_str(),"RECREATE");
 
-    // Extract triggers from waveforms
-    processWaveforms();
+        // Extract triggers from waveforms
+        processWaveforms();
 
-    cout << "Number of good fits: " << numberGoodFits << endl;
-    cout << "onePeak = " << numberOnePeakFits << endl; 
-    cout << "onePeakExpBack = " << numberOnePeakExpBackFits << endl; 
-    cout << "twoPeaks = " << numberTwoPeakFits << endl << endl; 
-    cout << "Number of bad fits: " << numberBadFits << endl;
+        cout << "Number of good fits: " << numberGoodFits << endl;
+        cout << "onePeak = " << numberOnePeakFits << endl; 
+        cout << "onePeakExpBack = " << numberOnePeakExpBackFits << endl; 
+        cout << "twoPeaks = " << numberTwoPeakFits << endl << endl; 
+        cout << "Number of bad fits: " << numberBadFits << endl;
+
+        outFile->Write();
+    }
+    else
+    {
+        TFile* outFile = new TFile(outFileName.c_str(),"UPDATE");
+        gDirectory->Delete("*Waveform;*");
+    }
+        // perform a manual dead-time correction
+    calculateDeadtime();
 
     // Calculate cross-sections from waveforms' trigger time data
     calculateCS();
@@ -1304,6 +1424,6 @@ int main(int argc, char* argv[])
     // Plot cross-sections
     fillCSGraphs();
 
-    outFile->Write();
     inFile->Close();
+    outFile->Close();
 }

@@ -4,9 +4,9 @@
 #include <string>
 #include "TFile.h"
 #include "TTree.h"
-#include "TGraph.h"
 #include "TGraphErrors.h"
 #include "TMath.h"
+#include "TLatex.h"
 
 using namespace std;
 
@@ -14,19 +14,16 @@ const int NUMBER_OF_TARGETS = 6;
 const int MAX_SUBRUN_NUMBER = 30;
 const double ARTIFICIAL_OFFSET = 0.0;
 
-const vector<string> targetNames = {"blankDPP", "shortCarbonDPP", "longCarbonDPP", "Sn112DPP", "NatSnDPP", "Sn124DPP"}; 
+const vector<string> targetNames = {"blank", "shortCarbon", "longCarbon", "Sn112", "NatSn", "Sn124"}; 
 const vector<string> targetNamesWaveform = {"blankWaveform", "shortCarbonWaveform", "longCarbonWaveform", "Sn112Waveform", "NatSnWaveform", "Sn124Waveform"}; 
-
-// Set number of bins for relative cross-section histograms
-const int NUM_RELATIVE_BINS = 50;
 
 struct Plots
 {
-    vector<TGraph*> CSGraphs;
-    vector<TGraph*> CSGraphsWaveform;
+    vector<TGraphErrors*> CSGraphs;
+    vector<TGraphErrors*> CSGraphsWaveform;
 
-    vector<TGraph*> relativeCSGraphs;
-    vector<TGraph*> relativeCSGraphsWaveform;
+    vector<TGraphErrors*> relativeCSGraphs;
+    vector<TGraphErrors*> relativeCSGraphsWaveform;
 } plots;
 
 long monCountsBlank;
@@ -311,18 +308,135 @@ void getTotalError()
 // Extract each point from a graph and store their positions in two vectors,
 // xValues and yValues
 void extractGraphData(
-        TGraph* graph,
+        TGraphErrors* graph,
         vector<double>* xValues,
-        vector<double>* yValues)
+        vector<double>* xError,
+        vector<double>* yValues,
+        vector<double>* yError)
 {
     int numPoints = graph->GetN();
-    yValues->resize(numPoints);
+    
     xValues->resize(numPoints);
+    yValues->resize(numPoints);
+    xError->resize(numPoints);
+    yError->resize(numPoints);
 
     for(int k=0; k<numPoints; k++)
     {
         graph->GetPoint(k,xValues->at(k),yValues->at(k));
+        xError->at(k) = graph->GetErrorX(k);
+        yError->at(k) = graph->GetErrorY(k);
     }
+}
+
+double calculateRMS(vector<double>* graph1Data, vector<double>* graph2Data)
+{
+    double rms = 0;
+    for(int i=0; i<graph1Data->size(); i++)
+    {
+        rms += pow(graph1Data->at(i)-graph2Data->at(i),2);
+    }
+    rms /= graph1Data->size();
+    rms = pow(rms,0.5);
+    return rms;
+}
+
+void createRelativeCSPlot(vector<double>* graph1Data, vector<double>* graph1Error,
+                          vector<double>* graph2Data, vector<double>* graph2Error,
+                          vector<double>* energyData ,vector<double>* energyError,
+                          string name, string title, bool listRMS)
+{
+    // the relative difference plots are defined as:
+    // (graph1Data-graph2Data)/(graph1Data+graph2Data)
+
+    // define vectors to hold the data points and error for the numerator
+    // and denominator of the relative difference
+    vector<double> summedGraphData; 
+    vector<double> summedGraphError; 
+
+    vector<double> differenceGraphData; 
+    vector<double> differenceGraphError; 
+
+    vector<double> relativeGraphData; 
+    vector<double> relativeGraphError; 
+
+    summedGraphData.resize(graph1Data->size());
+    summedGraphError.resize(graph1Data->size());
+
+    differenceGraphData.resize(graph1Data->size());
+    differenceGraphError.resize(graph1Data->size());
+
+    relativeGraphError.resize(graph1Data->size());
+    relativeGraphData.resize(graph1Data->size());
+
+    for(int i=1; (size_t)i<summedGraphData.size(); i++)
+    {
+        summedGraphData[i] = graph1Data->at(i) + graph2Data->at(i);
+        differenceGraphData[i] = graph1Data->at(i) - graph2Data->at(i);
+        relativeGraphData[i] =
+            (graph1Data->at(i) - graph2Data->at(i))/
+            (graph1Data->at(i) + graph2Data->at(i));
+    }
+
+    for(int i=1; (size_t)i<summedGraphError.size(); i++)
+    {
+        summedGraphError[i] = pow(pow(graph1Error->at(i),2) + pow(graph2Error->at(i),2),0.5);
+        differenceGraphError[i] = summedGraphError[i];
+        relativeGraphError[i] = relativeGraphData[i]*
+                                       pow(
+                                          pow(summedGraphError[i]/summedGraphData[i],2) +
+                                          pow(differenceGraphError[i]/differenceGraphData[i],2),
+                                          0.5);
+        //graph1Datagraph2DatarelativeCSError[i] = differenceGraphError[i]*summedGraphData[i]+summedGraphError[i]*differenceGraphData[i];
+    }
+
+    TGraphErrors *summedGraph =
+        new TGraphErrors(summedGraphData.size(),
+                  &energyData->at(0),
+                  &summedGraphData[0],
+                  &energyError->at(0),
+                  &summedGraphError[0]);
+    summedGraph->SetName("sumCS");
+    summedGraph->Write();
+
+    TGraphErrors *differenceGraph =
+        new TGraphErrors(differenceGraphData.size(),
+                  &energyData->at(0),
+                  &differenceGraphData[0],
+                  &energyError->at(0),
+                  &differenceGraphError[0]);
+    differenceGraph->SetName("differenceCS");
+    differenceGraph->Write();
+
+    TGraphErrors *relativeGraph =
+        new TGraphErrors(relativeGraphData.size(),
+                &energyData->at(0),
+                &relativeGraphData[0],
+                &energyError->at(0),
+                &relativeGraphError[0]);
+    relativeGraph->SetTitle(title.c_str());
+    relativeGraph->SetName(name.c_str());
+
+    relativeGraph->SetLineColor(kBlue);
+    relativeGraph->SetLineWidth(2);
+    relativeGraph->Draw();
+
+    // calculate RMS value
+    if(listRMS)
+    {
+        double rms = calculateRMS(graph1Data,graph2Data);
+
+        // add RMS value to plot
+        stringstream rmsText;
+        rmsText << "rms = " << rms;
+
+        TLatex* latex = new TLatex(0.3,0.2,rmsText.str().c_str());
+        latex->SetNDC();
+        latex->SetTextSize(0.05);
+        relativeGraph->GetListOfFunctions()->Add(latex);
+    }
+    
+    relativeGraph->Write();
 }
 
 int main()
@@ -340,32 +454,43 @@ int main()
     cout << "Total runs in runlist: " << totalRuns << endl << endl;
     runList.close();
 
+    // Create vector for holding the energies were the cross sections
+    // were calculated
+    vector<vector<vector<double>*>*> energies;
+    vector<vector<vector<double>*>*> energiesWaveform;
+    vector<vector<vector<double>*>*> energiesError;
+
     // Create vectors for holding cross section data:
     // CrossSections[target number]->at(subrun number)->at(data point)
     vector<vector<vector<double>*>*> crossSections;
     vector<vector<vector<double>*>*> crossSectionsWaveform;
+    vector<vector<vector<double>*>*> crossSectionsError;
+    vector<vector<vector<double>*>*> crossSectionsErrorWaveform;
 
     // Create vectors for holding cross section average over all subruns:
     // CrossSectionsAvg[target number]->at(data point)
     vector<vector<double>*> crossSectionsAvg;
     vector<vector<double>*> crossSectionsWaveformAvg;
-
-    // Create vector for holding the energies were the cross sections
-    // were calculated
-    vector<vector<vector<double>*>*> energies;
-    vector<vector<vector<double>*>*> energiesWaveform;
+    vector<vector<double>*> crossSectionsErrorAvg;
+    vector<vector<double>*> crossSectionsErrorWaveformAvg;
+    vector<double> energyError;
 
     // Prep vectors for filling
     for(int i=0; i<NUMBER_OF_TARGETS; i++)
     {
         crossSections.push_back(new vector<vector<double>*>);
         crossSectionsWaveform.push_back(new vector<vector<double>*>);
+        crossSectionsError.push_back(new vector<vector<double>*>);
+        crossSectionsErrorWaveform.push_back(new vector<vector<double>*>);
 
         crossSectionsAvg.push_back(new vector<double>);
         crossSectionsWaveformAvg.push_back(new vector<double>);
+        crossSectionsErrorAvg.push_back(new vector<double>);
+        crossSectionsErrorWaveformAvg.push_back(new vector<double>);
 
         energies.push_back(new vector<vector<double>*>);
         energiesWaveform.push_back(new vector<vector<double>*>);
+        energiesError.push_back(new vector<vector<double>*>);
     }
 
     // Loop through all listed runs and extract cross section data
@@ -412,15 +537,22 @@ int main()
         // Pull out the cross section data
         for(int j=1; (size_t)j<targetNames.size(); j++)
         {
-            TGraph * graph = (TGraph*)infile->Get(targetNames[j].c_str());
+            TGraphErrors * graph = (TGraphErrors*)infile->Get(targetNames[j].c_str());
             energies[j]->push_back(new vector<double>);
+            energiesError[j]->push_back(new vector<double>);
             crossSections[j]->push_back(new vector<double>);
-            extractGraphData(graph,energies[j]->back(),crossSections[j]->back());
+            crossSectionsError[j]->push_back(new vector<double>);
+            extractGraphData(graph,
+                             energies[j]->back(),
+                             energiesError[j]->back(),
+                             crossSections[j]->back(),
+                             crossSectionsError[j]->back());
 
-            TGraph * graphWaveform = (TGraph*)infile->Get(targetNamesWaveform[j].c_str());
+            /*TGraphErrors * graphWaveform = (TGraphErrors*)infile->Get(targetNamesWaveform[j].c_str());
             energiesWaveform[j]->push_back(new vector<double>);
             crossSectionsWaveform[j]->push_back(new vector<double>);
             extractGraphData(graphWaveform,energiesWaveform[j]->back(),crossSectionsWaveform[j]->back());
+            */
         }
 
         // Close the sub-run input files
@@ -430,10 +562,15 @@ int main()
         i++;
     }
 
-    // Create output file to contain summed histos
-    stringstream outfileName;
-    outfileName << "/data3/analysis/total.root";
-    TFile *outfile = new TFile(outfileName.str().c_str(),"RECREATE");
+    // read literature data for natural Sn
+    //TFile *litData = new TFile("/data2/analysis/literatureData.root","READ");
+    //litData->ls();
+    //TGraphErrors *SnNatLitData = (TGraphErrors*)litData->Get("Natural Sn (n,tot)");
+
+    // Create output file to contain averaged TGraphs of experimental cross section data
+    stringstream outFileName;
+    outFileName << "/data3/analysis/total.root";
+    TFile *outFile = new TFile(outFileName.str().c_str(),"RECREATE");
 
     // sum all subruns and compute average
     for(int i=1; (size_t)i<energies.size(); i++)
@@ -452,12 +589,35 @@ int main()
             crossSectionsAvg[i]->at(k) /= energies[1]->size();
         }
 
+        crossSectionsErrorAvg[i]->resize(energies[1]->at(0)->size());
+        for(int j=0; (size_t)j<energies[1]->size(); j++)
+        {
+            for(int k=0; (size_t)k<energies[1]->at(0)->size(); k++)
+            {
+                crossSectionsErrorAvg[i]->at(k) += pow(crossSectionsError[i]->at(j)->at(k),2);
+            }
+        }
+
+        for(int k=0; k<energies[1]->at(0)->size(); k++)
+        {
+            crossSectionsErrorAvg[i]->at(k) = pow(crossSectionsErrorAvg[i]->at(k),0.5);
+            crossSectionsErrorAvg[i]->at(k) /= energies[1]->size();
+        }
+
+        energyError.resize(energies[1]->at(0)->size());
+
         // create new graphs to display the average
-        TGraph* graph = new TGraph(energies[i]->at(0)->size(),&energies[i]->at(0)->at(0),&crossSectionsAvg[i]->at(0));
+        TGraphErrors* graph = new TGraphErrors(energies[i]->at(0)->size(),
+                                  &energies[i]->at(0)->at(0),
+                                  &crossSectionsAvg[i]->at(0),
+                                  &energyError[0],
+                                  &crossSectionsErrorAvg[i]->at(0));
         graph->SetNameTitle(targetNames[i].c_str(),targetNames[i].c_str());
         graph->Write();
         plots.CSGraphs.push_back(graph);
     }
+
+    /*
 
     // sum all subruns and compute average
     for(int i=1; (size_t)i<energiesWaveform.size(); i++)
@@ -477,48 +637,15 @@ int main()
         }
 
         // create new graphs to display the average
-        TGraph* graph = new TGraph(energiesWaveform[i]->at(0)->size(),&energiesWaveform[i]->at(0)->at(0),&crossSectionsWaveformAvg[i]->at(0));
+        TGraphErrors* graph = new TGraphErrors(energiesWaveform[i]->at(0)->size(),&energiesWaveform[i]->at(0)->at(0),&crossSectionsWaveformAvg[i]->at(0));
         graph->SetNameTitle(targetNamesWaveform[i].c_str(),targetNamesWaveform[i].c_str());
         graph->Write();
         plots.CSGraphs.push_back(graph);
     }
+    */
 
-    // create relative cross-section plot for 112Sn/124Sn
-    vector<double> Sn124PlusSn112CSData; 
-    vector<double> Sn124MinusSn112CSData; 
-    vector<double> Sn124Sn112relativeCSData; 
-
-    Sn124PlusSn112CSData.resize(crossSectionsAvg[1]->size());
-    Sn124MinusSn112CSData.resize(crossSectionsAvg[1]->size());
-    Sn124Sn112relativeCSData.resize(crossSectionsAvg[1]->size());
-
-    for(int i=1; (size_t)i<Sn124PlusSn112CSData.size(); i++)
-    {
-        Sn124PlusSn112CSData[i] = crossSectionsAvg[5]->at(i) + crossSectionsAvg[3]->at(i);
-        Sn124MinusSn112CSData[i] = crossSectionsAvg[5]->at(i) - crossSectionsAvg[3]->at(i);
-        Sn124Sn112relativeCSData[i] =
-            (crossSectionsAvg[5]->at(i) - crossSectionsAvg[3]->at(i))/
-            (crossSectionsAvg[5]->at(i) + crossSectionsAvg[3]->at(i));
-    }
-
-    TGraph *Sn124PlusSn112CS =
-        new TGraph(Sn124PlusSn112CSData.size(),
-                  &energies[1]->at(0)->at(0),
-                  &Sn124PlusSn112CSData[0]);
-    Sn124PlusSn112CS->Write();
-
-    TGraph *Sn124MinusSn112CS =
-        new TGraph(Sn124MinusSn112CSData.size(),
-                  &energies[1]->at(0)->at(0),
-                  &Sn124MinusSn112CSData[0]);
-    Sn124MinusSn112CS->Write();
-
-    TGraph *Sn124Sn112relativeCS =
-        new TGraph(Sn124Sn112relativeCSData.size(),
-                &energies[1]->at(0)->at(0),
-                &Sn124Sn112relativeCSData[0]);
-    Sn124Sn112relativeCS->SetTitle("#frac{#sigma_{^{124}Sn}-#sigma_{^{112}Sn}}{#sigma_{^{124}Sn}+#sigma_{^{112}Sn}}");
-    Sn124Sn112relativeCS->Write();
+    // produce relative cross section with isotopic cross sections
+    // adjusted by matching to the literature SnNat data
 
     //getStatisticalError(Sn112CSTotalLog, Sn124CSTotalLog);
     //getSystemicError();
@@ -529,7 +656,62 @@ int main()
     vector<double> error;
     */
 
+    // read literature data
+    TFile *litDataFile = new TFile("/data2/analysis/literatureData.root","READ");
+    TGraphErrors *SnNatLitGraph = (TGraphErrors*)litDataFile->Get("Natural Sn (n,tot)");
+    TGraphErrors *CNatLitGraph = (TGraphErrors*)litDataFile->Get("Natural carbon (n,tot)");
+
+    // extract literature data on natural Sn and natural carbon
+    vector<double>* SnNatLitData = new vector<double>;
+    vector<double>* CNatLitData = new vector<double>;
+
+    vector<double>* SnNatLitError = new vector<double>;
+    vector<double>* CNatLitError = new vector<double>;
+
+    for(int i=0; i<energies[1]->at(0)->size(); i++)
+    {
+        SnNatLitData->push_back(SnNatLitGraph->Eval(energies[1]->at(0)->at(i)));
+        CNatLitData->push_back(CNatLitGraph->Eval(energies[1]->at(0)->at(i)));
+        SnNatLitError->push_back(SnNatLitGraph->GetErrorY(energies[1]->at(0)->at(i)));
+        CNatLitError->push_back(CNatLitGraph->GetErrorY(energies[1]->at(0)->at(i)));
+    }
+
+    litDataFile->Close();
+    outFile->cd();
+
+    // create Sn124/Sn112 relative cross section plot
+    createRelativeCSPlot(crossSectionsAvg[5], crossSectionsErrorAvg[5],
+                         crossSectionsAvg[3], crossSectionsErrorAvg[3],
+                         energies[1]->at(0), energiesError[1]->at(0),
+                         "Sn relative CS",
+                         "#frac{#sigma_{^{124}Sn}-#sigma_{^{112}Sn}}{#sigma_{^{124}Sn}+#sigma_{^{112}Sn}}",
+                         false);
+
+    // create long carbon/short carbon relative cross section plot
+    createRelativeCSPlot(crossSectionsAvg[2], crossSectionsErrorAvg[2],
+                         crossSectionsAvg[1], crossSectionsErrorAvg[1],
+                         energies[1]->at(0), energiesError[1]->at(0),
+                         "long/short carbon relative CS",
+                         "long/short carbon relative CS",
+                         true);
+
+    // create short carbon/literature carbon relative cross section plot
+    createRelativeCSPlot(crossSectionsAvg[1], crossSectionsErrorAvg[1],
+                         CNatLitData, CNatLitError,
+                         energies[1]->at(0), energiesError[1]->at(0),
+                         "short carbon/lit carbon relative CS",
+                         "short carbon/lit carbon relative CS",
+                         true);
+
+    // create SnNat/literature Sn relative cross section plot
+    createRelativeCSPlot(crossSectionsAvg[4], crossSectionsErrorAvg[4],
+                         SnNatLitData, SnNatLitError,
+                         energies[1]->at(0), energiesError[1]->at(0),
+                         "SnNat/lit Sn relative CS",
+                         "SnNat/lit Sn relative CS",
+                         true);
+
     // Write run histograms to sum.root
-    outfile->Write();
-    outfile->Close();
+    outFile->Write();
+    outFile->Close();
 }
