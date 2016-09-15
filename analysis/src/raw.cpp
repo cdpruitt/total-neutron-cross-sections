@@ -1,3 +1,16 @@
+#include <iostream>
+#include <iomanip>
+#include <fstream>
+#include <string>
+#include <sstream>
+#include "TFile.h"
+#include "TTree.h"
+#include "../include/raw.h"
+#include "../include/dataStructures.h"
+#include "../include/physicalConstants.h"
+
+extern RawEvent rawEvent;
+
 /******************************************************************************
   raw.cpp
  ******************************************************************************/
@@ -47,110 +60,50 @@
 //      (only events of type 2 have WAVEFORM EVENT BODY)
 //      ---------------------------------------------------------------------------
 
-#include <iostream>
-#include <iomanip>
-#include <fstream>
-#include <string>
-#include <sstream>
-#include "TFile.h"
-#include "TTree.h"
-
 using namespace std;
-
-const double SAMPLE_PERIOD = 2; // time of one sample, in ns
-
-// To populate events from the raw file into a ROOT tree, we provide
-// an event structure listing all the variables that comprise an event.
-// When a new event is added to the tree, a subset of these variables is
-// included in the new event being saved.
-struct Event
-{
-    // Event header variables:
-    unsigned int size;    // size of event, in bytes
-    unsigned int evtType; // "event type", either 1 (DPP) or 2 (waveform)
-    unsigned int chNo;    // "channel number" indicates event origin (i.e.,
-    // detector, monitor, target changer)
-    double timetag;       // "coarse timestamp of event" includes 32 bits of time
-    // information. Units are the same as the sample period of
-    // the digitizer (e.g. 2 ns or 5 ns)
-
-    // Event body variables:
-    unsigned int extraSelect; // indicates the meaning of the "extras" words
-    unsigned int sgQ;     // "short gate integrated charge" provides the charge
-    // integral over an adjustable range of the event's peak 
-    unsigned int lgQ;     // "long gate integrated charge" provides the charge
-    // integral over an adjustable range of the event's peak 
-    unsigned int nSamp; // number of samples in the event's waveform
-    vector<int> waveform; // "digital waveform of event" is a series of waveform
-    // samples for each event
-
-    // Variables extracted from "extras"
-
-    unsigned int baseline;
-    unsigned int flags;
-    unsigned int extTime; // "extended timestamp of event" extends timetag with
-    // 16 additional bits for times greater than 2^32
-    // sample periods.
-    unsigned int fineTime;// "fine timestamp of event" sub-divides timetag with
-    // 10 additional bits of time granularity, with units of
-    // (sample period)/2^10 units.
-    unsigned int PZC; // positive zero-crossing (for manual CFD calculation)
-    unsigned int NZC; // negative zero-crossing (for manual CFD calculation)
-} ev;
-
-// Raw data is stored as hexadecimal words (16 bits long) in the .evt files
-int const BufferWords = 1; // number of chars per buffer word
-int const BufferBytes = BufferWords*2; // number of bytes per buffer word
-
-// track number of processed events of each type
-long numberOfEvents = 0;
-long numberOfDPPs = 0;
-long numberOfWaveforms = 0;
-long numberOfCh0Waveforms = 0;
-long numberOfCh2Waveforms = 0;
-long numberOfCh4Waveforms = 0;
 
 // extract a single event from the raw event file and fill its data into the
 // tree
 int readEvent(ifstream& evtfile)
 {
     // clear all DPP-specific event variables to prepare for reading event
-    ev.extTime = 0;
-    ev.fineTime = 0;
-    ev.sgQ = 0;
-    ev.lgQ = 0;
+    rawEvent.extTime = 0;
+    rawEvent.fineTime = 0;
+    rawEvent.sgQ = 0;
+    rawEvent.lgQ = 0;
 
-    unsigned short buffer[BufferWords];
+    unsigned short buffer[BUFFER_WORDS];
+    // we're now pointing at the first 16-bit word in the data stream
 
     // start reading event header (common to all events)
 
-    evtfile.read((char*)buffer,BufferBytes);
+    evtfile.read((char*)buffer,BUFFER_BYTES);
     unsigned short size1 = buffer[0];
-    evtfile.read((char*)buffer,BufferBytes);
+    evtfile.read((char*)buffer,BUFFER_BYTES);
     unsigned short size2 = buffer[0];
-    ev.size = (size2 << 16) | size1;
+    rawEvent.size = (size2 << 16) | size1;
 
-    evtfile.read((char*)buffer,BufferBytes);
+    evtfile.read((char*)buffer,BUFFER_BYTES);
     unsigned short evtType1 = buffer[0];
-    evtfile.read((char*)buffer,BufferBytes);
+    evtfile.read((char*)buffer,BUFFER_BYTES);
     unsigned short evtType2 = buffer[0];
-    ev.evtType = (evtType2 << 16) | evtType1;
+    rawEvent.evtType = (evtType2 << 16) | evtType1;
 
-    evtfile.read((char*)buffer,BufferBytes);
+    evtfile.read((char*)buffer,BUFFER_BYTES);
     unsigned short chNo1 = buffer[0];
-    evtfile.read((char*)buffer,BufferBytes);
+    evtfile.read((char*)buffer,BUFFER_BYTES);
     unsigned short chNo2 = buffer[0];
-    ev.chNo = (chNo2 << 16) | chNo1;
+    rawEvent.chNo = (chNo2 << 16) | chNo1;
 
-    evtfile.read((char*)buffer,BufferBytes);
+    evtfile.read((char*)buffer,BUFFER_BYTES);
     unsigned short timetag1 = buffer[0];
-    evtfile.read((char*)buffer,BufferBytes);
+    evtfile.read((char*)buffer,BUFFER_BYTES);
     unsigned short timetag2 = buffer[0];
-    ev.timetag = (timetag2<< 16) | timetag1;
-    ev.timetag *= SAMPLE_PERIOD; // timetag converted from samples to ns
+    rawEvent.timetag = (timetag2<< 16) | timetag1;
+    rawEvent.timetag *= SAMPLE_PERIOD; // timetag converted from samples to ns
     // finished reading event header
 
-    if(ev.evtType==1)
+    if(rawEvent.evtType==1)
     {
         // start reading event data specific to DPP events
 
@@ -163,30 +116,30 @@ int readEvent(ifstream& evtfile)
         //              5: CFD positive ZC (bits 16-31) and negative ZC (bits 0-15)
         //              7: fixed value of 0x12345678
 
-        evtfile.read((char*)buffer,BufferBytes);
-        ev.extraSelect = buffer[0];
+        evtfile.read((char*)buffer,BUFFER_BYTES);
+        rawEvent.extraSelect = buffer[0];
 
-        evtfile.read((char*)buffer,BufferBytes);
+        evtfile.read((char*)buffer,BUFFER_BYTES);
         unsigned int extras1 = buffer[0];
 
-        evtfile.read((char*)buffer,BufferBytes);
+        evtfile.read((char*)buffer,BUFFER_BYTES);
         unsigned int extras2 = buffer[0];
 
-        switch(ev.extraSelect)
+        switch(rawEvent.extraSelect)
         {
             case 2:
                 // retrieve extended time from bits 16-31 (extras2)
-                ev.extTime = extras2;
+                rawEvent.extTime = extras2;
                 // retrieve configuration file flags from bits 10:15 (0xfc00)
-                ev.flags = (extras1 & 0xfc00);
+                rawEvent.flags = (extras1 & 0xfc00);
                 // retrieve fine time from bits 0:9 (0x03ff)
-                ev.fineTime = (extras1 & 0x03ff);
+                rawEvent.fineTime = (extras1 & 0x03ff);
                 break;
 
                 case 5:
                 // retrieve positive and negative zero-crossings
-                ev.PZC = extras2;
-                ev.NZC = extras1;
+                rawEvent.PZC = extras2;
+                rawEvent.NZC = extras1;
 
                 // other cases not currently implemented
             default:
@@ -194,31 +147,31 @@ int readEvent(ifstream& evtfile)
                 return 1;
         }
 
-        evtfile.read((char*)buffer,BufferBytes);
-        ev.sgQ = buffer[0];
+        evtfile.read((char*)buffer,BUFFER_BYTES);
+        rawEvent.sgQ = buffer[0];
 
-        evtfile.read((char*)buffer,BufferBytes);
-        ev.lgQ = buffer[0];
+        evtfile.read((char*)buffer,BUFFER_BYTES);
+        rawEvent.lgQ = buffer[0];
 
         // "pile-up rejection" flag (not implemented in current acquisition software,
         // so discard this data)
         //puRej = buffer[0];
-        evtfile.read((char*)buffer,BufferBytes);
+        evtfile.read((char*)buffer,BUFFER_BYTES);
 
         // "probe" indicates whether an additional diagnostic waveform will be captured along with the
         // normal waveform. The top bit turns on this probe waveform; the bottom two bits describe the
         // probe type.
         // Note that this is a diagnostic tool for acquisition turned off during production runs
         //probe = buffer[0];
-        evtfile.read((char*)buffer,BufferBytes);
+        evtfile.read((char*)buffer,BUFFER_BYTES);
 
-        numberOfDPPs++;
+        rawNumberOfDPPs++;
     }
 
-    else if (ev.evtType==2)
+    else if (rawEvent.evtType==2)
     {
         // waveform mode event
-        numberOfWaveforms++;
+        rawNumberOfWaveforms++;
     }
 
     else
@@ -230,70 +183,46 @@ int readEvent(ifstream& evtfile)
     // the DPP-mode only data has been read out, so now let's read out the data
     // that's always present (the number of waveform samples and the waveforms)
 
-    evtfile.read((char*)buffer,BufferBytes);
+    evtfile.read((char*)buffer,BUFFER_BYTES);
     unsigned short nSamp1 = buffer[0];
-    evtfile.read((char*)buffer,BufferBytes);
+    evtfile.read((char*)buffer,BUFFER_BYTES);
     unsigned short nSamp2 = buffer[0];
-    ev.nSamp = (nSamp2 << 16) | nSamp1;
+    rawEvent.nSamp = (nSamp2 << 16) | nSamp1;
 
-    ev.waveform.clear();
-    for(int i=0;(size_t)i<ev.nSamp;i++)
+    rawEvent.waveform->clear();
+    for(int i=0;(size_t)i<rawEvent.nSamp;i++)
     {
-        evtfile.read((char*)buffer,BufferBytes);
-        ev.waveform.push_back(buffer[0]);
+        evtfile.read((char*)buffer,BUFFER_BYTES);
+        rawEvent.waveform->push_back(buffer[0]);
     }
 
 
     // Update statistics on events
 
-    numberOfEvents++;
-    if(ev.evtType==2)
+    rawNumberOfEvents++;
+    if(rawEvent.evtType==2)
     {
-        if(ev.chNo==0)
+        if(rawEvent.chNo==0)
         {
-            numberOfCh0Waveforms++;
+            rawNumberOfCh0Waveforms++;
         }
 
-        if(ev.chNo==2)
+        if(rawEvent.chNo==2)
         {
-            numberOfCh2Waveforms++;
+            rawNumberOfCh2Waveforms++;
         }
 
-        if(ev.chNo==4)
+        if(rawEvent.chNo==4)
         {
-            numberOfCh4Waveforms++;
+            rawNumberOfCh4Waveforms++;
         }
     }
     return 0;
 }
 
-int main(int argc, char* argv[])
+void extractRawData(string inFileName, string outFileName)
 {
     cout << endl << "Entering raw sort..." << endl;
-
-    string inFileName = argv[1];
-    string outFileName = argv[2];
-
-    // Open a ROOT file to store the event data
-    TFile *outFile;
-    outFileName = outFileName + "raw.root";
-    outFile = new TFile(outFileName.c_str(),"UPDATE");
-    if(outFile->Get("tree"))
-    {
-        cout << "Found previously existing raw sort " << outFileName << ". Skipping raw sort." << endl;
-        exit(0);
-    }
-
-    // Create a ROOT tree for storing events 
-    TTree* tree = new TTree("tree","");
-    tree->Branch("evtType",&ev.evtType,"evtType/i");
-    tree->Branch("chNo",&ev.chNo,"chNo/i");
-    tree->Branch("extTime",&ev.extTime,"extTime/i");
-    tree->Branch("timetag",&ev.timetag,"timetag/d");
-    tree->Branch("fineTime",&ev.fineTime,"fineTime/i");
-    tree->Branch("sgQ",&ev.sgQ,"sgQ/i");
-    tree->Branch("lgQ",&ev.lgQ,"lgQ/i");
-    tree->Branch("waveform",&ev.waveform);
 
     // attempt to open input file
     ifstream inFile;
@@ -306,9 +235,23 @@ int main(int argc, char* argv[])
 
     cout << inFileName << " opened successfully. Start reading events..." << endl;
 
-    // we're now pointing at the first 16-bit word in the data stream
+    TFile* outFile = new TFile(outFileName.c_str(),"RECREATE");
+
+    //RawEvent* rawEvent = RawEvent::getInstance();
+
+    // Create a ROOT tree for storing events 
+    TTree* tree = new TTree("tree","");
+    tree->Branch("evtType",&rawEvent.evtType,"evtType/i");
+    tree->Branch("chNo",&rawEvent.chNo,"chNo/i");
+    tree->Branch("extTime",&rawEvent.extTime,"extTime/i");
+    tree->Branch("timetag",&rawEvent.timetag,"timetag/d");
+    tree->Branch("fineTime",&rawEvent.fineTime,"fineTime/i");
+    tree->Branch("sgQ",&rawEvent.sgQ,"sgQ/i");
+    tree->Branch("lgQ",&rawEvent.lgQ,"lgQ/i");
+    tree->Branch("waveform",&rawEvent.waveform);
+
     // start looping through the evtfile to extract events
-    while(!inFile.eof() /* use to truncate sort && numberOfEvents<1000000*/)
+    while(!inFile.eof() /* use to truncate sort && rawNumberOfEvents<1000000*/)
     {
         if(readEvent(inFile))
         {
@@ -319,18 +262,18 @@ int main(int argc, char* argv[])
         // Add event to tree
         tree->Fill();
 
-        if (numberOfEvents%10000 == 0)
+        if (rawNumberOfEvents%10000 == 0)
         {
-            cout << "Processed " << numberOfEvents << " events\r";
+            cout << "Processed " << rawNumberOfEvents << " events\r";
             fflush(stdout);
         }
     }
 
     // reached end of input file
     cout << "Finished processing event file" << endl;
-    cout << "Total events: " << numberOfEvents << endl;
-    cout << "Total number of DPP-mode events processed = " << numberOfDPPs << endl;
-    cout << "Total number of waveform-mode events processed = " << numberOfWaveforms << endl;
+    cout << "Total events: " << rawNumberOfEvents << endl;
+    cout << "Total number of DPP-mode events processed = " << rawNumberOfDPPs << endl;
+    cout << "Total number of waveform-mode events processed = " << rawNumberOfWaveforms << endl;
 
     inFile.close();
 

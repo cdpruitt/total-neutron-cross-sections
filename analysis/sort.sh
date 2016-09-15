@@ -26,17 +26,24 @@
 # SECTION 1: recompile analysis code
 
 # Check to see if analysis codes have been modified since last compile
-if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] || [ histos.cpp -nt histos ] || [ waveform.cpp -nt waveform ] || [ sumRun.cpp -nt sumRun ]
-then
+#if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] || [ histos.cpp -nt histos ] || [ waveform.cpp -nt waveform ] || [ sumRun.cpp -nt sumRun ]
+#then
     # sorting code modified
     # recompile to prepare for event sorting
-    make
-if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] || [ histos.cpp -nt histos ] || [ waveform.cpp -nt waveform ] || [ sumRun.cpp -nt sumRun ]
-    then
+#    make
+#if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] || [ histos.cpp -nt histos ] || [ waveform.cpp -nt waveform ] || [ sumRun.cpp -nt sumRun ]
+#    then
         # compilation failed - exit
-        printf "\nCompilation failed - correct errors before sorting.\n"
-        exit
-    fi
+#        printf "\nCompilation failed - correct errors before sorting.\n"
+#        exit
+#    fi
+#fi
+
+make
+if [ "$?" -ne 0 ]
+then
+    echo "Compilation failed - correct errors in source code."
+    exit $?
 fi
 
 ################################################################################
@@ -74,49 +81,13 @@ sort ()
         exit
     fi
 
-    # Convert selected .evt file to ROOT tree, stored as runX-YYYY_raw.root
-    ./raw "$inputFileName" "$outputDirectoryName"
-    # If ./raw returned an exit status indicating failure, exit the script
-    rc=$?; if [[ $rc != 0 ]]; then echo "./raw $inputFileName $outputDirectoryName
-    returned $rc, indicating error; exiting"; exit $rc; fi
-
-    # Process raw ROOT tree into channel-specific subtrees in runX-YYYY_sorted.root
-    ./resort "$outputDirectoryName"
-    # Delete temporary trees outputted by resort
-    tempFileName=$outputDirectoryName"temp.root"
-    rm $tempFileName
-    # If ./resort returned an exit status indicating failure, exit the script
-    rc=$?; if [[ $rc != 0 ]]; then echo "./resort $outputDirectoryName
-    returned $rc, indicating error; exiting"; exit $rc; fi
-
-    # Process waveforms from channel-specific subtrees
-    if [ "$waveform" = true ]
-    then
-        ./waveform "$outputDirectoryName" "$runNumber"
-        # If ./waveform returned an exit status indicating failure, exit the script
-        rc=$?; if [[ $rc != 0 ]]; then echo "./waveform $outputDirectoryName
-        returned $rc, indicating error; exiting"; exit $rc; fi
-    fi
-
-    # Process waveforms from channel-specific subtrees
-    if [ "$DPPwaveform" = true ]
-    then
-        ./DPPwaveform "$outputDirectoryName" "$runNumber"
-        # If ./DPPwaveform returned an exit status indicating failure, exit the script
-        rc=$?; if [[ $rc != 0 ]]; then echo "./DPPwaveform $outputDirectoryName
-        returned $rc, indicating error; exiting"; exit $rc; fi
-    fi
-    
     if [ "$overwriteHistos" = true ]
     then
         rm $outputDirectoryName"/histos.root"
     fi
-    # Process channel-specific subtrees into histograms in runX-YYYY_histos.root
-    ./histos "$outputDirectoryName" "$runNumber"
-    # If ./resort returned an exit status indicating failure, exit the script
-    rc=$?; if [[ $rc != 0 ]]; then echo "./histos $outputDirectoryName
-    returned $rc, indicating error; exiting"; exit $rc; fi
-    }
+
+    ./analyze "$inputFileName" "$outputDirectoryName" "$runNumber" "$waveform" "$DPPwaveform"
+}
 
 ################################################################################
 

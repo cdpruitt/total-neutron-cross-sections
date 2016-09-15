@@ -96,7 +96,7 @@ void readGraphs(
         cout << "Adding run " << runNumber << " " << i <<endl;
 
         // Pull out the cross section data
-        for(int j=0; j<targets.size(); j++)
+        for(int j=0; (size_t)j<targets.size(); j++)
         {
             TGraphErrors * graph = (TGraphErrors*)infile->Get(targets[j].c_str());
             energies[j]->push_back(new vector<double>);
@@ -131,34 +131,34 @@ void averageGraphs(
         crossSectionsErrorAvg.push_back(new vector<double>);
     }
 
-    for(int i=1; i<energies.size(); i++)
+    for(int i=1; (size_t)i<energies.size(); i++)
     {
         // compute average
         crossSectionsAvg[i]->resize(energies[0]->at(0)->size());
-        for(int j=0; j<energies[1]->size(); j++)
+        for(int j=0; (size_t)j<energies[1]->size(); j++)
         {
-            for(int k=0; k<energies[1]->at(0)->size(); k++)
+            for(int k=0; (size_t)k<energies[1]->at(0)->size(); k++)
             {
                 crossSectionsAvg[i]->at(k) += crossSections[i]->at(j)->at(k);
             }
         }
 
-        for(int k=0; k<energies[1]->at(0)->size(); k++)
+        for(int k=0; (size_t)k<energies[1]->at(0)->size(); k++)
         {
             crossSectionsAvg[i]->at(k) /= energies[1]->size();
         }
 
         // propagate error
         crossSectionsErrorAvg[i]->resize(energies[0]->at(0)->size());
-        for(int j=0; j<energies[1]->size(); j++)
+        for(int j=0; (size_t)j<energies[1]->size(); j++)
         {
-            for(int k=0; k<energies[1]->at(0)->size(); k++)
+            for(int k=0; (size_t)k<energies[1]->at(0)->size(); k++)
             {
                 crossSectionsErrorAvg[i]->at(k) += pow(crossSectionsError[i]->at(j)->at(k),2);
             }
         }
 
-        for(int k=0; k<energies[1]->at(0)->size(); k++)
+        for(int k=0; (size_t)k<energies[1]->at(0)->size(); k++)
         {
             crossSectionsErrorAvg[i]->at(k) = pow(crossSectionsErrorAvg[i]->at(k),0.5);
             crossSectionsErrorAvg[i]->at(k) /= energies[1]->size();

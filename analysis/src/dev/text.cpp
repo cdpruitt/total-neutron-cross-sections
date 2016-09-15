@@ -538,7 +538,7 @@ void printEvent(Event& event, TextOutput& text)
         *out << "| waveform length = " << left << setfill(' ') << setw(41) << temp.str() << " |" << endl;
         *out << "|" << right << setfill('-') << setw(62) << "|" << endl;
 
-        for(int i=0;i<event.nSamp;i++)
+        for(int i=0;(size_t)i<event.nSamp;i++)
         {
 
             if(event.nSamp>1000 && (i%1000 == 0))
