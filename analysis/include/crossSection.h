@@ -11,6 +11,7 @@ class CrossSection
         CrossSection();
         void addDataPoint(DataPoint dataPoint);
         DataPoint getDataPoint(int i);
+        void createCSGraph();
 
         int getNumberOfPoints();
         std::vector<double> getEnergyValues();
@@ -21,5 +22,8 @@ class CrossSection
     private:
         std::vector<DataPoint> data;
 };
+
+void calculateCS(const std::vector<std::string>& targetOrder, std::string histoFileName, std::string CSFileName);
+
 
 #endif

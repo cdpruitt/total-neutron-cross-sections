@@ -6,6 +6,7 @@
 #include "../include/histos.h"
 #include "../include/plots.h"
 #include "../include/waveform.h"
+#include "../include/crossSection.h"
 
 // ROOT library classes
 #include "TFile.h"
@@ -70,14 +71,6 @@ int main(int argc, char* argv[])
     {
         cout << "Error - bad run number given to ./driver" << endl;
     }
-
-    vector<Target*> targets;
-    for(string s : targetOrder)
-    {
-        targets.push_back(
-                new Target(TARGET_DATA_FILE_PATH + s + TARGET_DATA_FILE_EXTENSION));
-    }
-
 
     /*************************************************************************/
     /* Analyze data */
@@ -163,21 +156,16 @@ int main(int argc, char* argv[])
     /*************************************************************************/
     /* perform fits on DPP wavelets and waveform-mode data */
 
-    TFile* histoFile = new TFile(histoFileName.c_str(),"READ");
-    TFile* CSFile = new TFile(CSFileName.c_str(),"READ");
-    TFile* waveformFile = new TFile(waveformFileName.c_str(),"READ");
-
-    vector<Plots*> plots;
-    for(string s : targetOrder)
-    {
-        plots.push_back(new Plots(s, histoFile, waveformFile));
-    }
-
     // analyze the waveform-mode data, including peak-fitting and deadtime extraction
-    if(runWaveform)
-    {
-        waveform(sortedFileName, waveformFile, targets, plots);
-    }
+    //if(runWaveform)
+
+    waveform(sortedFileName, waveformFileName);
+
+    histos(sortedFileName, histoFileName);
+
+    // Calculate deadtime using waveform-mode data, and apply correction to
+    // DPP-mode data
+    correctForDeadtime(histoFileName, waveformFileName);
 
     // perform peak-fitting on the DPP-mode wavelets
     //if(DPPwaveform)
@@ -185,11 +173,8 @@ int main(int argc, char* argv[])
     //    DPPwaveform(sortedFileName,DPPWaveformFileName);
     //}
 
-    // fill histograms with DPP data
-    histos(sortedFileName, histoFile, CSFileName, plots);
-
     // calculate cross sections
-    //calculateCS(sortedFileName,CSFileName);
+    calculateCS(targetOrder,histoFileName,CSFileName);
 
     return 0;
 }
