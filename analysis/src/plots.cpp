@@ -123,58 +123,37 @@ TH1I* timeBinsToRKEBins(TH1I *inputHisto, string name)
     return outputHisto;
 }
 
-Plots::Plots(string name, TFile*& histoFile, TFile*& waveformFile)
+// create new plots
+Plots::Plots(string name)
 {
     string tofName = name + "TOF";
     string energyName = name + "Energy";
-    string tofCorrectedName = name + "TOFCorrected";
-    string energyCorrectedName = name + "EnergyCorrected";
+    string deadtimeName = name + "Deadtime";
 
-    if(!histoFile->IsOpen())
-    {
-        // no prior histograms exist - create new ones
-        TOFHisto = new TH1I(tofName.c_str(),tofName.c_str(),TOF_BINS,0,TOF_RANGE);
-        energyHisto = timeBinsToRKEBins(TOFHisto,energyName);
-        TOFHistoCorrected = new TH1I(tofCorrectedName.c_str(),tofCorrectedName.c_str(),TOF_BINS,0,TOF_RANGE);
-        energyHistoCorrected = timeBinsToRKEBins(TOFHistoCorrected,energyCorrectedName);
-    }
-
-    else
-    {
-        histoFile->cd(dirs[2].c_str());
-        TOFHisto = (TH1I*)histoFile->Get(tofName.c_str());
-        energyHisto = (TH1I*)histoFile->Get(energyName.c_str());
-        TOFHistoCorrected = (TH1I*)histoFile->Get(tofCorrectedName.c_str());
-        energyHistoCorrected = (TH1I*)histoFile->Get(energyCorrectedName.c_str());
-    }
-
-    string tofNameW = name + "WaveformTOF";
-    string energyNameW = name + "WaveformEnergy";
-    string tofCorrectedNameW = name + "WaveformTOFCorrected";
-    string energyCorrectedNameW = name + "WaveformEnergyCorrected";
-    string deadtimeName = name + "deadtime";
-
-    if(!waveformFile->IsOpen())
-    {
-        waveformTOFHisto = new TH1I(tofNameW.c_str(),tofNameW.c_str(),TOF_BINS,0,TOF_RANGE);
-        waveformEnergyHisto = timeBinsToRKEBins(waveformTOFHisto,energyNameW);
-        waveformTOFHistoCorrected = new TH1I(tofCorrectedNameW.c_str(),tofCorrectedNameW.c_str(),TOF_BINS,0,TOF_RANGE);
-        waveformEnergyHistoCorrected = timeBinsToRKEBins(waveformTOFHistoCorrected,energyCorrectedNameW);
-        deadtimeHisto = new TH1I(deadtimeName.c_str(),deadtimeName.c_str(),TOF_BINS,0,TOF_RANGE);
-    }
-
-    else
-    {
-        waveformTOFHisto = (TH1I*)histoFile->Get(tofNameW.c_str());
-        waveformEnergyHisto = (TH1I*)histoFile->Get(energyNameW.c_str());
-        waveformTOFHistoCorrected = (TH1I*)histoFile->Get(tofCorrectedNameW.c_str());
-        waveformEnergyHistoCorrected = (TH1I*)histoFile->Get(energyCorrectedNameW.c_str());
-    }
+    TOFHisto = new TH1I(tofName.c_str(),tofName.c_str(),TOF_BINS,0,TOF_RANGE);
+    energyHisto = timeBinsToRKEBins(TOFHisto,energyName);
+    deadtimeHisto = new TH1I(deadtimeName.c_str(),deadtimeName.c_str(),TOF_BINS,0,TOF_RANGE);
 }
 
-CrossSection Plots::getCrossSection()
+// reconnect to old plots
+Plots::Plots(string name, TFile*& inputFile)
 {
-    return crossSection;
+    string tofName = name + "TOF";
+    string energyName = name + "Energy";
+    string deadtimeName = name + "Deadtime";
+
+    if(!inputFile->IsOpen())
+    {
+        // can't find histograms - exit with error
+        cout << "error - couldn't open histograms" << endl;
+    }
+
+    else
+    {
+        TOFHisto = (TH1I*)inputFile->Get(tofName.c_str());
+        energyHisto = (TH1I*)inputFile->Get(energyName.c_str());
+        deadtimeHisto = (TH1I*)inputFile->Get(deadtimeName.c_str());
+    }
 }
 
 TH1I* Plots::getTOFHisto()
@@ -182,39 +161,9 @@ TH1I* Plots::getTOFHisto()
     return TOFHisto;
 }
 
-TH1I* Plots::getTOFHistoCorrected()
-{
-    return TOFHistoCorrected;
-}
-
 TH1I* Plots::getEnergyHisto()
 {
     return energyHisto;
-}
-
-TH1I* Plots::getEnergyHistoCorrected()
-{
-    return energyHistoCorrected;
-}
-
-TH1I* Plots::getWaveformTOFHisto()
-{
-    return waveformTOFHisto;
-}
-
-TH1I* Plots::getWaveformTOFHistoCorrected()
-{
-    return waveformTOFHistoCorrected;
-}
-
-TH1I* Plots::getWaveformEnergyHisto()
-{
-    return waveformEnergyHisto;
-}
-
-TH1I* Plots::getWaveformEnergyHistoCorrected()
-{
-    return waveformEnergyHistoCorrected;
 }
 
 TH1I* Plots::getDeadtimeHisto()
@@ -222,21 +171,4 @@ TH1I* Plots::getDeadtimeHisto()
     return deadtimeHisto;
 }
 
-long Plots::getMonitorCounts()
-{
-    return monitorCounts;
-}
 
-void Plots::setMonitorCounts(int m)
-{
-    monitorCounts = m;
-}
-
-void Plots::createCSGraph()
-{
-    CSGraph = new TGraphErrors(crossSection.getNumberOfPoints(),
-                               &crossSection.getEnergyValues()[0],
-                               &crossSection.getEnergyErrors()[0],
-                               &crossSection.getCrossSectionValues()[0],
-                               &crossSection.getCrossSectionErrors()[0]);
-}

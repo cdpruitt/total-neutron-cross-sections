@@ -49,14 +49,14 @@ struct Output
 
 // Populate advanced histograms (TOFs, cross-section, etc) calculated using
 // data from ch4 and ch6 trees
-void fillAdvancedHistos(int detIndex, TFile *histoFile)
+void fillAdvancedHistos(int detIndex, TFile *histoFile, vector<Plots*>& plots)
 {
     /*************************************************************************/
     // Prepare histograms
 
     // navigate to the correct directory for channel 2*i 
-    gDirectory->cd("/");
-    gDirectory->GetDirectory(dirs[detIndex].c_str())->cd();
+    //gDirectory->cd("/");
+    //gDirectory->GetDirectory(dirs[detIndex].c_str())->cd();
 
     // Initialize histograms for this channel (to be filled by events after they
     // pass through various energy, time, and charge filters below
@@ -255,22 +255,22 @@ void fillAdvancedHistos(int detIndex, TFile *histoFile)
                 /*****************************************************************/
                 // Fill target-specific plots
 
-                /*if (procEvent.targetPos>0 && procEvent.targetPos<=NUMBER_OF_TARGETS)
+                if (procEvent.targetPos>0 && procEvent.targetPos<=NUMBER_OF_TARGETS)
                 {
-                    plots.TOFHistos[procEvent.targetPos-1]->Fill(microTime);
-                    plots.energyHistos[procEvent.targetPos-1]->Fill(rKE);
+                    plots[procEvent.targetPos-1]->getTOFHisto()->Fill(microTime);
+                    plots[procEvent.targetPos-1]->getEnergyHisto()->Fill(rKE);
 
                     if(!gammaInMicro)
                     {
-                        plots.energyHistosNoGamma[procEvent.targetPos-1]->Fill(rKE);
+                        //plots.energyHistosNoGamma[procEvent.targetPos-1]->Fill(rKE);
                     }
 
                     if(orderInMicro==1)
                     {
-                        plots.TOFHistosFirstInMicro[procEvent.targetPos-1]->Fill(microTime);
+                        //plots.TOFHistosFirstInMicro[procEvent.targetPos-1]->Fill(microTime);
                         microsPerTarget[procEvent.targetPos-1]++;
                     }
-                }*/
+                }
 
                 // end of energy, time, cross-section gates on events
                 /*****************************************************************/
@@ -298,6 +298,12 @@ void fillAdvancedHistos(int detIndex, TFile *histoFile)
         }
     }
 
+    for(Plots* p : plots)
+    {
+        p->getTOFHisto()->Write();
+        p->getEnergyHisto()->Write();
+    }
+
     /*for(int i=0; i<NUMBER_OF_TARGETS; i++)
     {
         string temp = positionNames[i] + "GateRatio";
@@ -306,16 +312,37 @@ void fillAdvancedHistos(int detIndex, TFile *histoFile)
     }*/
 }
 
-void correctForDeadtime(vector<Plots*>& plots)
+void correctForDeadtime(string histoFileName, string waveformFileName)
 {
-    // save reference to the histo file for later use
-    TFile* histoFile = gDirectory->GetFile();
+    TFile* waveformFile = new TFile(waveformFileName.c_str(),"READ");
+    TFile* histoFile = new TFile(histoFileName.c_str(),"UPDATE");
+
+    vector<Plots*> uncorrectedPlots;
+    for(int i=0; i<NUMBER_OF_TARGETS; i++)
+    {
+        string name = positionNames[i];
+        uncorrectedPlots.push_back(new Plots(name,histoFile));
+    }
+
+    vector<Plots*> correctedPlots;
+    for(int i=0; i<NUMBER_OF_TARGETS; i++)
+    {
+        string name = positionNames[i] + "Corrected";
+        correctedPlots.push_back(new Plots(name));
+    }
+
+    vector<Plots*> deadtimePlots;
+    for(int i=0; i<NUMBER_OF_TARGETS; i++)
+    {
+        string name = positionNames[i] + "W";
+        deadtimePlots.push_back(new Plots(name, waveformFile));
+    }
 
     // extract deadtime from waveform-mode fit
 
     TRandom3 *randomizeBin = new TRandom3();
 
-    for(Plots* p : plots)
+    for(int i=0; i<NUMBER_OF_TARGETS; i++)
     {
         // "deadtimeFraction" records the fraction of time that the detector is dead, for
         // neutrons of a certain energy.
@@ -332,7 +359,7 @@ void correctForDeadtime(vector<Plots*>& plots)
             exit(1);
         }*/
 
-        TH1I* deadtimeHisto = p->getDeadtimeHisto();
+        TH1I* deadtimeHisto = deadtimePlots[i]->getDeadtimeHisto();
         int deadtimeBins = deadtimeHisto->GetNbinsX();
 
         for(int j=0; j<deadtimeBins; j++)
@@ -341,8 +368,6 @@ void correctForDeadtime(vector<Plots*>& plots)
         }
 
         // create deadtime-corrected histograms
-        histoFile->cd();
-        gDirectory->cd(dirs[2].c_str());
 
         deadtimeHisto->Write();
 
@@ -362,10 +387,11 @@ void correctForDeadtime(vector<Plots*>& plots)
 
         // loop through all TOF histos
 
-        TH1I* tof = p->getTOFHisto();
-        TH1I* tofC = p->getTOFHistoCorrected();
-        TH1I* en = p->getEnergyHisto();
-        TH1I* enC = p->getEnergyHistoCorrected();
+        TH1I* tof = uncorrectedPlots[i]->getTOFHisto();
+        TH1I* en = uncorrectedPlots[i]->getEnergyHisto();
+
+        TH1I* tofC = correctedPlots[i]->getTOFHisto();
+        TH1I* enC = correctedPlots[i]->getEnergyHisto();
 
         int tofBins = tof->GetNbinsX();
 
@@ -374,7 +400,7 @@ void correctForDeadtime(vector<Plots*>& plots)
         {
             if(deadtimeFraction[j] > 0)
             {
-                tofC->SetBinContent(j,(tofC->GetBinContent(j)/(1-deadtimeFraction[j])));
+                tofC->SetBinContent(j,(tof->GetBinContent(j)/(1-deadtimeFraction[j])));
             }
 
             // convert microTime into neutron velocity based on flight path distance
@@ -391,6 +417,9 @@ void correctForDeadtime(vector<Plots*>& plots)
         tofC->Write();
         enC->Write();
     }
+
+    waveformFile->Close();
+    histoFile->Close();
 }
 
 /*void fillCSGraphs(string CSFileName, vector<Target*>& targets)
@@ -731,7 +760,7 @@ setBranches(orchard[3]);
 }
 */
 
-int histos(string sortedFileName, TFile*& histoFile, string CSFileName, vector<Plots*>& plots)
+int histos(string sortedFileName, string histoFileName)
 {
     cout << endl << "Entering ./histos..." << endl;
 
@@ -764,19 +793,24 @@ int histos(string sortedFileName, TFile*& histoFile, string CSFileName, vector<P
     cout.precision(13);
 
     // open output file to contain histos
-    histoFile->cd("/detS");
-    if(!gDirectory->Get("macroNoH"))
+    TFile* histoFile = new TFile(histoFileName.c_str(),"UPDATE");
+    if(!histoFile->Get("blankEnergy"))
     {
         // No histogram file - need to create it and fill it before moving on to
         // cross-section histos
-        histoFile = new TFile(histoFileName.c_str(),"RECREATE");
+
+        vector<Plots*> plots;
+        for(int i=0; i<NUMBER_OF_TARGETS; i++)
+        {
+            plots.push_back(new Plots(positionNames[i]));
+        }
 
         // prepare the root file with 4 directories, one for each channel
         // these directories will hold basic variable histograms showing the
         // raw data in each tree, plus TOF, x-sections, etc histograms
         fillHistos();
         // fill TOF, cross-section, etc. histos for channels 4, 6
-        fillAdvancedHistos(2, histoFile);
+        fillAdvancedHistos(2, histoFile, plots);
         //fillAdvancedHistos(3);
 
         sortedFile->Close();
@@ -785,22 +819,9 @@ int histos(string sortedFileName, TFile*& histoFile, string CSFileName, vector<P
 
     else
     {
-        histoFile->Close();
-        histoFile = new TFile(histoFileName.c_str(),"UPDATE");
-        histoFile->cd(dirs[2].c_str());
-        gDirectory->Delete("*deadtime*;*");
-        gDirectory->Delete("*Corrected;*");
+        gDirectory->Delete("*Deadtime*;*");
+        gDirectory->Delete("*Corrected*;*");
     }
-
-    // Calculate deadtime using waveform-mode data, and apply correction to
-    // DPP-mode data
-    correctForDeadtime(plots);
-
-    // Calculate cross-sections using target data and corrected energy histograms
-    //calculateCS(targets, histoFile);
-
-    // Fill cross-section histograms using calculated cross-section data
-    //fillCSGraphs(CSFileName, targets);
 
     // Modify plots
     /*for(int i=0; i<NUMBER_OF_TARGETS; i++)

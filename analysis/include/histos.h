@@ -3,6 +3,7 @@
 
 #include "plots.h"
 
-int histos(std::string sortedFileName, TFile*& histoFile, std::string crossSectionFileName, std::vector<Plots*>& plots);
+int histos(std::string sortedFileName, std::string histoFileName);
+void correctForDeadtime(std::string histoFileName, std::string waveformFileName);
 
 #endif

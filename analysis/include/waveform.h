@@ -5,6 +5,6 @@
 
 #include "plots.h"
 
-void waveform(std::string inFileName, TFile*& outFile, const std::vector<Target*>& targets, std::vector<Plots*>& plots);
+void waveform(std::string inFileName,std::string outFileName);
 
 #endif

@@ -411,7 +411,7 @@ double calculateGammaOffset()
     return gammaOffset;
 }
 
-void fillTriggerHistos(double triggerTime, double gammaOffset, int waveformNo, const vector<Target*>& targets,vector<Plots*>& plots)
+void fillTriggerHistos(double triggerTime, double gammaOffset, int waveformNo, vector<Plots*>& plots)
 {
     // Calculate time of flight from trigger time
     microTime = fmod((triggerTime+WAVEFORM_OFFSET),MICRO_LENGTH)-gammaOffset;
@@ -428,8 +428,8 @@ void fillTriggerHistos(double triggerTime, double gammaOffset, int waveformNo, c
 
     if (procEvent.targetPos>0 && procEvent.targetPos<=NUMBER_OF_TARGETS)
     {
-        TH1I* tof = plots[procEvent.targetPos-1]->getWaveformTOFHisto();
-        TH1I* en = plots[procEvent.targetPos-1]->getWaveformEnergyHisto();
+        TH1I* tof = plots[procEvent.targetPos-1]->getTOFHisto();
+        TH1I* en = plots[procEvent.targetPos-1]->getEnergyHisto();
 
         tof->Fill(microTime);
         en->Fill(rKE);
@@ -464,18 +464,11 @@ void processTrigger(int waveformNo, float triggerSample)
     }
 }
 
-void processWaveforms(TTree* ch4TreeWaveform, const vector<Target*>& targets, vector<Plots*>& plots)
+void processWaveforms(TTree* ch4TreeWaveform, vector<Plots*>& plots)
 {
     triggerWalk = new TH2I("triggerWalk","trigger time vs. waveform chunk #",200,0,200,1000,0,1000);
 
     relativeTriggerSampleHisto = new TH1I("relativeTriggerSampleHisto","relative trigger time, from start of fitted wavelet",100,PEAKFIT_OFFSET*SAMPLE_PERIOD,(PEAKFIT_OFFSET+PEAKFIT_WINDOW)*SAMPLE_PERIOD);
-
-    //convolvedPeakFunc = new TF1Convolution(fittingFunc,detFunc,SAMPLE_PERIOD*PEAKFIT_OFFSET,SAMPLE_PERIOD*(PEAKFIT_OFFSET+PEAKFIT_WINDOW),true);
-    //convolvedPeakFunc = new TF1Convolution(fittingFunc,detFunc,SAMPLE_PERIOD*PEAKFIT_OFFSET,SAMPLE_PERIOD*(PEAKFIT_OFFSET+PEAKFIT_WINDOW),true);
-    //convolvedPeakFunc->SetRange(SAMPLE_PERIOD*PEAKFIT_OFFSET,SAMPLE_PERIOD*(PEAKFIT_OFFSET+PEAKFIT_WINDOW));
-    //convolvedPeakFunc->SetNofPointsFFT(20000);
-
-    //fittingFunc = new TF1("fitf",*convolvedPeakFunc,SAMPLE_PERIOD*PEAKFIT_OFFSET,SAMPLE_PERIOD*(PEAKFIT_OFFSET+PEAKFIT_WINDOW),convolvedPeakFunc->GetNpar());
 
     // Loop through all channel-specific trees
     for(int i=0; (size_t)i<1; i++)
@@ -550,7 +543,7 @@ void processWaveforms(TTree* ch4TreeWaveform, const vector<Target*>& targets, ve
             {
                 for(int m=0; (size_t)m<triggerList.size(); m++)
                 {
-                    fillTriggerHistos(triggerList[m], gammaOffset, j, targets, plots);
+                    fillTriggerHistos(triggerList[m], gammaOffset, j, plots);
                 }
             }
 
@@ -632,6 +625,12 @@ void processWaveforms(TTree* ch4TreeWaveform, const vector<Target*>& targets, ve
                 break;
             }*/
         }
+
+        for(Plots* p : plots)
+        {
+            p->getTOFHisto()->Write();
+            p->getEnergyHisto()->Write();
+        }
     }
 
     for(int k=0; (size_t)k<NUMBER_OF_TARGETS; k++)
@@ -672,7 +671,7 @@ void calculateDeadtime(TTree* ch4TreeWaveform, vector<Plots*>& plots)
         cout << "microsPerTarget[i] = " << microsPerTarget[i] << endl;
 
         // for each bin,
-        TH1I* tof = plots[i]->getWaveformTOFHisto();
+        TH1I* tof = plots[i]->getTOFHisto();
         TH1I* dtH = plots[i]->getDeadtimeHisto();
 
         for(int j=0; j<tof->GetNbinsX(); j++)
@@ -710,7 +709,7 @@ void calculateDeadtime(TTree* ch4TreeWaveform, vector<Plots*>& plots)
     }
 }
 
-void waveform(string inFileName, TFile*& outFile, const vector<Target*>& targets, vector<Plots*>& plots)
+void waveform(string inFileName, string outFileName)
 {
     TFile* inFile = new TFile(inFileName.c_str(),"READ");
     if(!inFile->IsOpen())
@@ -728,16 +727,23 @@ void waveform(string inFileName, TFile*& outFile, const vector<Target*>& targets
     //TTree* ch2TreeW = (TTree*)file->Get("ch2ProcessedTreeW");
     TTree* ch4TreeWaveform = (TTree*)inFile->Get("ch4ProcessedTreeW");
 
-    // open output file to contain waveform histos
-    //TFile* outFile = new TFile(outFileName.c_str(),"READ");
-    if(!outFile->IsOpen())
-    {
-        // No waveform file - need to create it and fill it before moving on to
-        // cross-section histos
-        TFile* outFile = new TFile(outFileName.c_str(),"RECREATE");
+    TFile* outFile;
+    outFile = new TFile(outFileName.c_str(),"UPDATE");
 
+    vector<Plots*> plots;
+
+    // if plots are empty
+    if(!(TH1I*)outFile->Get("blankWEnergy"))
+    {
         // Extract triggers from waveforms
-        processWaveforms(ch4TreeWaveform, targets, plots);
+
+        for(int i=0; i<NUMBER_OF_TARGETS; i++)
+        {
+            string name = positionNames[i] + "W";
+            plots.push_back(new Plots(name.c_str()));
+        }
+
+        processWaveforms(ch4TreeWaveform, plots);
 
         cout << "Number of good fits: " << numberGoodFits << endl;
         cout << "onePeak = " << numberOnePeakFits << endl; 
@@ -745,15 +751,16 @@ void waveform(string inFileName, TFile*& outFile, const vector<Target*>& targets
         cout << "twoPeaks = " << numberTwoPeakFits << endl << endl; 
         cout << "Number of bad fits: " << numberBadFits << endl;
 
-        outFile->Write();
+     //   outFile->Write();
     }
 
     else
     {
-        TFile* outFile = new TFile(outFileName.c_str(),"UPDATE");
-        gDirectory->Delete("*Waveform;*");
-        gDirectory->Delete("*deadtime*;*");
-        gDirectory->Delete("*Corrected;*");
+        for(int i=0; i<NUMBER_OF_TARGETS; i++)
+        {
+            string name = positionNames[i] + "W";
+            plots.push_back(new Plots(name.c_str(), outFile));
+        }
     }
 
     // perform a manual dead-time correction

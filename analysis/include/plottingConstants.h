@@ -16,6 +16,7 @@ const int TOF_BINS = 18000; // for plots with time units as abscissa
 
 const std::vector<std::string> positionNames =
 {"blank", "target1", "target2", "target3", "target4", "target5"}; 
+
 // segregate histograms by target position, with labels given by 'positionNames'
 
 const std::string dirs[4] = {"targetChanger","monitor","detS","scavenger"};
