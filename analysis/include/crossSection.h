@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "DataPoint.h"
+#include "../include/dataPoint.h"
 
 class CrossSection
 {

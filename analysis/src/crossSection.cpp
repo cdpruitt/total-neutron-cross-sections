@@ -3,7 +3,7 @@
 #include "../include/target.h"
 #include "../include/targetConstants.h"
 #include "../include/crossSection.h"
-#include "../include/DataPoint.h"
+#include "../include/dataPoint.h"
 #include "../include/analysisConstants.h"
 #include "../include/physicalConstants.h"
 #include "../include/plottingConstants.h"
@@ -65,7 +65,6 @@ void calculateCS(const vector<string>& targetOrder, string histoFileName, string
                 new Target(TARGET_DATA_FILE_PATH + s + TARGET_DATA_FILE_EXTENSION));
     }
 
-    Target* blank = targets[0];
     TH1I* blankEnergy = energyHistos[0];
 
     TFile* CSFile = new TFile(CSFileName.c_str(),"RECREATE");

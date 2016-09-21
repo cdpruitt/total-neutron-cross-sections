@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
     int runNumber = stoi(argv[3]);
 
     // flag indicating whether ./waveform should be run
-    bool runWaveform = argv[4];
+    //bool runWaveform = argv[4];
 
     // flag indicating whether ./DPPwaveform should be run
     //bool runDPPFitting = argv[5];

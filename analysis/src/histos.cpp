@@ -49,7 +49,7 @@ struct Output
 
 // Populate advanced histograms (TOFs, cross-section, etc) calculated using
 // data from ch4 and ch6 trees
-void fillAdvancedHistos(int detIndex, TFile *histoFile, vector<Plots*>& plots)
+void fillAdvancedHistos(int detIndex, vector<Plots*>& plots)
 {
     /*************************************************************************/
     // Prepare histograms
@@ -388,12 +388,12 @@ void correctForDeadtime(string histoFileName, string waveformFileName)
         // loop through all TOF histos
 
         TH1I* tof = uncorrectedPlots[i]->getTOFHisto();
-        TH1I* en = uncorrectedPlots[i]->getEnergyHisto();
+        //TH1I* en = uncorrectedPlots[i]->getEnergyHisto();
 
         TH1I* tofC = correctedPlots[i]->getTOFHisto();
         TH1I* enC = correctedPlots[i]->getEnergyHisto();
 
-        int tofBins = tof->GetNbinsX();
+        int tofBins = tofC->GetNbinsX();
 
         // apply deadtime correction to TOF histos
         for(int j=0; j<tofBins; j++)
@@ -810,8 +810,7 @@ int histos(string sortedFileName, string histoFileName)
         // raw data in each tree, plus TOF, x-sections, etc histograms
         fillHistos();
         // fill TOF, cross-section, etc. histos for channels 4, 6
-        fillAdvancedHistos(2, histoFile, plots);
-        //fillAdvancedHistos(3);
+        fillAdvancedHistos(2, plots);
 
         sortedFile->Close();
         histoFile->Write();
