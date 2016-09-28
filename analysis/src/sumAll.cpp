@@ -8,14 +8,11 @@
 #include "TMath.h"
 #include "TLatex.h"
 
+#include "../include/targetConstants.h"
+
 using namespace std;
 
-const int NUMBER_OF_TARGETS = 6;
-const int MAX_SUBRUN_NUMBER = 30;
 const double ARTIFICIAL_OFFSET = 0.0;
-
-const vector<string> targetNames = {"blank", "shortCarbon", "longCarbon", "Sn112", "NatSn", "Sn124"}; 
-const vector<string> targetNamesWaveform = {"blankWaveform", "shortCarbonWaveform", "longCarbonWaveform", "Sn112Waveform", "NatSnWaveform", "Sn124Waveform"}; 
 
 struct Plots
 {
@@ -94,53 +91,6 @@ TFile* infile;
         // keep track of which order the targets are in, based on which run number we're
         // sorting
         vector<int> order;
-
-        if(stoi(runDir)<=5)
-        {
-            cout << "Neon run - stopping sort." << endl;
-            exit(0);
-        }
-
-        if(stoi(runDir)<=151)
-        {
-            // blank, short carbon, long carbon, Sn112, NatSn, Sn124
-            order.push_back(0);
-            order.push_back(1);
-            order.push_back(2);
-            order.push_back(3);
-            order.push_back(4);
-            order.push_back(5);
-        }
-
-        else if(stoi(runDir)==152)
-        {
-            // blank, Sn112, NatSn, Sn124, short carbon, long carbon
-            order.push_back(0);
-            order.push_back(3);
-            order.push_back(4);
-            order.push_back(5);
-            order.push_back(1);
-            order.push_back(2);
-        }
-
-        else if(stoi(runDir)>=153 && stoi(runDir)<=168)
-        {
-            // blank, Sn112, NatSn, Sn124
-            order.push_back(0);
-            order.push_back(3);
-            order.push_back(4);
-            order.push_back(5);
-        }
-
-        else if(stoi(runDir)>=169 && stoi(runDir)<=180)
-        {
-            // blank, Sn112, NatSn, Sn124, short carbon
-            order.push_back(0);
-            order.push_back(3);
-            order.push_back(4);
-            order.push_back(5);
-            order.push_back(1);
-        }
 
         int pos112 = find(order.begin(), order.end(), 3) - order.begin();
         int pos124 = find(order.begin(), order.end(), 5) - order.begin();
@@ -332,7 +282,7 @@ void extractGraphData(
 double calculateRMS(vector<double>* graph1Data, vector<double>* graph2Data)
 {
     double rms = 0;
-    for(int i=0; i<graph1Data->size(); i++)
+    for(int i=0; (size_t)i<graph1Data->size(); i++)
     {
         rms += pow(graph1Data->at(i)-graph2Data->at(i),2);
     }
@@ -439,20 +389,11 @@ void createRelativeCSPlot(vector<double>* graph1Data, vector<double>* graph1Erro
     relativeGraph->Write();
 }
 
-int main()
+int main(int, char* argv[])
 {
     // Find the total number of runs to read in
-    int totalRuns = 0;
     string runNumber;
     ifstream runList;
-
-    runList.open("runsToSort.txt");
-    while(runList >> runNumber)
-    {
-        totalRuns++;
-    }
-    cout << "Total runs in runlist: " << totalRuns << endl << endl;
-    runList.close();
 
     // Create vector for holding the energies were the cross sections
     // were calculated
@@ -494,7 +435,11 @@ int main()
     }
 
     // Loop through all listed runs and extract cross section data
-    runList.open("runsToSort.txt");
+
+    string targetName = argv[1];
+    targetName = "../" + targetName + "/runsToSort.txt";
+
+    runList.open(targetName);
     int i = 0;
     while (runList >> runNumber)
     {
@@ -598,7 +543,7 @@ int main()
             }
         }
 
-        for(int k=0; k<energies[1]->at(0)->size(); k++)
+        for(int k=0; (size_t)k<energies[1]->at(0)->size(); k++)
         {
             crossSectionsErrorAvg[i]->at(k) = pow(crossSectionsErrorAvg[i]->at(k),0.5);
             crossSectionsErrorAvg[i]->at(k) /= energies[1]->size();
@@ -668,7 +613,7 @@ int main()
     vector<double>* SnNatLitError = new vector<double>;
     vector<double>* CNatLitError = new vector<double>;
 
-    for(int i=0; i<energies[1]->at(0)->size(); i++)
+    for(int i=0; (size_t)i<energies[1]->at(0)->size(); i++)
     {
         SnNatLitData->push_back(SnNatLitGraph->Eval(energies[1]->at(0)->at(i)));
         CNatLitData->push_back(CNatLitGraph->Eval(energies[1]->at(0)->at(i)));

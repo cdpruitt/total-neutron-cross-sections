@@ -1,6 +1,8 @@
 #ifndef PHYSICAL_CONSTANTS_H
 #define PHYSICAL_CONSTANTS_H
 
+#include <math.h>
+
 /******************************************************************************/
 /* Physical constants used in the experiment */
 /******************************************************************************/

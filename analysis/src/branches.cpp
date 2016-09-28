@@ -91,3 +91,11 @@ void setBranchesW(TTree* tree)
     tree->SetBranchAddress("targetPos",&procEvent.targetPos);
     tree->SetBranchAddress("waveform",&procEvent.waveform);
 }
+
+void setTCBranches(TTree* tree)
+{
+    tree->SetBranchAddress("macroNo",&procEvent.macroNo);
+    tree->SetBranchAddress("macroTime",&procEvent.macroTime);
+    tree->SetBranchAddress("targetPos",&procEvent.targetPos);
+    tree->SetBranchAddress("waveform",&procEvent.waveform);
+}

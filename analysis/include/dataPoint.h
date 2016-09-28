@@ -6,10 +6,12 @@ class DataPoint
     public:
         DataPoint(double xValue, double xError,
                   double yValue, double yError);
-        double getXValue();
-        double getXError();
-        double getYValue();
-        double getYError();
+        double getXValue() const;
+        double getXError() const;
+        double getYValue() const;
+        double getYError() const;
+
+        friend DataPoint operator-(const DataPoint& minuend, const DataPoint& subtrahend);
 
     private:
         double xValue;

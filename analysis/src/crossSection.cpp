@@ -10,12 +10,73 @@
 #include "../include/plots.h"
 
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <vector>
+#include <stdlib.h>
 #include "TH1.h"
 #include "TFile.h"
 #include "TAxis.h"
 
 using namespace std;
+
+vector<Target*> getTargetOrder(string expName, int runNumber)
+{
+    expName = "../" + expName + "/targetOrder.txt";
+    ifstream dataFile(expName.c_str());
+    if(!dataFile.is_open())
+    {
+        std::cout << "Failed to find target order data in " << expName << std::endl;
+        exit(1);
+    }
+
+    string str;
+    vector<string> targetOrder;
+
+    while(getline(dataFile,str))
+    {
+        // ignore comments in data file
+        string delimiter = "-";
+        string token = str.substr(0,str.find(delimiter));
+        if(!atoi(token.c_str()))
+        {
+            // This line starts with a non-integer and is thus a comment; ignore
+            continue;
+        }
+
+        // parse data lines into space-delimited tokens
+        vector<string> tokens;
+        istringstream iss(str);
+        copy(istream_iterator<string>(iss),
+                istream_iterator<string>(),
+                back_inserter(tokens));
+
+        // extract run numbers from first token
+        string lowRun = tokens[0].substr(0,tokens[0].find(delimiter));
+        tokens[0] = tokens[0].erase(0,tokens[0].find(delimiter) + delimiter.length());
+
+        delimiter = "\n";
+        string highRun = tokens[0].substr(0,tokens[0].find(delimiter));
+        
+        if(atoi(lowRun.c_str()) <= runNumber && runNumber <= atoi(highRun.c_str()))
+        {
+            for(int i=1; (size_t)i<tokens.size(); i++)
+            {
+                targetOrder.push_back(tokens[i]);
+            }
+            break;
+        }
+    }
+
+    vector<Target*> targets;
+
+    for(string s : targetOrder)
+    {
+        targets.push_back(
+                new Target(TARGET_DATA_FILE_PATH + s + TARGET_DATA_FILE_EXTENSION));
+    }
+    return targets;
+}
 
 void getMonitorCounts(vector<long>& monitorCounts, TFile*& histoFile)
 {
@@ -28,7 +89,7 @@ void getMonitorCounts(vector<long>& monitorCounts, TFile*& histoFile)
     }
 }
 
-void calculateCS(const vector<string>& targetOrder, string histoFileName, string CSFileName)
+void calculateCS(string histoFileName, string CSFileName, int runNumber)
 {
     // Find number of events in the monitor for each target to use in scaling
     // cross-sections
@@ -58,12 +119,7 @@ void calculateCS(const vector<string>& targetOrder, string histoFileName, string
     double energyValue;
     double energyError;
 
-    vector<Target*> targets;
-    for(string s : targetOrder)
-    {
-        targets.push_back(
-                new Target(TARGET_DATA_FILE_PATH + s + TARGET_DATA_FILE_EXTENSION));
-    }
+    vector<Target*> targets = getTargetOrder("tin",runNumber);
 
     TH1I* blankEnergy = energyHistos[0];
 
@@ -138,11 +194,24 @@ void calculateCS(const vector<string>& targetOrder, string histoFileName, string
 
         }
 
-        crossSection.createCSGraph();
+        crossSection.createCSGraph(t->getName());
     }
 
     histoFile->Close();
     CSFile->Close();
+}
+
+CrossSection operator-(const CrossSection& minuend, const CrossSection& subtrahend)
+{
+    int n = minuend.getNumberOfPoints();
+    CrossSection outputCS;
+
+    for(int i=0; i<n; i++)
+    {
+        outputCS.addDataPoint(minuend.getDataPoint(i)-subtrahend.getDataPoint(i));
+    }
+
+    return outputCS;
 }
 
 CrossSection::CrossSection()
@@ -154,7 +223,7 @@ void CrossSection::addDataPoint(DataPoint dataPoint)
     data.push_back(dataPoint);
 }
 
-DataPoint CrossSection::getDataPoint(int i)
+DataPoint CrossSection::getDataPoint(int i) const
 {
     if((size_t)i>data.size())
     {
@@ -168,12 +237,12 @@ DataPoint CrossSection::getDataPoint(int i)
     return data[i];
 }
 
-int CrossSection::getNumberOfPoints()
+int CrossSection::getNumberOfPoints() const
 {
     return data.size();
 }
 
-vector<double> CrossSection::getEnergyValues()
+vector<double> CrossSection::getEnergyValues() const
 {
     vector<double> energyValues;
     for(DataPoint d : data)
@@ -183,7 +252,7 @@ vector<double> CrossSection::getEnergyValues()
     return energyValues;
 }
 
-vector<double> CrossSection::getEnergyErrors()
+vector<double> CrossSection::getEnergyErrors() const
 {
     vector<double> energyErrors;
     for(DataPoint d : data)
@@ -193,7 +262,7 @@ vector<double> CrossSection::getEnergyErrors()
     return energyErrors;
 }
 
-vector<double> CrossSection::getCrossSectionValues()
+vector<double> CrossSection::getCrossSectionValues() const
 {
     vector<double> crossSectionValues;
     for(DataPoint d : data)
@@ -203,7 +272,7 @@ vector<double> CrossSection::getCrossSectionValues()
     return crossSectionValues;
 }
 
-vector<double> CrossSection::getCrossSectionErrors()
+vector<double> CrossSection::getCrossSectionErrors() const
 {
     vector<double> crossSectionErrors;
     for(DataPoint d : data)
@@ -213,12 +282,13 @@ vector<double> CrossSection::getCrossSectionErrors()
     return crossSectionErrors;
 }
 
-void CrossSection::createCSGraph()
+void CrossSection::createCSGraph(string name)
 {
     TGraphErrors* t = new TGraphErrors(getNumberOfPoints(),
                                       &getEnergyValues()[0],
                                       &getCrossSectionValues()[0],
                                       &getEnergyErrors()[0],
                                       &getCrossSectionErrors()[0]);
+    t->SetNameTitle(name.c_str(),name.c_str());
     t->Write();
 }

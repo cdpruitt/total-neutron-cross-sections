@@ -20,7 +20,7 @@
 
 using namespace std;
 
-int main(int argc, char* argv[])
+int main(int, char* argv[])
 {
     /*************************************************************************/
     /* Parse input parameters */
@@ -41,36 +41,6 @@ int main(int argc, char* argv[])
     // flag indicating whether ./DPPwaveform should be run
     //bool runDPPFitting = argv[5];
 
-
-    /*************************************************************************/
-    /* Retrieve target data */
-
-    vector<string> targetOrder;
-
-    if(runNumber>5 && runNumber<=151)
-    {
-        targetOrder = {"blank","shortCarbon","longCarbon","Sn112","NatSn","Sn124"};
-    }
-
-    else if(runNumber==152)
-    {
-        targetOrder = {"blank","Sn112","NatSn","Sn124","shortCarbon","longCarbon"};
-    }
-        
-    else if(runNumber>=153 && runNumber<=168)
-    {
-        targetOrder = {"blank","Sn112","NatSn","Sn124"};
-    }
-
-    else if(runNumber>=169 && runNumber<=180)
-    {
-        targetOrder = {"blank","Sn112","NatSn","Sn124","shortCarbon"};
-    }
-
-    else
-    {
-        cout << "Error - bad run number given to ./driver" << endl;
-    }
 
     /*************************************************************************/
     /* Analyze data */
@@ -174,7 +144,7 @@ int main(int argc, char* argv[])
     //}
 
     // calculate cross sections
-    calculateCS(targetOrder,histoFileName,CSFileName);
+    calculateCS(histoFileName,CSFileName,runNumber);
 
     return 0;
 }

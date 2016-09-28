@@ -193,7 +193,7 @@ int main(int argc, char *argv[])
     vector<vector<vector<double>*>*> crossSectionsError;
     vector<vector<vector<double>*>*> crossSectionsErrorWaveform;
 
-    readGraphs(runNumber, driveName, "cross-sections",targetNames,energies,crossSections,crossSectionsError);
+    readGraphs(runNumber, driveName, "cross-sections", targetNames, energies, crossSections, crossSectionsError);
     //readGraphs(runNumber, driveName, "waveform",targetNamesWaveform,energiesWaveform,crossSectionsWaveform);
 
     // Create output file to contain summed histos

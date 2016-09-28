@@ -1,46 +1,42 @@
 #!/bin/bash
 
 ################################################################################
-#                               sort.sh                                        #
+#                               analyze.sh                                     #
 ################################################################################
 
-# /sort.sh is used to initiate data analysis, using raw data from acquisition
-# Several options can be triggered using flags when the script is run,
-# modifying which runs are to be sorted. See flags section below for more info.
-
-# There are four sections to the sort.sh script:
-
-#   0. A list of runs to be excluded from analysis.
-#   1. Check to see if the analysis code has been modified, and recompile if so
-#   2. Define the analysis workflow (./raw -> ./resort -> ./histos)
-#   3. Process this script's flags to determine which/how many runs to analyze
-#   4. Process the desired runs/sub-runs
-
-# Upon failure of a command, the script will be terminated and the reason for
-# failure will be printed to terminal.
-
-################################################################################
-
+# This script initiates data analysis. It decides which experimental
+# runs to analyze, then calls C++ programs to process those runs.
+# Several flags can be used with this script to manage this workflow:
+#
+#  Flag |                           Description
+#-------+-----------------------------------------------------------------------
+#    -f | analyze a single event file, specified by the full filepath
+#       | (e.g., ./analyze -f path/to/input/file path/to/output/file)
+#-------+-----------------------------------------------------------------------
+#    -s | analyze a single event file, specified by run and subrun numbers
+#       | (e.g., ./analyze -s <run number> <subrun number>)
+#-------+-----------------------------------------------------------------------
+#    -r | for each run given in ../<target>/runsToSort.txt, analyze the most
+#       | recent subrun
+#       | (e.g., ./analyze -r)
+#-------+-----------------------------------------------------------------------
+#    -a | if using -r, analyze ALL subruns in each run, not just the most recent
+#       | (e.g., ./analyze -ra)
+#-------+-----------------------------------------------------------------------
+#    -t | produce a formatted text file for each data channel, instead of analysis
+#       | (e.g., ./analyze -t)
+#-------+-----------------------------------------------------------------------
+#    -o | overwrite previous analysis histograms (use if analysis code has changed)
+#       | (e.g., ./analyze -o)
+#
+# Flags can be combined for additional functionality (e.g., ./analyze -ro)
+#
 ################################################################################
 
 # SECTION 1: recompile analysis code
 
-# Check to see if analysis codes have been modified since last compile
-#if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] || [ histos.cpp -nt histos ] || [ waveform.cpp -nt waveform ] || [ sumRun.cpp -nt sumRun ]
-#then
-    # sorting code modified
-    # recompile to prepare for event sorting
-#    make
-#if [ raw.cpp -nt raw ] || [ resort.cpp -nt resort ] || [ histos.cpp -nt histos ] || [ waveform.cpp -nt waveform ] || [ sumRun.cpp -nt sumRun ]
-#    then
-        # compilation failed - exit
-#        printf "\nCompilation failed - correct errors before sorting.\n"
-#        exit
-#    fi
-#fi
-
 make
-if [ "$?" != 0 ]
+if [ "$?" != 0 ] # "$?" is return value of previous command
 then
     echo "Compilation failed - correct errors in source code."
     exit $?
@@ -48,117 +44,41 @@ fi
 
 ################################################################################
 
-# SECTION 2: define analysis workflow
+# SECTION 2: process script flags
 
-# This method defines the analysis workflow as raw->resort->histos.
-# Once the correct runs to sort have been identified, it will be called to
-# perform analysis on those runs.
-sort ()
-{
-    # If the analysis directory in outpath doesn't exist yet, make it
-    if [ ! -d $outputDirectoryName ]
-    then
-        mkdir $outputDirectoryName
-    fi
-
-    # Check to make sure that the run to be sorted isn't blacklisted
-    if [[ -s blacklist.txt &&  "$givenFile" != true ]]
-    then
-        while read l
-        do
-            if [[ "$runNumber-$subrunNo" = "$l" ]]
-            then
-                echo "Found sub-run "$l" on blacklist; skipping..."
-                return 1
-            fi
-        done < blacklist.txt
-    fi
-
-    # Produce pretty-formatted text file listing a run's event data
-    if [ "$produceText" = true ]
-    then
-        ./text $inputFileName
-        exit
-    fi
-
-    if [ "$overwriteHistos" = true ]
-    then
-        rm $outputDirectoryName"/histos.root"
-    fi
-
-    ./driver "$inputFileName" "$outputDirectoryName" "$runNumber" "$waveform" "$DPPwaveform"
-}
-
-################################################################################
-
-# SECTION 3: process script flags to identify which runs should be analyzed
-
-# Default state is that runs will NOT be read from a text file that lists them
-runlist=false
-
-# Default is not to produce text output of raw run data
-produceText=0
-
-# Default is for absolute filepath NOT to be given by used
-givenFile=false
+# Default analysis behavior is:
+#   - to analyze only the most-recently-modified subrun
+#   - not to produce text output of event data
 
 # Parse runtime flags
-while getopts "trsawdfo" opt; do
+while getopts "fsratw" opt; do
     case ${opt} in
-        t)
-            # Have ./raw produce text output
-            printf "\nText output enabled (this will slow sorting considerably)\n"
-            produceText=true
-            ;;
-        r)
-            # Read runs to be sorted from the text file runsToSort.txt
-            printf "\nRunlist mode enabled. Run directories will be read from ./runsToSort.txt"
-            runlist=true
+        f)
+            fullFilePath=true
             ;;
         s)
-            # Sort only one sub-run, specified after the flag as X YYYY
-            single=true
+            runSubrunPath=true
+            ;;
+        r)
+            runlist=true
             ;;
         a)
-            # When the runlist is used to identify runs to sort, this will sort
-            # all sub-runs in the specified run
-            printf "\nReading all evt files in specified run (this will slow sorting considerably)\n"
-            allFiles=true
+            allSubruns=true
             ;;
-        w)
-            # Perform a waveform fit in addition to DPP analysis
-            printf "\nPerforming waveform fit in addition to DPP analysis.\n"
-            waveform=true
+        t)
+            produceText=true
             ;;
-        d)
-            # Perform a waveform fit in addition to DPP analysis
-            printf "\nPerforming waveform fit in addition to DPP analysis.\n"
-            DPPwaveform=true
+        o)  overwriteHistos=true
             ;;
-
-        f)
-            # Complete paths to event file and output file given as arguments
-            printf "\nReading single file given by user...\n"
-            givenFile=true
-            ;;
-
-        o)  # Overwrite existing histogram files (saves the user from having to
-            # manually delete them)
-            printf "\nOverwriting existing histogram files...\n"
-            overwriteHistos=true
-            ;;
-
         \?)
             # Flags unrecognized - exit script and give user help text
             printf "\nInvalid option: -$OPTARG.\n\nValid options are:"
-            printf "\n    -t (text output)"
-            printf "\n    -r (use runlist)"
-            printf "\n    -a (if using runlist, read all evt files from last run)\n"
-            printf "\n    -s (sort a single run using runNumber subrunNumber format)\n"
-            printf "\n    -f (sort a single run by explicitly giving input filename)\n"
-            printf "\n    -w (fit waveform-mode data and produce cross-sections)\n"
-            printf "\n    -d (fit DPP-mode waveforms and produce cross-sections)\n"
-            printf "\o    -o (overwrite existing histogram files)\n"
+            printf "\n    -f (analyze a single file, given as filepath)\n"
+            printf "\n    -s (analyze a single file, given as runNumber subRunNumber)\n"
+            printf "\n    -r (analyze runs listed in ../<target>/runsToSort.txt)\n"
+            printf "\n    -a (if using -r, read ALL subruns in each run, not just the most recent)\n"
+            printf "\n    -t (produce text output of event data instead of doing full analysis)\n"
+            printf "\n    -o (overwrite existing event histograms - use if analysis code has been changed)\n"
 
             exit
             ;;
@@ -167,36 +87,76 @@ done
 
 ################################################################################
 
-# SECTION 4: perform analysis on specified runs
+# SECTION 3: define analysis workflow
 
-# Sort a run with a specific filename
-if [ "$givenFile" = true ]
+# 'analyze()' is called for each data set we want to analyze.
+
+analyze ()
+{
+    inputFileName=$1
+    outputDirectoryName=$2
+    runNumber=$3
+    subrunNumber=$4
+
+    if [ "$produceText" == true ]
+    then
+        printf "\nText output enabled... \n"
+        ./text $inputFileName
+        exit # we just want the text output, so stop analysis here
+    fi
+
+    # Create directory to hold the output of our analysis
+    if [ ! -d $outputDirectoryName ]
+    then
+        mkdir $outputDirectoryName
+    fi
+
+    if [ "$overwriteHistos" == true ]
+    then
+        printf "\nOverwriting existing histogram file $outputDirectoryName"/histos.root"...\n"
+        rm $outputDirectoryName"/histos.root"
+    fi
+
+    ./driver $inputFileName $outputDirectoryName $runNumber
+}
+
+################################################################################
+
+# SECTION 4: determine which runs should be analyzed
+
+read -r target<target.txt # find out which experimental dataset to analyze
+
+# Analyze a single event file, specified by the full filepath
+if [ "$fullFilePath" = true ]
 then
+    printf "\nAnalyzing single event file $2...\n"
     inputFileName=$2
     outputDirectoryName=$3
-    sort
+    analyze $inputFileName $outputDirectoryName
+    exit
+fi
 
-# Sort only a single sub-run, listed as arguments to this script
-elif [ "$single" = true ]
+# Analyze a single event file, specified by its run number and subrun number
+if [ "$runSubrunPath" = true ]
 then
     runNumber=$2
     subrunNo=$3
 
-    # set file path to fine this run number's data
-    if [ "$2" -lt 6 ]
+    # read input filepath and output filepath
+    while read l
+    do
+        filepaths=($l)
+        if [[ ${filepaths[0]} -le $runNumber && ${filepaths[1]} -ge $runNumber ]]
+        then
+            datapath=${filepaths[2]}
+            outpath=${filepaths[3]}
+            break
+        fi
+    done < ../$target/filepaths.txt
+
+    if [[ $datapath == "" ]]
     then
-        datapath=/media/cdpruitt/Drive3
-        outpath=/data3
-    elif [ "$2" -gt 127 ] && [ "$2" -lt 160 ]
-    then
-        datapath=/media/cdpruitt/Drive2
-        outpath=/data2
-    elif [ "$2" -gt 159 ] && [ "$2" -lt 178 ]
-    then
-        datapath=/media/cdpruitt/Drive3
-        outpath=/data3
-    else
-        printf "\nRun directory outside bounds (runs 128-177) - check run number"
+        echo "Failed to find filepath to input data. Exiting..."
         exit
     fi
 
@@ -205,67 +165,42 @@ then
 
     printf "\nSorting single sub-run $inputFileName\n"
 
-    # Start sort
-    runSize=$(du -k "$inputFileName" | cut -f 1)
-    if [ "$runSize" -ge 1000000 ]
+    # Start analysis
+    analyze $inputFileName $outputDirectoryName $runNumber
+    exit
+fi
+
+# Analyze runs listed in runsToSort.txt
+if [[ $runlist = true && -a ../$target/runsToSort.txt ]]
+then
+    printf "\nRunlist mode enabled. Reading runs from ./runsToSort.txt...\n"
+
+    # read input filepath and output filepath
+    while read l
+    do
+        if [ ${l[0]} <= $runNumber && ${l[1]} >=$runNumber ]
+        then
+            datapath=${l[2]}
+            outpath=${l[3]}
+            break
+        fi
+    done < ../$target/filepaths.txt
+
+    if [ $datapath == 0 ]
     then
-        sort
-    else
-        printf "$inputFileName is less than 1 GB in size; ignoring...\n"
+        echo "Failed to find filepath to input data. Exiting..."
+        exit
     fi
 
-# Check to see if the runlist should be used to identify runs to sort
-elif [ "$runlist" = false ]
-then
-    # Sort only the most recent run (as determined by the run directory number
-    # in datapath)
-
-    # We arbitrarily set datapath and outpath to Drive 3 here - edit this to use
-    # another drive for sorting based on most recent run number
-    datapath=/media/cdpruitt/Drive3
-    outpath=/data3
-
-    # Find highest-numbered run directory in datapath
-    runNumber=$(ls -t $datapath/output | head -1)
-    subrunNo=$(ls -t $datapath/output/run$runNumber/data-* | head -1 | egrep\
-        -o '[0-9]+' | tail -1)
-    inputFileName="$datapath/output/run$runNumber/data-$subrunNo.evt"
-    outputDirectoryName="$outpath/analysis/run$runNumber/$subrunNo/"
-    printf "\nSorting most recent run $outputDirectoryName\n"
-
-    # Start sort
-    sort
-
-    # runlist is true, so let's check to see if a runlist actually exists
-elif [ -a ./runsToSort.txt ]
-then
-    # The runlist exists - use it to identify runs to sort
-    printf "\n"
+    # loop through all runs listed in runsToSort.txt
     while read runNumber; do
         printf "Reading from directory run$runNumber\n"
 
-        # set path to data/analysis depending on run number
-        if [ $runNumber -lt 6 ]
-        then
-            datapath=/media/cdpruitt/Drive3
-            outpath=/data3
-        elif [ $runNumber -gt 127 ] && [ $runNumber -lt 160 ]
-        then
-            datapath=/media/cdpruitt/Drive2
-            outpath=/data2
-        elif [ $runNumber -gt 159 ] && [ $runNumber -lt 178 ]
-        then
-            datapath=/media/cdpruitt/Drive3
-            outpath=/data3
-        else
-            printf "\nRun directory outside bounds (runs 128-177) - check run number"
-        fi
-
-        # Check to see if all sub-runs in this run directory should be sorted,
-        # or just one
-        if [ "$allFiles" = true ]
+        # Check to see if all subruns should be analyzed, or just one
+        if [ "$allSubruns" = true ]
         then
             # Sort all sub-runs in the specified run directory
+            printf "\nReading all subruns in specified run\n"
             for f in $datapath/output/run$runNumber/data-*;
             do
                 subrunNo=$(echo $f | egrep -o '[0-9]+' | tail -1)
@@ -273,14 +208,30 @@ then
                 outputDirectoryName="$outpath/analysis/run$runNumber/$subrunNo/"
                 printf "\n***Starting sort of sub-run $subrunNo***\n"
 
-                # Sort sub-run
+                # Skip subruns < 1GB in size
                 runSize=$(du -k "$inputFileName" | cut -f 1)
-                if [ $runSize -ge 1000000 ]
+                if [ $runSize -lt 1000000 ]
                 then
-                    sort
-                else
                     printf "$inputFileName is less than 1 GB in size; ignoring...\n"
+                    continue
                 fi
+
+                # Skip subruns on the blacklist
+                while read l
+                do
+                    if [[ "$runNumber-$subrunNo" == "$l" ]]
+                    then
+                        echo "Found sub-run "$l" on blacklist; skipping..."
+                        skip=true
+                        break
+                    fi
+                done < ../$target/blacklist.txt
+                if [ $skip ]
+                then
+                    continue
+                fi
+
+                analyze $inputFileName $outputDirectoryName
             done
 
             # Last, sum together histograms from all the runs just sorted
@@ -294,7 +245,27 @@ then
             printf "\n***Starting sort of sub-run $subrunNo***\n"
 
             # Sort sub-run
-            sort
+            analyze $inputFileName $outputDirectoryName
         fi
-    done < runsToSort.txt
+    done < ../$target/runsToSort.txt
+    exit
 fi
+
+# Default behavior: sort only the most recent run (as determined by files
+# modified in defaultFilepath.txt in the target directory)
+
+echo $target
+read -r filepaths<../$target/defaultFilepath.txt
+datapath=${filepaths[0]}
+outpath=${filepaths[1]}
+
+# Find highest-numbered run directory in datapath
+runNumber=$(ls -t $datapath/output | head -1)
+subrunNo=$(ls -t $datapath/output/run$runNumber/data-* | head -1 | egrep\
+    -o '[0-9]+' | tail -1)
+inputFileName="$datapath/output/run$runNumber/data-$subrunNo.evt"
+outputDirectoryName="$outpath/analysis/run$runNumber/$subrunNo/"
+printf "\nSorting most recent run $outputDirectoryName\n"
+
+# Start sort
+analyze $inputFileName $outputDirectoryName

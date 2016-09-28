@@ -1,7 +1,0 @@
-[COMMON]
-
-dppconfig         prodConfig/dppconfig.txt
-waveformconfig    prodConfig/waveformconfig.txt 
-dpptriggers       2000000
-waveformtriggers  33
-end_after         700000000

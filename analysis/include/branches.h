@@ -8,5 +8,6 @@ void branchProcW(TTree*& tree);
 void branchTargetChanger(TTree*& tree);
 void setBranches(TTree* tree);
 void setBranchesW(TTree* tree);
+void setTCBranches(TTree* tree);
 
 #endif

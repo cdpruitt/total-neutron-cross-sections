@@ -655,7 +655,7 @@ void calculateDeadtime(TTree* ch4TreeWaveform, vector<Plots*>& plots)
         {
             continue;
         }
-        microsPerTarget[procEvent.targetPos-1] += 2*procEvent.waveform->size()/(double)MICRO_LENGTH;
+        microsPerTargetWaveform[procEvent.targetPos-1] += 2*procEvent.waveform->size()/(double)MICRO_LENGTH;
     }
 
     vector<vector<double>> eventsPerBinPerMicro(NUMBER_OF_TARGETS,vector<double>(0));
@@ -668,7 +668,7 @@ void calculateDeadtime(TTree* ch4TreeWaveform, vector<Plots*>& plots)
     // for each target,
     for(int i=0; i<NUMBER_OF_TARGETS; i++)
     {
-        cout << "microsPerTarget[i] = " << microsPerTarget[i] << endl;
+        cout << "microsPerTargetWaveform[i] = " << microsPerTargetWaveform[i] << endl;
 
         // for each bin,
         TH1I* tof = plots[i]->getTOFHisto();
@@ -676,9 +676,9 @@ void calculateDeadtime(TTree* ch4TreeWaveform, vector<Plots*>& plots)
 
         for(int j=0; j<tof->GetNbinsX(); j++)
         {
-            if(microsPerTarget[i] > 0)
+            if(microsPerTargetWaveform[i] > 0)
             {
-                eventsPerBinPerMicro[i].push_back(tof->GetBinContent(j)/(double)microsPerTarget[i]);
+                eventsPerBinPerMicro[i].push_back(tof->GetBinContent(j)/(double)microsPerTargetWaveform[i]);
             }
 
             else
@@ -759,7 +759,7 @@ void waveform(string inFileName, string outFileName)
         for(int i=0; i<NUMBER_OF_TARGETS; i++)
         {
             string name = positionNames[i] + "W";
-            plots.push_back(new Plots(name.c_str(), outFile));
+            plots.push_back(new Plots(name, outFile));
         }
     }
 
@@ -768,6 +768,20 @@ void waveform(string inFileName, string outFileName)
 
     // Calculate cross-sections from waveforms' trigger time data
     //calculateCS(targets, waveformFile);
+
+    int totalMicros = 0;
+    for(int i=0; (size_t)i<microsPerTargetWaveform.size(); i++)
+    {
+        totalMicros += microsPerTargetWaveform[i];
+    }
+
+    for(Plots* p : plots)
+    {
+        numberTotalTriggers += p->getTOFHisto()->GetEntries();
+    }
+
+    cout << "Total number of triggers: " << numberTotalTriggers << endl;
+    cout << "Triggers/micropulse: " << numberTotalTriggers/(double)totalMicros;
  
     inFile->Close();
     outFile->Close();

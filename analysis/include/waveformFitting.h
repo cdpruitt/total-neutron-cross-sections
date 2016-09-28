@@ -8,7 +8,7 @@ const int ADC_RANGE  = 16383;  // Range of ADC voltage steps (internal units)
 
 const int THRESHOLD = 25;      // displacement from baseline needed to trigger
                                // software threshold
-const int DERIVATIVE_THRESHOLD = -10; // derivative needed to trigger software
+const int DERIVATIVE_THRESHOLD = -15; // derivative needed to trigger software
                                       // threshold
 const int PEAKFIT_WINDOW = 40; // set the size of the window (in number of
                                // samples) where peak-fitting is done on raw
@@ -45,10 +45,11 @@ int numberOnePeakFits = 0;
 int numberOnePeakExpBackFits = 0; // Successfully fit as one peak riding on
                                   // an exponential tail
 int numberTwoPeakFits = 0;        // Successfully fit as two peaks
+int numberTotalTriggers = 0;
 
 // total number of micropulses processed per target (for performing dead time
 // calculation)
-std::vector<long> microsPerTarget(6,0);
+std::vector<long> microsPerTargetWaveform(6,0);
 
 
 

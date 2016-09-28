@@ -10,20 +10,20 @@ class CrossSection
     public:
         CrossSection();
         void addDataPoint(DataPoint dataPoint);
-        DataPoint getDataPoint(int i);
-        void createCSGraph();
+        DataPoint getDataPoint(int i) const;
+        void createCSGraph(std::string name);
 
-        int getNumberOfPoints();
-        std::vector<double> getEnergyValues();
-        std::vector<double> getEnergyErrors();
-        std::vector<double> getCrossSectionValues();
-        std::vector<double> getCrossSectionErrors();
+        int getNumberOfPoints() const;
+        std::vector<double> getEnergyValues() const;
+        std::vector<double> getEnergyErrors() const;
+        std::vector<double> getCrossSectionValues() const;
+        std::vector<double> getCrossSectionErrors() const;
 
     private:
         std::vector<DataPoint> data;
 };
 
-void calculateCS(const std::vector<std::string>& targetOrder, std::string histoFileName, std::string CSFileName);
+void calculateCS(std::string histoFileName, std::string CSFileName, int runNumber);
 
 
 #endif
