@@ -17,8 +17,119 @@
 #include "TH1.h"
 #include "TFile.h"
 #include "TAxis.h"
+#include "TRandom3.h"
 
 using namespace std;
+
+void correctForDeadtime(string histoFileName, string deadtimeFileName)
+{
+    TFile* deadtimeFile = new TFile(deadtimeFileName.c_str(),"READ");
+    TFile* histoFile = new TFile(histoFileName.c_str(),"UPDATE");
+
+    vector<Plots*> uncorrectedPlots;
+    for(int i=0; i<NUMBER_OF_TARGETS; i++)
+    {
+        string name = positionNames[i];
+        uncorrectedPlots.push_back(new Plots(name,histoFile));
+    }
+
+    vector<Plots*> correctedPlots;
+    for(int i=0; i<NUMBER_OF_TARGETS; i++)
+    {
+        string name = positionNames[i] + "Corrected";
+        correctedPlots.push_back(new Plots(name));
+    }
+
+    vector<Plots*> deadtimePlots;
+    for(int i=0; i<NUMBER_OF_TARGETS; i++)
+    {
+        string name = positionNames[i] + "W";
+        deadtimePlots.push_back(new Plots(name, deadtimeFile));
+    }
+
+    // extract deadtime from waveform-mode fit
+
+    TRandom3 *randomizeBin = new TRandom3();
+
+    for(int i=0; i<NUMBER_OF_TARGETS; i++)
+    {
+        // "deadtimeFraction" records the fraction of time that the detector is dead, for
+        // neutrons of a certain energy.
+
+        vector<double> deadtimeFraction;
+
+        //string temp;
+        //temp = "deadtime" + t.getName() + "Waveform";
+        //plots.waveformDeadtimes.push_back((TH1I*)deadtimeFile->Get(temp.c_str()));
+
+        /*if(!t.getDeadtime.back())
+        {
+            cerr << "Error: couldn't find waveform deadtime histograms." << endl;
+            exit(1);
+        }*/
+
+        TH1I* deadtimeHisto = deadtimePlots[i]->getDeadtimeHisto();
+        int deadtimeBins = deadtimeHisto->GetNbinsX();
+
+        for(int j=0; j<deadtimeBins; j++)
+        {
+            deadtimeFraction.push_back(deadtimeHisto->GetBinContent(j)/(double)pow(10,6));
+        }
+
+        // create deadtime-corrected histograms
+
+        deadtimeHisto->Write();
+
+        //vector<vector<double>> eventsPerBinPerMicro(6,vector<double>(0));
+
+        //const double FULL_DEADTIME = 183; // total amount of time after firing when
+        // detector is at least partially dead to
+        // incoming pulses (in ns)
+        //const double PARTIAL_DEADTIME = 9; // amount of time after the end of
+        // FULL_DEADTIME when detector is
+        // becoming live again, depending on
+        // amplitude (in ns)
+
+        /*************************************************************************/
+        // Perform deadtime correction
+        /*************************************************************************/
+
+        // loop through all TOF histos
+
+        TH1I* tof = uncorrectedPlots[i]->getTOFHisto();
+        //TH1I* en = uncorrectedPlots[i]->getEnergyHisto();
+
+        TH1I* tofC = correctedPlots[i]->getTOFHisto();
+        TH1I* enC = correctedPlots[i]->getEnergyHisto();
+
+        int tofBins = tofC->GetNbinsX();
+
+        // apply deadtime correction to TOF histos
+        for(int j=0; j<tofBins; j++)
+        {
+            if(deadtimeFraction[j] > 0)
+            {
+                tofC->SetBinContent(j,(tof->GetBinContent(j)/(1-deadtimeFraction[j])));
+            }
+
+            // convert microTime into neutron velocity based on flight path distance
+            double velocity = pow(10.,7.)*FLIGHT_DISTANCE/(tofC->GetBinCenter(j)+randomizeBin->Uniform(-TOF_RANGE/(double)(2*TOF_BINS),TOF_RANGE/(double)(2*TOF_BINS))); // in meters/sec 
+
+            // convert velocity to relativistic kinetic energy
+            double rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
+
+            enC->Fill(rKE,tofC->GetBinContent(j));
+            tofC->SetBinError(j,pow(tofC->GetBinContent(j),0.5));
+            enC->SetBinError(j,pow(enC->GetBinContent(j),0.5));
+        }
+
+        tofC->Write();
+        enC->Write();
+    }
+
+    deadtimeFile->Close();
+    histoFile->Close();
+}
 
 vector<Target*> getTargetOrder(string expName, int runNumber)
 {
@@ -73,7 +184,7 @@ vector<Target*> getTargetOrder(string expName, int runNumber)
     for(string s : targetOrder)
     {
         targets.push_back(
-                new Target(TARGET_DATA_FILE_PATH + s + TARGET_DATA_FILE_EXTENSION));
+                new Target("../tin/targetData/" + s + ".txt"));
     }
     return targets;
 }
@@ -138,7 +249,7 @@ void calculateCS(string histoFileName, string CSFileName, int runNumber)
         long blankMonCounts = monitorCounts[0];
         if(targetMonCounts == 0 || blankMonCounts == 0)
         {
-            cout << "Error - didn't find any monitor counts for target while trying to calculate cross sections. Exiting..." << endl;
+            cerr << "Error - didn't find any monitor counts for target while trying to calculate cross sections. Exiting..." << endl;
             exit(1);
         }
 

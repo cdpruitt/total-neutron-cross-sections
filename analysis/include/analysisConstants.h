@@ -25,7 +25,7 @@ const std::vector<std::string> activeWaveformChannels = {"ch0","ch2","ch4"};
 const double SCALEDOWN = 1; // (for debugging) only sort (total/SCALEDOWN) events
 
 // experimentally-determined  digitizer deadtime
-const int DEADTIME_PERIOD = 183;
+const int DEADTIME_PERIOD = 189;
 
 // Indicate the range of times considered to be gamma rays (for the purposes of
 // counting gamma rays)

@@ -8,9 +8,6 @@
 
 #include "crossSection.h"
 
-const std::string TARGET_DATA_FILE_PATH = "../tin/targetData/";
-const std::string TARGET_DATA_FILE_EXTENSION = ".txt";
-
 class Target
 {
     public:

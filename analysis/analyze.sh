@@ -51,7 +51,7 @@ fi
 #   - not to produce text output of event data
 
 # Parse runtime flags
-while getopts "fsratw" opt; do
+while getopts "fsrato" opt; do
     case ${opt} in
         f)
             fullFilePath=true
@@ -89,7 +89,7 @@ done
 
 # SECTION 3: define analysis workflow
 
-# 'analyze()' is called for each data set we want to analyze.
+# This function is called once for each data set we want to analyze.
 
 analyze ()
 {
@@ -117,7 +117,15 @@ analyze ()
         rm $outputDirectoryName"/histos.root"
     fi
 
+    # Send error messages to a text file
+    2>&1 | tee > $outputDirectoryName"/error.txt"
+
     ./driver $inputFileName $outputDirectoryName $runNumber
+
+    if [ -s $outputDirectoryName"/temp.root" ]
+    then
+        rm $outputDirectoryName"/temp.root"
+    fi
 }
 
 ################################################################################
@@ -175,26 +183,31 @@ if [[ $runlist = true && -a ../$target/runsToSort.txt ]]
 then
     printf "\nRunlist mode enabled. Reading runs from ./runsToSort.txt...\n"
 
-    # read input filepath and output filepath
-    while read l
-    do
-        if [ ${l[0]} <= $runNumber && ${l[1]} >=$runNumber ]
-        then
-            datapath=${l[2]}
-            outpath=${l[3]}
-            break
-        fi
-    done < ../$target/filepaths.txt
-
-    if [ $datapath == 0 ]
-    then
-        echo "Failed to find filepath to input data. Exiting..."
-        exit
-    fi
-
     # loop through all runs listed in runsToSort.txt
     while read runNumber; do
-        printf "Reading from directory run$runNumber\n"
+
+        # read input filepath and output filepath
+        while read l
+        do
+            IFS=' ' read -r -a tokens <<< "$l"
+
+            if [[ "${tokens[0]}" -le "$runNumber" && "${tokens[1]}" -ge "$runNumber" ]]
+            then
+                echo "token 0 is ${tokens[0]}, token 1 is ${tokens[1]}, runNumber is $runNumber"
+                datapath=${tokens[2]}
+                outpath=${tokens[3]}
+                break
+            fi
+            echo $outpath
+        done < ../$target/filepaths.txt
+
+        if [ $datapath == 0 ]
+        then
+            echo "Failed to find filepath to input data. Exiting..."
+            exit
+        fi
+
+        printf "Reading from directory $datapath\n"
 
         # Check to see if all subruns should be analyzed, or just one
         if [ "$allSubruns" = true ]
@@ -217,6 +230,7 @@ then
                 fi
 
                 # Skip subruns on the blacklist
+                skip=false
                 while read l
                 do
                     if [[ "$runNumber-$subrunNo" == "$l" ]]
@@ -226,12 +240,12 @@ then
                         break
                     fi
                 done < ../$target/blacklist.txt
-                if [ $skip ]
+                if [ $skip == true ]
                 then
                     continue
                 fi
 
-                analyze $inputFileName $outputDirectoryName
+                analyze $inputFileName $outputDirectoryName $runNumber
             done
 
             # Last, sum together histograms from all the runs just sorted

@@ -24,6 +24,6 @@ class CrossSection
 };
 
 void calculateCS(std::string histoFileName, std::string CSFileName, int runNumber);
-
+void correctForDeadtime(std::string histoFileName, std::string waveformFileName);
 
 #endif

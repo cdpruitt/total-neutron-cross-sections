@@ -10,7 +10,7 @@ using namespace std;
 
 DataSet::DataSet()
 {
-    cout << "Error: attempted to create DataSet without providing an input file or input data." << std::endl;
+    cerr << "Error: attempted to create DataSet without providing an input file or input data." << std::endl;
     exit(1);
 }
 
@@ -81,7 +81,7 @@ const DataSet operator+(const DataSet& set1, const DataSet& set2)
 
         else
         {
-            cout << "Error: set 1 energies != set 2 energies" << endl;
+            cerr << "Error: set 1 energies != set 2 energies" << endl;
             exit(1);
         }
     }
@@ -109,7 +109,7 @@ const DataSet DataSet::plus(const DataSet& set2,const string& name)
 
         else
         {
-            cout << "Error: set 1 energies != set 2 energies" << endl;
+            cerr << "Error: set 1 energies != set 2 energies" << endl;
             exit(1);
         }
     }
@@ -137,7 +137,7 @@ const DataSet operator-(const DataSet& set1, const DataSet& set2)
 
         else
         {
-            cout << "Error: set 1 energies != set 2 energies" << endl;
+            cerr << "Error: set 1 energies != set 2 energies" << endl;
             exit(1);
         }
     }
@@ -165,7 +165,7 @@ const DataSet DataSet::minus(const DataSet& set2,const string& name)
 
         else
         {
-            cout << "Error: set 1 energies != set 2 energies" << endl;
+            cerr << "Error: set 1 energies != set 2 energies" << endl;
             exit(1);
         }
     }
@@ -200,7 +200,7 @@ const DataSet operator/(const DataSet& set1, const DataSet& set2)
 
         else
         {
-            cout << "Error: set 1 energies != set 2 energies" << endl;
+            cerr << "Error: set 1 energies != set 2 energies" << endl;
             exit(1);
         }
     }
@@ -234,7 +234,7 @@ const DataSet DataSet::divideBy(const DataSet& set2, const string& name)
 
         else
         {
-            cout << "Error: set 1 energies != set 2 energies" << endl;
+            cerr << "Error: set 1 energies != set 2 energies" << endl;
             exit(1);
         }
     }

@@ -8,13 +8,10 @@
 #include "TH2.h"
 #include "TDirectoryFile.h"
 #include "TROOT.h"
-#include "TApplication.h"
 #include "TMath.h"
-#include "TRandom3.h"
 #include "../include/physicalConstants.h"
 #include "../include/analysisConstants.h"
 #include "../include/helperFunctions.h"
-#include "../include/target.h"
 #include "../include/dataStructures.h"
 #include "../include/plottingConstants.h"
 #include "../include/targetConstants.h"
@@ -44,408 +41,12 @@ TH1I* waveformCh6;
 
 TDirectory *waveformsDir;
 
-struct Output
-{
-    // declare vector to hold the energy bins for cross sections
-    vector<double> energyBins;
-} output;
-
-// Populate advanced histograms (TOFs, cross-section, etc) calculated using
-// data from ch4 and ch6 trees
-void fillAdvancedHistos(int detIndex, vector<Plots*>& plots)
-{
-    /*************************************************************************/
-    // Prepare histograms
-
-    // navigate to the correct directory for channel 2*i 
-    //gDirectory->cd("/");
-    //gDirectory->GetDirectory(dirs[detIndex].c_str())->cd();
-
-    // Initialize histograms for this channel (to be filled by events after they
-    // pass through various energy, time, and charge filters below
-
-    // diagnostic histograms
-    TH1I *TOF = new TH1I("TOF","Summed-detector time of flight",TOF_BINS,0,TOF_RANGE);
-    TH2I *triangle = new TH2I("triangle","Pulse integral vs. TOF",TOF_RANGE,0,MICRO_LENGTH+1,2048,0,65536);
-    TH2I *triangleRKE = new TH2I("triangleRKE","Pulse integral vs. relativistic KE",NUMBER_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND,2048,0,65536);
-    TH2I *sgQlgQ = new TH2I("sgQlgQ","short gate Q vs. long gate Q",2048,0,65536,2048,0,65536);
-    TH1I *QRatio = new TH1I("QRatio","short gate Q/long gate Q",1000,0,1);
-    TH2I *rKElgQ = new TH2I("lgQrKE","relativistic KE vs. long gate Q",500,ENERGY_LOWER_BOUND,100,2048,0,65536);
-    TH1I *microNoH = new TH1I("microNoH","microNo",360,0,360);
-    microNoH->GetXaxis()->SetTitle("micropulse number of each event");
-
-    /*for(int i=0; i<NUMBER_OF_TARGETS; i++)
-    {
-        string temp = positionNames[i] + "TOF";
-        plots.TOFHistos.push_back(new TH1I(temp.c_str(),temp.c_str(),TOF_BINS,0,TOF_RANGE));
-
-        temp = positionNames[i] + "Energy";
-        plots.energyHistos.push_back((TH1I*)timeBinsToRKEBins(plots.TOFHistos[i],temp.c_str())); 
-
-        temp = positionNames[i] + "EnergyUngated";
-        plots.energyHistosUngated.push_back((TH1I*)plots.energyHistos[i]->Clone(temp.c_str()));
-
-        temp = positionNames[i] + "EnergyNoGamma";
-        plots.energyHistosNoGamma.push_back((TH1I*)plots.energyHistos[i]->Clone(temp.c_str()));
-
-        temp = positionNames[i] + "FirstInMicro";
-        plots.TOFHistosFirstInMicro.push_back((TH1I*)plots.TOFHistos[i]->Clone(temp.c_str()));
-    }*/
-
-    //double test = plots.energyHistos[0]->GetXaxis()->GetBinLowEdge(plots.energyHistos[0]->GetXaxis()->GetNbins());
-    //double test2 = plots.energyHistosCorrected[0]->GetXaxis()->GetBinLowEdge(plots.energyHistosCorrected[0]->GetXaxis()->GetNbins());
-
-    // create neutron energy plots using only micropulses with no gammas
-    
-    // create TOF plots for events that come first, second, or third in their
-    // micro
-    /*for(int i=0; i<3; i++)
-    {
-        stringstream temp;
-        temp << "order" << i << "InMicro";
-        plots.orderInMicro.push_back(new TH1I(temp.str().c_str(),temp.str().c_str(),TOF_BINS,0,TOF_RANGE));
-    }*/
-
-        /*************************************************************************/
-    // Prepare variables used to fill histograms (TOF, order of event in micro,
-    // etc.)
-
-    // create TIME VARIABLES used for filling histograms
-    double microTime;
-    int microNo, prevMicroNo;
-    long totalMicros = 0;
-
-    // create variables for DESCRIBING MICROPULSE TYPE (i.e., whether a
-    // micropulse has a gamma at the start and keep track of the influence of
-    // early micropulse events on later ones)
-    int orderInMicro = 0;
-    bool isGamma = false;
-    bool gammaInMicro = false;
-    /*************************************************************************/
-
-    /*************************************************************************/
-    // Prepare GAMMA GATE for filtering events depending on gamma presence
-
-    // channel-dependent time offset relative to the target changer's macropulse
-    // start time
-    int gammaGate[2];
-
-    // adjust time parameters based on channel identity
-    switch(detIndex)
-    {
-        case 1:
-            // monitor
-            gammaGate[0] = 25;
-            gammaGate[1] = 40;
-            break;
-        case 2:
-            // summed detector
-            gammaGate[0] = 85;
-            gammaGate[1] = 95;
-            break;
-        case 3:
-            // scavenger
-            gammaGate[0] = 85;
-            gammaGate[1] = 95;
-            break;
-    }
-    /*************************************************************************/
-
-    /*************************************************************************/
-    // Loop through sorted trees to calculate advanced histogram variables
-
-    // point at correct tree in preparation for reading data
-    if(detIndex==0)
-    {
-        setTCBranches(orchard[detIndex]);
-    }
-    else
-    {
-        setBranches(orchard[detIndex]);
-    }
-
-    int totalEntries = orchard[detIndex]->GetEntries();
-
-    // reduce # of total entries for testing purposes
-    //totalEntries /= 2;
-
-    cout << "Populating advanced histograms for channel " << 2*detIndex << endl;
-
-    // MAIN LOOP for sorting through channel-specific events
-    for(int j=0; j<totalEntries; j++)
-    {
-        orchard[detIndex]->GetEntry(j);
-
-        // calculate time since start of macro (includes time offsets)
-        double timeDiff = procEvent.completeTime-procEvent.macroTime;
-
-        // Apply gates:
-        if (timeDiff < 650000 && timeDiff > 0           // require events to come during the macropulse's beam-on period
-                && procEvent.targetPos != 0                              // discard events during target-changer movement
-                && procEvent.lgQ<65500 && procEvent.sgQ<32750                      // discard events with unphysically-large integrated charges
-                && procEvent.lgQ>procEvent.sgQ                                     // discard events with short gate charge is larger than long gate charge
-                //&& (procEvent.sgQ/(double)procEvent.lgQ<0.25 || procEvent.sgQ/(double)procEvent.lgQ>0.35)  // discard events outside accepted range of sgQ/lgQ
-                //&& procEvent.lgQ>100                                     // discard gammas at lowest range of energy
-           )
-        {
-            /*****************************************************************/
-            // Calculate event properties
-
-            // find which micropulse the event is in and the time since
-            // the start of the micropulse
-
-            // first, save previous event's micropulse number (we'll need this
-            // to calculate event ordering in each micropulse)
-            prevMicroNo = microNo;
-
-            microNo = floor(timeDiff/MICRO_LENGTH);
-            microTime = fmod(timeDiff,MICRO_LENGTH);
-
-            // convert microTime into neutron velocity based on flight path distance
-            double velocity = pow(10.,7.)*FLIGHT_DISTANCE/microTime; // in meters/sec 
-
-            // convert velocity to relativistic kinetic energy
-            double rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
-
-            // check to see whether this event is a gamma
-            if (microTime>gammaGate[0] && microTime<gammaGate[1])
-            {
-                // this event IS a gamma => indicate as such
-                isGamma = true;
-                gammaInMicro = true;
-            }
-
-            else
-            {
-                isGamma = false;
-            }
-            /*****************************************************************/
-
-            // GATE: discard events with too low of an integrated charge for their energy
-            //if (procEvent.lgQ>50)
-            //if (procEvent.lgQ>500*exp(-(microTime-100)/87))
-            //if (procEvent.lgQ<30*rKE)
-            {
-                // tag this event by its order in the micropulse
-                if (microNo==prevMicroNo)
-                {
-                    // still in same micropulse => increment order counter
-                    orderInMicro++;
-                }
-
-                else
-                {
-                    // new micropulse => return order counter to 1
-                    orderInMicro = 1;
-
-                    // new micropulse => return gamma indicator to false
-                    gammaInMicro = false;
-                    totalMicros++;
-                }
-
-                /*****************************************************************/
-                // Fill troubleshooting plots with event variables (rKE, microtime, etc.)
-                TOF->Fill(microTime);
-                triangle->Fill(microTime,procEvent.lgQ);
-                sgQlgQ->Fill(procEvent.sgQ,procEvent.lgQ);
-                QRatio->Fill(procEvent.sgQ/(double)procEvent.lgQ);
-                rKElgQ->Fill(rKE,procEvent.lgQ);
-                triangleRKE->Fill(microTime,rKE);
-                microNoH->Fill(microNo);
-
-                // populate only first three orderInMicro plots
-                /*if(orderInMicro<4)
-                {
-                    plots.orderInMicro[orderInMicro-1]->Fill(microTime);
-                }*/
-                
-                /*****************************************************************/
-
-                /*****************************************************************/
-                // Fill target-specific plots
-
-                if (procEvent.targetPos>0 && procEvent.targetPos<=NUMBER_OF_TARGETS)
-                {
-                    plots[procEvent.targetPos-1]->getTOFHisto()->Fill(microTime);
-                    plots[procEvent.targetPos-1]->getEnergyHisto()->Fill(rKE);
-
-                    if(!gammaInMicro)
-                    {
-                        //plots.energyHistosNoGamma[procEvent.targetPos-1]->Fill(rKE);
-                    }
-
-                    if(orderInMicro==1)
-                    {
-                        //plots.TOFHistosFirstInMicro[procEvent.targetPos-1]->Fill(microTime);
-                    }
-                }
-
-                // end of energy, time, cross-section gates on events
-                /*****************************************************************/
-            }
-
-            // fill ungated plots
-            /*if (procEvent.targetPos>0 && procEvent.targetPos<=NUMBER_OF_TARGETS)
-            {
-                plots.energyHistosUngated[procEvent.targetPos-1]->Fill(rKE);
-            }*/
-
-            // end of main event loop
-            /*****************************************************************/
-
-            /*if(procEvent.macroNo>0)
-              {
-              break;
-              }*/
-
-            if(j%1000==0)
-            {
-                cout << "Processed " << j << " events...\r";
-                fflush(stdout);
-            }
-        }
-    }
-
-    /*for(int i=0; i<NUMBER_OF_TARGETS; i++)
-    {
-        string temp = positionNames[i] + "GateRatio";
-        plots.gateRatios.push_back((TH1I*)plots.energyHistos[i]->Clone(temp.c_str()));
-        plots.gateRatios[i]->Divide(plots.energyHistosUngated[i]);
-    }*/
-
-}
-
-void correctForDeadtime(string histoFileName, string waveformFileName)
-{
-    TFile* waveformFile = new TFile(waveformFileName.c_str(),"READ");
-    TFile* histoFile = new TFile(histoFileName.c_str(),"UPDATE");
-
-    vector<Plots*> uncorrectedPlots;
-    for(int i=0; i<NUMBER_OF_TARGETS; i++)
-    {
-        string name = positionNames[i];
-        uncorrectedPlots.push_back(new Plots(name,histoFile));
-    }
-
-    vector<Plots*> correctedPlots;
-    for(int i=0; i<NUMBER_OF_TARGETS; i++)
-    {
-        string name = positionNames[i] + "Corrected";
-        correctedPlots.push_back(new Plots(name));
-    }
-
-    vector<Plots*> deadtimePlots;
-    for(int i=0; i<NUMBER_OF_TARGETS; i++)
-    {
-        string name = positionNames[i] + "W";
-        deadtimePlots.push_back(new Plots(name, waveformFile));
-    }
-
-    // extract deadtime from waveform-mode fit
-
-    TRandom3 *randomizeBin = new TRandom3();
-
-    for(int i=0; i<NUMBER_OF_TARGETS; i++)
-    {
-        // "deadtimeFraction" records the fraction of time that the detector is dead, for
-        // neutrons of a certain energy.
-
-        vector<double> deadtimeFraction;
-
-        //string temp;
-        //temp = "deadtime" + t.getName() + "Waveform";
-        //plots.waveformDeadtimes.push_back((TH1I*)waveformFile->Get(temp.c_str()));
-
-        /*if(!t.getDeadtime.back())
-        {
-            cout << "Error: couldn't find waveform deadtime histograms." << endl;
-            exit(1);
-        }*/
-
-        TH1I* deadtimeHisto = deadtimePlots[i]->getDeadtimeHisto();
-        int deadtimeBins = deadtimeHisto->GetNbinsX();
-
-        for(int j=0; j<deadtimeBins; j++)
-        {
-            deadtimeFraction.push_back(deadtimeHisto->GetBinContent(j)/(double)pow(10,6));
-        }
-
-        // create deadtime-corrected histograms
-
-        deadtimeHisto->Write();
-
-        //vector<vector<double>> eventsPerBinPerMicro(6,vector<double>(0));
-
-        //const double FULL_DEADTIME = 183; // total amount of time after firing when
-        // detector is at least partially dead to
-        // incoming pulses (in ns)
-        //const double PARTIAL_DEADTIME = 9; // amount of time after the end of
-        // FULL_DEADTIME when detector is
-        // becoming live again, depending on
-        // amplitude (in ns)
-
-        /*************************************************************************/
-        // Perform deadtime correction
-        /*************************************************************************/
-
-        // loop through all TOF histos
-
-        TH1I* tof = uncorrectedPlots[i]->getTOFHisto();
-        //TH1I* en = uncorrectedPlots[i]->getEnergyHisto();
-
-        TH1I* tofC = correctedPlots[i]->getTOFHisto();
-        TH1I* enC = correctedPlots[i]->getEnergyHisto();
-
-        int tofBins = tofC->GetNbinsX();
-
-        // apply deadtime correction to TOF histos
-        for(int j=0; j<tofBins; j++)
-        {
-            if(deadtimeFraction[j] > 0)
-            {
-                tofC->SetBinContent(j,(tof->GetBinContent(j)/(1-deadtimeFraction[j])));
-            }
-
-            // convert microTime into neutron velocity based on flight path distance
-            double velocity = pow(10.,7.)*FLIGHT_DISTANCE/(tofC->GetBinCenter(j)+randomizeBin->Uniform(-TOF_RANGE/(double)(2*TOF_BINS),TOF_RANGE/(double)(2*TOF_BINS))); // in meters/sec 
-
-            // convert velocity to relativistic kinetic energy
-            double rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
-
-            enC->Fill(rKE,tofC->GetBinContent(j));
-            tofC->SetBinError(j,pow(tofC->GetBinContent(j),0.5));
-            enC->SetBinError(j,pow(enC->GetBinContent(j),0.5));
-        }
-
-        tofC->Write();
-        enC->Write();
-    }
-
-    waveformFile->Close();
-    histoFile->Close();
-}
-
-/*void fillCSGraphs(string CSFileName, vector<Target*>& targets)
-{
-    // create a file to hold calculated cross sections
-    TFile *CSfile = new TFile(CSFileName.c_str(),"RECREATE");
-
-    // remake the cross-section histogram file
-
-    for(Target t : targets)
-    {
-        t.addCSGraph();
-    }
-
-    CSfile->Write();
-    CSfile->Close();
-}*/
-
 // Loop through all trees (one per channel) and populate their data into basic
 // histograms. Then, calculate the TOF, cross-section, etc using the channel 4
 // data and produce histograms of these calculated quantities.
-void fillHistos()
+void fillHistos(vector<Plots*>& plots)
 {
+    cout << endl << "Entering ./histos..." << endl;
     TH1* waveformH;
     // fill basic histograms for DPP mode in each channel
 
@@ -458,7 +59,7 @@ void fillHistos()
         gDirectory->GetDirectory(dirs[i].c_str())->cd();
 
         // instantiate DPP-mode histograms
-        TH1I* macroNoH = new TH1I("macroNoH","macroNo",150000,0,150000);
+        TH1I* macroNoH = new TH1I("macroNoH","macroNo",500000,0,500000);
         macroNoH->GetXaxis()->SetTitle("macropulse number of each event");
 
         TH1I* evtNoH = new TH1I("evtNoH","evtNo",2500,0,2500);
@@ -482,18 +83,74 @@ void fillHistos()
         TH1I* lgQH = new TH1I("lgQH","lgQ",7000,0,70000);
         lgQH->GetXaxis()->SetTitle("long gate integrated charge for each event");
 
+        // diagnostic histograms
+        TH1I *TOF = new TH1I("TOF","Summed-detector time of flight",TOF_BINS,0,TOF_RANGE);
+        TH2I *triangle = new TH2I("triangle","Pulse integral vs. TOF",TOF_RANGE,0,MICRO_LENGTH+1,2048,0,65536);
+        TH2I *triangleRKE = new TH2I("triangleRKE","Pulse integral vs. relativistic KE",NUMBER_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND,2048,0,65536);
+        TH2I *sgQlgQ = new TH2I("sgQlgQ","short gate Q vs. long gate Q",2048,0,65536,2048,0,65536);
+        TH1I *QRatio = new TH1I("QRatio","short gate Q/long gate Q",1000,0,1);
+        TH2I *rKElgQ = new TH2I("lgQrKE","relativistic KE vs. long gate Q",500,ENERGY_LOWER_BOUND,100,2048,0,65536);
+        TH1I *microNoH = new TH1I("microNoH","microNo",360,0,360);
+        microNoH->GetXaxis()->SetTitle("micropulse number of each event");
+
         // create a subdirectory for holding DPP-mode waveform data
         gDirectory->mkdir("waveformsDir","raw DPP waveforms");
 
         // reattach to the channel-specific tree for reading out data
         if(i==0)
         {
-            setTCBranches(orchard[i]);
+            setBranchesTC(orchard[i]);
         }
         else
         {
-            setBranches(orchard[i]);
+            setBranchesHistos(orchard[i]);
         }
+
+        // create TIME VARIABLES used for filling histograms
+        double microTime;
+        int microNo, prevMicroNo;
+        long totalMicros = 0;
+
+        // create variables for DESCRIBING MICROPULSE TYPE (i.e., whether a
+        // micropulse has a gamma at the start and keep track of the influence of
+        // early micropulse events on later ones)
+        int orderInMicro = 0;
+        bool isGamma = false;
+        bool gammaInMicro = false;
+        /*************************************************************************/
+
+        /*************************************************************************/
+        // Prepare GAMMA GATE for filtering events depending on gamma presence
+
+        // channel-dependent time offset relative to the target changer's macropulse
+        // start time
+        int gammaGate[2];
+
+        // adjust time parameters based on channel identity
+        switch(i)
+        {
+            case 1:
+                // monitor
+                gammaGate[0] = 25;
+                gammaGate[1] = 40;
+                break;
+            case 2:
+                // summed detector
+                gammaGate[0] = 85;
+                gammaGate[1] = 95;
+                break;
+            case 3:
+                // scavenger
+                gammaGate[0] = 85;
+                gammaGate[1] = 95;
+                break;
+        }
+        /*************************************************************************/
+
+        /*************************************************************************/
+        // Loop through sorted trees to calculate advanced histogram variables
+
+        cout << "Populating advanced histograms for channel " << 2*i << endl;
 
         int totalEntries = orchard[i]->GetEntries();
 
@@ -552,6 +209,139 @@ void fillHistos()
               {
               break;
               }*/
+        
+            if(i==2)
+            {
+                // calculate time since start of macro (includes time offsets)
+                double timeDiff = procEvent.completeTime-procEvent.macroTime;
+
+                // Apply gates:
+                if (timeDiff < 650000 && timeDiff > 0           // require events to come during the macropulse's beam-on period
+                        && procEvent.targetPos != 0                              // discard events during target-changer movement
+                        && procEvent.lgQ<65500 && procEvent.sgQ<32750                      // discard events with unphysically-large integrated charges
+                        && procEvent.lgQ>procEvent.sgQ                                     // discard events with short gate charge is larger than long gate charge
+                        //&& (procEvent.sgQ/(double)procEvent.lgQ<0.25 || procEvent.sgQ/(double)procEvent.lgQ>0.35)  // discard events outside accepted range of sgQ/lgQ
+                        //&& procEvent.lgQ>100                                     // discard gammas at lowest range of energy
+                   )
+                {
+                    /*****************************************************************/
+                    // Calculate event properties
+
+                    // find which micropulse the event is in and the time since
+                    // the start of the micropulse
+
+                    // first, save previous event's micropulse number (we'll need this
+                    // to calculate event ordering in each micropulse)
+                    prevMicroNo = microNo;
+
+                    microNo = floor(timeDiff/MICRO_LENGTH);
+                    microTime = fmod(timeDiff,MICRO_LENGTH);
+
+                    // convert microTime into neutron velocity based on flight path distance
+                    double velocity = pow(10.,7.)*FLIGHT_DISTANCE/microTime; // in meters/sec 
+
+                    // convert velocity to relativistic kinetic energy
+                    double rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
+
+                    // check to see whether this event is a gamma
+                    if (microTime>gammaGate[0] && microTime<gammaGate[1])
+                    {
+                        // this event IS a gamma => indicate as such
+                        isGamma = true;
+                        gammaInMicro = true;
+                    }
+
+                    else
+                    {
+                        isGamma = false;
+                    }
+                    /*****************************************************************/
+
+                    // GATE: discard events with too low of an integrated charge for their energy
+                    //if (procEvent.lgQ>50)
+                    //if (procEvent.lgQ>500*exp(-(microTime-100)/87))
+                    //if (procEvent.lgQ<30*rKE)
+                    {
+                        // tag this event by its order in the micropulse
+                        if (microNo==prevMicroNo)
+                        {
+                            // still in same micropulse => increment order counter
+                            orderInMicro++;
+                        }
+
+                        else
+                        {
+                            // new micropulse => return order counter to 1
+                            orderInMicro = 1;
+
+                            // new micropulse => return gamma indicator to false
+                            gammaInMicro = false;
+                            totalMicros++;
+                        }
+
+                        /*****************************************************************/
+                        // Fill troubleshooting plots with event variables (rKE, microtime, etc.)
+                        TOF->Fill(microTime);
+                        triangle->Fill(microTime,procEvent.lgQ);
+                        sgQlgQ->Fill(procEvent.sgQ,procEvent.lgQ);
+                        QRatio->Fill(procEvent.sgQ/(double)procEvent.lgQ);
+                        rKElgQ->Fill(rKE,procEvent.lgQ);
+                        triangleRKE->Fill(microTime,rKE);
+                        microNoH->Fill(microNo);
+
+                        // populate only first three orderInMicro plots
+                        /*if(orderInMicro<4)
+                          {
+                          plots.orderInMicro[orderInMicro-1]->Fill(microTime);
+                          }*/
+
+                        /*****************************************************************/
+
+                        /*****************************************************************/
+                        // Fill target-specific plots
+
+                        if (procEvent.targetPos>0 && procEvent.targetPos<=NUMBER_OF_TARGETS)
+                        {
+                            plots[procEvent.targetPos-1]->getTOFHisto()->Fill(microTime);
+                            plots[procEvent.targetPos-1]->getEnergyHisto()->Fill(rKE);
+
+                            if(!gammaInMicro)
+                            {
+                                //plots.energyHistosNoGamma[procEvent.targetPos-1]->Fill(rKE);
+                            }
+
+                            if(orderInMicro==1)
+                            {
+                                //plots.TOFHistosFirstInMicro[procEvent.targetPos-1]->Fill(microTime);
+                            }
+                        }
+
+                        // end of energy, time, cross-section gates on events
+                        /*****************************************************************/
+                    }
+
+                    // fill ungated plots
+                    /*if (procEvent.targetPos>0 && procEvent.targetPos<=NUMBER_OF_TARGETS)
+                      {
+                      plots.energyHistosUngated[procEvent.targetPos-1]->Fill(rKE);
+                      }*/
+
+                    // end of main event loop
+                    /*****************************************************************/
+
+                    /*if(procEvent.macroNo>0)
+                      {
+                      break;
+                      }*/
+
+                    if(j%1000==0)
+                    {
+                        cout << "Processed " << j << " events...\r";
+                        fflush(stdout);
+                    }
+                }
+            }
+
             if(j%1000==0)
             {
                 cout << "Processed " << j << " events...\r";
@@ -592,8 +382,8 @@ void fillHistos()
         waveformsDir->cd();
 
         // fill waveform mode histograms
-        setBranchesW(orchardW[i]);
-        
+        setBranchesHistosW(orchardW[i]);
+
         int totalEntries = orchardW[i]->GetEntries();
         cout << totalEntries << " total waveforms detected in channel " << i*2 << endl;
 
@@ -791,12 +581,10 @@ setBranches(orchard[3]);
 
 int histos(string sortedFileName, string histoFileName)
 {
-    cout << endl << "Entering ./histos..." << endl;
-
     TFile* sortedFile = new TFile(sortedFileName.c_str(),"READ");
     if(!sortedFile->IsOpen())
     {
-        cout << "Error: failed to open resort.root" << endl;
+        cerr << "Error: failed to open resort.root" << endl;
         exit(1);
     }
 
@@ -811,8 +599,6 @@ int histos(string sortedFileName, string histoFileName)
     orchard.push_back(ch0Tree);
     orchard.push_back(ch2Tree);
     orchard.push_back(ch4Tree);
-    // uncomment to include scavenger data
-    //orchard.push_back(ch6Tree);
 
     orchardW.push_back(ch0TreeW);
     orchardW.push_back(ch2TreeW);
@@ -824,11 +610,11 @@ int histos(string sortedFileName, string histoFileName)
     vector<Plots*> plots;
 
     // open output file to contain histos
-    TFile* histoFile = new TFile(histoFileName.c_str(),"UPDATE");
-    if(!histoFile->Get("blankEnergy"))
+    TFile* histoFile = new TFile(histoFileName.c_str(),"READ");
+    if(!histoFile->IsOpen())
     {
-        // No histogram file - need to create it and fill it before moving on to
-        // cross-section histos
+        // No histogram file - create and fill
+        histoFile = new TFile(histoFileName.c_str(),"CREATE");
 
         for(int i=0; i<NUMBER_OF_TARGETS; i++)
         {
@@ -838,9 +624,8 @@ int histos(string sortedFileName, string histoFileName)
         // prepare the root file with 4 directories, one for each channel
         // these directories will hold basic variable histograms showing the
         // raw data in each tree, plus TOF, x-sections, etc histograms
-        fillHistos();
+        fillHistos(plots);
         // fill TOF, cross-section, etc. histos for channels 4, 6
-        fillAdvancedHistos(2, plots);
 
         sortedFile->Close();
         histoFile->Write();

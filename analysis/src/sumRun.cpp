@@ -81,7 +81,7 @@ void readGraphs(
 
         else
         {
-            cout << "Error: subrun number too large." << endl;
+            cerr << "Error: subrun number too large." << endl;
             exit(1);
         }
 

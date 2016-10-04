@@ -61,7 +61,7 @@ TH1I* timeBinsToRKEBins(TH1I *inputHisto, string name)
     double tentativeEnergy = tofToRKE(minimumTime);
     if(tentativeEnergy==-1)
     {
-        cout << "Error: energy of old min time " << minimumTime << " was not finite: " << tentativeEnergy << " (MeV)" << endl;
+        cerr << "Error: energy of old min time " << minimumTime << " was not finite: " << tentativeEnergy << " (MeV)" << endl;
         exit(1);
     }
 
@@ -83,7 +83,7 @@ TH1I* timeBinsToRKEBins(TH1I *inputHisto, string name)
     tentativeEnergy = tofToRKE(maximumTime);
     if(tentativeEnergy==-1)
     {
-        cout << "Error: energy of old maximum time " << maximumTime << " was not finite: " << tentativeEnergy << " (MeV)" << endl;
+        cerr << "Error: energy of old maximum time " << maximumTime << " was not finite: " << tentativeEnergy << " (MeV)" << endl;
         exit(1);
     }
 

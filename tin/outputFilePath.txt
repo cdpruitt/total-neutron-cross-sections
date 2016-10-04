@@ -1,2 +1,0 @@
-/data2/analysis
-/data3/analysis

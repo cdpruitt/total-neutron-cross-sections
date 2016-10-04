@@ -1,8 +1,7 @@
 // project-specific classes
-#include "../include/target.h"
-#include "../include/driver.h"
 #include "../include/analysisConstants.h"
-#include "../include/resort.h"
+#include "../include/raw.h"
+#include "../include/separate.h"
 #include "../include/histos.h"
 #include "../include/plots.h"
 #include "../include/waveform.h"
@@ -23,10 +22,11 @@ using namespace std;
 int main(int, char* argv[])
 {
     /*************************************************************************/
-    /* Parse input parameters */
+    /* Set up input/output filenames */
+    /*************************************************************************/
 
     // location of digitizer-produced data file
-    string inputFileName = argv[1];
+    string rawDataFileName = argv[1];
 
     // location of directory where all output will be stored
     string outputDirectoryName = argv[2];
@@ -35,20 +35,9 @@ int main(int, char* argv[])
     // during this run
     int runNumber = stoi(argv[3]);
 
-    // flag indicating whether ./waveform should be run
-    //bool runWaveform = argv[4];
-
-    // flag indicating whether ./DPPwaveform should be run
-    //bool runDPPFitting = argv[5];
-
-
-    /*************************************************************************/
-    /* Analyze data */
-
-    // Set filenames for output files
     string analysisDirectory = argv[2];
-    string rawFileName = analysisDirectory + "raw.root";
-    string sortedFileName = analysisDirectory + "sorted.root";
+    string rawTreeFileName = analysisDirectory + "raw.root";
+    string processedTreeFileName = analysisDirectory + "sorted.root";
     string waveformFileName = analysisDirectory + "waveform.root";
     string DPPwaveformFileName = analysisDirectory + "DPPwaveform.root";
     string histoFileName = analysisDirectory + "histos.root";
@@ -58,69 +47,64 @@ int main(int, char* argv[])
     string tempFileName = analysisDirectory + "temp.root";
 
     /*************************************************************************/
-    /* extract raw data from binary file */
+    /* Start analysis */
+    /*************************************************************************/
 
-    // Check to see if raw trees already exist
-    TFile *rawFile;
-    rawFile = new TFile(rawFileName.c_str(),"UPDATE");
-    if(!rawFile->Get("tree"))
+    /*************************************************************************/
+    /* Populate raw event data into a tree */
+    /*************************************************************************/
+    TFile* rawTreeFile = new TFile(rawTreeFileName.c_str(),"READ");
+    if(!rawTreeFile->IsOpen())
     {
-        // we need to (re)sort the raw data into trees
-        extractRawData(inputFileName,rawFileName);
+        // create a raw data tree
+        readRawData(rawDataFileName,rawTreeFileName);
     }
 
     else
     {
-        cout << "Found previously existing raw sort " << rawFileName << ". Skipping raw sort." << endl;
+        cout << "Found previously existing raw data tree " << rawTreeFileName << ". Skipping reading raw data file." << endl;
+        rawTreeFile->Close();
     }
 
-    rawFile->Close();
-
     /*************************************************************************/
-    /* separate data by channel and assign to macropulse */
-
-    // Check to see if sorted trees already exist
-    TFile* sortedFile = new TFile(sortedFileName.c_str(),"READ");
-    if(!sortedFile->IsOpen())
+    /* "Process" raw events by assigning time and target data */
+    /*************************************************************************/
+    TFile* processedTreeFile = new TFile(processedTreeFileName.c_str(),"READ");
+    if(!processedTreeFile->IsOpen())
     {
-        vector<TTree*> orchardRaw;       // channel-specific DPP events NOT assigned to macropulses
-        vector<TTree*> orchardRawW;      // channel-specific waveform events NOT assigned to macropulses
+        vector<TTree*> orchardRaw;
+        vector<TTree*> orchardRawW;
 
-        // separate all data by channel
-        separateByChannel(rawFileName, tempFileName, orchardRaw, orchardRawW);
-
-        // Create an error log where sorting errors can be recorded for review
-        ofstream errorFile;
-        errorFile.open(errorFileName);
-        errorFile.precision(13);
+        // separate all data by channel and event type
+        separateByChannel(rawTreeFileName, tempFileName, orchardRaw, orchardRawW);
 
         vector<TTree*> orchardProcessed; // channel-specific DPP events assigned to macropulses
         vector<TTree*> orchardProcessedW;// channel-specific waveform events assigned to macropulses
 
-        sortedFile = new TFile(sortedFileName.c_str(),"CREATE");
+        processedTreeFile = new TFile(processedTreeFileName.c_str(),"CREATE");
 
         // Next, extract target changer events from the input tree and add to the
         // target changer trees (DPP and waveform), assigning a macropulse to each
         // target changer event. 
 
-        processTargetChanger(rawFileName, sortedFile, errorFile);
+        processTargetChanger(rawTreeFileName, processedTreeFile);
 
         // Last, now that the macropulse structure is assigned by the target changer
         // events, we can assign detector events to the correct macropulse.
-        processDPPEvents(sortedFile, orchardRaw, orchardProcessed, errorFile);
-        processWaveformEvents(sortedFile, orchardRawW, orchardProcessedW, errorFile);
+        processDPPEvents(processedTreeFile, orchardRaw, orchardProcessed);
+        processWaveformEvents(processedTreeFile, orchardRawW, orchardProcessedW);
 
         //cout << "Total number of ch0 waveform-mode events processed = " << numberOfCh0Waveforms << endl;
        // cout << "Total number of ch2 waveform-mode events processed = " << numberOfCh2Waveforms << endl;
        //   cout << "Total number of ch4 waveform-mode events processed = " << numberOfCh4Waveforms << endl;
 
-        sortedFile->Write();
-        sortedFile->Close();
+        processedTreeFile->Write();
+        processedTreeFile->Close();
     }
 
     else
     {
-        cout << "Found previously existing file " << sortedFileName << ". Skipping resort..." << endl;
+        cout << "Found previously existing file " << processedTreeFileName << ". Skipping resort..." << endl;
     }
 
     /*************************************************************************/
@@ -129,19 +113,12 @@ int main(int, char* argv[])
     // analyze the waveform-mode data, including peak-fitting and deadtime extraction
     //if(runWaveform)
 
-    waveform(sortedFileName, waveformFileName);
+    waveform(processedTreeFileName, waveformFileName);
 
-    histos(sortedFileName, histoFileName);
+    histos(processedTreeFileName, histoFileName);
 
-    // Calculate deadtime using waveform-mode data, and apply correction to
-    // DPP-mode data
+    // Apply deadtime correction to DPP-mode data
     correctForDeadtime(histoFileName, waveformFileName);
-
-    // perform peak-fitting on the DPP-mode wavelets
-    //if(DPPwaveform)
-    //{
-    //    DPPwaveform(sortedFileName,DPPWaveformFileName);
-    //}
 
     // calculate cross sections
     calculateCS(histoFileName,CSFileName,runNumber);

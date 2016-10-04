@@ -371,6 +371,7 @@ fitData fitTrigger(int waveformNo, float triggerSample)
         }
     }
 
+    //peakHisto->Write();
     delete peakHisto;
     delete fittingFunc;
 
@@ -449,19 +450,55 @@ void processTrigger(int waveformNo, float triggerSample)
     {
         triggerList.push_back(data.trigger1Time);
         triggerValues.push_back(procEvent.waveform->at(data.trigger1Time/2));
+
+        if(data.peak2Amplitude && data.peak1Amplitude > 13000)
+        {
+            triggerList.push_back(data.trigger2Time);
+            triggerValues.push_back(procEvent.waveform->at(data.trigger2Time/2));
+        }
+
         numberGoodFits++;
     }
 
     else
     {
         numberBadFits++;
+        triggerList.push_back(triggerSample*SAMPLE_PERIOD);
     }
 
-    if(triggerList.size()%1000==0)
+}
+
+void produceTriggerOverlay(int j)
+{
+    stringstream temp;
+    temp << "waveform " << j;
+    waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),procEvent.waveform->size(),0,SAMPLE_PERIOD*procEvent.waveform->size());
+
+    for(int k=0; (size_t)k<procEvent.waveform->size(); k++)
     {
-        cout << "Processing triggers on waveform " << waveformNo << "\r";
-        fflush(stdout);
+        waveformH->SetBinContent(k,procEvent.waveform->at(k));
     }
+
+    waveformH->Write();
+
+    temp << "triggers";
+    triggerH = new TH1I(temp.str().c_str(),temp.str().c_str(),procEvent.waveform->size(),0,SAMPLE_PERIOD*(procEvent.waveform->size()));
+
+    for(int k=0; (size_t)k<triggerList.size(); k++)
+    {
+        triggerH->SetBinContent(triggerList[k]/SAMPLE_PERIOD,triggerValues[k]);
+    }
+
+    TCanvas *c1 = new TCanvas;
+    c1->DrawFrame(0,0,procEvent.waveform->size()+10,16383);
+
+    triggerH->SetOption("P");
+
+    triggerH->SetMarkerStyle(29);
+    triggerH->SetMarkerSize(2);
+    triggerH->SetMarkerColor(2);
+
+    triggerH->Write();
 }
 
 void processWaveforms(TTree* ch4TreeWaveform, vector<Plots*>& plots)
@@ -475,7 +512,7 @@ void processWaveforms(TTree* ch4TreeWaveform, vector<Plots*>& plots)
     {
         // point event variables at the correct tree in preparation for reading
         // data
-        setBranchesW(ch4TreeWaveform);
+        setBranchesHistosW(ch4TreeWaveform);
 
         int totalEntries = ch4TreeWaveform->GetEntries();
         cout << "Total waveforms = " << totalEntries << endl;
@@ -490,6 +527,10 @@ void processWaveforms(TTree* ch4TreeWaveform, vector<Plots*>& plots)
         // EVENT LOOP for sorting through channel-specific waveforms
         for(int j=0; j<totalEntries; j++)
         {
+
+            cout << "Processing triggers on waveform " << j << "\r";
+            fflush(stdout);
+
             triggerList.clear();
             triggerValues.clear();
 
@@ -521,9 +562,9 @@ void processWaveforms(TTree* ch4TreeWaveform, vector<Plots*>& plots)
                     // trigger found - plot/fit/extract time
                     processTrigger(j, k);
 
-                    // shift waveform index ahead by TRIGGER_HOLDOFF to prevent
-                    // retriggering
-                    k += TRIGGER_HOLDOFF;
+                    // shift waveform index past the end of this fitting window
+                    // so that we don't refit the same data
+                    k += PEAKFIT_WINDOW;
                 }
                 /*if(triggerList.size()>10)
                 {
@@ -547,14 +588,7 @@ void processWaveforms(TTree* ch4TreeWaveform, vector<Plots*>& plots)
                 }
             }
 
-            /*stringstream temp;
-            temp << "waveform " << j;
-            waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),procEvent.waveform->size()+10,0,2*(procEvent.waveform->size()+10));
-
-            for(int k=0; k<procEvent.waveform->size(); k++)
-            {
-                waveformH->SetBinContent(k,procEvent.waveform->at(k));
-            }*/
+            //produceTriggerOverlay(j);
 
             /*temp.str("");
             temp << "waveformWrap" << j;
@@ -596,31 +630,10 @@ void processWaveforms(TTree* ch4TreeWaveform, vector<Plots*>& plots)
               cout << "trigger " << l << " = " << triggerList[l] << ", " << triggerValues[l] << endl;
               }*/
 
-            /*
-            temp << "triggers";
-            triggerH = new TH1I(temp.str().c_str(),temp.str().c_str(),procEvent.waveform->size()+10,0,2*(procEvent.waveform->size()+10));
-
-            for(int k=0; k<triggerList.size(); k++)
-            {
-                triggerH->SetBinContent(triggerList[k],triggerValues[k]);
-            }
-
-            TCanvas *c1 = new TCanvas;
-            c1->DrawFrame(0,0,procEvent.waveform->size()+10,16383);
-
-            //waveformH->Draw("same");
-            triggerH->SetOption("P");
-
-            triggerH->SetMarkerStyle(29);
-            triggerH->SetMarkerSize(2);
-            triggerH->SetMarkerColor(2);
-            */
-            //triggerH->Draw();
-
-            //triggerH->Write();
+                        //triggerH->Write();
             //cout << "Finished processing waveform " << j << endl << endl;
 
-            /*if(j>1)
+            /*if(j==0)
             {
                 break;
             }*/
@@ -642,7 +655,7 @@ void processWaveforms(TTree* ch4TreeWaveform, vector<Plots*>& plots)
 
 void calculateDeadtime(TTree* ch4TreeWaveform, vector<Plots*>& plots)
 {
-    setBranchesW(ch4TreeWaveform);
+    setBranchesHistosW(ch4TreeWaveform);
 
     int totalEntries = ch4TreeWaveform->GetEntries();
     cout << "Total waveforms on ch. " << ": " << totalEntries << endl;
@@ -657,7 +670,7 @@ void calculateDeadtime(TTree* ch4TreeWaveform, vector<Plots*>& plots)
         }
         microsPerTargetWaveform[procEvent.targetPos-1] += 2*procEvent.waveform->size()/(double)MICRO_LENGTH;
     }
-
+    
     vector<vector<double>> eventsPerBinPerMicro(NUMBER_OF_TARGETS,vector<double>(0));
 
     // "deadtimeFraction" records the fraction of time that the detector is dead, for
@@ -674,38 +687,48 @@ void calculateDeadtime(TTree* ch4TreeWaveform, vector<Plots*>& plots)
         TH1I* tof = plots[i]->getTOFHisto();
         TH1I* dtH = plots[i]->getDeadtimeHisto();
 
-        for(int j=0; j<tof->GetNbinsX(); j++)
+        for(int j=0; j<TOF_BINS; j++)
         {
-            if(microsPerTargetWaveform[i] > 0)
+            if(microsPerTargetWaveform[i] <= 0)
             {
-                eventsPerBinPerMicro[i].push_back(tof->GetBinContent(j)/(double)microsPerTargetWaveform[i]);
+                break;
             }
 
-            else
-            {
-                eventsPerBinPerMicro[i].push_back(0);
-            }
-
+            eventsPerBinPerMicro[i].push_back(tof->GetBinContent(j+1)/(double)microsPerTargetWaveform[i]);
             deadtimeFraction[i].push_back(0);
         }
 
         // find the fraction of the time that the detector is dead for each bin in the micropulse
-        for(int j=1; (size_t)j<eventsPerBinPerMicro[i].size(); j++)
+        // set deadtime fraction base case
+
+        int deadtimeBins = (TOF_BINS/TOF_RANGE)*DEADTIME_PERIOD;
+
+        // use deadtime base case to calculate deadtime for remaining bins
+        for(int j=0; (size_t)j<TOF_BINS; j++)
         {
-            deadtimeFraction[i][j] = deadtimeFraction[i][j-1]+(1-deadtimeFraction[i][j-1])*eventsPerBinPerMicro[i][j];
-            if(j>(TOF_BINS/TOF_RANGE)*DEADTIME_PERIOD)
+            for(int k=j-deadtimeBins; k<j; k++)
             {
-                deadtimeFraction[i][j] -= (1-deadtimeFraction[i][j-(TOF_BINS/TOF_RANGE)*DEADTIME_PERIOD])*eventsPerBinPerMicro[i][j-(TOF_BINS/TOF_RANGE)*DEADTIME_PERIOD];
+                if(k<0)
+                {
+                    deadtimeFraction[i][j] += eventsPerBinPerMicro[i][k+TOF_BINS]*(1-deadtimeFraction[i][j]);
+                    continue;
+                }
+
+                deadtimeFraction[i][j] += eventsPerBinPerMicro[i][k]*(1-deadtimeFraction[i][j]);
             }
         }
 
-        string temp;
-        temp = "deadtime" + targetNamesWaveform[i];
-        for(int j=0; (size_t)j<deadtimeFraction[0].size(); j++)
+        double averageDeadtime = 0;
+
+        for(int j=0; (size_t)j<deadtimeFraction[i].size(); j++)
         {
             dtH->SetBinContent(j,1000000*deadtimeFraction[i][j]);
+            averageDeadtime += deadtimeFraction[i][j];
         }
         dtH->Write();
+
+        averageDeadtime /= deadtimeFraction[i].size();
+        cout << "Average deadtime for target " << i << ": " << averageDeadtime << endl;
     }
 }
 
@@ -714,17 +737,10 @@ void waveform(string inFileName, string outFileName)
     TFile* inFile = new TFile(inFileName.c_str(),"READ");
     if(!inFile->IsOpen())
     {
-        cout << "Error: failed to open resort.root" << endl;
+        cerr << "Error: failed to open resort.root" << endl;
         exit(1);
     }
 
-    if(inFile->Get("ch4ProcessedTreeW"))
-    {
-        cout << "Located waveform trees in " << inFileName << "." << endl;
-    }
-
-    //TTree* ch0TreeW = (TTree*)file->Get("targetChangerTree");
-    //TTree* ch2TreeW = (TTree*)file->Get("ch2ProcessedTreeW");
     TTree* ch4TreeWaveform = (TTree*)inFile->Get("ch4ProcessedTreeW");
 
     TFile* outFile;
@@ -780,8 +796,9 @@ void waveform(string inFileName, string outFileName)
         numberTotalTriggers += p->getTOFHisto()->GetEntries();
     }
 
-    cout << "Total number of triggers: " << numberTotalTriggers << endl;
-    cout << "Triggers/micropulse: " << numberTotalTriggers/(double)totalMicros;
+    cout << "Total micros on ch. : " << totalMicros << endl;
+    cout << "Total number of triggers on ch. : " << numberTotalTriggers << endl;
+    cout << "Triggers/micropulse: " << numberTotalTriggers/(double)totalMicros << endl;
  
     inFile->Close();
     outFile->Close();

@@ -6,7 +6,7 @@
 #include "../include/dataStructures.h"
 
 RawEvent rawEvent;
-SortedEvent sortedEvent;
+SeparatedEvent separatedEvent;
 ProcessedEvent procEvent;
 TargetChangerEvent tcEvent;
 
@@ -14,25 +14,37 @@ TargetChangerEvent tcEvent;
 // start populating it with DPP events
 void branchRaw(TTree*& tree)
 {
-    tree->Branch("evtNo",&sortedEvent.evtNo,"evtNo/i");
-    tree->Branch("chNo",&sortedEvent.chNo,"chNo/i");
-    tree->Branch("timetag",&sortedEvent.timetag,"timetag/d");
-    tree->Branch("extTime",&sortedEvent.extTime,"extTime/i");
-    tree->Branch("fineTime",&sortedEvent.fineTime,"fineTime/i");
-    tree->Branch("sgQ",&sortedEvent.sgQ,"sgQ/i");
-    tree->Branch("lgQ",&sortedEvent.lgQ,"lgQ/i");
-    tree->Branch("waveform",&sortedEvent.waveform);
+    tree->Branch("evtType",&rawEvent.evtType,"evtType/i");
+    tree->Branch("chNo",&rawEvent.chNo,"chNo/i");
+    tree->Branch("extTime",&rawEvent.extTime,"extTime/i");
+    tree->Branch("timetag",&rawEvent.timetag,"timetag/d");
+    tree->Branch("fineTime",&rawEvent.fineTime,"fineTime/i");
+    tree->Branch("sgQ",&rawEvent.sgQ,"sgQ/i");
+    tree->Branch("lgQ",&rawEvent.lgQ,"lgQ/i");
+    tree->Branch("waveform",&rawEvent.waveform);
+}
+
+void branchSplit(TTree*& tree)
+{
+    tree->Branch("evtNo",&separatedEvent.evtNo,"evtNo/i");
+    tree->Branch("chNo",&separatedEvent.chNo,"chNo/i");
+    tree->Branch("timetag",&separatedEvent.timetag,"timetag/d");
+    tree->Branch("extTime",&separatedEvent.extTime,"extTime/i");
+    tree->Branch("fineTime",&separatedEvent.fineTime,"fineTime/i");
+    tree->Branch("sgQ",&separatedEvent.sgQ,"sgQ/i");
+    tree->Branch("lgQ",&separatedEvent.lgQ,"lgQ/i");
+    tree->Branch("waveform",&separatedEvent.waveform);
 }
 
 // Used to connect a channel-specific tree to waveform event variables so we can
 // start populating it with waveform events
-void branchRawW(TTree*& tree)
+void branchSplitW(TTree*& tree)
 {
-    tree->Branch("timetag",&sortedEvent.timetag,"timetag/d");
-    tree->Branch("extTime",&sortedEvent.extTime,"extTime/i");
-    tree->Branch("chNo",&sortedEvent.chNo,"chNo/i");
-    tree->Branch("evtNo",&sortedEvent.evtNo,"evtNo/i");
-    tree->Branch("waveform",&sortedEvent.waveform);
+    tree->Branch("timetag",&separatedEvent.timetag,"timetag/d");
+    tree->Branch("extTime",&separatedEvent.extTime,"extTime/i");
+    tree->Branch("chNo",&separatedEvent.chNo,"chNo/i");
+    tree->Branch("evtNo",&separatedEvent.evtNo,"evtNo/i");
+    tree->Branch("waveform",&separatedEvent.waveform);
 }
 
 // Used to connect a channel-specific tree to DPP event variables so we can
@@ -68,9 +80,37 @@ void branchTargetChanger(TTree*& tree)
     tree->Branch("targetPos",&tcEvent.targetPos,"targetPos/i");
 }
 
+void setBranchesSeparated(TTree* tree)
+{
+   tree->SetBranchAddress("chNo",&separatedEvent.chNo);
+   tree->SetBranchAddress("evtType",&separatedEvent.evtType);
+   tree->SetBranchAddress("timetag",&separatedEvent.timetag);
+   tree->SetBranchAddress("extTime",&separatedEvent.extTime);
+   tree->SetBranchAddress("sgQ",&separatedEvent.sgQ);
+   tree->SetBranchAddress("lgQ",&separatedEvent.lgQ);
+   tree->SetBranchAddress("fineTime",&separatedEvent.fineTime);
+   tree->SetBranchAddress("waveform",&separatedEvent.waveform);
+}
 
-// Re-link to an already-existing tree's data so we can read the tree
-void setBranches(TTree* tree)
+void setBranchesSeparatedW(TTree* tree)
+{
+    tree->SetBranchAddress("timetag",&separatedEvent.timetag);
+    tree->SetBranchAddress("extTime",&separatedEvent.extTime);
+    tree->SetBranchAddress("evtNo",&separatedEvent.evtNo);
+    tree->SetBranchAddress("waveform",&separatedEvent.waveform);
+}
+
+
+void setBranchesProcessedTC(TTree* tree)
+{
+    tree->SetBranchAddress("macroNo",&tcEvent.macroNo);
+    tree->SetBranchAddress("macroTime",&tcEvent.macroTime);
+    tree->SetBranchAddress("modeChange",&tcEvent.modeChange);
+    tree->SetBranchAddress("targetPos",&tcEvent.targetPos);
+}
+
+// To read a tree, we need to point variables at its branches
+void setBranchesHistos(TTree* tree)
 {
     tree->SetBranchAddress("macroNo",&procEvent.macroNo);
     tree->SetBranchAddress("evtNo",&procEvent.evtNo);
@@ -82,8 +122,7 @@ void setBranches(TTree* tree)
     tree->SetBranchAddress("waveform",&procEvent.waveform);
 }
 
-// Re-link to an already-existing tree's data so we can read the tree
-void setBranchesW(TTree* tree)
+void setBranchesHistosW(TTree* tree)
 {
     tree->SetBranchAddress("macroNo",&procEvent.macroNo);
     tree->SetBranchAddress("evtNo",&procEvent.evtNo);
@@ -92,7 +131,7 @@ void setBranchesW(TTree* tree)
     tree->SetBranchAddress("waveform",&procEvent.waveform);
 }
 
-void setTCBranches(TTree* tree)
+void setBranchesTC(TTree* tree)
 {
     tree->SetBranchAddress("macroNo",&procEvent.macroNo);
     tree->SetBranchAddress("macroTime",&procEvent.macroTime);

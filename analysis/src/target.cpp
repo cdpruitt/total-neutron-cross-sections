@@ -56,7 +56,7 @@ Target::Target(string targetDataLocation)
 
         else
         {
-            cout << "Error - couldn't parse a line in a targetData text file" << endl;
+            cerr << "Error - couldn't parse a line in a targetData text file" << endl;
             exit(1);
         }
     }

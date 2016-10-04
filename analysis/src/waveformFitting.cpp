@@ -106,7 +106,7 @@ double onePeakForm(double *x, double *par)
 
     if (par[2]==0 || par[3]==0)
     {
-        cout << "Error: divide by 0 in onePeakForm" << endl;
+        cerr << "Error: divide by 0 in onePeakForm" << endl;
         exit(1);
     }
 
@@ -129,7 +129,7 @@ double onePeakExpBackForm(double *x, double *par)
 
     if (par[2]==0 || par[3]==0)
     {
-        cout << "Error: divide by 0 in onePeakOnExpForm" << endl;
+        cerr << "Error: divide by 0 in onePeakOnExpForm" << endl;
         exit(1);
     }
 
@@ -158,7 +158,7 @@ double twoPeakForm(double *x, double *par)
 
     if (par[4]==0 || par[5]==0)
     {
-        cout << "Error: divide by 0 in twoPeakForm" << endl;
+        cerr << "Error: divide by 0 in twoPeakForm" << endl;
         exit(1);
     }
 
@@ -188,7 +188,7 @@ double twoPeakForm(double *x, double *par)
     // Uncomment for 'real' detForm
     if (par[2]==0)
     {
-        cout << "Error: divide by 0 in detForm" << endl;
+        cerr << "Error: divide by 0 in detForm" << endl;
         exit(1);
     }
 
@@ -210,7 +210,7 @@ double twoPeakForm(double *x, double *par)
 
     if (par[5]==0)
     {
-        cout << "Error: divide by 0 in onePeakForm" << endl;
+        cerr << "Error: divide by 0 in onePeakForm" << endl;
         exit(1);
     }
 
