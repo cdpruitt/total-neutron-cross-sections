@@ -4,6 +4,7 @@
 #include "../include/targetConstants.h"
 #include "../include/crossSection.h"
 #include "../include/dataPoint.h"
+#include "../include/dataSet.h"
 #include "../include/analysisConstants.h"
 #include "../include/physicalConstants.h"
 #include "../include/plottingConstants.h"
@@ -20,6 +21,105 @@
 #include "TRandom3.h"
 
 using namespace std;
+
+CrossSection::CrossSection()
+{
+}
+
+void CrossSection::addDataSet(DataSet dataSet)
+{
+    this->dataSet = dataSet;
+}
+
+void CrossSection::addDataPoint(DataPoint dataPoint)
+{
+    dataSet.addPoint(dataPoint);
+}
+
+int CrossSection::getNumberOfPoints() const
+{
+    return dataSet.getNumberOfPoints();
+}
+
+DataPoint CrossSection::getDataPoint(int i) const
+{
+    if((size_t)i>dataSet.getNumberOfPoints())
+    {
+        cout <<
+        "Error: tried to retrieve a non-existent cross section data point" <<
+        endl;
+
+        exit(1);
+    }
+
+    return dataSet.getPoint(i);
+}
+
+
+vector<double> CrossSection::getEnergyValues() const
+{
+    vector<double> energyValues;
+    for(int i=0; i<dataSet.getNumberOfPoints(); i++)
+    {
+        energyValues.push_back(dataSet.getPoint(i).getXValue());
+    }
+    return energyValues;
+}
+
+vector<double> CrossSection::getEnergyErrors() const
+{
+    vector<double> energyErrors;
+    for(int i=0; i<dataSet.getNumberOfPoints(); i++)
+    {
+        energyErrors.push_back(dataSet.getPoint(i).getXError());
+    }
+    return energyErrors;
+}
+
+vector<double> CrossSection::getCrossSectionValues() const
+{
+    vector<double> crossSectionValues;
+    for(int i=0; i<dataSet.getNumberOfPoints(); i++)
+    {
+        crossSectionValues.push_back(dataSet.getPoint(i).getYValue());
+    }
+    return crossSectionValues;
+}
+
+vector<double> CrossSection::getCrossSectionErrors() const
+{
+    vector<double> crossSectionErrors;
+    for(int i=0; i<dataSet.getNumberOfPoints(); i++)
+    {
+        crossSectionErrors.push_back(dataSet.getPoint(i).getYError());
+    }
+    return crossSectionErrors;
+}
+
+CrossSection operator-(const CrossSection& minuend, const CrossSection& subtrahend)
+{
+    int n = minuend.getNumberOfPoints();
+    CrossSection outputCS;
+
+    for(int i=0; i<n; i++)
+    {
+        outputCS.addDataPoint(minuend.getDataPoint(i)-subtrahend.getDataPoint(i));
+    }
+
+    return outputCS;
+}
+
+
+void CrossSection::createCSGraph(string name)
+{
+    TGraphErrors* t = new TGraphErrors(getNumberOfPoints(),
+                                      &getEnergyValues()[0],
+                                      &getCrossSectionValues()[0],
+                                      &getEnergyErrors()[0],
+                                      &getCrossSectionErrors()[0]);
+    t->SetNameTitle(name.c_str(),name.c_str());
+    t->Write();
+}
 
 void correctForDeadtime(string histoFileName, string deadtimeFileName)
 {
@@ -312,94 +412,4 @@ void calculateCS(string histoFileName, string CSFileName, int runNumber)
     CSFile->Close();
 }
 
-CrossSection operator-(const CrossSection& minuend, const CrossSection& subtrahend)
-{
-    int n = minuend.getNumberOfPoints();
-    CrossSection outputCS;
 
-    for(int i=0; i<n; i++)
-    {
-        outputCS.addDataPoint(minuend.getDataPoint(i)-subtrahend.getDataPoint(i));
-    }
-
-    return outputCS;
-}
-
-CrossSection::CrossSection()
-{
-}
-
-void CrossSection::addDataPoint(DataPoint dataPoint)
-{
-    data.push_back(dataPoint);
-}
-
-DataPoint CrossSection::getDataPoint(int i) const
-{
-    if((size_t)i>data.size())
-    {
-        cout <<
-        "Error: tried to retrieve a non-existent cross section data point" <<
-        endl;
-
-        exit(1);
-    }
-
-    return data[i];
-}
-
-int CrossSection::getNumberOfPoints() const
-{
-    return data.size();
-}
-
-vector<double> CrossSection::getEnergyValues() const
-{
-    vector<double> energyValues;
-    for(DataPoint d : data)
-    {
-        energyValues.push_back(d.getXValue());
-    }
-    return energyValues;
-}
-
-vector<double> CrossSection::getEnergyErrors() const
-{
-    vector<double> energyErrors;
-    for(DataPoint d : data)
-    {
-        energyErrors.push_back(d.getXError());
-    }
-    return energyErrors;
-}
-
-vector<double> CrossSection::getCrossSectionValues() const
-{
-    vector<double> crossSectionValues;
-    for(DataPoint d : data)
-    {
-        crossSectionValues.push_back(d.getYValue());
-    }
-    return crossSectionValues;
-}
-
-vector<double> CrossSection::getCrossSectionErrors() const
-{
-    vector<double> crossSectionErrors;
-    for(DataPoint d : data)
-    {
-        crossSectionErrors.push_back(d.getYError());
-    }
-    return crossSectionErrors;
-}
-
-void CrossSection::createCSGraph(string name)
-{
-    TGraphErrors* t = new TGraphErrors(getNumberOfPoints(),
-                                      &getEnergyValues()[0],
-                                      &getCrossSectionValues()[0],
-                                      &getEnergyErrors()[0],
-                                      &getCrossSectionErrors()[0]);
-    t->SetNameTitle(name.c_str(),name.c_str());
-    t->Write();
-}

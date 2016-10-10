@@ -193,7 +193,6 @@ then
 
             if [[ "${tokens[0]}" -le "$runNumber" && "${tokens[1]}" -ge "$runNumber" ]]
             then
-                echo "token 0 is ${tokens[0]}, token 1 is ${tokens[1]}, runNumber is $runNumber"
                 datapath=${tokens[2]}
                 outpath=${tokens[3]}
                 break
@@ -206,8 +205,6 @@ then
             echo "Failed to find filepath to input data. Exiting..."
             exit
         fi
-
-        printf "Reading from directory $datapath\n"
 
         # Check to see if all subruns should be analyzed, or just one
         if [ "$allSubruns" = true ]
@@ -262,6 +259,7 @@ then
             analyze $inputFileName $outputDirectoryName
         fi
     done < ../$target/runsToSort.txt
+    ./sumAll $target
     exit
 fi
 

@@ -136,5 +136,4 @@ void setBranchesTC(TTree* tree)
     tree->SetBranchAddress("macroNo",&procEvent.macroNo);
     tree->SetBranchAddress("macroTime",&procEvent.macroTime);
     tree->SetBranchAddress("targetPos",&procEvent.targetPos);
-    tree->SetBranchAddress("waveform",&procEvent.waveform);
 }

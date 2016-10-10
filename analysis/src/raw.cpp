@@ -134,13 +134,16 @@ bool readExtras(ifstream& evtfile)
             unsigned int dummy;
             readWord(evtfile, dummy);
             rawEvent.flags = (dummy & CONFIG_FLAGS_MASK);
-            rawEvent.fineTime = (dummy & FINETIME_MASK);
+            rawEvent.fineTime = (dummy & FINETIME_MASK); // in ns
             readWord(evtfile, rawEvent.extTime);
             return true;
 
         case 5:
             readWord(evtfile, rawEvent.NZC);
             readWord(evtfile, rawEvent.PZC);
+            rawEvent.fineTime = SAMPLE_PERIOD*
+                (8192-rawEvent.NZC)/
+                (rawEvent.PZC-rawEvent.NZC); // in ns
             return true;
 
         default:

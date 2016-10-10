@@ -4,13 +4,16 @@
 #include <vector>
 
 #include "../include/dataPoint.h"
+#include "../include/dataSet.h"
 
 class CrossSection
 {
     public:
         CrossSection();
         void addDataPoint(DataPoint dataPoint);
+        void addDataSet(DataSet dataSet);
         DataPoint getDataPoint(int i) const;
+        DataSet getDataSet() const;
         void createCSGraph(std::string name);
 
         int getNumberOfPoints() const;
@@ -20,7 +23,7 @@ class CrossSection
         std::vector<double> getCrossSectionErrors() const;
 
     private:
-        std::vector<DataPoint> data;
+        DataSet dataSet;
 };
 
 void calculateCS(std::string histoFileName, std::string CSFileName, int runNumber);

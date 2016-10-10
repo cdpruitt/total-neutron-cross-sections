@@ -14,9 +14,13 @@ class DataSet
         DataSet(std::vector<double> energy, std::vector<double> xsection, std::vector<double> error, std::string reference);
 
         TGraphErrors* getPlot() const;
+        int getNumberOfPoints() const;
 
-        std::string getReference();
+        std::string getReference() const;
         void setReference(std::string reference);
+
+        void addPoint(DataPoint dataPoint);
+        DataPoint getPoint(int i) const;
 
         friend const DataSet operator+(const DataSet& set1, const DataSet& set2);
         friend const DataSet operator-(const DataSet& set1, const DataSet& set2);
@@ -25,9 +29,15 @@ class DataSet
         const DataSet plus(const DataSet& set2, const std::string& name);
         const DataSet minus(const DataSet& set2, const std::string& name);
         const DataSet divideBy(const DataSet& set2, const std::string& name);
+        DataSet merge(DataSet set2);
 
+        std::vector<double> getXValues() const;
+        std::vector<double> getXErrors() const;
+        std::vector<double> getYValues() const;
+        std::vector<double> getYErrors() const;
+
+        TGraphErrors* createPlot(std::string name);
     private:
-        void createPlot();
 
         TGraphErrors* dataPlot;
 
