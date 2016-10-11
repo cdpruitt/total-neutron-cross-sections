@@ -113,7 +113,7 @@ analyze ()
 
     if [ "$overwriteHistos" == true ]
     then
-        printf "\nOverwriting existing histogram file $outputDirectoryName"/histos.root"...\n"
+        printf "\nOverwriting existing histogram file $outputDirectoryName"histos.root"...\n"
         rm $outputDirectoryName"/histos.root"
     fi
 
@@ -181,7 +181,7 @@ fi
 # Analyze runs listed in runsToSort.txt
 if [[ $runlist = true && -a ../$target/runsToSort.txt ]]
 then
-    printf "\nRunlist mode enabled. Reading runs from ./runsToSort.txt...\n"
+    printf "\nRunlist mode enabled. Reading runs from ./runsToSort.txt..."
 
     # loop through all runs listed in runsToSort.txt
     while read runNumber; do
@@ -210,7 +210,7 @@ then
         if [ "$allSubruns" = true ]
         then
             # Sort all sub-runs in the specified run directory
-            printf "\nReading all subruns in specified run\n"
+            printf "Reading all subruns in specified run\n"
             for f in $datapath/output/run$runNumber/data-*;
             do
                 subrunNo=$(echo $f | egrep -o '[0-9]+' | tail -1)

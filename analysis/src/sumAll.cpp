@@ -273,6 +273,19 @@ void createRelativeCSPlot(vector<double>* graph1Data, vector<double>* graph1Erro
     //relativeGraph->Write();
 }
 
+DataSet scaleToLit(DataSet setToScale, DataSet expReference, DataSet litReference)
+{
+    DataSet scaledSet;
+    int n = setToScale.getNumberOfPoints();
+    for(int i=0; i<n; i++)
+    {
+        DataPoint p = litReference.getPoint(i)/expReference.getPoint(i);
+        scaledSet.addPoint(p);
+    }
+
+    return scaledSet;
+}
+
 int main(int, char* argv[])
 {
     // Find the total number of runs to read in
@@ -404,13 +417,13 @@ int main(int, char* argv[])
 
     for(int i=0; (size_t)i<energies.size(); i++)
     {
-        DataPoint d(energies[0],
+        DataPoint d(energies[i],
                     0,
                     SnNatLitGraph->Eval(energies[i]),
                     SnNatLitGraph->GetErrorY(energies[i]));
         SnNatLitData.addPoint(d);
 
-        DataPoint d2(energies[0],
+        DataPoint d2(energies[i],
                      0,
                      CNatLitGraph->Eval(energies[i]),
                      CNatLitGraph->GetErrorY(energies[i]));
@@ -425,7 +438,7 @@ int main(int, char* argv[])
                          "#frac{#sigma_{^{124}Sn}-#sigma_{^{112}Sn}}{#sigma_{^{124}Sn}+#sigma_{^{112}Sn}}",
                          false);
 
-    /*createRelativeCSPlot(dataAverage[1],dataAverage[0],"long-to-short carbon relative CS",
+    createRelativeCSPlot(dataAverage[1],dataAverage[0],"long-to-short carbon relative CS",
                          "long/short carbon relative CS",
                          false);
 
@@ -436,11 +449,13 @@ int main(int, char* argv[])
     createRelativeCSPlot(dataAverage[0],CNatLitData,"long/short carbon relative CS",
                          "long/short carbon relative CS",
                          false);
-                         */
 
     // create isotopic Sn plots, scaled using literature data for natural Sn
-    //CrossSection Sn112Scaled;
-    //CrossSection Sn124Scaled;
+    DataSet Sn112Scaled = scaleToLit(dataAverage[2],dataAverage[3],SnNatLitData);
+    DataSet Sn124Scaled = scaleToLit(dataAverage[4],dataAverage[3],SnNatLitData);
+
+    Sn112Scaled.createPlot("Sn112Scaled");
+    Sn124Scaled.createPlot("Sn124Scaled");
 
     /*for(int i=0; i<crossSectionsAvg[4].size(); i++)
     {

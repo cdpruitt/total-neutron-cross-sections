@@ -43,7 +43,7 @@ int CrossSection::getNumberOfPoints() const
 
 DataPoint CrossSection::getDataPoint(int i) const
 {
-    if((size_t)i>dataSet.getNumberOfPoints())
+    if(i>dataSet.getNumberOfPoints())
     {
         cout <<
         "Error: tried to retrieve a non-existent cross section data point" <<
@@ -223,10 +223,8 @@ void correctForDeadtime(string histoFileName, string deadtimeFileName)
             enC->SetBinError(j,pow(enC->GetBinContent(j),0.5));
         }
 
-        tofC->Write();
-        enC->Write();
     }
-
+    histoFile->Write();
     deadtimeFile->Close();
     histoFile->Close();
 }
@@ -353,7 +351,7 @@ void calculateCS(string histoFileName, string CSFileName, int runNumber)
             exit(1);
         }
 
-        for(int j=1; j<numberOfBins; j++)
+        for(int j=1; j<=numberOfBins; j++) // start j at 1 to skip the underflow bin
         {
             energyValue = energy->GetBinCenter(j);
             energyError = 0;
@@ -411,5 +409,3 @@ void calculateCS(string histoFileName, string CSFileName, int runNumber)
     histoFile->Close();
     CSFile->Close();
 }
-
-

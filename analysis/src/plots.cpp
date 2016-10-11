@@ -93,13 +93,18 @@ TH1I* timeBinsToRKEBins(TH1I *inputHisto, string name)
 
     // Remap bins from old histo to new histo
     int nUnscaledEnergyBins = maximumBin-minimumBin;
-    vector<double> unscaledEnergyBins(nUnscaledEnergyBins);
+    vector<double> unscaledEnergyBins;
 
     // Reorder bins to go from lowest energy (shortest time) to highest energy (longest time)
     // n bins are defined n+1 points (like fence sections and fence posts)
     for(int i=0; i<nUnscaledEnergyBins+1; i++)
     {
-        unscaledEnergyBins.push_back(tofToRKE(oldAxis->GetBinLowEdge(maximumBin-i)));
+        double newBin = tofToRKE(oldAxis->GetBinLowEdge(maximumBin-i));
+        if(newBin<=0)
+        {
+            continue;
+        }
+        unscaledEnergyBins.push_back(newBin);
     }
 
     // Downscale bins to desired granularity

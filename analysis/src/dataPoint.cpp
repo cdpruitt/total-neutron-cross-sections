@@ -1,5 +1,8 @@
 #include "../include/dataPoint.h"
 #include <math.h>
+#include <iostream>
+
+using namespace std;
 
 DataPoint::DataPoint()
 {
@@ -64,6 +67,25 @@ DataPoint operator-(const DataPoint& minuend, const DataPoint& subtrahend)
                               pow(
                                   pow(minuend.getYError(),2)+
                                   pow(subtrahend.getYError(),2),0.5));
+    return outputDataPoint;
+}
+
+DataPoint operator/(const DataPoint& dividend, const DataPoint& divisor)
+{
+    if(divisor.getXValue()<=0)
+    {
+        cerr << "Error: cannot divide by <=0 (DataPoint division)" << endl;
+        exit(1);
+    }
+
+    DataPoint outputDataPoint(dividend.getXValue()/divisor.getXValue(),
+                              pow(
+                                  pow(dividend.getXError()/dividend.getXValue(),2)+
+                                  pow(divisor.getXError()/divisor.getXValue(),2),0.5),
+                              dividend.getYValue()/divisor.getYValue(),
+                              pow(
+                                  pow(dividend.getYError()/dividend.getYValue(),2)+
+                                  pow(divisor.getYError()/divisor.getYValue(),2),0.5));
     return outputDataPoint;
 }
 

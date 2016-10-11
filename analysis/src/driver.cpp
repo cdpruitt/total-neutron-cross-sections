@@ -62,7 +62,7 @@ int main(int, char* argv[])
 
     else
     {
-        cout << "Found previously existing raw data tree " << rawTreeFileName << ". Skipping reading raw data file." << endl;
+        cout << "Found previously existing raw data tree. Skipping import of raw data file..." << endl;
         rawTreeFile->Close();
     }
 
@@ -104,7 +104,7 @@ int main(int, char* argv[])
 
     else
     {
-        cout << "Found previously existing file " << processedTreeFileName << ". Skipping resort..." << endl;
+        cout << "Found previously existing processed tree file. Skipping tree processing..." << endl;
     }
 
     /*************************************************************************/
