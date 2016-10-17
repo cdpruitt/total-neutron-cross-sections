@@ -7,7 +7,7 @@ const std::string markers[4] = {"kPlus","kPlus","kPlus","kPlus"};
 
 // ROOT macro for formatting and combining plots
 
-void plotLitData()
+void plotLitData(string formatFileName, string outFileName)
 {
     gStyle->SetOptStat(0);
 
@@ -56,119 +56,314 @@ void plotLitData()
     gROOT->ForceStyle();
 
     // open calculated data file
-    std::stringstream fileInName;
-    fileInName << "/data2/analysis/literatureData.root";
-    TFile* fileIn = new TFile(fileInName.str().c_str(),"READ");
-
-    TGraphErrors* plot1 = (TGraphErrors*)gDirectory->Get("diff_sum");
-    TGraphErrors* plot2 = (TGraphErrors*)gDirectory->Get("diff_sumLog");
-
-    if(!plot1 || !plot2)
+    ifstream inFile(formatFileName);
+    if(!inFile.is_open())
     {
+        cout << "Failed to open " << formatFileName << endl;
         exit(1);
     }
 
-    // open experimental data file
-    std::stringstream expFileName;
-    expFileName << "/data3/analysis/total.root";
-    TFile* expFile = new TFile(expFileName.str().c_str(),"READ");
+    int numberOfFiles;
+    vector<string> fileNames;
 
-    TH1D* relativeCS = (TH1D*)gDirectory->Get("relativeSnCS");
-    TH1D* relativeCSLog = (TH1D*)gDirectory->Get("relativeSnCSLog");
+    int numberOfPlots;
+    vector<string> plotTypes;
+    vector<string> plotNames;
+    vector<string> plotTitles;
+    vector<string> plotLine;
+    vector<string> plotPoints;
+    vector<int> plotLineColor;
+    vector<int> plotPointColor;
+    vector<double> plotLineWidth;
+    vector<double> plotPointSize;
+    vector<string> plotXAxisTitles;
+    vector<string> plotYAxisTitles;
+    vector<string> XAxisTitles;
+    vector<string> YAxisTitles;
 
-    TH1D* relativeCS_W = (TH1D*)gDirectory->Get("relativeSnCS_W");
+    vector<TGraphErrors*> graphs;
+    vector<TH1I*> histos;
 
-    TGraphErrors* relativeCSLogGraph = (TGraphErrors*)gDirectory->Get("relativeGraph");
-    relativeCSLogGraph->SetMarkerColor(kRed);
+    string dummy;
+    string dummy2;
+    inFile >> dummy >> dummy2;
+    {
+        if(dummy=="numberOfFiles")
+        {
+            numberOfFiles = stoi(dummy2);
+        }
+    }
+
+    for(int i=0; i<numberOfFiles; i++)
+    {
+        getline(inFile,dummy); // discard blank line
+        inFile >> dummy >> dummy2;
+        if(dummy=="fileName")
+        {
+            fileNames.push_back(dummy2);
+        }
+
+        inFile >> dummy >> dummy2;
+
+        if(dummy=="numberOfPlots")
+        {
+            numberOfPlots = stoi(dummy2);
+        }
+
+        while(inFile >> dummy >> dummy2 && dummy!="b")
+        {
+            //cout << dummy << " " << dummy2 << endl;
+            if(dummy=="plotType")
+            {
+                plotTypes.push_back(dummy2);
+            }
+
+            else if(dummy=="plotName")
+            {
+                plotNames.push_back(dummy2);
+            }
+
+            else if(dummy=="plotTitle")
+            {
+                plotTitles.push_back(dummy2);
+            }
+
+            else if(dummy=="plotLine")
+            {
+                plotLine.push_back(dummy2);
+            }
+
+            else if(dummy=="plotPoints")
+            {
+                plotPoints.push_back(dummy2);
+            }
+
+            else if(dummy=="plotLineColor")
+            {
+                plotLineColor.push_back(stoi(dummy2));
+            }
+
+            else if(dummy=="plotPointColor")
+            {
+                plotPointColor.push_back(stoi(dummy2));
+            }
+
+            else if(dummy=="plotLineWidth")
+            {
+                plotLineWidth.push_back(stod(dummy2));
+            }
+
+            else if(dummy=="plotPointSize")
+            {
+                plotPointSize.push_back(stod(dummy2));
+            }
+
+            else if(dummy=="plotXAxisTitle")
+            {
+                plotXAxisTitles.push_back(dummy2);
+            }
+            else if(dummy=="plotYAxisTitle")
+            {
+                plotYAxisTitles.push_back(dummy2);
+            }
+
+            else if(dummy=="XAxisTitle")
+            {
+                XAxisTitles.push_back(dummy2);
+            }
+            else if(dummy=="YAxisTitle")
+            {
+                YAxisTitles.push_back(dummy2);
+            }
+        }
+    }
+
+    vector<TFile*> files;
+    for(int i=0; i<numberOfFiles; i++)
+    {
+        files.push_back(new TFile(fileNames[i].c_str(),"READ"));
+        for(int j=0; j<plotTypes.size(); j++)
+        {
+            if(plotTypes[j]=="graph")
+            {
+                graphs.push_back((TGraphErrors*)files[i]->Get(plotNames[j].c_str()));
+                if(!graphs.back())
+                {
+                    cerr << "Error: failed to find " << plotNames[j] <<
+                        " in " << fileNames[i] << ". Exiting..." << endl;
+                    exit(1);
+                }
+            }
+
+            if(plotTypes[j]=="histo")
+            {
+                histos.push_back((TH1I*)files[i]->Get(plotNames[j].c_str()));
+                if(!histos.back())
+                {
+                    cerr << "Error: failed to find " << plotNames[j] <<
+                        " in " << fileNames[i] << ". Exiting..." << endl;
+                    exit(1);
+                }
+            }
+        }
+    }
+
+    //relativeCSLogGraph->SetMarkerColor(kRed);
     //relativeCSLogGraph->SetMarkerSize(1);
 
     // create output file
-    std::stringstream fileOutName;
-    fileOutName << "plotLitData.root";
-    TFile* fileOut = new TFile(fileOutName.str().c_str(),"RECREATE");
+    TFile* outFile = new TFile(outFileName.c_str(),"RECREATE");
 
-    plot1->SetMarkerColor(kRed);
-    plot2->SetMarkerColor(kRed);
+    for(int i=0; i<histos.size(); i++)
+    {
+        if(plotTitles[i]=="true")
+        {
+            histos[i]->SetTitle(plotTitles[i].c_str());
+        }
 
-    relativeCSLogGraph->GetXaxis()->SetTitle("Energy (MeV)");
-    relativeCSLogGraph->GetXaxis()->CenterTitle();
+        if(plotXAxisTitles[i]=="true")
+        {
+            histos[i]->GetXaxis()->SetTitle(XAxisTitles[i].c_str());
+            histos[i]->GetXaxis()->CenterTitle();
+            histos[i]->GetXaxis()->SetTitleSize(0.05);
+            histos[i]->GetXaxis()->SetTitleOffset(1.5);
+        }
 
-    relativeCSLogGraph->GetYaxis()->SetTitle("#frac{#sigma^{124}_{tot}-#sigma^{112}_{tot}}{#sigma^{124}_{tot}+#sigma^{112}_{tot}}");
-    relativeCSLogGraph->GetYaxis()->SetTitleSize(0.05);
-    relativeCSLogGraph->GetYaxis()->SetTitleOffset(1.4);
+        if(plotYAxisTitles[i]=="true")
+        {
+            histos[i]->GetYaxis()->SetTitle(YAxisTitles[i].c_str());
+            histos[i]->GetYaxis()->CenterTitle();
+            histos[i]->GetYaxis()->SetTitleSize(0.04);
+            histos[i]->GetYaxis()->SetTitleOffset(3);
+        }
 
-    relativeCSLogGraph->GetYaxis()->CenterTitle();
+        if(plotLine[i]=="true")
+        {
+            histos[i]->SetLineColor(plotLineColor[i]);
+            histos[i]->SetLineWidth(plotLineWidth[i]);
+        }
 
-    relativeCSLogGraph->SetName("relativeCS");
+        if(plotPoints[i]=="true")
+        {
+            histos[i]->SetMarkerColor(plotPointColor[i]);
+            histos[i]->SetMarkerSize(plotPointSize[i]);
+        }
+
+        else
+        {
+            histos[i]->SetMarkerSize(0);
+        }
+
+        //histos[i]->Scale(1/1000.); // for deadtime plotting
+        histos[i]->Write();
+    }
+
+    for(int i=0; i<graphs.size(); i++)
+    {
+        if(plotTitles[i]=="true")
+        {
+            graphs[i]->SetTitle(plotTitles[i].c_str());
+        }
+
+        if(plotXAxisTitles[i]=="true")
+        {
+            graphs[i]->GetXaxis()->SetTitle(XAxisTitles[i].c_str());
+            graphs[i]->GetXaxis()->CenterTitle();
+            graphs[i]->GetXaxis()->SetTitleSize(0.05);
+            graphs[i]->GetXaxis()->SetTitleOffset(1.5);
+        }
+
+        if(plotYAxisTitles[i]=="true")
+        {
+            graphs[i]->GetYaxis()->SetTitle(YAxisTitles[i].c_str());
+            graphs[i]->GetYaxis()->CenterTitle();
+            graphs[i]->GetYaxis()->SetTitleSize(0.05);
+            graphs[i]->GetYaxis()->SetTitleOffset(1.2);
+        }
+
+        if(plotLine[i]=="true")
+        {
+            graphs[i]->SetLineColor(plotLineColor[i]);
+            graphs[i]->SetLineWidth(plotLineWidth[i]);
+        }
+
+        if(plotPoints[i]=="true")
+        {
+            graphs[i]->SetMarkerColor(plotPointColor[i]);
+            graphs[i]->SetMarkerSize(plotPointSize[i]);
+        }
+
+        else
+        {
+            graphs[i]->SetMarkerSize(0);
+        }
+
+        graphs[i]->Write();
+    }
+
+    //relativeCSLogGraph->GetXaxis()->SetTitle("Energy (MeV)");
+    //relativeCSLogGraph->GetXaxis()->CenterTitle();
+
+    //relativeCSLogGraph->GetYaxis()->SetTitle("#frac{#sigma^{124}_{tot}-#sigma^{112}_{tot}}{#sigma^{124}_{tot}+#sigma^{112}_{tot}}");
+    //relativeCSLogGraph->GetYaxis()->SetTitleSize(0.05);
+    //relativeCSLogGraph->GetYaxis()->SetTitleOffset(1.4);
+
+    //relativeCSLogGraph->GetYaxis()->CenterTitle();
+
+    //relativeCSLogGraph->SetName("relativeCS");
 
     //relativeCS->SetLineColor(kRed);
-    relativeCSLog->SetLineColor(kRed);
 
     //relativeCS->SetTitle("Relative #sigma_{tot} difference: #frac{^{124}Sn-^{112}Sn}{^{124}Sn-^{112}Sn}");
 
     //relativeCS->Draw();
 
-    relativeCSLogGraph->GetXaxis()->SetRangeUser(3,300);
-    relativeCSLogGraph->GetYaxis()->SetRangeUser(0,0.06);
-    relativeCSLogGraph->SetLineColor(kPink);
+    //relativeCSLogGraph->GetXaxis()->SetRangeUser(3,300);
+    //relativeCSLogGraph->GetYaxis()->SetRangeUser(0,0.06);
 
-    relativeCSLogGraph->Draw("ap");
+    //relativeCSLogGraph->Draw("ap");
     //relativeCS_W->Draw("same");
     //plot2->Draw("same");
 
-    plot1->GetXaxis()->SetRangeUser(3,300);
+    //TLine *line = new TLine(3,0.0345,300,0.0345);
+    //line->SetLineStyle(7);
+    //line->SetLineWidth(3);
+    //line->SetLineColor(kBlack);
+    //line->Draw();
 
-    plot1->Draw("same");
-
-    //relativeCS->SetTitle("Relative");
-    //relativeCS->GetTitle->CenterTitle();
-    //relativeCSLog->SetTitle("Relative");
-    //relativeCSLog->Clone("
-    //relativeCSLog->GetTitle()->CenterTitle();
-
-
-    // plot1->GetXaxis()->SetRangeUser(3,300);
-    //relativeCS->GetXaxis()->SetRangeUser(3,300);
-
-    TLine *line = new TLine(3,0.0345,300,0.0345);
-    line->SetLineStyle(7);
-    line->SetLineWidth(3);
-    line->SetLineColor(kBlack);
-    line->Draw();
-
-    TLegend *legend = new TLegend(0.2,0.7,0.4,0.9);
+    //TLegend *legend = new TLegend(0.2,0.7,0.4,0.9);
     //legend->SetHeader("data");
-    legend->AddEntry(relativeCSLogGraph,"experimental (preliminary)","p");
-    legend->AddEntry(plot1,"DOM calculation","l");
-    legend->AddEntry(line,"expected from size scaling","l");
-    legend->Draw();
+    //legend->AddEntry(relativeCSLogGraph,"experimental (preliminary)","p");
+    //legend->AddEntry(plot1,"DOM calculation","l");
+    //legend->AddEntry(line,"expected from size scaling","l");
+    //legend->Draw();
 
 
     /*    TMultiGraph *allPlots = new TMultiGraph();
-    for(int i=0; i<allData.size(); i++)
-    {
-        allPlots->Add(((TGraphErrors*)allData[i].getPlot()),"p");
-    }
-    allPlots->Draw("a");
+          for(int i=0; i<allData.size(); i++)
+          {
+          allPlots->Add(((TGraphErrors*)allData[i].getPlot()),"p");
+          }
+          allPlots->Draw("a");
 
-    allPlots->GetXaxis()->SetTitle("MeV");
-    allPlots->GetXaxis()->CenterTitle();
+          allPlots->GetXaxis()->SetTitle("MeV");
+          allPlots->GetXaxis()->CenterTitle();
 
-    allPlots->GetYaxis()->SetTitle("Barns");
-    allPlots->GetYaxis()->CenterTitle();
+          allPlots->GetYaxis()->SetTitle("Barns");
+          allPlots->GetYaxis()->CenterTitle();
 
-    legend = new TLegend(0.7,0.7,0.9,0.9);
-    legend->SetHeader("Literature data");
-    for(int i=0; i<allData.size(); i++)
-    {
-        legend->AddEntry(((TGraphErrors*)allData[i].getPlot()),allData[i].getReference(),"lep");
-    }
-    legend->Draw();
+          legend = new TLegend(0.7,0.7,0.9,0.9);
+          legend->SetHeader("Literature data");
+          for(int i=0; i<allData.size(); i++)
+          {
+          legend->AddEntry(((TGraphErrors*)allData[i].getPlot()),allData[i].getReference(),"lep");
+          }
+          legend->Draw();
 
-    allPlots->Write();
-*/
+          allPlots->Write();
+          */
 
     // clean up
-    fileOut->Write();
-    fileOut->Close();
+    outFile->Write();
+    outFile->Close();
 }

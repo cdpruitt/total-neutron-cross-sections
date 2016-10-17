@@ -3,7 +3,7 @@
 #include <iostream>
 #include "TFile.h"
 #include <string>
-#include <include/dataPoint.h>
+#include "../include/dataPoint.h"
 
 void makeCSText(string inputFileName, string graphName, string outputFileName)
 {

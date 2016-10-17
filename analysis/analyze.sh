@@ -28,6 +28,9 @@
 #-------+-----------------------------------------------------------------------
 #    -o | overwrite previous analysis histograms (use if analysis code has changed)
 #       | (e.g., ./analyze -o)
+#-------+-----------------------------------------------------------------------
+#    -w | overwrite previous waveform fitting (use if fitting code has changed)
+#       | (e.g., ./analyze -o)
 #
 # Flags can be combined for additional functionality (e.g., ./analyze -ro)
 #
@@ -51,7 +54,7 @@ fi
 #   - not to produce text output of event data
 
 # Parse runtime flags
-while getopts "fsrato" opt; do
+while getopts "fsratow" opt; do
     case ${opt} in
         f)
             fullFilePath=true
@@ -70,6 +73,8 @@ while getopts "fsrato" opt; do
             ;;
         o)  overwriteHistos=true
             ;;
+        w)  overwriteWaveforms=true
+            ;;
         \?)
             # Flags unrecognized - exit script and give user help text
             printf "\nInvalid option: -$OPTARG.\n\nValid options are:"
@@ -79,6 +84,7 @@ while getopts "fsrato" opt; do
             printf "\n    -a (if using -r, read ALL subruns in each run, not just the most recent)\n"
             printf "\n    -t (produce text output of event data instead of doing full analysis)\n"
             printf "\n    -o (overwrite existing event histograms - use if analysis code has been changed)\n"
+            printf "\n    -o (overwrite existing waveform fits - use if waveform fitting code has been changed)\n"
 
             exit
             ;;
@@ -115,6 +121,12 @@ analyze ()
     then
         printf "\nOverwriting existing histogram file $outputDirectoryName"histos.root"...\n"
         rm $outputDirectoryName"/histos.root"
+    fi
+
+    if [ "$overwriteWaveforms" == true ]
+    then
+        printf "\nOverwriting existing waveform file $outputDirectoryName"waveform.root"...\n"
+        rm $outputDirectoryName"/waveform.root"
     fi
 
     # Send error messages to a text file

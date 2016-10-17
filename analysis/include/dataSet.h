@@ -24,6 +24,7 @@ class DataSet
 
         friend const DataSet operator+(const DataSet& set1, const DataSet& set2);
         friend const DataSet operator-(const DataSet& set1, const DataSet& set2);
+        friend const DataSet operator*(const DataSet& set1, const DataSet& set2);
         friend const DataSet operator/(const DataSet& set1, const DataSet& set2);
 
         const DataSet plus(const DataSet& set2, const std::string& name);

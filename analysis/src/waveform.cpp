@@ -371,9 +371,9 @@ fitData fitTrigger(int waveformNo, float triggerSample)
         }
     }
 
-    //peakHisto->Write();
-    delete peakHisto;
-    delete fittingFunc;
+    peakHisto->Write(); // uncomment to produce a fitted histo for each peak
+    //delete peakHisto;
+    //delete fittingFunc;
 
     /*if(data.chiSquare<5)
       {
@@ -495,7 +495,7 @@ void produceTriggerOverlay(int j)
     triggerH->SetOption("P");
 
     triggerH->SetMarkerStyle(29);
-    triggerH->SetMarkerSize(2);
+    triggerH->SetMarkerSize(3);
     triggerH->SetMarkerColor(2);
 
     triggerH->Write();
@@ -588,7 +588,7 @@ void processWaveforms(TTree* ch4TreeWaveform, vector<Plots*>& plots)
                 }
             }
 
-            //produceTriggerOverlay(j);
+            produceTriggerOverlay(j);
 
             /*temp.str("");
             temp << "waveformWrap" << j;
@@ -633,10 +633,10 @@ void processWaveforms(TTree* ch4TreeWaveform, vector<Plots*>& plots)
                         //triggerH->Write();
             //cout << "Finished processing waveform " << j << endl << endl;
 
-            /*if(j==0)
+            if(j==4)
             {
                 break;
-            }*/
+            }
         }
 
         for(Plots* p : plots)
@@ -658,7 +658,6 @@ void calculateDeadtime(TTree* ch4TreeWaveform, vector<Plots*>& plots)
     setBranchesHistosW(ch4TreeWaveform);
 
     int totalEntries = ch4TreeWaveform->GetEntries();
-    cout << "Total waveforms on ch. " << ": " << totalEntries << endl;
 
     for(int i=0; i<totalEntries; i++)
     {
@@ -681,8 +680,6 @@ void calculateDeadtime(TTree* ch4TreeWaveform, vector<Plots*>& plots)
     // for each target,
     for(int i=0; i<NUMBER_OF_TARGETS; i++)
     {
-        cout << "microsPerTargetWaveform[i] = " << microsPerTargetWaveform[i] << endl;
-
         // for each bin,
         TH1I* tof = plots[i]->getTOFHisto();
         TH1I* dtH = plots[i]->getDeadtimeHisto();

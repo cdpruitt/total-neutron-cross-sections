@@ -294,7 +294,6 @@ void getMonitorCounts(vector<long>& monitorCounts, TFile*& histoFile)
     for(int i=0; i<6; i++)
     {
         monitorCounts.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(i+2));
-        cout << "target position " << i << " monitor counts = " << monitorCounts.back() << endl;
     }
 }
 

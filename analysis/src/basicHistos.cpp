@@ -385,7 +385,6 @@ void fillHistos(vector<Plots*>& plots)
         setBranchesHistosW(orchardW[i]);
 
         int totalEntries = orchardW[i]->GetEntries();
-        cout << totalEntries << " total waveforms detected in channel " << i*2 << endl;
 
         // we need label the number of waveform-mode macropulses to make
         // uniquely named histograms

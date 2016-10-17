@@ -72,13 +72,13 @@ DataPoint operator-(const DataPoint& minuend, const DataPoint& subtrahend)
 
 DataPoint operator/(const DataPoint& dividend, const DataPoint& divisor)
 {
-    if(divisor.getXValue()<=0)
+    if(divisor.getXValue()<=0 || divisor.getYValue()<=0)
     {
         cerr << "Error: cannot divide by <=0 (DataPoint division)" << endl;
         exit(1);
     }
 
-    DataPoint outputDataPoint(dividend.getXValue()/divisor.getXValue(),
+    DataPoint outputDataPoint(dividend.getXValue(),
                               pow(
                                   pow(dividend.getXError()/dividend.getXValue(),2)+
                                   pow(divisor.getXError()/divisor.getXValue(),2),0.5),
@@ -92,9 +92,15 @@ DataPoint operator/(const DataPoint& dividend, const DataPoint& divisor)
 DataPoint DataPoint::mergePoints(DataPoint point2)
 {
     DataPoint mergedPoint;
-    mergedPoint.setXValue(this->xValue+point2.getXValue());
-    mergedPoint.setXError(pow(pow(this->xError,2)+pow(point2.getXError(),2),0.5));
-    mergedPoint.setYValue(this->yValue+point2.getYValue());
-    mergedPoint.setYError(pow(pow(this->yError,2)+pow(point2.getYError(),2),0.5));
+    if(xValue!=point2.getXValue())
+    {
+        cerr << "Error: tried to merge points with different xValues. Exiting..." << endl;
+    }
+
+    mergedPoint.setXValue(xValue);
+    mergedPoint.setXError(pow(pow(xError,2)+pow(point2.getXError(),2),0.5));
+    mergedPoint.setYValue((yValue+point2.getYValue())/2);
+    mergedPoint.setYError(pow(pow(yError,2)+pow(point2.getYError(),2),0.5));
+
     return mergedPoint;
 }

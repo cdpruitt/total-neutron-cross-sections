@@ -275,13 +275,16 @@ void createRelativeCSPlot(vector<double>* graph1Data, vector<double>* graph1Erro
 
 DataSet scaleToLit(DataSet setToScale, DataSet expReference, DataSet litReference)
 {
-    DataSet scaledSet;
+    DataSet scaleFactor;
+
     int n = setToScale.getNumberOfPoints();
     for(int i=0; i<n; i++)
     {
         DataPoint p = litReference.getPoint(i)/expReference.getPoint(i);
-        scaledSet.addPoint(p);
+        scaleFactor.addPoint(p);
     }
+
+    DataSet scaledSet = scaleFactor*setToScale;
 
     return scaledSet;
 }
@@ -438,7 +441,7 @@ int main(int, char* argv[])
                          "#frac{#sigma_{^{124}Sn}-#sigma_{^{112}Sn}}{#sigma_{^{124}Sn}+#sigma_{^{112}Sn}}",
                          false);
 
-    createRelativeCSPlot(dataAverage[1],dataAverage[0],"long-to-short carbon relative CS",
+    /*createRelativeCSPlot(dataAverage[1],dataAverage[0],"long-to-short carbon relative CS",
                          "long/short carbon relative CS",
                          false);
 
@@ -449,6 +452,7 @@ int main(int, char* argv[])
     createRelativeCSPlot(dataAverage[0],CNatLitData,"long/short carbon relative CS",
                          "long/short carbon relative CS",
                          false);
+    */
 
     // create isotopic Sn plots, scaled using literature data for natural Sn
     DataSet Sn112Scaled = scaleToLit(dataAverage[2],dataAverage[3],SnNatLitData);

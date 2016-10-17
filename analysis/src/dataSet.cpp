@@ -208,6 +208,52 @@ const DataSet DataSet::minus(const DataSet& set2,const string& name)
     return DataSet(sumEnergy, sumXsection, sumError, name);
 }
 
+const DataSet operator*(const DataSet& set1, const DataSet& set2)
+{
+    std::vector<double> multEnergy;
+    std::vector<double> multXsection;
+    std::vector<double> multError;
+
+    std::vector<double> energies1 = set1.getXValues();
+    std::vector<double> xsecs1 = set1.getYValues();
+    std::vector<double> errors1 = set1.getYErrors();
+
+    std::vector<double> energies2 = set2.getXValues();
+    std::vector<double> xsecs2 = set2.getYValues();
+    std::vector<double> errors2 = set2.getYErrors();
+
+    DataSet multDataSet;
+    for (int i=0; i<set2.getNumberOfPoints(); i++)
+    {
+        if (energies1[i] == energies2[i])
+        {
+            multEnergy.push_back(energies1[i]);
+            if(xsecs1[i]!=0 && xsecs2[i]!=0)
+            {
+                multXsection.push_back(xsecs1[i]*xsecs2[i]);
+                multError.push_back(pow(pow(errors1[i]/xsecs1[i],2) + pow(errors2[i]/xsecs2[i],2),2));
+            }
+
+            else
+            {
+                multXsection.push_back(0);
+                multError.push_back(0);
+            }
+        }
+
+        else
+        {
+            cerr << "Error: set 1 energies != set 2 energies" << endl;
+            exit(1);
+        }
+        DataPoint d = DataPoint(multEnergy[i],0,multXsection[i],multError[i]);
+        multDataSet.addPoint(d);
+    }
+
+    multDataSet.setReference(set1.getReference() + set2.getReference() + "mult");
+    return multDataSet;
+}
+
 const DataSet operator/(const DataSet& set1, const DataSet& set2)
 {
     std::vector<double> divEnergy;

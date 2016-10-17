@@ -11,7 +11,7 @@ void scaleBins(vector<double> inputBins, vector<double>& outputBins, int scaledo
     outputBins.resize((int)floor(inputBins.size()/scaledown));
     for(int i=0; (size_t)i<outputBins.size(); i++)
     {
-        outputBins[i] = inputBins[i*scaledown];
+        outputBins[i] = inputBins[i*scaledown+scaledown/2];
     }
 
     /*for(int i=0; i<nInputBins/scaledown; i++)
@@ -109,7 +109,7 @@ TH1I* timeBinsToRKEBins(TH1I *inputHisto, string name)
 
     // Downscale bins to desired granularity
     vector<double> scaledEnergyBins;
-    scaleBins(unscaledEnergyBins, scaledEnergyBins, TOF_BINS/NUMBER_ENERGY_BINS);
+    scaleBins(unscaledEnergyBins, scaledEnergyBins, nUnscaledEnergyBins/NUMBER_ENERGY_BINS);
 
     TH1I* outputHisto = new TH1I(name.c_str(),
             name.c_str(),

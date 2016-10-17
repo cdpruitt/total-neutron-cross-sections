@@ -30,8 +30,8 @@ text: src/text.cpp src/raw.cpp src/branches.cpp
 finetimeCheck: src/finetimeCheck.cpp src/branches.cpp
 	$(COMPILER) $(CFLAGS) -o finetimeCheck src/finetimeCheck.cpp src/branches.cpp $(LINKOPTION)
 
-#dataSet: src/dataSet.cpp src/dataPoint.cpp
-#	$(COMPILER) $(CFLAGS) -o dataSet src/dataPoint.cpp src/dataSet.cpp $(LINKOPTION)
+makeCSText: src/makeCSText.cpp src/dataPoint.cpp
+	$(COMPILER) $(CFLAGS) -o makeCSText src/makeCSText.cpp src/dataPoint.cpp $(LINKOPTION)
 
 %.o : %.cpp $(HEADERS) $(COMMON)
 	$(COMPILER) $(CFLAGS) $< -o $@
