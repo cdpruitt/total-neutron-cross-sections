@@ -11,6 +11,12 @@ ALLOBJECTS := $(patsubst %.cpp,%.o,$(wildcard src/*.cpp))
 LINKOPTION = $(shell root-config --libs)
 
 all: driver sumRun sumAll text finetimeCheck readLitData
+	#install -m 755 driver bin
+	#install -m 755 sumRun bin
+	#install -m 755 sumAll bin
+	#install -m 755 text bin
+	#install -m 755 finetimeCheck bin
+	#install -m 755 readLitData bin
 
 driver: $(OBJECTS) $(COMMON)
 	$(COMPILER) $(CFLAGS) -o driver $(OBJECTS) $(LINKOPTION)
@@ -35,6 +41,8 @@ makeCSText: src/makeCSText.cpp src/dataPoint.cpp
 
 %.o : %.cpp $(HEADERS) $(COMMON)
 	$(COMPILER) $(CFLAGS) $< -o $@
+
+#.PHONY: all
 
 clean:
 	rm -f *.o

@@ -1,0 +1,65 @@
+********************************************************************************
+                               Data analysis overview
+********************************************************************************
+
+Data analysis converts a raw data file from the digitizer into cross sections
+for each target, plus several diagnostic plots. This is accomplished by
+producing a series of ROOT files, each building on the analysis completed in the
+previous step.
+
+The workflow is as follows:
+
+  Data file     | Contents                                                      
+----------------+---------------------------------------------------------------
+1) .evt file    | This is the raw data format produced by the digitizer.       
+----------------+---------------------------------------------------------------
+2) raw.root     | All data from the .evt file, translated into a ROOT tree.    
+----------------+---------------------------------------------------------------
+3) sorted.root  | Data from raw.root separated by channel and event type, with 
+                | each event uniquely identified by its macropulse and event   
+                | number within that macropulse.                               
+----------------+---------------------------------------------------------------
+4a) histos.root | DPP-mode data from sorted.root is populated into histograms,
+                | some useful for calculating the cross section and some for
+                | disagnostics of the run.          
+----------------+---------------------------------------------------------------
+4b) waveform    | Waveform-mode data from sorted.root is analyzed to create a
+    .root       | deadtime correction for DPP mode data.
+----------------+---------------------------------------------------------------
+5) cross-       | TOF histos from histos.root, deadtime corrections from
+   sections     | waveform.root, and target data are combined to produce cross
+   .root        | sections.   
+----------------+---------------------------------------------------------------
+6) sum.root     | Each sub-run's cross sections are combined to produce cross
+                | sections for the entire run.
+----------------+---------------------------------------------------------------
+7) total.root   | Each runs's cross sections are combined to produce cross
+                | sections for all runs specified in runsToSort.txt
+
+This tiered approach requires more disk space (the ROOT files contain redundant
+data), but it allows for re-analyzing to be much faster (e.g., once sorted.root
+has been produced, subsequent analysis starts there instead of the beginning).
+
+
+The following lists all C++ executables available for analysis:
+
+File          | Function
+--------------+-----------------------------------------------------------------
+driver        | The main function for conducting analysis. This manages file
+              | input/output and calls appropriate sub-routines that produce the
+              | ROOT files detailed above.
+--------------+-----------------------------------------------------------------
+text          | Takes a digitizer output file and produces a pretty-print text
+              | file listing event data. The text files produced can be several
+              | times the size of the input file.
+--------------+-----------------------------------------------------------------
+sumRun        | Called by driver to sum sub-runs into a total for an entire run.
+--------------+-----------------------------------------------------------------
+sumAll        | Called by driver to sum all specified runs into a total for an
+              | entire experiment.
+--------------+-----------------------------------------------------------------
+finetimeCheck | Creates plots showing the time delay between events on two
+              | separate channels so that the user can adjust their delay.
+--------------+-----------------------------------------------------------------
+readLitData   | Reads in literature data and creates cross section plots,
+              | allowing comparison with previous results

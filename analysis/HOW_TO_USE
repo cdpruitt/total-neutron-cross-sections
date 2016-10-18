@@ -1,0 +1,30 @@
+********************************************************************************
+                              How to analyze data
+********************************************************************************
+
+Running ./analyze.sh starts data analysis. One or more flags can be used to
+modify the analysis workflow:
+
+Flag |                           Function
+-----+--------------------------------------------------------------------------
+ -f  | analyze a single event file, specified by the full filepath
+     | (e.g., ./analyze -f path/to/input/file path/to/output/directory)
+-----+--------------------------------------------------------------------------
+ -s  | analyze a single event file, specified by run and subrun numbers
+     | (e.g., ./analyze -s <run number> <subrun number>)
+-----+--------------------------------------------------------------------------
+ -r  | for each run given in ../<target>/runsToSort.txt, analyze the only one
+     | subrun (the most recently modified)
+     | (e.g., ./analyze -r)
+-----+--------------------------------------------------------------------------
+ -ra | if using -r, analyze ALL subruns in each run, not just the most recent
+     | (e.g., ./analyze -ra)
+-----+--------------------------------------------------------------------------
+ -t  | produce a pretty-printed text file for each channel - skip full analysis
+     | (e.g., ./analyze -t)
+-------+------------------------------------------------------------------------
+ -o  | overwrite previous analysis histograms (use if analysis code has changed)
+     | (e.g., ./analyze -o)
+-------+------------------------------------------------------------------------
+ -w  | overwrite previous waveform fitting (use if fitting code has changed)
+     | (e.g., ./analyze -o)

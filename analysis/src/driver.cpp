@@ -28,7 +28,7 @@ int main(int, char* argv[])
     // location of digitizer-produced data file
     string rawDataFileName = argv[1];
 
-    // location of directory where all output will be stored
+    // location of directory where all analysis output will be stored
     string outputDirectoryName = argv[2];
 
     // run number of data - to figure out which targets were in which positions

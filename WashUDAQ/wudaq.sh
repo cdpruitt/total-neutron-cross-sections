@@ -84,6 +84,10 @@ then
 
     echo "Run duration: $diff seconds" >> $runMeta
 
+    # list the descriptions of each run in a single file
+    echo "run $i: $comments " >> "runDescriptions.log"
+
+    # move recorded data to external disk
     mv $stagingLocation$i/ $storageLocation$i/
 
 elif [ "$testing" == "true" ] 

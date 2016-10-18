@@ -1,0 +1,26 @@
+DAQ and Analysis code for Neutron Total Cross Sections
+--------------------------------------------------------------
+
+This software is a data acquisition (DAQ) and analysis package
+for measuring neutron total cross sections. It uses a CAEN
+waveform digitizer (from the x730 series) with proprietary DAQ software
+(developed by Ron Fox @ CAEN for Washington University in St Louis) to record data.
+
+The project consists of three parts:
+    - ./WashUDAQ, which contains configuration files, software, and documentation
+    for recording data from the x730 digitizer.
+
+    - ./analysis, which contains software for analyzing the recorded data with
+    the ROOT analysis package, producing cross sections, plots, and diagnostics.
+
+    - ./<exp name>, which contains experiment-specific data (which runs to
+    use for producing cross sections, target information, etc).
+
+See the README files in each of these directories for more information.
+
+-------------------------------------------------------------------------------
+Author: Cole D. Pruitt (Washington University in St Louis, Radiochemistry Group)
+Email: cole.d.pruitt@gmail.com
+
+This project is freely available on github at:
+https://github.com/cdpruitt/total-neutron-cross-sections

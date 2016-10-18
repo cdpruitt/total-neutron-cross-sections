@@ -18,25 +18,25 @@ using namespace std;
 
 // Organize formatted text output by channel number:
 struct TextOutput {
-    ofstream targetChanger;
-    ofstream monitor;
-    ofstream detectorT;
+    ofstream ch0;
+    ofstream ch2;
+    ofstream ch4;
 
     // print left and right detector channels independently (for diagnostics
     // only)
-    ofstream detectorL;
-    ofstream detectorR;
+    ofstream channel6;
+    ofstream channel7;
 
     // conglomerate of all channels
     ofstream total;
 
 } textOutput;
 
-const string targetChangerName = "textOutput/targetChanger.txt";
-const string monitorName = "textOutput/monitor.txt";
-const string detectorTName = "textOutput/detectorT.txt";
-const string detectorLName = "textOutput/detectorL.txt";
-const string detectorRName = "textOutput/detectorR.txt";
+const string ch0Name = "textOutput/ch0.txt";
+const string ch2Name = "textOutput/ch2.txt";
+const string ch4Name = "textOutput/ch4.txt";
+const string channel6Name = "textOutput/channel6.txt";
+const string channel7Name = "textOutput/channel7.txt";
 
 // Pretty-print event data into a text file
 void printEvent(RawEvent& rawEvent, TextOutput& text)
@@ -47,19 +47,19 @@ void printEvent(RawEvent& rawEvent, TextOutput& text)
     switch(rawEvent.chNo)
     {
         case 0:
-            out = &text.targetChanger;
+            out = &text.ch0;
             break;
         case 2:
-            out = &text.monitor;
+            out = &text.ch2;
             break;
         case 4:
-            out = &text.detectorT;
+            out = &text.ch4;
             break;
         case 6:
-            out = &text.detectorL;
+            out = &text.channel6;
             break;
         case 7:
-            out = &text.detectorR;
+            out = &text.channel7;
             break;
     }
 
@@ -348,11 +348,11 @@ int main(int, char* argv[])
 
     cout << inFileName << " opened successfully. Start reading events..." << endl;
 
-    textOutput.targetChanger.open(targetChangerName);
-    textOutput.monitor.open(monitorName);
-    textOutput.detectorT.open(detectorTName);
-    textOutput.detectorL.open(detectorLName);
-    textOutput.detectorR.open(detectorRName);
+    textOutput.ch0.open(ch0Name);
+    textOutput.ch2.open(ch2Name);
+    textOutput.ch4.open(ch4Name);
+    textOutput.channel6.open(channel6Name);
+    textOutput.channel7.open(channel7Name);
 
     rawEvent.waveform = new vector<int>;
 
@@ -379,9 +379,9 @@ int main(int, char* argv[])
     cout << "Total events: " << numberOfEvents << endl;
 
     inFile.close();
-    textOutput.targetChanger.close();
-    textOutput.monitor.close();
-    textOutput.detectorT.close();
-    textOutput.detectorL.close();
-    textOutput.detectorR.close();
+    textOutput.ch0.close();
+    textOutput.ch2.close();
+    textOutput.ch4.close();
+    textOutput.channel6.close();
+    textOutput.channel7.close();
 }

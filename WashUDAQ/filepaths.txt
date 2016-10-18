@@ -1,0 +1,2 @@
+stagingLocation /media/InternalDrive2/output
+storageLocation /media/ExternalDrive1/output

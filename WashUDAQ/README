@@ -1,0 +1,38 @@
+How to collect data
+------------------------
+
+Run ./wudaq.sh to start recording data on the digitizer. Optionally, ./wudaq.sh
+can be run with the following arguments to modify its behavior:
+
+-------------------------------------------------------------------------------
+| Flag  | Behavior                                                            | 
+--------+----------------------------------------------------------------------
+| -p    | Production mode. This will prompt the user for important            |
+|       | experimental details about the run (e.g., voltages of the detectors |
+|       | how many sub-runs to attempt) and save them along with the config   |
+|       | files for the run (in ./prodConfig) for use in analysis.            |
+|       | Data is recorded as several 'sub-runs' (individual files) under an  |
+|       | umbrella 'run' (a directory).                                       |
+--------+----------------------------------------------------------------------
+| -t    | Testing mode. This attempts to collect a single run and prompts the |
+|       | user for a location where this test run should be stored.           |
+-------------------------------------------------------------------------------
+
+When data is recorded from the digitizer, it is first kept in a staging area,
+then moved to a storage location for more permanent storage. The filepaths for
+these locations is set in ./stagingLocation and ./storageLocation.
+
+
+Installing the DAQ software
+---------------------------
+
+Run the ./install script in this directory, passing the name of the version to
+install as a parameter (e.g., ./install washudaq-2.9-002).
+
+
+Verifying/updating digitizer firmware
+---------------------------
+
+Run the CAENUpgrader from the CAENUpgrader directory. Select the appropriate
+digitizer model and action (e.g., updating firmware) and indicate the location
+of the new firmware (if updating). Firmware files are stored in ./firmware.

@@ -16,7 +16,7 @@
 #    -s | analyze a single event file, specified by run and subrun numbers
 #       | (e.g., ./analyze -s <run number> <subrun number>)
 #-------+-----------------------------------------------------------------------
-#    -r | for each run given in ../<target>/runsToSort.txt, analyze the most
+#    -r | for each run given in ../<experiment>/runsToSort.txt, analyze the most
 #       | recent subrun
 #       | (e.g., ./analyze -r)
 #-------+-----------------------------------------------------------------------
@@ -80,7 +80,7 @@ while getopts "fsratow" opt; do
             printf "\nInvalid option: -$OPTARG.\n\nValid options are:"
             printf "\n    -f (analyze a single file, given as filepath)\n"
             printf "\n    -s (analyze a single file, given as runNumber subRunNumber)\n"
-            printf "\n    -r (analyze runs listed in ../<target>/runsToSort.txt)\n"
+            printf "\n    -r (analyze runs listed in ../<experiment>/runsToSort.txt)\n"
             printf "\n    -a (if using -r, read ALL subruns in each run, not just the most recent)\n"
             printf "\n    -t (produce text output of event data instead of doing full analysis)\n"
             printf "\n    -o (overwrite existing event histograms - use if analysis code has been changed)\n"
@@ -144,7 +144,7 @@ analyze ()
 
 # SECTION 4: determine which runs should be analyzed
 
-read -r target<target.txt # find out which experimental dataset to analyze
+read -r experiment<experiment.txt # find out which experimental dataset to analyze
 
 # Analyze a single event file, specified by the full filepath
 if [ "$fullFilePath" = true ]
@@ -172,7 +172,7 @@ then
             outpath=${filepaths[3]}
             break
         fi
-    done < ../$target/filepaths.txt
+    done < ../$experiment/filepaths.txt
 
     if [[ $datapath == "" ]]
     then
@@ -191,7 +191,7 @@ then
 fi
 
 # Analyze runs listed in runsToSort.txt
-if [[ $runlist = true && -a ../$target/runsToSort.txt ]]
+if [[ $runlist = true && -a ../$experiment/runsToSort.txt ]]
 then
     printf "\nRunlist mode enabled. Reading runs from ./runsToSort.txt..."
 
@@ -210,7 +210,7 @@ then
                 break
             fi
             echo $outpath
-        done < ../$target/filepaths.txt
+        done < ../$experiment/filepaths.txt
 
         if [ $datapath == 0 ]
         then
@@ -248,7 +248,7 @@ then
                         skip=true
                         break
                     fi
-                done < ../$target/blacklist.txt
+                done < ../$experiment/blacklist.txt
                 if [ $skip == true ]
                 then
                     continue
@@ -270,16 +270,16 @@ then
             # Sort sub-run
             analyze $inputFileName $outputDirectoryName
         fi
-    done < ../$target/runsToSort.txt
-    ./sumAll $target
+    done < ../$experiment/runsToSort.txt
+    ./sumAll $experiment
     exit
 fi
 
 # Default behavior: sort only the most recent run (as determined by files
-# modified in defaultFilepath.txt in the target directory)
+# modified in defaultFilepath.txt in the experiment directory)
 
-echo $target
-read -r filepaths<../$target/defaultFilepath.txt
+echo $experiment
+read -r filepaths<../$experiment/defaultFilepath.txt
 datapath=${filepaths[0]}
 outpath=${filepaths[1]}
 
