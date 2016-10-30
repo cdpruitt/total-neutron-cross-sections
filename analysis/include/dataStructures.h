@@ -45,7 +45,7 @@ struct RawEvent
 // used to sort events into channel-specific trees, but do no processing
 struct SeparatedEvent
 {
-    double timetag; // 1 sample granularity, 32 bits
+    unsigned int timetag; // 1 sample granularity, 32 bits
     unsigned int extTime;
     unsigned int fineTime; // provide additional bits of granularity 
     unsigned int evtNo;

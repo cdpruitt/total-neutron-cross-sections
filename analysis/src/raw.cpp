@@ -114,6 +114,10 @@ bool readEventHeader(ifstream& evtfile)
     && readTwoWordVariable(evtfile, rawEvent.timetag))
     {
         // successfully read event header
+
+        // convert timetag from samples to ns
+        rawEvent.timetag *= SAMPLE_PERIOD;
+
         return true;
     }
 
@@ -253,9 +257,6 @@ void readRawData(string inFileName, string outFileName)
     while(!inFile.eof())
     {
         readEvent(inFile);
-
-        // convert timetag from samples to ns
-        rawEvent.timetag *= SAMPLE_PERIOD;
 
         // add event to tree
         tree->Fill();

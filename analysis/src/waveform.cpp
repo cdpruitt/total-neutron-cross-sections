@@ -6,7 +6,6 @@
 #include "TFile.h"
 #include "TTree.h"
 #include "TF1.h"
-#include "TF1Convolution.h"
 #include "TH1.h"
 #include "TH2.h"
 #include "TCanvas.h"
@@ -34,7 +33,6 @@ TH1I *relativeTriggerSampleHisto;
 TH2I *triggerWalk;
 TH1I *peakHisto;
 TF1 *fittingFunc;
-TF1Convolution *convolvedPeakFunc;
 
 extern struct ProcessedEvent procEvent;
 
@@ -371,9 +369,9 @@ fitData fitTrigger(int waveformNo, float triggerSample)
         }
     }
 
-    peakHisto->Write(); // uncomment to produce a fitted histo for each peak
-    //delete peakHisto;
-    //delete fittingFunc;
+    //peakHisto->Write(); // uncomment to produce a fitted histo for each peak
+    delete peakHisto;
+    delete fittingFunc;
 
     /*if(data.chiSquare<5)
       {
@@ -588,7 +586,7 @@ void processWaveforms(TTree* ch4TreeWaveform, vector<Plots*>& plots)
                 }
             }
 
-            produceTriggerOverlay(j);
+            //produceTriggerOverlay(j);
 
             /*temp.str("");
             temp << "waveformWrap" << j;
@@ -633,10 +631,10 @@ void processWaveforms(TTree* ch4TreeWaveform, vector<Plots*>& plots)
                         //triggerH->Write();
             //cout << "Finished processing waveform " << j << endl << endl;
 
-            if(j==4)
+            /*if(j==4)
             {
                 break;
-            }
+            }*/
         }
 
         for(Plots* p : plots)
@@ -680,17 +678,17 @@ void calculateDeadtime(TTree* ch4TreeWaveform, vector<Plots*>& plots)
     // for each target,
     for(int i=0; i<NUMBER_OF_TARGETS; i++)
     {
+        if(microsPerTargetWaveform[i] <= 0)
+        {
+            break;
+        }
+
         // for each bin,
         TH1I* tof = plots[i]->getTOFHisto();
         TH1I* dtH = plots[i]->getDeadtimeHisto();
 
         for(int j=0; j<TOF_BINS; j++)
         {
-            if(microsPerTargetWaveform[i] <= 0)
-            {
-                break;
-            }
-
             eventsPerBinPerMicro[i].push_back(tof->GetBinContent(j+1)/(double)microsPerTargetWaveform[i]);
             deadtimeFraction[i].push_back(0);
         }

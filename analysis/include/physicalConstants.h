@@ -20,13 +20,9 @@ const double FLIGHT_DISTANCE = 2672;  // detector distance from neutron
 // Digitizer constants
 
 const double SAMPLE_PERIOD = 2;       // digitizer sample rate, in ns
-const double MACROPULSE_OFFSET = 842; // timing delay between the digitizer (channel 0)
+const double MACROPULSE_OFFSET = 622; // timing delay between the digitizer (channel 0)
                                       // and the facility's RF clock (due to cable delay,
                                       // NIM logic, etc.), in ns
-const double SCAVENGER_OFFSET = -12.51; // timing delay between channels 0 and 6
-                                        // on the digitizer (due to cable delay,
-                                        // NIM logic, etc.), in ns
-
 // Nuclear physics constants
 
 const double C = 299792458; // speed of light in m/s

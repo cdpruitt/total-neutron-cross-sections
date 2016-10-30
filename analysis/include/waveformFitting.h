@@ -31,7 +31,7 @@ const float ERROR_LIMIT_2 = 50.0;
 /*****************************************************************************/
 // Variables for calculating the baseline:
 
-double BASELINE = 14830;
+double BASELINE = 15720;
 const int BASELINE_SAMPLES = 10; // number of samples averaged to calculate baseline
 const int BASELINE_THRESHOLD = 25; // used to reject samples from being used to calculate the baseline average 
 const int BASELINE_LIMIT = 1000; // used to abort waveform fitting if baseline can't be established within this # of samples
@@ -49,7 +49,7 @@ int numberTotalTriggers = 0;
 
 // total number of micropulses processed per target (for performing dead time
 // calculation)
-std::vector<long> microsPerTargetWaveform(6,0);
+std::vector<long> microsPerTargetWaveform(NUMBER_OF_TARGETS,0);
 
 
 
@@ -78,19 +78,19 @@ float tE_init = 0; // previous-peak background: time offset
 
 // Fitting function parameter limits:
 // One-peak fitting
-const float onePeakParamMin[nParamsOnePeak] = {-300000., -10.,  5, 0.2, 14800., -0.2};
+const float onePeakParamMin[nParamsOnePeak] = {-300000., -10.,  5, 0.2, 15700., -0.2};
                                              //       A    t1   n    d       C     m
-const float onePeakParamMax[nParamsOnePeak] = {    -30.,   2., 20,   3, 14860.,  0.2};
+const float onePeakParamMax[nParamsOnePeak] = {    -30.,   2., 20,   3, 15750.,  0.2};
 
 // One-peak-plus-exponential-tail fitting
-const float onePeakExpBackParamMin[nParamsOnePeakExpBack] = {-300000., -10.,  5, 0.2, 14800., -0.2, -30000, -5};
+const float onePeakExpBackParamMin[nParamsOnePeakExpBack] = {-300000., -10.,  5, 0.2, 15700., -0.2, -30000, -5};
                                                            //       A    t1   n    d       C     m       E  tE
-const float onePeakExpBackParamMax[nParamsOnePeakExpBack] = {    -30.,   6., 20,   3, 14860.,  0.2,  30000, 20};
+const float onePeakExpBackParamMax[nParamsOnePeakExpBack] = {    -30.,   6., 20,   3, 15750.,  0.2,  30000, 20};
 
 // Two-peak fitting
-const float twoPeakParamMin[nParamsTwoPeaks] = {-300000., -300000., -10., 10,  5, 0.2, 14800., -0.2};
+const float twoPeakParamMin[nParamsTwoPeaks] = {-300000., -300000., -10., 10,  5, 0.2, 15700., -0.2};
                                              //        A         B    t1  t2   n    d       C     m
-const float twoPeakParamMax[nParamsTwoPeaks] = {    -30.,     -30.,    6, 50, 20,   3, 14860.,  0.2};
+const float twoPeakParamMax[nParamsTwoPeaks] = {    -30.,     -30.,    6, 50, 20,   3, 15750.,  0.2};
 
 // Variables for manual CFD waveform fitting (diagnostic mode)
 //const double CFD_SCALEDOWN = 2;

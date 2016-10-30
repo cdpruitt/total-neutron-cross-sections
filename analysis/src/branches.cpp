@@ -17,7 +17,7 @@ void branchRaw(TTree*& tree)
     tree->Branch("evtType",&rawEvent.evtType,"evtType/i");
     tree->Branch("chNo",&rawEvent.chNo,"chNo/i");
     tree->Branch("extTime",&rawEvent.extTime,"extTime/i");
-    tree->Branch("timetag",&rawEvent.timetag,"timetag/d");
+    tree->Branch("timetag",&rawEvent.timetag,"timetag/i");
     tree->Branch("fineTime",&rawEvent.fineTime,"fineTime/i");
     tree->Branch("sgQ",&rawEvent.sgQ,"sgQ/i");
     tree->Branch("lgQ",&rawEvent.lgQ,"lgQ/i");
@@ -28,7 +28,7 @@ void branchSplit(TTree*& tree)
 {
     tree->Branch("evtNo",&separatedEvent.evtNo,"evtNo/i");
     tree->Branch("chNo",&separatedEvent.chNo,"chNo/i");
-    tree->Branch("timetag",&separatedEvent.timetag,"timetag/d");
+    tree->Branch("timetag",&separatedEvent.timetag,"timetag/i");
     tree->Branch("extTime",&separatedEvent.extTime,"extTime/i");
     tree->Branch("fineTime",&separatedEvent.fineTime,"fineTime/i");
     tree->Branch("sgQ",&separatedEvent.sgQ,"sgQ/i");
@@ -40,7 +40,7 @@ void branchSplit(TTree*& tree)
 // start populating it with waveform events
 void branchSplitW(TTree*& tree)
 {
-    tree->Branch("timetag",&separatedEvent.timetag,"timetag/d");
+    tree->Branch("timetag",&separatedEvent.timetag,"timetag/i");
     tree->Branch("extTime",&separatedEvent.extTime,"extTime/i");
     tree->Branch("chNo",&separatedEvent.chNo,"chNo/i");
     tree->Branch("evtNo",&separatedEvent.evtNo,"evtNo/i");
@@ -86,9 +86,9 @@ void setBranchesSeparated(TTree* tree)
    tree->SetBranchAddress("evtType",&separatedEvent.evtType);
    tree->SetBranchAddress("timetag",&separatedEvent.timetag);
    tree->SetBranchAddress("extTime",&separatedEvent.extTime);
+   tree->SetBranchAddress("fineTime",&separatedEvent.fineTime);
    tree->SetBranchAddress("sgQ",&separatedEvent.sgQ);
    tree->SetBranchAddress("lgQ",&separatedEvent.lgQ);
-   tree->SetBranchAddress("fineTime",&separatedEvent.fineTime);
    tree->SetBranchAddress("waveform",&separatedEvent.waveform);
 }
 

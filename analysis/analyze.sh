@@ -130,14 +130,14 @@ analyze ()
     fi
 
     # Send error messages to a text file
-    2>&1 | tee > $outputDirectoryName"/error.txt"
+    2>&1 | tee > $outputDirectoryName"error.txt"
 
     ./driver $inputFileName $outputDirectoryName $runNumber
 
-    if [ -s $outputDirectoryName"/temp.root" ]
-    then
-        rm $outputDirectoryName"/temp.root"
-    fi
+    #if [ -s $outputDirectoryName"/temp.root" ]
+    #then
+    #    rm $outputDirectoryName"/temp.root"
+    #fi
 }
 
 ################################################################################
@@ -152,7 +152,7 @@ then
     printf "\nAnalyzing single event file $2...\n"
     inputFileName=$2
     outputDirectoryName=$3
-    analyze $inputFileName $outputDirectoryName
+    analyze $inputFileName $outputDirectoryName -1
     exit
 fi
 
@@ -180,8 +180,8 @@ then
         exit
     fi
 
-    inputFileName="$datapath/output/run$runNumber/data-$subrunNo.evt"
-    outputDirectoryName="$outpath/analysis/run$runNumber/$subrunNo/"
+    inputFileName="$datapath/output/$runNumber/data-$subrunNo.evt"
+    outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
 
     printf "\nSorting single sub-run $inputFileName\n"
 
@@ -223,20 +223,27 @@ then
         then
             # Sort all sub-runs in the specified run directory
             printf "Reading all subruns in specified run\n"
-            for f in $datapath/output/run$runNumber/data-*;
+            for f in $datapath/output/$runNumber/data-*;
             do
                 subrunNo=$(echo $f | egrep -o '[0-9]+' | tail -1)
-                inputFileName="$datapath/output/run$runNumber/data-$subrunNo.evt"
-                outputDirectoryName="$outpath/analysis/run$runNumber/$subrunNo/"
+                inputFileName="$datapath/output/$runNumber/data-$subrunNo.evt"
+
+                # Create directory to hold the output of our analysis
+                if [ ! -d "$outpath/analysis/$runNumber" ]
+                then
+                    mkdir $outpath/analysis/$runNumber
+                fi
+
+                outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
                 printf "\n***Starting sort of sub-run $subrunNo***\n"
 
                 # Skip subruns < 1GB in size
                 runSize=$(du -k "$inputFileName" | cut -f 1)
-                if [ $runSize -lt 1000000 ]
-                then
-                    printf "$inputFileName is less than 1 GB in size; ignoring...\n"
-                    continue
-                fi
+                #if [ "$runSize" -lt 1000000 ]
+                #then
+                #    printf "$inputFileName is less than 1 GB in size; ignoring...\n"
+                #    continue
+                #fi
 
                 # Skip subruns on the blacklist
                 skip=false
@@ -261,10 +268,10 @@ then
             ./sumRun $runNumber $outpath
         else
             # Sort just the most recent sub-run in the specified run directory
-            subrunNo=$(ls -t $datapath/output/run$runNumber/data-* | head -1 | egrep\
+            subrunNo=$(ls -t $datapath/output/$runNumber/data-* | head -1 | egrep\
                 -o '[0-9]+' | tail -1)
-            inputFileName="$datapath/output/run$runNumber/data-$subrunNo.evt"
-            outputDirectoryName="$outpath/analysis/run$runNumber/$subrunNo/"
+            inputFileName="$datapath/output/$runNumber/data-$subrunNo.evt"
+            outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
             printf "\n***Starting sort of sub-run $subrunNo***\n"
 
             # Sort sub-run
@@ -285,10 +292,10 @@ outpath=${filepaths[1]}
 
 # Find highest-numbered run directory in datapath
 runNumber=$(ls -t $datapath/output | head -1)
-subrunNo=$(ls -t $datapath/output/run$runNumber/data-* | head -1 | egrep\
+subrunNo=$(ls -t $datapath/output/$runNumber/data-* | head -1 | egrep\
     -o '[0-9]+' | tail -1)
-inputFileName="$datapath/output/run$runNumber/data-$subrunNo.evt"
-outputDirectoryName="$outpath/analysis/run$runNumber/$subrunNo/"
+inputFileName="$datapath/output/$runNumber/data-$subrunNo.evt"
+outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
 printf "\nSorting most recent run $outputDirectoryName\n"
 
 # Start sort

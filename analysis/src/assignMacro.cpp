@@ -79,9 +79,6 @@ void processDPPEvents(TFile*& sortedFile, vector<TTree*>& orchardRaw, vector<TTr
             case 4:
                 TIME_OFFSET = MACROPULSE_OFFSET;
                 break;
-            case 6:
-                TIME_OFFSET = MACROPULSE_OFFSET+SCAVENGER_OFFSET;
-                break;
             default:
                 cerr << "Error: non-existent channel index given by detIndex" << endl;
                 exit(1);
@@ -145,10 +142,6 @@ void processDPPEvents(TFile*& sortedFile, vector<TTree*>& orchardRaw, vector<TTr
 
                     prevMacroTime = tcEvent.macroTime;
                     targetChangerTree->GetEntry(tcEvent.macroNo+1);
-                    if(tcEvent.macroNo == 1320)
-                    {
-                        cerr << "macroNo = 1320, macroTime = " << tcEvent.macroTime << ", prevMacroTime = " << prevMacroTime << ", completeTime = " << procEvent.completeTime << ", prevCompleteTime = " << prevCompleteTime << endl;
-                    }
                 }
                 while (prevMacroTime < tcEvent.macroTime);
 
@@ -185,14 +178,12 @@ void processDPPEvents(TFile*& sortedFile, vector<TTree*>& orchardRaw, vector<TTr
 
                 targetChangerTree->GetEntry(tcEvent.macroNo+1);
 
-                //if(tcEvent.macroNo == 67387)
-                //{
-                //    cerr << "macroNo = 67387, macroTime = " << tcEvent.macroTime << ", prevMacroTime = " << prevMacroTime << ", completeTime = " << procEvent.completeTime << ", prevCompleteTime = " << prevCompleteTime << ", tc mode change = " << tcEvent.modeChange << endl;
-                //}
-
                 if (tcEvent.modeChange==1)
                 {
                     // this macropulse is the first macropulse of a new DPP mode
+
+                    cout << "modeChange = 1; new DPP mode at macroNo " << tcEvent.macroNo << endl;
+                    fflush(stdout);
 
                     // Move detector event index forward until it reaches a new DPP mode period
                     do
@@ -220,9 +211,6 @@ void processDPPEvents(TFile*& sortedFile, vector<TTree*>& orchardRaw, vector<TTr
                     {
                         break;
                     }
-
-                    //cerr << "Start new DPP period @ macroNo " << tcEvent.macroNo << ", macroTime = " << tcEvent.macroTime << ", completeTime = " << procEvent.completeTime << endl;
-                    //fflush(stdout);
                 }
 
                 // Lastly, check to see if there are any beam
@@ -415,17 +403,14 @@ void processWaveformEvents(TFile*& sortedFile, vector<TTree*>& orchardRawW, vect
         {
             orchardRawW[detIndex/2]->GetEntry(i);
 
-            //cerr << "waveform evtNo = " << separatedEvent.evtNo << endl;
             if(separatedEvent.evtNo==0)
             {
                 // Start of new waveform mode period:
                 // Move forward to the next mode change in the target changer
 
-                //cerr << "modeChange == " << tcEvent.modeChange << endl;
                 do
                 {
                     targetChangerTree->GetEntry(tcEvent.macroNo+1);
-                //    cerr << "cycling through tcTree, macroNo = " << tcEvent.macroNo << endl;
 
                 } while(tcEvent.modeChange==0 && tcEvent.macroNo+1<targetChangerTree->GetEntries());
 
@@ -445,8 +430,6 @@ void processWaveformEvents(TFile*& sortedFile, vector<TTree*>& orchardRawW, vect
             procEvent.macroNo = tcEvent.macroNo;
             procEvent.macroTime = tcEvent.macroTime;
             procEvent.targetPos = tcEvent.targetPos;
-
-            cerr << "targ position = " << tcEvent.targetPos << endl;
 
             procEvent.evtNo = separatedEvent.evtNo;
             procEvent.waveform = separatedEvent.waveform;

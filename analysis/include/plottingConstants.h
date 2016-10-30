@@ -9,7 +9,7 @@
 /* Plotting constants*/
 
 const double ENERGY_LOWER_BOUND = 2;   // lower bound of cross-section plots, in MeV
-const double ENERGY_UPPER_BOUND = 700; // upper bound of cross-section plots, in MeV
+const double ENERGY_UPPER_BOUND = 600; // upper bound of cross-section plots, in MeV
 const int NUMBER_ENERGY_BINS = 60;    // for plots with energy units as abscissa
 
 const int TOF_RANGE = MICRO_LENGTH+1; // upper bound of time-of-flight plots, in ns
@@ -20,7 +20,7 @@ const std::vector<std::string> positionNames =
 
 // segregate histograms by target position, with labels given by 'positionNames'
 
-const std::string dirs[4] = {"targetChanger","monitor","detS","scavenger"};
+const std::string dirs[3] = {"targetChanger","monitor","detS"};
 // segregate directories by data channel, with labels given by 'dirs'
 
 #endif

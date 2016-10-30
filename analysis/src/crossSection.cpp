@@ -169,6 +169,11 @@ void correctForDeadtime(string histoFileName, string deadtimeFileName)
         }*/
 
         TH1I* deadtimeHisto = deadtimePlots[i]->getDeadtimeHisto();
+        if(!deadtimeHisto)
+        {
+            break;
+        }
+
         int deadtimeBins = deadtimeHisto->GetNbinsX();
 
         for(int j=0; j<deadtimeBins; j++)

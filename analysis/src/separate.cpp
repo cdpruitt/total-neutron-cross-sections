@@ -154,6 +154,10 @@ void separateByChannel(string rawFileName, string tempFileName, vector<TTree*>& 
     // To uniquely identify each event, we assign each channel's events an event
     // number (evtNo), which is the event's order in its macropulse.
     vector<int> evtNo(activeDPPChannels.size());
+
+    // Use the previous event's timetags to re-insert missing extTimes
+    vector<int> currentExtTime(activeDPPChannels.size(),0);
+    vector<unsigned int> prevTimetag(activeDPPChannels.size(),0);
     
     // Loop through all events in input tree and separate them into channel-
     // specific trees
@@ -169,10 +173,22 @@ void separateByChannel(string rawFileName, string tempFileName, vector<TTree*>& 
             continue;
         }*/
 
+        /*if(prevTimetag[separatedEvent.chNo/2] > 3000000000)
+        {
+            cout << separatedEvent.timetag << endl;
+        }*/
+
+        if(prevTimetag[separatedEvent.chNo/2] > separatedEvent.timetag
+           && prevTimetag[separatedEvent.chNo/2] > pow(2,32)-50000000) // 50 ms before extTime kicks in
+        {
+            currentExtTime[separatedEvent.chNo/2]++;
+        }
+
         if (separatedEvent.evtType==1)
         {
             // DPP mode
 
+            separatedEvent.extTime = currentExtTime[separatedEvent.chNo/2];
             fillRawTree(orchardRaw[separatedEvent.chNo/2]);
         }
 
@@ -193,6 +209,11 @@ void separateByChannel(string rawFileName, string tempFileName, vector<TTree*>& 
             separatedEvent.evtNo = evtNo[separatedEvent.chNo/2];
             fillRawTree(orchardRawW[separatedEvent.chNo/2]);
             evtNo[separatedEvent.chNo/2]++;
+
+            for(auto &value: currentExtTime)
+            {
+                value = 0;
+            }
         }
 
         if(index%10000==0)
@@ -202,6 +223,7 @@ void separateByChannel(string rawFileName, string tempFileName, vector<TTree*>& 
         }
 
         prevEvtType = separatedEvent.evtType;
+        prevTimetag[separatedEvent.chNo/2] = separatedEvent.timetag;
     }
 
     cout << "Separated " << totalEntries << " events into channels 2, 4 and 6." << endl;
@@ -239,6 +261,8 @@ void processTargetChanger(string rawFileName, TFile*& sortedFile)
     // uncomment to use
     totalEntries /= DEBUG_SCALEDOWN;
 
+    int currentExtTime = 0;
+
     for(int i=0; i<totalEntries; i++)
     {
         inputTree->GetEntry(i);
@@ -256,6 +280,14 @@ void processTargetChanger(string rawFileName, TFile*& sortedFile)
                     // time-correlated with the facility RF time reference.
                     continue;
                 }
+
+                if(timetagPrev > separatedEvent.timetag
+                && timetagPrev > pow(2,32)-50000000) // 50 ms before extTime kicks in
+                {
+                    currentExtTime++;
+                }
+
+                separatedEvent.extTime = currentExtTime;
 
                 // assign the macropulse start time
                 tcEvent.macroTime = (double)separatedEvent.extTime*pow(2,32)+separatedEvent.timetag;
@@ -304,8 +336,17 @@ void processTargetChanger(string rawFileName, TFile*& sortedFile)
                     fflush(stdout);
                 }
             }
+
+            else
+            {
+                currentExtTime = 0;
+            }
+
             prevEvtType = separatedEvent.evtType;
             // move to next event in the loop
+
+            //cerr << "macroNo = " << tcEvent.macroNo << ", macroTime = " << tcEvent.macroTime
+            //    << ", modeChange = " << tcEvent.modeChange << endl;
         }
     }
 
