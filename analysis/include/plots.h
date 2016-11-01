@@ -10,7 +10,7 @@ class Plots
 {
     public:
         Plots(std::string name);
-        Plots(std::string name, TFile*& inputFile);
+        Plots(std::string name, TFile*& inputFile, std::string directory);
 
         TH1I* getTOFHisto();
         TH1I* getEnergyHisto();

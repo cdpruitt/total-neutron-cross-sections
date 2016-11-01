@@ -141,7 +141,7 @@ Plots::Plots(string name)
 }
 
 // reconnect to old plots
-Plots::Plots(string name, TFile*& inputFile)
+Plots::Plots(string name, TFile*& inputFile, string directory)
 {
     string tofName = name + "TOF";
     string energyName = name + "Energy";
@@ -155,9 +155,12 @@ Plots::Plots(string name, TFile*& inputFile)
 
     else
     {
-        TOFHisto = (TH1I*)inputFile->Get(tofName.c_str());
-        energyHisto = (TH1I*)inputFile->Get(energyName.c_str());
-        deadtimeHisto = (TH1I*)inputFile->Get(deadtimeName.c_str());
+        gDirectory->cd("/");
+        gDirectory->GetDirectory(directory.c_str())->cd();
+
+        TOFHisto = (TH1I*)gDirectory->Get(tofName.c_str());
+        energyHisto = (TH1I*)gDirectory->Get(energyName.c_str());
+        deadtimeHisto = (TH1I*)gDirectory->Get(deadtimeName.c_str());
     }
 }
 

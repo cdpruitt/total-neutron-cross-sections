@@ -1,0 +1,8 @@
+This file lists the default position of the targets (to be used in testing,
+when no run number is specified for a file)
+The data format is:
+***********************************************************
+Pos. 1  Pos.2       Pos. 3      Pos. 4  Pos. 5       Pos. 6
+***********************************************************
+
+blank   shortCarbon longCarbon  Sn112   NatSn        Sn124

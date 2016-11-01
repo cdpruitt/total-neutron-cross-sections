@@ -180,29 +180,35 @@ int main(int argc, char *argv[])
 {
     string runNumber = argv[1];
     string driveName = argv[2];
+    string fileName = argv[3];
 
     // create vector for holding the energies where the cross sections
     // were calculated
     vector<vector<vector<double>*>*> energies;
-    vector<vector<vector<double>*>*> energiesWaveform;
 
     // create vectors for holding cross section data:
     // crossSections[target number]->at(subrun number)->at(data point)
     vector<vector<vector<double>*>*> crossSections;
-    vector<vector<vector<double>*>*> crossSectionsWaveform;
+    vector<vector<vector<double>*>*> crossSectionsLowThresh;
     vector<vector<vector<double>*>*> crossSectionsError;
-    vector<vector<vector<double>*>*> crossSectionsErrorWaveform;
+    vector<vector<vector<double>*>*> crossSectionsErrorLowThresh;
 
     readGraphs(runNumber, driveName, "cross-sections", targetNames, energies, crossSections, crossSectionsError);
-    //readGraphs(runNumber, driveName, "waveform",targetNamesWaveform,energiesWaveform,crossSectionsWaveform);
+    readGraphs(runNumber, driveName, "cross-sections_low",targetNames,energies,crossSectionsLowThresh, crossSectionsErrorLowThresh);
 
     // Create output file to contain summed histos
     stringstream outfileName;
     outfileName << driveName << "/analysis/" << runNumber << "/" << "sum.root";
     TFile *outfile = new TFile(outfileName.str().c_str(),"RECREATE");
 
+    gDirectory->mkdir("high_threshold","high_threshold");
+    gDirectory->cd("high_threshold");
     averageGraphs(targetNames,energies,crossSections,crossSectionsError);
-    //averageGraphs(targetNamesWaveform,energiesWaveform,crossSectionsWaveform);
+
+    gDirectory->cd("/");
+    gDirectory->mkdir("low_threshold","low_threshold");
+    gDirectory->cd("low_threshold");
+    averageGraphs(targetNames,energies,crossSectionsLowThresh,crossSectionsError);
 
     outfile->Close();
 }

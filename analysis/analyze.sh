@@ -168,7 +168,7 @@ then
     # read input filepath and output filepath
     while read l
     do
-        filepaths=("$l")
+        filepaths=($l)
         if [[ ${filepaths[0]} -le $runNumber && ${filepaths[1]} -ge $runNumber ]]
         then
             datapath=${filepaths[2]}
@@ -269,6 +269,7 @@ then
 
             # Last, sum together histograms from all the runs just sorted
             ./sumRun "$runNumber" "$outpath"
+
         else
             # Sort just the most recent sub-run in the specified run directory
             subrunNo=$(ls -t "$datapath/output/$runNumber/data-*" | head -1 | egrep\

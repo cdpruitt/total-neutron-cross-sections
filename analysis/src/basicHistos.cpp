@@ -45,15 +45,19 @@ TDirectory *waveformsDir;
 // Loop through all trees (one per channel) and populate their data into basic
 // histograms. Then, calculate the TOF, cross-section, etc using the channel 4
 // data and produce histograms of these calculated quantities.
-void fillHistos(vector<Plots*>& plots)
+void fillHistos()
 {
     cout << endl << "Entering ./histos..." << endl;
     TH1* waveformH;
     // fill basic histograms for DPP mode in each channel
 
+    // define container to hold cross-section-relevant plots
+
     // first loop through all channel-specific DPP-mode trees
     for(int i=0; (size_t)i<orchard.size(); i++)
     {
+        vector<Plots*> plots;
+
         // create a channel-specific directory for putting histograms inside
         gDirectory->cd("/");
         gDirectory->mkdir(dirs[i].c_str(),dirs[i].c_str());
@@ -129,21 +133,28 @@ void fillHistos(vector<Plots*>& plots)
         // adjust time parameters based on channel identity
         switch(i)
         {
+            case 0:
+                break;
             case 1:
                 // monitor
                 gammaGate[0] = 25;
                 gammaGate[1] = 40;
                 break;
             case 2:
+            case 3:
                 // summed detector
                 gammaGate[0] = 85;
                 gammaGate[1] = 95;
+
+                // make detector-channel-specific plots
+                for(int i=0; i<NUMBER_OF_TARGETS; i++)
+                {
+                    plots.push_back(new Plots(positionNames[i]));
+                }
                 break;
-            case 3:
-                // scavenger
-                gammaGate[0] = 85;
-                gammaGate[1] = 95;
-                break;
+            default:
+                cerr << "Error: couldn't define gamma gates for non-detector channel." << endl;
+                exit(1);
         }
         /*************************************************************************/
 
@@ -210,7 +221,7 @@ void fillHistos(vector<Plots*>& plots)
               break;
               }*/
         
-            if(i==2)
+            if(i==2 || i==3)
             {
                 // calculate time since start of macro (includes time offsets)
                 double timeDiff = procEvent.completeTime-procEvent.macroTime;
@@ -339,14 +350,41 @@ void fillHistos(vector<Plots*>& plots)
                     }
                 }
             }
-
-            if(j%1000==0)
-            {
-                cout << "Processed " << j << " events...\r";
-                fflush(stdout);
-            }
         }
-        cout << "Processed " << totalEntries << " in " << dirs[i] << " histograms." << endl;
+
+        if(i==2 || i==3)
+        {
+            cout << "Processed " << totalEntries << " in " << dirs[i] << " histograms." << endl;
+
+            std::vector<long> macrosPerTarget;
+            std::vector<long> microsPerTarget;
+
+            long totalMacros = 0;
+
+            gDirectory->cd("/");
+            gDirectory->cd(dirs[0].c_str());
+
+            for(int i=0; i<NUMBER_OF_TARGETS; i++)
+            {
+                macrosPerTarget.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(i+2));
+                totalMacros+=macrosPerTarget.back();
+
+                microsPerTarget.push_back(macrosPerTarget.back()*(MACRO_LENGTH/MICRO_LENGTH));
+                totalMicros+=microsPerTarget.back();
+
+                cout << "Micropulses on target " << i+1 << ": " << microsPerTarget.back() << endl;
+            }
+
+            int numberTotalTriggers = 0;
+            for(Plots* p : plots)
+            {
+                numberTotalTriggers += p->getTOFHisto()->GetEntries();
+            }
+
+            cout << "Triggers/micropulse: " << numberTotalTriggers/(double)totalMicros << endl;
+
+            calculateDeadtime(microsPerTarget, plots);
+        }
     }
 
     // fill basic histograms for waveform mode in each channel
@@ -588,23 +626,24 @@ int histos(string sortedFileName, string histoFileName)
     TTree* ch0Tree = (TTree*)sortedFile->Get("targetChangerTree");
     TTree* ch2Tree = (TTree*)sortedFile->Get("ch2ProcessedTree");
     TTree* ch4Tree = (TTree*)sortedFile->Get("ch4ProcessedTree");
-    //TTree* ch6Tree = (TTree*)sortedFile->Get("ch6ProcessedTree");
+    TTree* ch6Tree = (TTree*)sortedFile->Get("ch6ProcessedTree");
     TTree* ch0TreeW = (TTree*)sortedFile->Get("ch0ProcessedTreeW");
     TTree* ch2TreeW = (TTree*)sortedFile->Get("ch2ProcessedTreeW");
     TTree* ch4TreeW = (TTree*)sortedFile->Get("ch4ProcessedTreeW");
+    TTree* ch6TreeW = (TTree*)sortedFile->Get("ch6ProcessedTreeW");
 
     orchard.push_back(ch0Tree);
     orchard.push_back(ch2Tree);
     orchard.push_back(ch4Tree);
+    orchard.push_back(ch6Tree);
 
     orchardW.push_back(ch0TreeW);
     orchardW.push_back(ch2TreeW);
     orchardW.push_back(ch4TreeW);
+    orchardW.push_back(ch6TreeW);
 
     // increase precision to handle outputted times (for troubleshooting)
     cout.precision(13);
-
-    vector<Plots*> plots;
 
     // open output file to contain histos
     TFile* histoFile = new TFile(histoFileName.c_str(),"READ");
@@ -613,59 +652,27 @@ int histos(string sortedFileName, string histoFileName)
         // No histogram file - create and fill
         histoFile = new TFile(histoFileName.c_str(),"CREATE");
 
-        for(int i=0; i<NUMBER_OF_TARGETS; i++)
-        {
-            plots.push_back(new Plots(positionNames[i]));
-        }
-
         // prepare the root file with 4 directories, one for each channel
         // these directories will hold basic variable histograms showing the
         // raw data in each tree, plus TOF, x-sections, etc histograms
-        fillHistos(plots);
+        fillHistos();
         // fill TOF, cross-section, etc. histos for channels 4, 6
 
         sortedFile->Close();
         histoFile->Write();
     }
 
-    else
+    // uncomment to when histos can avoid bein deleted without messing up plots
+    /*else
     {
         for(int i=0; i<NUMBER_OF_TARGETS; i++)
         {
-            plots.push_back(new Plots(positionNames[i], histoFile));
+            plots.push_back(new Plots(positionNames[i], histoFile, dirs[2]));
+            plots.push_back(new Plots(positionNames[i], histoFile, dirs[3]));
         }
-    }
+    }*/
 
 
-    std::vector<long> macrosPerTarget;
-    std::vector<long> microsPerTarget;
-
-    long totalMacros = 0;
-
-    gDirectory->cd("/");
-    gDirectory->cd(dirs[0].c_str());
-
-    for(int i=0; i<NUMBER_OF_TARGETS; i++)
-    {
-        macrosPerTarget.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(i+2));
-        totalMacros+=macrosPerTarget.back();
-
-        microsPerTarget.push_back(macrosPerTarget.back()*(MACRO_LENGTH/MICRO_LENGTH));
-        totalMicros+=microsPerTarget.back();
-
-        cout << "Micropulses on target " << i+1 << ": " << microsPerTarget.back() << endl;
-    }
-
-    int numberTotalTriggers = 0;
-    for(Plots* p : plots)
-    {
-        numberTotalTriggers += p->getTOFHisto()->GetEntries();
-    }
-
-    cout << "Total number of triggers: " << numberTotalTriggers << endl;
-    cout << "Triggers/micropulse: " << numberTotalTriggers/(double)totalMicros << endl;
-
-    calculateDeadtime(microsPerTarget, plots);
     histoFile->Write();
 
     // Modify plots

@@ -741,6 +741,7 @@ void waveform(string inFileName, string outFileName)
     }
 
     TTree* ch4TreeWaveform = (TTree*)inFile->Get("ch4ProcessedTreeW");
+    TTree* ch6TreeWaveform = (TTree*)inFile->Get("ch6ProcessedTreeW");
 
     TFile* outFile;
     outFile = new TFile(outFileName.c_str(),"UPDATE");
@@ -769,6 +770,9 @@ void waveform(string inFileName, string outFileName)
      //   outFile->Write();
     }
 
+    // Commented out until waveform.cpp can support 2 detector channels (hi/lo
+    // threshold)
+    /*
     else
     {
         for(int i=0; i<NUMBER_OF_TARGETS; i++)
@@ -776,7 +780,7 @@ void waveform(string inFileName, string outFileName)
             string name = positionNames[i] + "W";
             plots.push_back(new Plots(name, outFile));
         }
-    }
+    }*/
 
     setBranchesHistosW(ch4TreeWaveform);
 

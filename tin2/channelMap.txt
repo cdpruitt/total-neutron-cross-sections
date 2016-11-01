@@ -1,0 +1,5 @@
+ch0 macropulseChannel
+ch2 monitorChannel
+ch4 detectorChannel
+ch6 leftDetectorChannel
+ch7 rightDetectorChannel

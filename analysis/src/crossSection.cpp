@@ -121,16 +121,18 @@ void CrossSection::createCSGraph(string name)
     t->Write();
 }
 
-void correctForDeadtime(string histoFileName, string deadtimeFileName)
+void correctForDeadtime(string histoFileName, string deadtimeFileName, string directory)
 {
     TFile* deadtimeFile = new TFile(deadtimeFileName.c_str(),"READ");
     TFile* histoFile = new TFile(histoFileName.c_str(),"UPDATE");
+    gDirectory->cd("/");
+    gDirectory->cd(directory.c_str());
 
     vector<Plots*> uncorrectedPlots;
     for(int i=0; i<NUMBER_OF_TARGETS; i++)
     {
         string name = positionNames[i];
-        uncorrectedPlots.push_back(new Plots(name,histoFile));
+        uncorrectedPlots.push_back(new Plots(name,histoFile,directory));
     }
 
     vector<Plots*> correctedPlots;
@@ -144,7 +146,7 @@ void correctForDeadtime(string histoFileName, string deadtimeFileName)
     for(int i=0; i<NUMBER_OF_TARGETS; i++)
     {
         string name = positionNames[i];
-        deadtimePlots.push_back(new Plots(name, deadtimeFile));
+        deadtimePlots.push_back(new Plots(name, deadtimeFile, directory));
     }
 
     // extract deadtime from waveform-mode fit
@@ -171,6 +173,7 @@ void correctForDeadtime(string histoFileName, string deadtimeFileName)
         TH1I* deadtimeHisto = deadtimePlots[i]->getDeadtimeHisto();
         if(!deadtimeHisto)
         {
+            cout << "Couldn't find deadtimeHisto for target " << i << endl;
             break;
         }
 
@@ -230,7 +233,6 @@ void correctForDeadtime(string histoFileName, string deadtimeFileName)
 
     }
     histoFile->Write();
-    deadtimeFile->Close();
     histoFile->Close();
 }
 
@@ -303,7 +305,7 @@ void getMonitorCounts(vector<long>& monitorCounts, TFile*& histoFile)
     }
 }
 
-void calculateCS(string histoFileName, string CSFileName, string expName, int runNumber)
+void calculateCS(string histoFileName, string directory, string CSFileName, string expName, int runNumber)
 {
     // Find number of events in the monitor for each target to use in scaling
     // cross-sections
@@ -316,12 +318,13 @@ void calculateCS(string histoFileName, string CSFileName, string expName, int ru
     getMonitorCounts(monitorCounts, histoFile);
 
     histoFile->cd("/");
+    gDirectory->cd(directory.c_str());
 
     vector<TH1I*> energyHistos;
     for(int i = 0; i<NUMBER_OF_TARGETS; i++)
     {
         string name = positionNames[i] + "CorrectedEnergy";
-        energyHistos.push_back((TH1I*)histoFile->Get(name.c_str()));
+        energyHistos.push_back((TH1I*)gDirectory->Get(name.c_str()));
     }
 
     // Loop through the relativistic kinetic energy histograms and use them

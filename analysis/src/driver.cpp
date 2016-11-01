@@ -1,5 +1,7 @@
 // project-specific classes
 #include "../include/analysisConstants.h"
+#include "../include/plottingConstants.h"
+
 #include "../include/raw.h"
 #include "../include/separate.h"
 #include "../include/histos.h"
@@ -45,6 +47,7 @@ int main(int, char* argv[])
     string DPPwaveformFileName = analysisDirectory + "DPPwaveform.root";
     string histoFileName = analysisDirectory + "histos.root";
     string CSFileName = analysisDirectory + "cross-sections.root";
+    string CSFileNameLowThresh = analysisDirectory + "cross-sections_low.root";
 
     string errorFileName = analysisDirectory + "error.txt";
     string tempFileName = analysisDirectory + "temp.root";
@@ -116,15 +119,17 @@ int main(int, char* argv[])
     // analyze the waveform-mode data, including peak-fitting and deadtime extraction
     //if(runWaveform)
 
-    waveform(processedTreeFileName, waveformFileName);
+    //waveform(processedTreeFileName, waveformFileName);
 
     histos(processedTreeFileName, histoFileName);
 
     // Apply deadtime correction to DPP-mode data
-    correctForDeadtime(histoFileName, histoFileName);
+    correctForDeadtime(histoFileName, histoFileName, dirs[2]);
+    correctForDeadtime(histoFileName, histoFileName, dirs[3]);
 
     // calculate cross sections
-    calculateCS(histoFileName,CSFileName,expName,runNumber);
+    calculateCS(histoFileName,dirs[2],CSFileName,expName,runNumber);
+    calculateCS(histoFileName,dirs[3],CSFileNameLowThresh,expName,runNumber);
 
     return 0;
 }

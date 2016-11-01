@@ -26,7 +26,7 @@ class CrossSection
         DataSet dataSet;
 };
 
-void calculateCS(std::string histoFileName, std::string CSFileName, std::string expName, int runNumber);
-void correctForDeadtime(std::string histoFileName, std::string waveformFileName);
+void calculateCS(std::string histoFileName, std::string directory, std::string CSFileName, std::string expName, int runNumber);
+void correctForDeadtime(std::string histoFileName, std::string deadtimeFileName, std::string directory);
 
 #endif
