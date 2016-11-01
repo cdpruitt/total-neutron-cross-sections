@@ -17,7 +17,7 @@ int main(int, char* argv[])
     string inputDirectory = argv[1];
     string outputFile = argv[2];
     string inFileName = inputDirectory + "/filesToRead.txt";
-    string outFileName = inputDirectory + outputFile;
+    string outFileName = inputDirectory + "/" + outputFile;
 
     ifstream inFile(inFileName);
     if(!inFile.is_open())
@@ -31,7 +31,7 @@ int main(int, char* argv[])
 
     while(inFile >> dummy)
     {
-        dummy = inputDirectory + dummy;
+        dummy = inputDirectory + "/" + dummy;
         fileNames.push_back(dummy);
     }
 
@@ -53,7 +53,7 @@ int main(int, char* argv[])
     }*/
 
     // clean up
-    //outFile->Write();
+    outFile->Write();
     outFile->Close();
 
     return 0;

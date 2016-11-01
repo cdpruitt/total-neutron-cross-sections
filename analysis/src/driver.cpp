@@ -31,9 +31,12 @@ int main(int, char* argv[])
     // location of directory where all analysis output will be stored
     string outputDirectoryName = argv[2];
 
+    // name of experimental directory where target information is located
+    string expName = argv[3];
+
     // run number of data - to figure out which targets were in which positions
     // during this run
-    int runNumber = stoi(argv[3]);
+    int runNumber = stoi(argv[4]);
 
     string analysisDirectory = argv[2];
     string rawTreeFileName = analysisDirectory + "raw.root";
@@ -118,10 +121,10 @@ int main(int, char* argv[])
     histos(processedTreeFileName, histoFileName);
 
     // Apply deadtime correction to DPP-mode data
-    correctForDeadtime(histoFileName, waveformFileName);
+    correctForDeadtime(histoFileName, histoFileName);
 
     // calculate cross sections
-    calculateCS(histoFileName,CSFileName,runNumber);
+    calculateCS(histoFileName,CSFileName,expName,runNumber);
 
     return 0;
 }

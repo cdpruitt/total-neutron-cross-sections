@@ -18,10 +18,11 @@
 #include "../include/branches.h"
 #include "../include/plots.h"
 #include "../include/histos.h"
+#include "../include/waveform.h"
 
 using namespace std;
 
-std::vector<long> microsPerTargetDPP(6,0);
+long totalMicros = 0;
 
 extern ProcessedEvent procEvent;
 
@@ -109,7 +110,6 @@ void fillHistos(vector<Plots*>& plots)
         // create TIME VARIABLES used for filling histograms
         double microTime;
         int microNo, prevMicroNo;
-        long totalMicros = 0;
 
         // create variables for DESCRIBING MICROPULSE TYPE (i.e., whether a
         // micropulse has a gamma at the start and keep track of the influence of
@@ -261,59 +261,57 @@ void fillHistos(vector<Plots*>& plots)
                     //if (procEvent.lgQ>50)
                     //if (procEvent.lgQ>500*exp(-(microTime-100)/87))
                     //if (procEvent.lgQ<30*rKE)
+
+                    // tag this event by its order in the micropulse
+                    if (microNo==prevMicroNo)
                     {
-                        // tag this event by its order in the micropulse
-                        if (microNo==prevMicroNo)
+                        // still in same micropulse => increment order counter
+                        orderInMicro++;
+                    }
+
+                    else
+                    {
+                        // new micropulse => return order counter to 1
+                        orderInMicro = 1;
+
+                        // new micropulse => return gamma indicator to false
+                        gammaInMicro = false;
+                    }
+
+                    /*****************************************************************/
+                    // Fill troubleshooting plots with event variables (rKE, microtime, etc.)
+                    TOF->Fill(microTime);
+                    triangle->Fill(microTime,procEvent.lgQ);
+                    sgQlgQ->Fill(procEvent.sgQ,procEvent.lgQ);
+                    QRatio->Fill(procEvent.sgQ/(double)procEvent.lgQ);
+                    rKElgQ->Fill(rKE,procEvent.lgQ);
+                    triangleRKE->Fill(microTime,rKE);
+                    microNoH->Fill(microNo);
+
+                    // populate only first three orderInMicro plots
+                    /*if(orderInMicro<4)
+                      {
+                      plots.orderInMicro[orderInMicro-1]->Fill(microTime);
+                      }*/
+
+                    /*****************************************************************/
+
+                    /*****************************************************************/
+                    // Fill target-specific plots
+
+                    if (procEvent.targetPos>0 && procEvent.targetPos<=NUMBER_OF_TARGETS)
+                    {
+                        plots[procEvent.targetPos-1]->getTOFHisto()->Fill(microTime);
+                        plots[procEvent.targetPos-1]->getEnergyHisto()->Fill(rKE);
+
+                        if(!gammaInMicro)
                         {
-                            // still in same micropulse => increment order counter
-                            orderInMicro++;
+                            //plots.energyHistosNoGamma[procEvent.targetPos-1]->Fill(rKE);
                         }
 
-                        else
+                        if(orderInMicro==1)
                         {
-                            // new micropulse => return order counter to 1
-                            orderInMicro = 1;
-
-                            // new micropulse => return gamma indicator to false
-                            gammaInMicro = false;
-                            totalMicros++;
-                        }
-
-                        /*****************************************************************/
-                        // Fill troubleshooting plots with event variables (rKE, microtime, etc.)
-                        TOF->Fill(microTime);
-                        triangle->Fill(microTime,procEvent.lgQ);
-                        sgQlgQ->Fill(procEvent.sgQ,procEvent.lgQ);
-                        QRatio->Fill(procEvent.sgQ/(double)procEvent.lgQ);
-                        rKElgQ->Fill(rKE,procEvent.lgQ);
-                        triangleRKE->Fill(microTime,rKE);
-                        microNoH->Fill(microNo);
-
-                        // populate only first three orderInMicro plots
-                        /*if(orderInMicro<4)
-                          {
-                          plots.orderInMicro[orderInMicro-1]->Fill(microTime);
-                          }*/
-
-                        /*****************************************************************/
-
-                        /*****************************************************************/
-                        // Fill target-specific plots
-
-                        if (procEvent.targetPos>0 && procEvent.targetPos<=NUMBER_OF_TARGETS)
-                        {
-                            plots[procEvent.targetPos-1]->getTOFHisto()->Fill(microTime);
-                            plots[procEvent.targetPos-1]->getEnergyHisto()->Fill(rKE);
-
-                            if(!gammaInMicro)
-                            {
-                                //plots.energyHistosNoGamma[procEvent.targetPos-1]->Fill(rKE);
-                            }
-
-                            if(orderInMicro==1)
-                            {
-                                //plots.TOFHistosFirstInMicro[procEvent.targetPos-1]->Fill(microTime);
-                            }
+                            //plots.TOFHistosFirstInMicro[procEvent.targetPos-1]->Fill(microTime);
                         }
 
                         // end of energy, time, cross-section gates on events
@@ -636,18 +634,27 @@ int histos(string sortedFileName, string histoFileName)
         {
             plots.push_back(new Plots(positionNames[i], histoFile));
         }
-
-        gDirectory->Delete("*Deadtime*;*");
-        gDirectory->Delete("*Corrected*;*");
     }
 
+
+    std::vector<long> macrosPerTarget;
+    std::vector<long> microsPerTarget;
+
     long totalMacros = 0;
-    long totalMicros = 0;
 
     gDirectory->cd("/");
     gDirectory->cd(dirs[0].c_str());
-    totalMacros = ((TH1I*)gDirectory->Get("macroNoH"))->GetEntries();
-    totalMicros = totalMacros*(MACRO_LENGTH/MICRO_LENGTH);
+
+    for(int i=0; i<NUMBER_OF_TARGETS; i++)
+    {
+        macrosPerTarget.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(i+2));
+        totalMacros+=macrosPerTarget.back();
+
+        microsPerTarget.push_back(macrosPerTarget.back()*(MACRO_LENGTH/MICRO_LENGTH));
+        totalMicros+=microsPerTarget.back();
+
+        cout << "Micropulses on target " << i+1 << ": " << microsPerTarget.back() << endl;
+    }
 
     int numberTotalTriggers = 0;
     for(Plots* p : plots)
@@ -655,11 +662,11 @@ int histos(string sortedFileName, string histoFileName)
         numberTotalTriggers += p->getTOFHisto()->GetEntries();
     }
 
-    cout << "Total number of macropulses: " << totalMacros << endl;
-    cout << "Total number of micropulses: " << totalMicros << endl;
-
     cout << "Total number of triggers: " << numberTotalTriggers << endl;
     cout << "Triggers/micropulse: " << numberTotalTriggers/(double)totalMicros << endl;
+
+    calculateDeadtime(microsPerTarget, plots);
+    histoFile->Write();
 
     // Modify plots
     /*for(int i=0; i<NUMBER_OF_TARGETS; i++)

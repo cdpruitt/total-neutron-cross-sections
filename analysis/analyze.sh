@@ -104,39 +104,41 @@ analyze ()
     runNumber=$3
     subrunNumber=$4
 
+
+
     if [ "$produceText" == true ]
     then
         printf "\nText output enabled... \n"
-        ./text $inputFileName
+        ./text "$inputFileName"
         exit # we just want the text output, so stop analysis here
     fi
 
     # Create directory to hold the output of our analysis
-    if [ ! -d $outputDirectoryName ]
+    if [ ! -d "$outputDirectoryName" ]
     then
-        mkdir $outputDirectoryName
+        mkdir "$outputDirectoryName"
     fi
 
     if [ "$overwriteHistos" == true ]
     then
         printf "\nOverwriting existing histogram file $outputDirectoryName"histos.root"...\n"
-        rm $outputDirectoryName"/histos.root"
+        rm "$outputDirectoryName/histos.root"
     fi
 
     if [ "$overwriteWaveforms" == true ]
     then
         printf "\nOverwriting existing waveform file $outputDirectoryName"waveform.root"...\n"
-        rm $outputDirectoryName"/waveform.root"
+        rm "$outputDirectoryName/waveform.root"
     fi
 
     # Send error messages to a text file
-    2>&1 | tee > $outputDirectoryName"error.txt"
+    2>&1 | tee > "$outputDirectoryName"error.txt
 
-    ./driver $inputFileName $outputDirectoryName $runNumber
+    ./driver "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber"
 
-    #if [ -s $outputDirectoryName"/temp.root" ]
+    #if [ -s "$outputDirectoryName/temp.root" ]
     #then
-    #    rm $outputDirectoryName"/temp.root"
+    #    rm "$outputDirectoryName/temp.root"
     #fi
 }
 
@@ -152,7 +154,8 @@ then
     printf "\nAnalyzing single event file $2...\n"
     inputFileName=$2
     outputDirectoryName=$3
-    analyze $inputFileName $outputDirectoryName -1
+    runNumber=$5
+    analyze "$inputFileName" "$outputDirectoryName" "$runNumber"
     exit
 fi
 
@@ -165,14 +168,14 @@ then
     # read input filepath and output filepath
     while read l
     do
-        filepaths=($l)
+        filepaths=("$l")
         if [[ ${filepaths[0]} -le $runNumber && ${filepaths[1]} -ge $runNumber ]]
         then
             datapath=${filepaths[2]}
             outpath=${filepaths[3]}
             break
         fi
-    done < ../$experiment/filepaths.txt
+    done < ../"$experiment"/filepaths.txt
 
     if [[ $datapath == "" ]]
     then
@@ -186,14 +189,14 @@ then
     printf "\nSorting single sub-run $inputFileName\n"
 
     # Start analysis
-    analyze $inputFileName $outputDirectoryName $runNumber
+    analyze "$inputFileName" "$outputDirectoryName" "$runNumber"
     exit
 fi
 
 # Analyze runs listed in runsToSort.txt
 if [[ $runlist = true && -a ../$experiment/runsToSort.txt ]]
 then
-    printf "\nRunlist mode enabled. Reading runs from ./runsToSort.txt..."
+    printf "\nRunlist mode enabled. Reading runs from ./runsToSort.txt...\n"
 
     # loop through all runs listed in runsToSort.txt
     while read runNumber; do
@@ -209,8 +212,8 @@ then
                 outpath=${tokens[3]}
                 break
             fi
-            echo $outpath
-        done < ../$experiment/filepaths.txt
+            echo "$outpath"
+        done < ../"$experiment"/filepaths.txt
 
         if [ $datapath == 0 ]
         then
@@ -223,7 +226,7 @@ then
         then
             # Sort all sub-runs in the specified run directory
             printf "Reading all subruns in specified run\n"
-            for f in $datapath/output/$runNumber/data-*;
+            for f in "$datapath"/output/"$runNumber"/data-*;
             do
                 subrunNo=$(echo $f | egrep -o '[0-9]+' | tail -1)
                 inputFileName="$datapath/output/$runNumber/data-$subrunNo.evt"
@@ -231,7 +234,7 @@ then
                 # Create directory to hold the output of our analysis
                 if [ ! -d "$outpath/analysis/$runNumber" ]
                 then
-                    mkdir $outpath/analysis/$runNumber
+                    mkdir "$outpath"/analysis/"$runNumber"
                 fi
 
                 outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
@@ -261,32 +264,32 @@ then
                     continue
                 fi
 
-                analyze $inputFileName $outputDirectoryName $runNumber
+                analyze "$inputFileName" "$outputDirectoryName" "$runNumber"
             done
 
             # Last, sum together histograms from all the runs just sorted
-            ./sumRun $runNumber $outpath
+            ./sumRun "$runNumber" "$outpath"
         else
             # Sort just the most recent sub-run in the specified run directory
-            subrunNo=$(ls -t $datapath/output/$runNumber/data-* | head -1 | egrep\
+            subrunNo=$(ls -t "$datapath/output/$runNumber/data-*" | head -1 | egrep\
                 -o '[0-9]+' | tail -1)
             inputFileName="$datapath/output/$runNumber/data-$subrunNo.evt"
             outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
             printf "\n***Starting sort of sub-run $subrunNo***\n"
 
             # Sort sub-run
-            analyze $inputFileName $outputDirectoryName
+            analyze "$inputFileName" "$outputDirectoryName"
         fi
-    done < ../$experiment/runsToSort.txt
-    ./sumAll $experiment
+    done < ../"$experiment"/runsToSort.txt
+    ./sumAll "$experiment"
     exit
 fi
 
 # Default behavior: sort only the most recent run (as determined by files
 # modified in defaultFilepath.txt in the experiment directory)
 
-echo $experiment
-read -r filepaths<../$experiment/defaultFilepath.txt
+echo "$experiment"
+read -r filepaths<../"$experiment"/defaultFilepath.txt
 datapath=${filepaths[0]}
 outpath=${filepaths[1]}
 
@@ -299,4 +302,4 @@ outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
 printf "\nSorting most recent run $outputDirectoryName\n"
 
 # Start sort
-analyze $inputFileName $outputDirectoryName
+analyze "$inputFileName" "$outputDirectoryName"

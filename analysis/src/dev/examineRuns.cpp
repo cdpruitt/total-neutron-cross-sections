@@ -2,9 +2,9 @@
 //
 // To run, start ROOT and run the following command (including quotes):
 //
-// .x examineRuns.cpp("filepath","run","runSuffix","subDir","histoType")
+// .x examineRuns.cpp("filepath","run","fileType","subDir","histoType")
 //
-// filepath = drive source (i.e., /data3/analysis)
+// filepath = drive source (i.e., /data3)
 // run = run to sort (i.e., 170)
 // fileType = type of root file (i.e., histos)
 // subDir = directory within ROOT file to look for plots (i.e., detS)
@@ -73,7 +73,7 @@ void examineRuns(string filePath, string run, string fileType, string subDir, st
     for(int i=0; i<CANVAS_WIDTH*CANVAS_HEIGHT; i++)
     {
         fileName.str("");
-        fileName << filePath.c_str() << "/analysis/run" << run.c_str() << "/"
+        fileName << filePath.c_str() << "/analysis/" << run.c_str() << "/"
             << std::setfill('0') << std::setw(4) << i << "/"
             << fileType << ".root";
         fileIn = new TFile(fileName.str().c_str(),"READ");

@@ -143,7 +143,7 @@ void correctForDeadtime(string histoFileName, string deadtimeFileName)
     vector<Plots*> deadtimePlots;
     for(int i=0; i<NUMBER_OF_TARGETS; i++)
     {
-        string name = positionNames[i] + "W";
+        string name = positionNames[i];
         deadtimePlots.push_back(new Plots(name, deadtimeFile));
     }
 
@@ -178,7 +178,7 @@ void correctForDeadtime(string histoFileName, string deadtimeFileName)
 
         for(int j=0; j<deadtimeBins; j++)
         {
-            deadtimeFraction.push_back(deadtimeHisto->GetBinContent(j)/(double)pow(10,6));
+            deadtimeFraction.push_back(deadtimeHisto->GetBinContent(j)/(double)pow(10,3));
         }
 
         // create deadtime-corrected histograms
@@ -236,11 +236,11 @@ void correctForDeadtime(string histoFileName, string deadtimeFileName)
 
 vector<Target*> getTargetOrder(string expName, int runNumber)
 {
-    expName = "../" + expName + "/targetOrder.txt";
-    ifstream dataFile(expName.c_str());
+    string targetOrderLocation = "../" + expName + "/targetOrder.txt";
+    ifstream dataFile(targetOrderLocation.c_str());
     if(!dataFile.is_open())
     {
-        std::cout << "Failed to find target order data in " << expName << std::endl;
+        std::cout << "Failed to find target order data in " << targetOrderLocation << std::endl;
         exit(1);
     }
 
@@ -286,8 +286,9 @@ vector<Target*> getTargetOrder(string expName, int runNumber)
 
     for(string s : targetOrder)
     {
+        string targetDataLocation = "../" + expName + "/targetData/" + s + ".txt";
         targets.push_back(
-                new Target("../tin/targetData/" + s + ".txt"));
+                new Target(targetDataLocation));
     }
     return targets;
 }
@@ -302,7 +303,7 @@ void getMonitorCounts(vector<long>& monitorCounts, TFile*& histoFile)
     }
 }
 
-void calculateCS(string histoFileName, string CSFileName, int runNumber)
+void calculateCS(string histoFileName, string CSFileName, string expName, int runNumber)
 {
     // Find number of events in the monitor for each target to use in scaling
     // cross-sections
@@ -332,7 +333,7 @@ void calculateCS(string histoFileName, string CSFileName, int runNumber)
     double energyValue;
     double energyError;
 
-    vector<Target*> targets = getTargetOrder("tin",runNumber);
+    vector<Target*> targets = getTargetOrder(expName,runNumber);
 
     TH1I* blankEnergy = energyHistos[0];
 
@@ -411,5 +412,6 @@ void calculateCS(string histoFileName, string CSFileName, int runNumber)
     }
 
     histoFile->Close();
+    CSFile->Write();
     CSFile->Close();
 }

@@ -27,6 +27,7 @@ extern TargetChangerEvent tcEvent;
 long separatedNumberOfCh0Waveforms = 0;
 long separatedNumberOfCh2Waveforms = 0;
 long separatedNumberOfCh4Waveforms = 0;
+long separatedNumberOfCh6Waveforms = 0;
 
 const double DEBUG_SCALEDOWN = 1; // (for debugging) only sort (total/DEBUG_SCALEDOWN) events
 
@@ -57,6 +58,12 @@ void fillRawTree(TTree* tree)
         {
             separatedNumberOfCh4Waveforms++;
         }
+
+        if(separatedEvent.chNo==6)
+        {
+            separatedNumberOfCh6Waveforms++;
+        }
+ 
     }
 }
 
@@ -189,6 +196,7 @@ void separateByChannel(string rawFileName, string tempFileName, vector<TTree*>& 
             // DPP mode
 
             separatedEvent.extTime = currentExtTime[separatedEvent.chNo/2];
+
             fillRawTree(orchardRaw[separatedEvent.chNo/2]);
         }
 

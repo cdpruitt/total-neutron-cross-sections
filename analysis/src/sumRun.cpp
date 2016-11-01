@@ -10,7 +10,7 @@
 using namespace std;
 
 const int NUMBER_OF_TARGETS = 6;
-const int MAX_SUBRUN_NUMBER = 30;
+const int MAX_SUBRUN_NUMBER = 99;
 
 const vector<string> targetNames = {"blank", "shortCarbon", "longCarbon", "Sn112", "NatSn", "Sn124"}; 
 
@@ -69,13 +69,13 @@ void readGraphs(
         // Calculate the name of the next sub-run
         if(i < 10)
         {
-            inFileName << driveName << "/analysis/run" << runNumber << "/000"
+            inFileName << driveName << "/analysis/" << runNumber << "/000"
                        << i << "/" << fileType << ".root";
         }
 
         else if(i < 100)
         {
-            inFileName << driveName << "/analysis/run" << runNumber << "/00"
+            inFileName << driveName << "/analysis/" << runNumber << "/00"
                        << i << "/" << fileType << ".root";
         }
 
@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
 
     // Create output file to contain summed histos
     stringstream outfileName;
-    outfileName << driveName << "/analysis/run" << runNumber << "/" << "sum.root";
+    outfileName << driveName << "/analysis/" << runNumber << "/" << "sum.root";
     TFile *outfile = new TFile(outfileName.str().c_str(),"RECREATE");
 
     averageGraphs(targetNames,energies,crossSections,crossSectionsError);

@@ -6,9 +6,9 @@
 
 const int ADC_RANGE  = 16383;  // Range of ADC voltage steps (internal units)
 
-const int THRESHOLD = 27;      // displacement from baseline needed to trigger
+const int THRESHOLD = 200;      // displacement from baseline needed to trigger
                                // software threshold
-const int DERIVATIVE_THRESHOLD = -8; // derivative needed to trigger software
+const int DERIVATIVE_THRESHOLD = -10; // derivative needed to trigger software
                                       // threshold
 const int PEAKFIT_WINDOW = 40; // set the size of the window (in number of
                                // samples) where peak-fitting is done on raw
@@ -16,17 +16,20 @@ const int PEAKFIT_WINDOW = 40; // set the size of the window (in number of
 const int PEAKFIT_OFFSET = -8; // set the offset of the peak-fitting window,
                                // relative to the raw trigger time (in samples)
 // Define time offset of waveforms relative to macropulse clock time
-const int WAVEFORM_OFFSET = -960; // in ns
+const int WAVEFORM_OFFSET = -1230; // in ns
 
 // After a trigger, prevent re-triggering on TRIGGER_HOLDOFF samples
 const int TRIGGER_HOLDOFF = 1; // in samples
 
 // If chi-square of a single-peak fit is worse than this, try fitting as a double-peak
-const float ERROR_LIMIT = 20.0;
+const float ERROR_LIMIT = 100.0;
 
 // If chi-square of the double peak fit is worse than this, throw trigger away
 // and generate error
-const float ERROR_LIMIT_2 = 50.0;
+const float ERROR_LIMIT_2 = 200.0;
+
+// reject all triggers that have ADC values > ECHO_THRESHOLD above baseline
+const float ECHO_THRESHOLD = 20;
 
 /*****************************************************************************/
 // Variables for calculating the baseline:

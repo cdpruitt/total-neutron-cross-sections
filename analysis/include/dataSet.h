@@ -45,9 +45,6 @@ class DataSet
         std::string reference;
 
         std::vector<DataPoint> data;
-        std::vector<double> energy;
-        std::vector<double> xsection;
-        std::vector<double> error;
 };
 
 #endif

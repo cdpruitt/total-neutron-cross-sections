@@ -211,6 +211,19 @@ struct fitData
     return cfdFunc->GetX(BASELINE,triggerTime-5,triggerTime+5);
 }*/
 
+bool testForEcho(vector<int>* waveform, int triggerSample)
+{
+    for(int i=triggerSample; i<triggerSample+PEAKFIT_WINDOW; i++)
+    {
+        if(waveform->at(i)>BASELINE+ECHO_THRESHOLD)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 fitData fitTrigger(int waveformNo, float triggerSample)
 {
     // A trigger has been detected on the current waveform; fitTrigger attempts
@@ -224,6 +237,12 @@ fitData fitTrigger(int waveformNo, float triggerSample)
 
     // check to make sure we don't run off the end of the waveform
     if(triggerSample+PEAKFIT_WINDOW >= procEvent.waveform->size())
+    {
+        return data;
+    }
+
+    // ignore peaks that go above baseline - these are echoes
+    if(testForEcho(procEvent.waveform, triggerSample))
     {
         return data;
     }
@@ -461,7 +480,7 @@ void processTrigger(int waveformNo, float triggerSample)
     else
     {
         numberBadFits++;
-        triggerList.push_back(triggerSample*SAMPLE_PERIOD);
+        //triggerList.push_back(triggerSample*SAMPLE_PERIOD);
     }
 
 }
@@ -515,12 +534,12 @@ void processWaveforms(TTree* ch4TreeWaveform, vector<Plots*>& plots)
         int totalEntries = ch4TreeWaveform->GetEntries();
         cout << "Total waveforms = " << totalEntries << endl;
 
-        TCanvas *mycan = (TCanvas*)gROOT->FindObject("mycan");
+        /*TCanvas *mycan = (TCanvas*)gROOT->FindObject("mycan");
 
         if(!mycan)
         {
             mycan = new TCanvas("mycan","mycan");
-        }
+        }*/
 
         // EVENT LOOP for sorting through channel-specific waveforms
         for(int j=0; j<totalEntries; j++)
@@ -631,7 +650,7 @@ void processWaveforms(TTree* ch4TreeWaveform, vector<Plots*>& plots)
                         //triggerH->Write();
             //cout << "Finished processing waveform " << j << endl << endl;
 
-            /*if(j==4)
+            /*if(j==10)
             {
                 break;
             }*/
@@ -651,23 +670,8 @@ void processWaveforms(TTree* ch4TreeWaveform, vector<Plots*>& plots)
     cout << endl;
 }
 
-void calculateDeadtime(TTree* ch4TreeWaveform, vector<Plots*>& plots)
+void calculateDeadtime(vector<long> microsPerTarget, vector<Plots*>& plots)
 {
-    setBranchesHistosW(ch4TreeWaveform);
-
-    int totalEntries = ch4TreeWaveform->GetEntries();
-
-    for(int i=0; i<totalEntries; i++)
-    {
-        ch4TreeWaveform->GetEntry(i);
-
-        if(procEvent.targetPos==0)
-        {
-            continue;
-        }
-        microsPerTargetWaveform[procEvent.targetPos-1] += 2*procEvent.waveform->size()/(double)MICRO_LENGTH;
-    }
-    
     vector<vector<double>> eventsPerBinPerMicro(NUMBER_OF_TARGETS,vector<double>(0));
 
     // "deadtimeFraction" records the fraction of time that the detector is dead, for
@@ -678,7 +682,7 @@ void calculateDeadtime(TTree* ch4TreeWaveform, vector<Plots*>& plots)
     // for each target,
     for(int i=0; i<NUMBER_OF_TARGETS; i++)
     {
-        if(microsPerTargetWaveform[i] <= 0)
+        if(microsPerTarget[i] <= 0)
         {
             break;
         }
@@ -689,7 +693,7 @@ void calculateDeadtime(TTree* ch4TreeWaveform, vector<Plots*>& plots)
 
         for(int j=0; j<TOF_BINS; j++)
         {
-            eventsPerBinPerMicro[i].push_back(tof->GetBinContent(j+1)/(double)microsPerTargetWaveform[i]);
+            eventsPerBinPerMicro[i].push_back(tof->GetBinContent(j+1)/(double)microsPerTarget[i]);
             deadtimeFraction[i].push_back(0);
         }
 
@@ -717,7 +721,7 @@ void calculateDeadtime(TTree* ch4TreeWaveform, vector<Plots*>& plots)
 
         for(int j=0; (size_t)j<deadtimeFraction[i].size(); j++)
         {
-            dtH->SetBinContent(j,1000000*deadtimeFraction[i][j]);
+            dtH->SetBinContent(j,1000*deadtimeFraction[i][j]);
             averageDeadtime += deadtimeFraction[i][j];
         }
         dtH->Write();
@@ -774,8 +778,23 @@ void waveform(string inFileName, string outFileName)
         }
     }
 
+    setBranchesHistosW(ch4TreeWaveform);
+
+    int totalEntries = ch4TreeWaveform->GetEntries();
+
+    for(int i=0; i<totalEntries; i++)
+    {
+        ch4TreeWaveform->GetEntry(i);
+
+        if(procEvent.targetPos==0)
+        {
+            continue;
+        }
+        microsPerTargetWaveform[procEvent.targetPos-1] += SAMPLE_PERIOD*procEvent.waveform->size()/(double)MICRO_LENGTH;
+    }
+
     // perform a manual dead-time correction
-    calculateDeadtime(ch4TreeWaveform,plots);
+    calculateDeadtime(microsPerTargetWaveform,plots);
 
     // Calculate cross-sections from waveforms' trigger time data
     //calculateCS(targets, waveformFile);

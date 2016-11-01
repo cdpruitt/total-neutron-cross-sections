@@ -15,9 +15,10 @@ DataSet::DataSet()
 
 DataSet::DataSet(std::vector<double> var1, std::vector<double> var2, std::vector<double> var3, std::string ref)
 {
-    energy = var1;
-    xsection = var2;
-    error = var3;
+    for(int i=0; (size_t)i<var1.size(); i++)
+    {
+        data.push_back(DataPoint(var1[i],0,var2[i],var3[i]));
+    }
 
     reference = ref;
 
@@ -42,10 +43,10 @@ DataSet::DataSet(string dataSetLocation)
 
     while(dataFile >> dum >> dum2 >> dum3)
     {
-        energy.push_back(dum);
-        xsection.push_back(dum2);
-        error.push_back(dum3);
+        data.push_back(DataPoint(dum, 0, dum2, dum3));
     }
+
+    createPlot(reference);
 }
 
 void DataSet::addPoint(DataPoint dataPoint)
@@ -121,16 +122,16 @@ const DataSet DataSet::plus(const DataSet& set2,const string& name)
     std::vector<double> sumXsection;
     std::vector<double> sumError;
 
-    sumEnergy = energy;
-    sumXsection = xsection;
-    sumError = error;
+    sumEnergy = getXValues();
+    sumXsection = getYValues();
+    sumError = getYErrors();
 
-    for (int i=0; (size_t)i<energy.size(); i++)
+    for (int i=0; (size_t)i<getXValues().size(); i++)
     {
-        if (energy[i] == set2.energy[i])
+        if (getXValues()[i] == set2.getXValues()[i])
         {
-            sumXsection[i] += set2.xsection[i];
-            sumError[i] += set2.error[i];
+            sumXsection[i] += set2.getYValues()[i];
+            sumError[i] += set2.getYErrors()[i];
         }
 
         else
@@ -186,16 +187,16 @@ const DataSet DataSet::minus(const DataSet& set2,const string& name)
     std::vector<double> sumXsection;
     std::vector<double> sumError;
 
-    sumEnergy = energy;
-    sumXsection = xsection;
-    sumError = error;
+    sumEnergy = getXValues();
+    sumXsection = getYValues();
+    sumError = getYErrors();
 
-    for (int i=0; (size_t)i<set2.energy.size(); i++)
+    for (int i=0; (size_t)i<set2.getXValues().size(); i++)
     {
-        if (energy[i] == set2.energy[i])
+        if (getXValues()[i] == set2.getXValues()[i])
         {
-            sumXsection[i] -= set2.xsection[i];
-            sumError[i] -= set2.error[i];
+            sumXsection[i] -= set2.getYValues()[i];
+            sumError[i] -= set2.getYErrors()[i];
         }
 
         else
@@ -306,22 +307,22 @@ const DataSet DataSet::divideBy(const DataSet& set2, const string& name)
     std::vector<double> sumXsection;
     std::vector<double> sumError;
 
-    sumEnergy = energy;
-    sumXsection = xsection;
-    sumError = error;
+    sumEnergy = getXValues();
+    sumXsection = getYValues();
+    sumError = getYErrors();
 
-    for (int i=0; (size_t)i<set2.energy.size(); i++)
+    for (int i=0; (size_t)i<set2.getXValues().size(); i++)
     {
-        if (energy[i] == set2.energy[i])
+        if (getXValues()[i] == set2.getXValues()[i])
         {
-            if(set2.xsection[i] != 0)
+            if(set2.getYValues()[i] != 0)
             {
-                sumXsection[i] /= set2.xsection[i];
+                sumXsection[i] /= set2.getYValues()[i];
             }
 
-            if(set2.error[i] != 0)
+            if(set2.getYErrors()[i] != 0)
             {
-                sumError[i] /= set2.error[i];
+                sumError[i] /= set2.getYErrors()[i];
             }
         }
 

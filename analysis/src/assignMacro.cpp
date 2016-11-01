@@ -42,8 +42,7 @@ void processDPPEvents(TFile*& sortedFile, vector<TTree*>& orchardRaw, vector<TTr
 
     long separatedNumberOfDPPs = 0;
 
-    // skip channel 6 (scavenger) events
-    for(int detIndex=2; detIndex<=4; detIndex+=2)
+    for(int detIndex=2; detIndex<NUMBER_OF_CHANNELS*2; detIndex+=2)
     {
         cerr << "Starting DPP processing on channel " << detIndex << endl;
 
@@ -77,6 +76,9 @@ void processDPPEvents(TFile*& sortedFile, vector<TTree*>& orchardRaw, vector<TTr
                 TIME_OFFSET = MACROPULSE_OFFSET;
                 break;
             case 4:
+                TIME_OFFSET = MACROPULSE_OFFSET;
+                break;
+            case 6:
                 TIME_OFFSET = MACROPULSE_OFFSET;
                 break;
             default:
@@ -129,7 +131,9 @@ void processDPPEvents(TFile*& sortedFile, vector<TTree*>& orchardRaw, vector<TTr
                 // timestamp wrapping back around to time zero
 
                 // move to the next macropulse of the target changer
-                cerr << "DPP/waveform mode switch at macroNo " << tcEvent.macroNo << endl;
+                cout << "DPP/waveform mode switch at macroNo " << tcEvent.macroNo << "\r";
+                fflush(stdout);
+
                 do
                 {
                     if (tcEvent.macroNo+1>=targetChangerTreeEntries)
@@ -182,7 +186,7 @@ void processDPPEvents(TFile*& sortedFile, vector<TTree*>& orchardRaw, vector<TTr
                 {
                     // this macropulse is the first macropulse of a new DPP mode
 
-                    cout << "modeChange = 1; new DPP mode at macroNo " << tcEvent.macroNo << endl;
+                    cout << "modeChange = 1; new DPP mode at macroNo " << tcEvent.macroNo << "\r";
                     fflush(stdout);
 
                     // Move detector event index forward until it reaches a new DPP mode period
@@ -388,7 +392,7 @@ void processWaveformEvents(TFile*& sortedFile, vector<TTree*>& orchardRawW, vect
 
     long separatedNumberOfWaveforms = 0;
 
-    for(int detIndex=0; detIndex<=4; detIndex+=2)
+    for(int detIndex=0; detIndex<NUMBER_OF_CHANNELS*2; detIndex+=2)
     {
         // Attach variables to correct waveform tree
         setBranchesSeparatedW(orchardRawW[detIndex/2]);

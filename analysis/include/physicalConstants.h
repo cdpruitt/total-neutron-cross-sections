@@ -12,15 +12,15 @@
 const double MACRO_FREQUENCY = 120;   // frequency of beam macropulses, in Hz
 const double MACRO_PERIOD = pow(10,9)/MACRO_FREQUENCY;
                                       // macropulse period, in ns
-const double MACRO_LENGTH = 650000;   // macropulse duration, in ns
+const double MACRO_LENGTH = 620000;   // macropulse duration, in ns
 const double MICRO_LENGTH = 1788.814; // micropulse duration, in ns
-const double FLIGHT_DISTANCE = 2672;  // detector distance from neutron
+const double FLIGHT_DISTANCE = 2532;  // detector distance from neutron
                                       // source, in cm
 
 // Digitizer constants
 
 const double SAMPLE_PERIOD = 2;       // digitizer sample rate, in ns
-const double MACROPULSE_OFFSET = 622; // timing delay between the digitizer (channel 0)
+const double MACROPULSE_OFFSET = 613; // timing delay between the digitizer (channel 0)
                                       // and the facility's RF clock (due to cable delay,
                                       // NIM logic, etc.), in ns
 // Nuclear physics constants
