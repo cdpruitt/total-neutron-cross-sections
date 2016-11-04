@@ -133,24 +133,26 @@ void printEvent(RawEvent& rawEvent, TextOutput& text)
                 *out << "| fine time stamp = " << left << setfill(' ') << setw(42) << rawEvent.fineTime << "|" << endl;
                 break;
 
-            /*case 3:
+            case 3:
                 // Maximum amplitude of pulse
-                *out << "| maximum amplitude of pulse = " << left << setfill(' ') << setw(49) << rawEvent.extras1 << "|" << endl;
+                *out << "| maximum amplitude of pulse = " << left << setfill(' ') << setw(49) << rawEvent.extTime << "|" << endl;
                 break;
 
             case 5:
                 // Positive zero-crossing and negative zero-crossing (for manual
                 // constant fraction discimination calculation)
-                *out << "| PZC = " << left << setfill(' ') << setw(54) << rawEvent.extras2 << "|" << endl;
-                *out << "| NZC = " << left << setfill(' ') << setw(54) << rawEvent.extras1 << "|" << endl;
+                *out << "| PZC = " << left << setfill(' ') << setw(54) << rawEvent.PZC << "|" << endl;
+                *out << "| NZC = " << left << setfill(' ') << setw(54) << rawEvent.NZC << "|" << endl;
                 break;
-
-            case 7:
+            /*case 7:
                 // fixed value of 0x12345678 (for diagnostics)
                 const unsigned int extras = (extras2 << 16) | extras1;
                 *out << "| Fixed value of 305419896 (0x12345678) outputted: " << left << setfill(' ') << setw(17) << rawEvent.extras << "|" << endl;
                 break;
-                */
+             */
+            default:
+                cerr << "Error: found unsupported value of EXTRAS. Exiting..." << endl;
+                exit(1);
         }
 
         *out << "| short gate charge = " << left << setw(40) << rawEvent.sgQ << "|" << endl;

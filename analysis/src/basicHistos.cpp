@@ -623,7 +623,7 @@ int histos(string sortedFileName, string histoFileName)
         exit(1);
     }
 
-    TTree* ch0Tree = (TTree*)sortedFile->Get("targetChangerTree");
+    TTree* ch0Tree = (TTree*)sortedFile->Get("ch0ProcessedTree");
     TTree* ch2Tree = (TTree*)sortedFile->Get("ch2ProcessedTree");
     TTree* ch4Tree = (TTree*)sortedFile->Get("ch4ProcessedTree");
 //    TTree* ch6Tree = (TTree*)sortedFile->Get("ch6ProcessedTree");

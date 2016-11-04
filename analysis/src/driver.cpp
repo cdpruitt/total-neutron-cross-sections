@@ -79,16 +79,19 @@ int main(int, char* argv[])
     TFile* processedFile = new TFile(processedFileName.c_str(),"READ");
     if(!processedFile->IsOpen())
     {
-        vector<TTree*> orchardRaw;
-        vector<TTree*> orchardRawW;
-
-        // separate all data by channel and event type
-        separateByChannel(rawTreeFileName, tempFileName, orchardRaw, orchardRawW);
+        //vector<TTree*> orchardRaw;
+        //vector<TTree*> orchardRawW;
 
         vector<TTree*> orchardProcessed; // channel-specific DPP events assigned to macropulses
         vector<TTree*> orchardProcessedW;// channel-specific waveform events assigned to macropulses
 
         processedFile = new TFile(processedFileName.c_str(),"CREATE");
+
+        // separate all data by channel and event type
+        separateByChannel(rawTreeFileName, processedFileName, orchardProcessed, orchardProcessedW);
+
+        // uncomment for NEVT_AGGR = 10 behavior
+        /*
 
         // Next, extract target changer events from the input tree and add to the
         // target changer trees (DPP and waveform), assigning a macropulse to each
@@ -100,6 +103,7 @@ int main(int, char* argv[])
         // events, we can assign detector events to the correct macropulse.
         processDPPEvents(processedFile, orchardRaw, orchardProcessed);
         processWaveformEvents(processedFile, orchardRawW, orchardProcessedW);
+        */
 
         vetoEvents(orchardProcessed[2],orchardProcessed[3]);
 
