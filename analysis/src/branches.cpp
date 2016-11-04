@@ -8,6 +8,7 @@
 RawEvent rawEvent;
 SeparatedEvent separatedEvent;
 ProcessedEvent procEvent;
+ProcessedEvent vetoEvent;
 TargetChangerEvent tcEvent;
 
 // Used to connect a channel-specific tree to DPP event variables so we can
@@ -100,6 +101,29 @@ void setBranchesSeparatedW(TTree* tree)
     tree->SetBranchAddress("waveform",&separatedEvent.waveform);
 }
 
+void setBranchesProcessed(TTree* tree)
+{
+   tree->SetBranchAddress("macroNo",&procEvent.macroNo);
+   tree->SetBranchAddress("macroTime",&procEvent.macroTime);
+   tree->SetBranchAddress("evtNo",&procEvent.evtNo);
+   tree->SetBranchAddress("completeTime",&procEvent.completeTime);
+   tree->SetBranchAddress("targetPos",&procEvent.targetPos);
+   tree->SetBranchAddress("sgQ",&procEvent.sgQ);
+   tree->SetBranchAddress("lgQ",&procEvent.lgQ);
+   tree->SetBranchAddress("waveform",&procEvent.waveform);
+}
+
+void setBranchesVeto(TTree* tree)
+{
+   tree->SetBranchAddress("macroNo",&vetoEvent.macroNo);
+   tree->SetBranchAddress("macroTime",&vetoEvent.macroTime);
+   tree->SetBranchAddress("evtNo",&vetoEvent.evtNo);
+   tree->SetBranchAddress("completeTime",&vetoEvent.completeTime);
+   tree->SetBranchAddress("targetPos",&vetoEvent.targetPos);
+   tree->SetBranchAddress("sgQ",&vetoEvent.sgQ);
+   tree->SetBranchAddress("lgQ",&vetoEvent.lgQ);
+   tree->SetBranchAddress("waveform",&vetoEvent.waveform);
+}
 
 void setBranchesProcessedTC(TTree* tree)
 {

@@ -1,5 +1,5 @@
 Name:       NatSn
-Length:     1.373 cm
-Diameter:   0.827 cm
-Mass:       5.3286 g
+Length:     1.368 cm
+Diameter:   0.824 cm
+Mass:       5.3263 g
 Molar Mass: 118.7 g/mol

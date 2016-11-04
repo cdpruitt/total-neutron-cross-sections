@@ -626,7 +626,8 @@ int histos(string sortedFileName, string histoFileName)
     TTree* ch0Tree = (TTree*)sortedFile->Get("targetChangerTree");
     TTree* ch2Tree = (TTree*)sortedFile->Get("ch2ProcessedTree");
     TTree* ch4Tree = (TTree*)sortedFile->Get("ch4ProcessedTree");
-    TTree* ch6Tree = (TTree*)sortedFile->Get("ch6ProcessedTree");
+//    TTree* ch6Tree = (TTree*)sortedFile->Get("ch6ProcessedTree");
+    TTree* ch6Tree = (TTree*)sortedFile->Get("cleanTree");
     TTree* ch0TreeW = (TTree*)sortedFile->Get("ch0ProcessedTreeW");
     TTree* ch2TreeW = (TTree*)sortedFile->Get("ch2ProcessedTreeW");
     TTree* ch4TreeW = (TTree*)sortedFile->Get("ch4ProcessedTreeW");
@@ -673,7 +674,7 @@ int histos(string sortedFileName, string histoFileName)
     }*/
 
 
-    histoFile->Write();
+    //histoFile->Write();
 
     // Modify plots
     /*for(int i=0; i<NUMBER_OF_TARGETS; i++)

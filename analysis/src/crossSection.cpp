@@ -22,6 +22,8 @@
 
 using namespace std;
 
+const double BLANK_MON_SCALING = 1;
+
 CrossSection::CrossSection()
 {
 }
@@ -352,7 +354,7 @@ void calculateCS(string histoFileName, string directory, string CSFileName, stri
         int numberOfBins = blankEnergy->GetNbinsX();
 
         long targetMonCounts = monitorCounts[i];
-        long blankMonCounts = monitorCounts[0];
+        long blankMonCounts = BLANK_MON_SCALING*monitorCounts[0];
         if(targetMonCounts == 0 || blankMonCounts == 0)
         {
             cerr << "Error - didn't find any monitor counts for target while trying to calculate cross sections. Exiting..." << endl;

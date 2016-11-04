@@ -79,7 +79,7 @@ void processDPPEvents(TFile*& sortedFile, vector<TTree*>& orchardRaw, vector<TTr
                 TIME_OFFSET = MACROPULSE_OFFSET;
                 break;
             case 6:
-                TIME_OFFSET = MACROPULSE_OFFSET;
+                TIME_OFFSET = MACROPULSE_OFFSET-VETO_OFFSET;
                 break;
             default:
                 cerr << "Error: non-existent channel index given by detIndex" << endl;

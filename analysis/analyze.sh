@@ -16,6 +16,9 @@
 #    -s | analyze a single event file, specified by run and subrun numbers
 #       | (e.g., ./analyze -s <run number> <subrun number>)
 #-------+-----------------------------------------------------------------------
+#    -c | analyze a chunk of subruns, specified by run, first, and last subruns
+#       | (e.g., ./analyze -s <run number> <subrun number>)
+#-------+-----------------------------------------------------------------------
 #    -r | for each run given in ../<experiment>/runsToSort.txt, analyze the most
 #       | recent subrun
 #       | (e.g., ./analyze -r)
@@ -54,13 +57,16 @@ fi
 #   - not to produce text output of event data
 
 # Parse runtime flags
-while getopts "fsratow" opt; do
+while getopts "fscratow" opt; do
     case ${opt} in
         f)
             fullFilePath=true
             ;;
         s)
             runSubrunPath=true
+            ;;
+        c)
+            runChunk=true
             ;;
         r)
             runlist=true
@@ -80,6 +86,7 @@ while getopts "fsratow" opt; do
             printf "\nInvalid option: -$OPTARG.\n\nValid options are:"
             printf "\n    -f (analyze a single file, given as filepath)\n"
             printf "\n    -s (analyze a single file, given as runNumber subRunNumber)\n"
+            printf "\n    -c (analyze a chunk of subruns, given as runNumber, first subRunNumber, last subRunNumber)\n"
             printf "\n    -r (analyze runs listed in ../<experiment>/runsToSort.txt)\n"
             printf "\n    -a (if using -r, read ALL subruns in each run, not just the most recent)\n"
             printf "\n    -t (produce text output of event data instead of doing full analysis)\n"
@@ -158,6 +165,47 @@ then
     analyze "$inputFileName" "$outputDirectoryName" "$runNumber"
     exit
 fi
+
+if [ "$runChunk" = true ]
+then
+    printf "\nAnalyzing chunk of subruns in $2...\n"
+    runNumber=$2
+    lowSubrun=$3
+    highSubrun=$4
+    subrunNo="$lowSubrun"
+    while [ $subrunNo -le $highSubrun ]
+    do
+        # read input filepath and output filepath
+        while read l
+        do
+            filepaths=($l)
+            if [[ ${filepaths[0]} -le $runNumber && ${filepaths[1]} -ge $runNumber ]]
+            then
+                datapath=${filepaths[2]}
+                outpath=${filepaths[3]}
+                break
+            fi
+        done < ../"$experiment"/filepaths.txt
+
+        if [[ $datapath == "" ]]
+        then
+            echo "Failed to find filepath to input data. Exiting..."
+            exit
+        fi
+
+        inputFileName="$datapath/output/$runNumber/data-$subrunNo.evt"
+        outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
+
+        printf "\nSorting sub-run $inputFileName\n"
+
+        # Start analysis
+        analyze "$inputFileName" "$outputDirectoryName" "$runNumber"
+        subrunNo=$(printf "%04d" $((10#$subrunNo+1)))
+    done
+    exit
+fi
+
+
 
 # Analyze a single event file, specified by its run number and subrun number
 if [ "$runSubrunPath" = true ]

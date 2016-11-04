@@ -1,5 +1,5 @@
 Name:       Sn124
-Length:     1.371 cm
-Diameter:   0.827 cm
-Mass:       5.5505 g
+Length:     1.373 cm
+Diameter:   0.824 cm
+Mass:       5.5492 g
 Molar Mass: 123.9 g/mol

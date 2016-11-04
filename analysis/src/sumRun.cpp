@@ -10,7 +10,7 @@
 using namespace std;
 
 const int NUMBER_OF_TARGETS = 6;
-const int MAX_SUBRUN_NUMBER = 99;
+const int MAX_SUBRUN_NUMBER = 15;
 
 const vector<string> targetNames = {"blank", "shortCarbon", "longCarbon", "Sn112", "NatSn", "Sn124"}; 
 
@@ -88,7 +88,6 @@ void readGraphs(
         // Attempt to open the sub-run
         if(!fileExists(inFileName.str()))
         {
-            cout << "Can't open subrun " << runNumber << " " << i << endl;
             continue;
         }
 
@@ -180,11 +179,11 @@ int main(int argc, char *argv[])
 {
     string runNumber = argv[1];
     string driveName = argv[2];
-    string fileName = argv[3];
 
     // create vector for holding the energies where the cross sections
     // were calculated
     vector<vector<vector<double>*>*> energies;
+    vector<vector<vector<double>*>*> energiesLowThresh;
 
     // create vectors for holding cross section data:
     // crossSections[target number]->at(subrun number)->at(data point)
@@ -194,7 +193,7 @@ int main(int argc, char *argv[])
     vector<vector<vector<double>*>*> crossSectionsErrorLowThresh;
 
     readGraphs(runNumber, driveName, "cross-sections", targetNames, energies, crossSections, crossSectionsError);
-    readGraphs(runNumber, driveName, "cross-sections_low",targetNames,energies,crossSectionsLowThresh, crossSectionsErrorLowThresh);
+    readGraphs(runNumber, driveName, "cross-sections_low",targetNames,energiesLowThresh,crossSectionsLowThresh, crossSectionsErrorLowThresh);
 
     // Create output file to contain summed histos
     stringstream outfileName;

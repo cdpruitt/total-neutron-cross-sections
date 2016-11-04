@@ -29,8 +29,6 @@ long separatedNumberOfCh2Waveforms = 0;
 long separatedNumberOfCh4Waveforms = 0;
 long separatedNumberOfCh6Waveforms = 0;
 
-const double DEBUG_SCALEDOWN = 1; // (for debugging) only sort (total/DEBUG_SCALEDOWN) events
-
 void fillRawTree(TTree* tree)
 {
     // To save only 1 DPP event's waveform in every 10000 events, uncomment this
@@ -154,7 +152,7 @@ void separateByChannel(string rawFileName, string tempFileName, vector<TTree*>& 
     
     int totalEntries = inputTree->GetEntries();
 
-    totalEntries /= DEBUG_SCALEDOWN; // for debugging:
+    totalEntries /= SCALEDOWN; // for debugging:
                                      // use to separate only a subset of total
                                      // events and ignore the rest
 
@@ -267,7 +265,7 @@ void processTargetChanger(string rawFileName, TFile*& sortedFile)
 
     // only use first 10% of entries (for debugging)
     // uncomment to use
-    totalEntries /= DEBUG_SCALEDOWN;
+    totalEntries /= SCALEDOWN;
 
     int currentExtTime = 0;
 

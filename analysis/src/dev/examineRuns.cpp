@@ -13,7 +13,7 @@
 void examineRuns(string filePath, string run, string fileType, string subDir, string histoType)
 {
     const unsigned int CANVAS_WIDTH = 6;
-    const unsigned int CANVAS_HEIGHT = 4;
+    const unsigned int CANVAS_HEIGHT = 8;
 
     //gROOT->SetStyle("Plain");
     gStyle->SetOptStat(0);
@@ -80,11 +80,11 @@ void examineRuns(string filePath, string run, string fileType, string subDir, st
         if(!fileIn->IsOpen())
         {
             cout << "Can't open input file " << i << "." << endl;
-            break;
+            continue;
         }
 
         canvas->cd(i+1);
-        gPad->SetLogx();
+        //gPad->SetLogx();
 
         if(subDir.c_str())
         {

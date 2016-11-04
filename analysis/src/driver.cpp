@@ -8,6 +8,7 @@
 #include "../include/plots.h"
 #include "../include/waveform.h"
 #include "../include/crossSection.h"
+#include "../include/vetoEvents.h"
 
 // ROOT library classes
 #include "TFile.h"
@@ -42,7 +43,7 @@ int main(int, char* argv[])
 
     string analysisDirectory = argv[2];
     string rawTreeFileName = analysisDirectory + "raw.root";
-    string processedTreeFileName = analysisDirectory + "sorted.root";
+    string processedFileName = analysisDirectory + "sorted.root";
     string waveformFileName = analysisDirectory + "waveform.root";
     string DPPwaveformFileName = analysisDirectory + "DPPwaveform.root";
     string histoFileName = analysisDirectory + "histos.root";
@@ -75,8 +76,8 @@ int main(int, char* argv[])
     /*************************************************************************/
     /* "Process" raw events by assigning time and target data */
     /*************************************************************************/
-    TFile* processedTreeFile = new TFile(processedTreeFileName.c_str(),"READ");
-    if(!processedTreeFile->IsOpen())
+    TFile* processedFile = new TFile(processedFileName.c_str(),"READ");
+    if(!processedFile->IsOpen())
     {
         vector<TTree*> orchardRaw;
         vector<TTree*> orchardRawW;
@@ -87,25 +88,27 @@ int main(int, char* argv[])
         vector<TTree*> orchardProcessed; // channel-specific DPP events assigned to macropulses
         vector<TTree*> orchardProcessedW;// channel-specific waveform events assigned to macropulses
 
-        processedTreeFile = new TFile(processedTreeFileName.c_str(),"CREATE");
+        processedFile = new TFile(processedFileName.c_str(),"CREATE");
 
         // Next, extract target changer events from the input tree and add to the
         // target changer trees (DPP and waveform), assigning a macropulse to each
         // target changer event. 
 
-        processTargetChanger(rawTreeFileName, processedTreeFile);
+        processTargetChanger(rawTreeFileName, processedFile);
 
         // Last, now that the macropulse structure is assigned by the target changer
         // events, we can assign detector events to the correct macropulse.
-        processDPPEvents(processedTreeFile, orchardRaw, orchardProcessed);
-        processWaveformEvents(processedTreeFile, orchardRawW, orchardProcessedW);
+        processDPPEvents(processedFile, orchardRaw, orchardProcessed);
+        processWaveformEvents(processedFile, orchardRawW, orchardProcessedW);
+
+        vetoEvents(orchardProcessed[2],orchardProcessed[3]);
 
         //cout << "Total number of ch0 waveform-mode events processed = " << numberOfCh0Waveforms << endl;
        // cout << "Total number of ch2 waveform-mode events processed = " << numberOfCh2Waveforms << endl;
        //   cout << "Total number of ch4 waveform-mode events processed = " << numberOfCh4Waveforms << endl;
 
-        processedTreeFile->Write();
-        processedTreeFile->Close();
+        processedFile->Write();
+        processedFile->Close();
     }
 
     else
@@ -119,9 +122,9 @@ int main(int, char* argv[])
     // analyze the waveform-mode data, including peak-fitting and deadtime extraction
     //if(runWaveform)
 
-    //waveform(processedTreeFileName, waveformFileName);
+    //waveform(processedFileName, waveformFileName);
 
-    histos(processedTreeFileName, histoFileName);
+    histos(processedFileName, histoFileName);
 
     // Apply deadtime correction to DPP-mode data
     correctForDeadtime(histoFileName, histoFileName, dirs[2]);

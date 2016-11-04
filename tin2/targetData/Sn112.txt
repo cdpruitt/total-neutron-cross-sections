@@ -1,5 +1,5 @@
 Name:       Sn112
-Length:     1.369 cm
-Diameter:   0.825 cm
-Mass:       4.9749 g
+Length:     1.365 cm
+Diameter:   0.824 cm
+Mass:       4.9720 g
 Molar Mass: 111.9 g/mol
