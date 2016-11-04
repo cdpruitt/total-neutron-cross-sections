@@ -78,6 +78,7 @@ struct TargetChangerEvent
     unsigned int modeChange; // indicate the first event after a mode change
     double macroTime; // the event's time-zero reference (the macropulse start)
     unsigned int targetPos; // target position
+    unsigned int lgQ; // the event's long integrated charge gate
 };
 
 #endif

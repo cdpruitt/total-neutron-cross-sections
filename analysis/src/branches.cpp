@@ -79,6 +79,7 @@ void branchTargetChanger(TTree*& tree)
     tree->Branch("macroTime",&tcEvent.macroTime,"macroTime/d");
     tree->Branch("modeChange",&tcEvent.modeChange,"modeChange/i");
     tree->Branch("targetPos",&tcEvent.targetPos,"targetPos/i");
+    tree->Branch("lgQ",&tcEvent.lgQ,"lgQ/i");
 }
 
 void setBranchesSeparated(TTree* tree)

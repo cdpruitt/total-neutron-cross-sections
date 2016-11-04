@@ -10,7 +10,7 @@ extern ProcessedEvent vetoEvent;
 
 using namespace std;
 
-double VETO_WINDOW = 100; // in ns
+double VETO_WINDOW = 10; // in ns
 
 void vetoEvents(TTree*& eventTree, TTree*& vetoTree)
 {
@@ -21,7 +21,7 @@ void vetoEvents(TTree*& eventTree, TTree*& vetoTree)
     TTree* cleanTree = new TTree("cleanTree","cleanTree");
     branchProc(cleanTree);
 
-    // vetoTree holds events that have been vetoed
+    // dirtyTree holds events that have been vetoed
     TTree* dirtyTree = new TTree("dirtyTree","dirtyTree");
     branchProc(dirtyTree);
 
@@ -93,4 +93,7 @@ void vetoEvents(TTree*& eventTree, TTree*& vetoTree)
         // event survived veto, so add to cleanTree
         cleanTree->Fill();
     }
+
+    cleanTree->Write();
+    dirtyTree->Write();
 }

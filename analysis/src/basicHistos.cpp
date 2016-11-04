@@ -352,7 +352,7 @@ void fillHistos()
             }
         }
 
-        if(i==2 || i==3)
+        if(i==2)
         {
             cout << "Processed " << totalEntries << " in " << dirs[i] << " histograms." << endl;
 
@@ -627,7 +627,7 @@ int histos(string sortedFileName, string histoFileName)
     TTree* ch2Tree = (TTree*)sortedFile->Get("ch2ProcessedTree");
     TTree* ch4Tree = (TTree*)sortedFile->Get("ch4ProcessedTree");
 //    TTree* ch6Tree = (TTree*)sortedFile->Get("ch6ProcessedTree");
-    TTree* ch6Tree = (TTree*)sortedFile->Get("cleanTree");
+    TTree* ch6Tree = (TTree*)sortedFile->Get("ch4ProcessedTree");
     TTree* ch0TreeW = (TTree*)sortedFile->Get("ch0ProcessedTreeW");
     TTree* ch2TreeW = (TTree*)sortedFile->Get("ch2ProcessedTreeW");
     TTree* ch4TreeW = (TTree*)sortedFile->Get("ch4ProcessedTreeW");

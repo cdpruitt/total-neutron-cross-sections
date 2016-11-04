@@ -105,7 +105,7 @@ int main(int, char* argv[])
         processWaveformEvents(processedFile, orchardRawW, orchardProcessedW);
         */
 
-        vetoEvents(orchardProcessed[2],orchardProcessed[3]);
+        //vetoEvents(orchardProcessed[2],orchardProcessed[3]);
 
         //cout << "Total number of ch0 waveform-mode events processed = " << numberOfCh0Waveforms << endl;
        // cout << "Total number of ch2 waveform-mode events processed = " << numberOfCh2Waveforms << endl;

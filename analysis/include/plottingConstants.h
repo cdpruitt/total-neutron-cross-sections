@@ -9,7 +9,7 @@
 /*****************************************************************************/
 /* Plotting constants*/
 
-const double ENERGY_LOWER_BOUND = 3;   // lower bound of cross-section plots, in MeV
+const double ENERGY_LOWER_BOUND = 6;   // lower bound of cross-section plots, in MeV
 const double ENERGY_UPPER_BOUND = 300; // upper bound of cross-section plots, in MeV
 const int NUMBER_ENERGY_BINS = 50;    // for plots with energy units as abscissa
 

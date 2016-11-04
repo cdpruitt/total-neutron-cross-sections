@@ -73,6 +73,9 @@ long rawNumberOfEvents = 0;
 long rawNumberOfDPPs = 0;
 long rawNumberOfWaveforms = 0;
 
+long monEvents = 0;
+long detEvents = 0;
+
 // read a word off the input file and store in a variable
 bool readWord(ifstream& evtfile, unsigned int& variable)
 {
@@ -260,6 +263,16 @@ void readRawData(string inFileName, string outFileName)
 
         // add event to tree
 
+        if(rawEvent.chNo==2)
+        {
+            monEvents++;
+        }
+
+        if(rawEvent.chNo==4)
+        {
+            detEvents++;
+        }
+
         tree->Fill();
 
         // print progress every 10000 events
@@ -275,6 +288,8 @@ void readRawData(string inFileName, string outFileName)
     cout << "Total events: " << rawNumberOfEvents << endl;
     cout << "Total number of DPP-mode events processed = " << rawNumberOfDPPs << endl;
     cout << "Total number of waveform-mode events processed = " << rawNumberOfWaveforms << endl;
+
+    cout << "Ratio of detector events/monitor events, before separation: " << (double) detEvents/monEvents << endl;
 
     inFile.close();
     outFile->Write();

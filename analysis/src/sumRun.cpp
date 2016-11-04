@@ -10,7 +10,7 @@
 using namespace std;
 
 const int NUMBER_OF_TARGETS = 6;
-const int MAX_SUBRUN_NUMBER = 15;
+const int MAX_SUBRUN_NUMBER = 99;
 
 const vector<string> targetNames = {"blank", "shortCarbon", "longCarbon", "Sn112", "NatSn", "Sn124"}; 
 
