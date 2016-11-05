@@ -10,7 +10,7 @@
 /* Plotting constants*/
 
 const double ENERGY_LOWER_BOUND = 6;   // lower bound of cross-section plots, in MeV
-const double ENERGY_UPPER_BOUND = 300; // upper bound of cross-section plots, in MeV
+const double ENERGY_UPPER_BOUND = 600; // upper bound of cross-section plots, in MeV
 const int NUMBER_ENERGY_BINS = 50;    // for plots with energy units as abscissa
 
 const int TOF_RANGE = MICRO_LENGTH+1; // upper bound of time-of-flight plots, in ns

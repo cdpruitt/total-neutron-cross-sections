@@ -70,6 +70,12 @@ DataPoint operator-(const DataPoint& minuend, const DataPoint& subtrahend)
     return outputDataPoint;
 }
 
+DataPoint operator/(const DataPoint& dividend, const double divisor)
+{
+    return DataPoint(dividend.getXValue(), dividend.getXError(),
+                     dividend.getYValue()/divisor, dividend.getYError()/divisor);
+}
+
 DataPoint operator/(const DataPoint& dividend, const DataPoint& divisor)
 {
     if(divisor.getXValue()<=0 || divisor.getYValue()<=0)

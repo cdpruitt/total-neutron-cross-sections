@@ -27,7 +27,7 @@ const int NUMBER_OF_CHANNELS = 4;
 const double SCALEDOWN = 1; // (for debugging) only sort (total/SCALEDOWN) events
 
 // experimentally-determined  digitizer deadtime
-const int DEADTIME_PERIOD = 156;
+const int DEADTIME_PERIOD = 152;
 
 // Indicate the range of times considered to be gamma rays (for the purposes of
 // counting gamma rays)

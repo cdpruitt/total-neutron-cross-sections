@@ -292,12 +292,14 @@ void separateByChannel(string rawFileName, string sortedFileName, vector<TTree*>
                     // clear finetime for monitor events!
                     separatedEvent.fineTime=0;
                 case 4:
+                //case 5:
                 case 6:
                     addDetectorEvent(evtNo, extTime, separatedEvent.chNo, 
                             orchardProcessed[separatedEvent.chNo/2]);
                     // main detector event
                     break;
                 default:
+                    continue;
                     cout << "Error: could not process event on channel " << separatedEvent.chNo << endl;
             }
 

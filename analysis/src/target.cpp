@@ -61,7 +61,6 @@ Target::Target(string targetDataLocation)
             exit(1);
         }
     }
-
 }
 
 string Target::getName()

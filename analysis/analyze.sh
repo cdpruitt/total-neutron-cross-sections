@@ -330,7 +330,7 @@ then
             analyze "$inputFileName" "$outputDirectoryName"
         fi
     done < ../"$experiment"/runsToSort.txt
-    ./sumAll "$experiment"
+    #./sumAll "$experiment"
     exit
 fi
 

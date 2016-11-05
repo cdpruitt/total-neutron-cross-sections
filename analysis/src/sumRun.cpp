@@ -7,32 +7,32 @@
 #include "TGraphErrors.h"
 #include "TMath.h"
 
+#include "../include/dataSet.h"
+
 using namespace std;
 
-const int NUMBER_OF_TARGETS = 6;
 const int MAX_SUBRUN_NUMBER = 99;
 
-const vector<string> targetNames = {"blank", "shortCarbon", "longCarbon", "Sn112", "NatSn", "Sn124"}; 
+//const vector<string> targetNames = {"shortCarbon", "longCarbon", "Sn112", "NatSn", "Sn124"}; 
+const vector<string> targetNames = {"NatPb", "longCarbon", "Sn112", "NatSn", "Sn124"};
 
 // Extract each point from a graph and store their positions in two vectors,
 // xValues and yValues
-void extractGraphData(
-        TGraphErrors* graph,
-        vector<double>* xValues,
-        vector<double>* yValues,
-        vector<double>* yError)
+DataSet extractGraphData(TGraphErrors* graph, string name)
 {
     int numPoints = graph->GetN();
     
-    xValues->resize(numPoints);
-    yValues->resize(numPoints);
-    yError->resize(numPoints);
+    vector<double> xValues(numPoints);
+    vector<double> yValues(numPoints);
+    vector<double> yErrors(numPoints);
 
     for(int k=0; k<numPoints; k++)
     {
-        graph->GetPoint(k,xValues->at(k),yValues->at(k));
-        yError->at(k) = graph->GetErrorY(k);
+        graph->GetPoint(k,xValues[k],yValues[k]);
+        yErrors[k] = graph->GetErrorY(k);
     }
+
+    return DataSet(xValues,yValues,yErrors,name);
 }
 
 bool fileExists(string fileName)
@@ -41,23 +41,16 @@ bool fileExists(string fileName)
     return infile.good();
 }
 
-void readGraphs(
+vector<DataSet> readGraphs(
         string runNumber,
         string driveName,
         string fileType,
-        vector<string> targets,
-        vector<vector<vector<double>*>*> &energies,
-        vector<vector<vector<double>*>*> &crossSections,
-        vector<vector<vector<double>*>*> &crossSectionsError
+        string target
         )
 {
-    // prep vectors for filling
-    for(int i=0; i<NUMBER_OF_TARGETS; i++)
-    {
-        energies.push_back(new vector<vector<double>*>);
-        crossSections.push_back(new vector<vector<double>*>);
-        crossSectionsError.push_back(new vector<vector<double>*>);
-    }
+
+    // hold each graph's data for this target
+    vector<DataSet> dataSets;
 
     TFile* infile;
 
@@ -79,12 +72,6 @@ void readGraphs(
                        << i << "/" << fileType << ".root";
         }
 
-        else
-        {
-            cerr << "Error: subrun number too large." << endl;
-            exit(1);
-        }
-
         // Attempt to open the sub-run
         if(!fileExists(inFileName.str()))
         {
@@ -92,108 +79,50 @@ void readGraphs(
         }
 
         infile = new TFile(inFileName.str().c_str());
-        cout << "Adding run " << runNumber << " " << i <<endl;
+        cout << "Adding target " << target << " in run " << runNumber << " " << i << endl;
 
-        // Pull out the cross section data
-        for(int j=0; (size_t)j<targets.size(); j++)
+        // Open the graph
+        TGraphErrors * graph = (TGraphErrors*)infile->Get(target.c_str());
+        if(!graph)
         {
-            TGraphErrors * graph = (TGraphErrors*)infile->Get(targets[j].c_str());
-            energies[j]->push_back(new vector<double>);
-            crossSections[j]->push_back(new vector<double>);
-            crossSectionsError[j]->push_back(new vector<double>);
-            extractGraphData(graph,energies[j]->back(),crossSections[j]->back(),crossSectionsError[j]->back());
+            cout << "Couldn't find graph for " << target << endl;
+            continue;
         }
+
+        dataSets.push_back(extractGraphData(graph,target));
 
         infile->Close();
         // End of loop - move to next sub-run
     }
+
+    return dataSets;
 }
 
-void averageGraphs(
-        vector<string> targets,
-        vector<vector<vector<double>*>*> &energies,
-        vector<vector<vector<double>*>*> &crossSections,
-        vector<vector<vector<double>*>*> &crossSectionsError
-        )
+void produceAverages(vector<DataSet> targetData)
 {
-    // create vectors for holding cross section average over all subruns:
-    // crossSectionsAvg[target number]->at(data point)
-    vector<vector<double>*> crossSectionsAvg;
-    vector<vector<double>*> crossSectionsErrorAvg;
-    vector<double> energyError;
-    energyError.resize(energies[0]->at(0)->size());
+    DataSet totalData = targetData[0];
+    string name = totalData.getReference();
 
-    // prep vectors for filling
-    for(int i=0; i<NUMBER_OF_TARGETS; i++)
+    for(int i=1; (size_t)i<targetData.size(); i++)
     {
-        crossSectionsAvg.push_back(new vector<double>);
-        crossSectionsErrorAvg.push_back(new vector<double>);
+        totalData = totalData + targetData[i];
     }
 
-    for(int i=1; (size_t)i<energies.size(); i++)
-    {
-        // compute average
-        crossSectionsAvg[i]->resize(energies[0]->at(0)->size());
-        for(int j=0; (size_t)j<energies[1]->size(); j++)
-        {
-            for(int k=0; (size_t)k<energies[1]->at(0)->size(); k++)
-            {
-                crossSectionsAvg[i]->at(k) += crossSections[i]->at(j)->at(k);
-            }
-        }
-
-        for(int k=0; (size_t)k<energies[1]->at(0)->size(); k++)
-        {
-            crossSectionsAvg[i]->at(k) /= energies[1]->size();
-        }
-
-        // propagate error
-        crossSectionsErrorAvg[i]->resize(energies[0]->at(0)->size());
-        for(int j=0; (size_t)j<energies[1]->size(); j++)
-        {
-            for(int k=0; (size_t)k<energies[1]->at(0)->size(); k++)
-            {
-                crossSectionsErrorAvg[i]->at(k) += pow(crossSectionsError[i]->at(j)->at(k),2);
-            }
-        }
-
-        for(int k=0; (size_t)k<energies[1]->at(0)->size(); k++)
-        {
-            crossSectionsErrorAvg[i]->at(k) = pow(crossSectionsErrorAvg[i]->at(k),0.5);
-            crossSectionsErrorAvg[i]->at(k) /= energies[1]->size();
-        }
-
-        // create new graphs to display the average
-
-        TGraphErrors* graph = new TGraphErrors(energies[i]->at(0)->size(),
-                                  &energies[i]->at(0)->at(0),
-                                  &crossSectionsAvg[i]->at(0),
-                                  &energyError[0],
-                                  &crossSectionsErrorAvg[i]->at(0));
-        graph->SetNameTitle(targets[i].c_str(),targets[i].c_str());
-        graph->Write();
-    }
+    DataSet averageData = totalData/targetData.size();
+    TGraphErrors* plot = averageData.createPlot(name);
 }
 
-int main(int argc, char *argv[])
+int main(int, char *argv[])
 {
     string runNumber = argv[1];
     string driveName = argv[2];
 
-    // create vector for holding the energies where the cross sections
-    // were calculated
-    vector<vector<vector<double>*>*> energies;
-    vector<vector<vector<double>*>*> energiesLowThresh;
+    vector<vector<DataSet>> runData;
 
-    // create vectors for holding cross section data:
-    // crossSections[target number]->at(subrun number)->at(data point)
-    vector<vector<vector<double>*>*> crossSections;
-    vector<vector<vector<double>*>*> crossSectionsLowThresh;
-    vector<vector<vector<double>*>*> crossSectionsError;
-    vector<vector<vector<double>*>*> crossSectionsErrorLowThresh;
-
-    readGraphs(runNumber, driveName, "cross-sections", targetNames, energies, crossSections, crossSectionsError);
-    readGraphs(runNumber, driveName, "cross-sections_low",targetNames,energiesLowThresh,crossSectionsLowThresh, crossSectionsErrorLowThresh);
+    for(string t : targetNames)
+    {
+        runData.push_back(readGraphs(runNumber, driveName, "cross-sections", t));
+    }
 
     // Create output file to contain summed histos
     stringstream outfileName;
@@ -202,12 +131,12 @@ int main(int argc, char *argv[])
 
     gDirectory->mkdir("high_threshold","high_threshold");
     gDirectory->cd("high_threshold");
-    averageGraphs(targetNames,energies,crossSections,crossSectionsError);
 
-    gDirectory->cd("/");
-    gDirectory->mkdir("low_threshold","low_threshold");
-    gDirectory->cd("low_threshold");
-    averageGraphs(targetNames,energies,crossSectionsLowThresh,crossSectionsError);
+    for(vector<DataSet> target : runData)
+    {
+        produceAverages(target);
+    }
 
+    outfile->Write();
     outfile->Close();
 }

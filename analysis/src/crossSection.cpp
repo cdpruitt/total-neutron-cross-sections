@@ -19,6 +19,7 @@
 #include "TFile.h"
 #include "TAxis.h"
 #include "TRandom3.h"
+#include "TGraphErrors.h"
 
 using namespace std;
 

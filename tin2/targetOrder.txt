@@ -8,4 +8,6 @@ Run Nos.    Pos. 1  Pos.2       Pos. 3      Pos. 4  Pos. 5       Pos. 6
 43-44     blank   shortCarbon NatSn       Sn112   longCarbon   Sn124
 45        blank   shortCarbon longCarbon  Sn112   NatSn        Sn124
 46-49     blank   shortCarbon NatSn       Sn112   longCarbon   Sn124
-50-100    blank   shortCarbon longCarbon  Sn112   NatSn        Sn124
+50-56     blank   shortCarbon longCarbon  Sn112   NatSn        Sn124
+57-100    blank   NatPb       longCarbon  Sn112   NatSn        Sn124
+

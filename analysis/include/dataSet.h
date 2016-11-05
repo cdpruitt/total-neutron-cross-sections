@@ -27,6 +27,8 @@ class DataSet
         friend const DataSet operator*(const DataSet& set1, const DataSet& set2);
         friend const DataSet operator/(const DataSet& set1, const DataSet& set2);
 
+        friend const DataSet operator/(const DataSet& dividend, const double divisor);
+
         const DataSet plus(const DataSet& set2, const std::string& name);
         const DataSet minus(const DataSet& set2, const std::string& name);
         const DataSet divideBy(const DataSet& set2, const std::string& name);

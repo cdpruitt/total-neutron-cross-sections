@@ -22,7 +22,7 @@ DataSet::DataSet(std::vector<double> var1, std::vector<double> var2, std::vector
 
     reference = ref;
 
-    createPlot(reference);
+    //createPlot(reference);
 }
 
 DataSet::DataSet(string dataSetLocation)
@@ -100,7 +100,7 @@ const DataSet operator+(const DataSet& set1, const DataSet& set2)
         {
             sumEnergy.push_back(energies1[i]);
             sumXsection.push_back(xsecs1[i] + xsecs2[i]);
-            sumError.push_back(pow(pow(errors1[i],2) + pow(errors2[i],2),2));
+            sumError.push_back(pow(pow(errors1[i],2) + pow(errors2[i],2),0.5));
         }
 
         else
@@ -165,7 +165,7 @@ const DataSet operator-(const DataSet& set1, const DataSet& set2)
         {
             diffEnergy.push_back(energies1[i]);
             diffXsection.push_back(xsecs1[i] - xsecs2[i]);
-            diffError.push_back(pow(pow(errors1[i],2) + pow(errors2[i],2),2));
+            diffError.push_back(pow(pow(errors1[i],2) + pow(errors2[i],2),0.5));
         }
 
         else
@@ -232,7 +232,7 @@ const DataSet operator*(const DataSet& set1, const DataSet& set2)
             if(xsecs1[i]!=0 && xsecs2[i]!=0)
             {
                 multXsection.push_back(xsecs1[i]*xsecs2[i]);
-                multError.push_back(pow(pow(errors1[i]/xsecs1[i],2) + pow(errors2[i]/xsecs2[i],2),2));
+                multError.push_back(pow(pow(errors1[i]/xsecs1[i],2) + pow(errors2[i]/xsecs2[i],2),0.5));
             }
 
             else
@@ -253,6 +253,18 @@ const DataSet operator*(const DataSet& set1, const DataSet& set2)
 
     multDataSet.setReference(set1.getReference() + set2.getReference() + "mult");
     return multDataSet;
+}
+
+const DataSet operator/(const DataSet& dividend, const double divisor)
+{
+    DataSet quotient;
+
+    for(int i=0; i<dividend.getNumberOfPoints(); i++)
+    {
+        quotient.addPoint(dividend.getPoint(i)/divisor);
+    }
+
+    return quotient;
 }
 
 const DataSet operator/(const DataSet& set1, const DataSet& set2)
@@ -278,7 +290,7 @@ const DataSet operator/(const DataSet& set1, const DataSet& set2)
             if(xsecs1[i]!=0 && xsecs2[i]!=0)
             {
                 divXsection.push_back(xsecs1[i]/xsecs2[i]);
-                divError.push_back(pow(pow(errors1[i]/xsecs1[i],2) + pow(errors2[i]/xsecs2[i],2),2));
+                divError.push_back(pow(pow(errors1[i]/xsecs1[i],2) + pow(errors2[i]/xsecs2[i],2),0.5));
             }
 
             else

@@ -15,11 +15,11 @@ all: driver sumRun sumAll text finetimeCheck readLitData
 driver: $(OBJECTS) $(COMMON)
 	$(COMPILER) $(CFLAGS) -o driver $(OBJECTS) $(LINKOPTION)
 
-sumRun: src/sumRun.cpp
-	$(COMPILER) $(CFLAGS) -o sumRun src/sumRun.cpp $(LINKOPTION)
+sumRun: src/sumRun.cpp src/dataSet.cpp src/dataPoint.cpp
+	$(COMPILER) $(CFLAGS) -o sumRun src/sumRun.cpp src/dataSet.cpp src/dataPoint.cpp $(LINKOPTION)
 
-sumAll: src/sumAll.cpp src/dataPoint.cpp src/dataSet.cpp
-	$(COMPILER) $(CFLAGS) -o sumAll src/sumAll.cpp src/dataPoint.cpp src/dataSet.cpp $(LINKOPTION)
+#sumAll: src/sumAll.cpp src/dataPoint.cpp src/dataSet.cpp
+#	$(COMPILER) $(CFLAGS) -o sumAll src/sumAll.cpp src/dataPoint.cpp src/dataSet.cpp $(LINKOPTION)
 
 readLitData: src/readLitData.cpp src/dataSet.cpp src/dataPoint.cpp
 	$(COMPILER) $(CFLAGS) -o readLitData src/readLitData.cpp src/dataSet.cpp src/dataPoint.cpp $(LINKOPTION)
