@@ -13,7 +13,7 @@ class CrossSection
         void addDataPoint(DataPoint dataPoint);
         void addDataSet(DataSet dataSet);
         DataPoint getDataPoint(int i) const;
-        DataSet getDataSet() const;
+        DataSet getDataSet();
         void createCSGraph(std::string name);
 
         int getNumberOfPoints() const;

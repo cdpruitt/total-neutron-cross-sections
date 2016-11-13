@@ -47,8 +47,8 @@ int main(int, char* argv[])
     string waveformFileName = analysisDirectory + "waveform.root";
     string DPPwaveformFileName = analysisDirectory + "DPPwaveform.root";
     string histoFileName = analysisDirectory + "histos.root";
-    string CSFileName = analysisDirectory + "cross-sections.root";
-    string CSFileNameLowThresh = analysisDirectory + "cross-sections_low.root";
+    string CSFileNameHighThresh = analysisDirectory + "cross-sections_highT.root";
+    string CSFileNameLowThresh = analysisDirectory + "cross-sections_lowT.root";
 
     string errorFileName = analysisDirectory + "error.txt";
     string tempFileName = analysisDirectory + "temp.root";
@@ -105,11 +105,12 @@ int main(int, char* argv[])
         processWaveformEvents(processedFile, orchardRawW, orchardProcessedW);
         */
 
-        //vetoEvents(orchardProcessed[2],orchardProcessed[3]);
+        vetoEvents(orchardProcessed[4],orchardProcessed[6], "highThreshold");
+        vetoEvents(orchardProcessed[5],orchardProcessed[6], "lowThreshold");
 
         //cout << "Total number of ch0 waveform-mode events processed = " << numberOfCh0Waveforms << endl;
-       // cout << "Total number of ch2 waveform-mode events processed = " << numberOfCh2Waveforms << endl;
-       //   cout << "Total number of ch4 waveform-mode events processed = " << numberOfCh4Waveforms << endl;
+        //cout << "Total number of ch2 waveform-mode events processed = " << numberOfCh2Waveforms << endl;
+        //cout << "Total number of ch4 waveform-mode events processed = " << numberOfCh4Waveforms << endl;
 
         processedFile->Write();
         processedFile->Close();
@@ -131,12 +132,12 @@ int main(int, char* argv[])
     histos(processedFileName, histoFileName);
 
     // Apply deadtime correction to DPP-mode data
-    correctForDeadtime(histoFileName, histoFileName, dirs[2]);
-    correctForDeadtime(histoFileName, histoFileName, dirs[3]);
+    correctForDeadtime(histoFileName, histoFileName, get<1>(channelMap[4]));
+    correctForDeadtime(histoFileName, histoFileName, get<1>(channelMap[5]));
 
     // calculate cross sections
-    calculateCS(histoFileName,dirs[2],CSFileName,expName,runNumber);
-    calculateCS(histoFileName,dirs[3],CSFileNameLowThresh,expName,runNumber);
+    calculateCS(histoFileName,get<1>(channelMap[4]),CSFileNameHighThresh,expName,runNumber);
+    calculateCS(histoFileName,get<1>(channelMap[5]),CSFileNameLowThresh,expName,runNumber);
 
     return 0;
 }

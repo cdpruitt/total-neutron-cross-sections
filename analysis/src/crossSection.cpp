@@ -15,6 +15,7 @@
 #include <sstream>
 #include <vector>
 #include <stdlib.h>
+#include <utility>
 #include "TH1.h"
 #include "TFile.h"
 #include "TAxis.h"
@@ -37,6 +38,11 @@ void CrossSection::addDataSet(DataSet dataSet)
 void CrossSection::addDataPoint(DataPoint dataPoint)
 {
     dataSet.addPoint(dataPoint);
+}
+
+DataSet CrossSection::getDataSet()
+{
+    return this->dataSet;
 }
 
 int CrossSection::getNumberOfPoints() const
@@ -300,7 +306,7 @@ vector<Target*> getTargetOrder(string expName, int runNumber)
 
 void getMonitorCounts(vector<long>& monitorCounts, TFile*& histoFile)
 {
-    histoFile->cd(dirs[1].c_str());
+    histoFile->cd(get<1>(channelMap[2]).c_str());
 
     for(int i=0; i<6; i++)
     {
@@ -414,6 +420,33 @@ void calculateCS(string histoFileName, string directory, string CSFileName, stri
 
         }
 
+        // get hydrogen data
+        TFile* hydrogenFile = new TFile("../tin2/literatureData/literatureData.root","READ");
+        TGraphErrors* hydrogenGraph = (TGraphErrors*)hydrogenFile->Get("Hydrogen (n,tot)\r");
+        if(!hydrogenGraph)
+        {
+            cerr << "Error: failed to find hydrogen graph in literature data." << endl;
+            exit(1);
+        }
+
+        DataSet hydrogenData = DataSet();
+
+        DataSet rawData = crossSection.getDataSet();
+
+        for(int j=0; j<rawData.getNumberOfPoints(); j++)
+        {
+            
+            hydrogenData.addPoint(
+                    DataPoint(rawData.getPoint(j).getXValue(),
+                              rawData.getPoint(j).getXError(),
+                              hydrogenGraph->Eval(rawData.getPoint(j).getXValue()),
+                              0)
+                    ); 
+        }
+
+        crossSection.addDataSet(crossSection.getDataSet()-hydrogenData*2);
+
+        CSFile->cd();
         crossSection.createCSGraph(t->getName());
     }
 

@@ -12,17 +12,19 @@ using namespace std;
 
 double VETO_WINDOW = 10; // in ns
 
-void vetoEvents(TTree*& eventTree, TTree*& vetoTree)
+void vetoEvents(TTree*& eventTree, TTree*& vetoTree, string name)
 {
     setBranchesProcessed(eventTree);
     setBranchesVeto(vetoTree);
 
     // cleanTree holds events that have survived the veto
-    TTree* cleanTree = new TTree("cleanTree","cleanTree");
+    string clean = name + "Clean";
+    TTree* cleanTree = new TTree(clean.c_str(),clean.c_str());
     branchProc(cleanTree);
 
     // dirtyTree holds events that have been vetoed
-    TTree* dirtyTree = new TTree("dirtyTree","dirtyTree");
+    string dirty = name + "Dirty";
+    TTree* dirtyTree = new TTree(dirty.c_str(),dirty.c_str());
     branchProc(dirtyTree);
 
     long eventTreeEntries = eventTree->GetEntries();
@@ -92,6 +94,12 @@ void vetoEvents(TTree*& eventTree, TTree*& vetoTree)
 
         // event survived veto, so add to cleanTree
         cleanTree->Fill();
+
+        if(i%10000==0)
+        {
+            cout << "Processed " << i << " events on " << name << " through veto \r";
+            fflush(stdout);
+        }
     }
 
     cleanTree->Write();

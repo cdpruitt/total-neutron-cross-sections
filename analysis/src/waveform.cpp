@@ -741,7 +741,6 @@ void waveform(string inFileName, string outFileName)
     }
 
     TTree* ch4TreeWaveform = (TTree*)inFile->Get("ch4ProcessedTreeW");
-    TTree* ch6TreeWaveform = (TTree*)inFile->Get("ch6ProcessedTreeW");
 
     TFile* outFile;
     outFile = new TFile(outFileName.c_str(),"UPDATE");

@@ -9,6 +9,7 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <utility>
 #include "TFile.h"
 #include "TTree.h"
 
@@ -33,16 +34,16 @@ void processDPPEvents(TFile*& sortedFile, vector<TTree*>& orchardRaw, vector<TTr
     setBranchesProcessedTC(targetChangerTree);
         // Create the new empty trees
     // Each channel has a separate tree for DPP data and for waveform mode data
-    for(int i=0; (size_t)i<activeDPPChannels.size(); i++)
+    for(int i=0; (size_t)i<channelMap.size(); i++)
     {
-        orchardProcessed.push_back(new TTree((activeDPPChannels[i]+"ProcessedTree").c_str(),""));
+        orchardProcessed.push_back(new TTree((get<1>(channelMap[i])+"ProcessedTree").c_str(),""));
         branchProc(orchardProcessed[i]);
         orchardProcessed[i]->SetDirectory(sortedFile);
     }
 
     long separatedNumberOfDPPs = 0;
 
-    for(int detIndex=2; detIndex<NUMBER_OF_CHANNELS*2; detIndex+=2)
+    for(int detIndex=2; detIndex<channelMap*2; detIndex+=2)
     {
         cerr << "Starting DPP processing on channel " << detIndex << endl;
 
@@ -383,16 +384,16 @@ void processWaveformEvents(TFile*& sortedFile, vector<TTree*>& orchardRawW, vect
     // the target changer tree
     setBranchesProcessedTC(targetChangerTree);
 
-    for(int i=0; (size_t)i<activeWaveformChannels.size(); i++)
+    for(int i=0; (size_t)i<channelMap.size(); i++)
     {
-        orchardProcessedW.push_back(new TTree((activeWaveformChannels[i]+"ProcessedTreeW").c_str(),""));
+        orchardProcessedW.push_back(new TTree((get<1>(channelMap[i])+"ProcessedTreeW").c_str(),""));
         branchProcW(orchardProcessedW[i]);
         //orchardProcessedW[i]->SetDirectory(tempFile);
     }
 
     long separatedNumberOfWaveforms = 0;
 
-    for(int detIndex=0; detIndex<NUMBER_OF_CHANNELS*2; detIndex+=2)
+    for(int detIndex=0; detIndex<channelMap.size(); detIndex+=1)
     {
         // Attach variables to correct waveform tree
         setBranchesSeparatedW(orchardRawW[detIndex/2]);

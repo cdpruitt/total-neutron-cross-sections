@@ -10,6 +10,7 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <utility>
 #include "TFile.h"
 #include "TTree.h"
 
@@ -26,12 +27,9 @@ extern SeparatedEvent separatedEvent;
 extern ProcessedEvent procEvent;
 extern TargetChangerEvent tcEvent;
 
-long separatedNumberOfCh0Waveforms = 0;
-long separatedNumberOfCh2Waveforms = 0;
-long separatedNumberOfCh4Waveforms = 0;
-long separatedNumberOfCh6Waveforms = 0;
+vector<long> separatedNumberOfWaveforms(channelMap.size(),0);
 
-void fillRawTree(TTree* tree)
+void fillRawTreeW(TTree* tree)
 {
     // To save only 1 DPP event's waveform in every 10000 events, uncomment this
     // (Note - will reduce output tree size by ~half)
@@ -42,29 +40,7 @@ void fillRawTree(TTree* tree)
 
     tree->Fill();
 
-    if(separatedEvent.evtType==2)
-    {
-        if(separatedEvent.chNo==0)
-        {
-            separatedNumberOfCh0Waveforms++;
-        }
-
-        if(separatedEvent.chNo==2)
-        {
-            separatedNumberOfCh2Waveforms++;
-        }
-
-        if(separatedEvent.chNo==4)
-        {
-            separatedNumberOfCh4Waveforms++;
-        }
-
-        if(separatedEvent.chNo==6)
-        {
-            separatedNumberOfCh6Waveforms++;
-        }
- 
-    }
+    separatedNumberOfWaveforms[separatedEvent.chNo]++;
 }
 
 /******************************************************************************/
@@ -133,6 +109,7 @@ void addDetectorEvent(vector<int>& evtNo, vector<int>& extTime, int chNo, TTree*
             TIME_OFFSET = MACROPULSE_OFFSET;
             break;
         case 4:
+        case 5:
             TIME_OFFSET = MACROPULSE_OFFSET;
             break;
         case 6:
@@ -150,8 +127,8 @@ void addDetectorEvent(vector<int>& evtNo, vector<int>& extTime, int chNo, TTree*
     procEvent.targetPos = tcEvent.targetPos;
 
     // update unique event information
-    procEvent.evtNo = evtNo[chNo/2];
-    procEvent.completeTime = (double)pow(2,32)*extTime[chNo/2] + separatedEvent.timetag + separatedEvent.fineTime + TIME_OFFSET;
+    procEvent.evtNo = evtNo[chNo];
+    procEvent.completeTime = (double)pow(2,32)*extTime[chNo] + separatedEvent.timetag + separatedEvent.fineTime + TIME_OFFSET;
     procEvent.sgQ = separatedEvent.sgQ;
     procEvent.lgQ = separatedEvent.lgQ;
     procEvent.waveform = separatedEvent.waveform;
@@ -183,22 +160,22 @@ void separateByChannel(string rawFileName, string sortedFileName, vector<TTree*>
 
     // Create the new empty trees
     // Each channel has a separate tree for DPP data and for waveform mode data
-    for(int i=0; (size_t)i<activeDPPChannels.size(); i++)
+    for(int i=0; (size_t)i<channelMap.size(); i++)
     {
-        orchardProcessed.push_back(new TTree((activeDPPChannels[i]+"ProcessedTree").c_str(),""));
-        if(i==0)
-        {
-            branchTargetChanger(orchardProcessed[i]);
+            orchardProcessed.push_back(new TTree((get<1>(channelMap[i])+"ProcessedTree").c_str(),""));
+            if(i==0)
+            {
+                branchTargetChanger(orchardProcessed[i]);
+                orchardProcessed[i]->SetDirectory(sortedFile);
+                continue;
+            }
+            branchProc(orchardProcessed[i]);
             orchardProcessed[i]->SetDirectory(sortedFile);
-            continue;
-        }
-        branchProc(orchardProcessed[i]);
-        orchardProcessed[i]->SetDirectory(sortedFile);
     }
 
-    for(int i=0; (size_t)i<activeWaveformChannels.size(); i++)
+    for(int i=0; (size_t)i<channelMap.size(); i++)
     {
-        orchardProcessedW.push_back(new TTree((activeWaveformChannels[i]+"ProcessedTreeW").c_str(),""));
+        orchardProcessedW.push_back(new TTree((get<1>(channelMap[i])+"ProcessedTreeW").c_str(),""));
         branchProcW(orchardProcessedW[i]);
         orchardProcessedW[i]->SetDirectory(sortedFile);
     }
@@ -225,14 +202,14 @@ void separateByChannel(string rawFileName, string sortedFileName, vector<TTree*>
 
     // To uniquely identify each event, we assign each channel's events an event
     // number (evtNo), which is the event's order in its macropulse.
-    vector<int> evtNo(activeDPPChannels.size(),0);
+    vector<int> evtNo(channelMap.size(),0);
 
     // keep track of event type for each channel
-    vector<int> prevEvtType(activeDPPChannels.size(),1);
+    vector<int> prevEvtType(channelMap.size(),1);
 
     // Use the previous event's timetags to re-insert missing extTimes
-    vector<int> extTime(activeDPPChannels.size(),0);
-    vector<double> prevTimetag(activeDPPChannels.size(),0);
+    vector<int> extTime(channelMap.size(),0);
+    vector<double> prevTimetag(channelMap.size(),0);
     
     // Loop through all events in input tree and separate them into channel-
     // specific trees
@@ -244,21 +221,22 @@ void separateByChannel(string rawFileName, string sortedFileName, vector<TTree*>
     {
         inputTree->GetEntry(index);
 
-        if(prevTimetag[separatedEvent.chNo/2] > separatedEvent.timetag &&
-           prevTimetag[separatedEvent.chNo/2] > (double)pow(2,32)-20000000) // 20 ms before extTime kicks in
+        //vector<pair<string,string>> it = find_if(channelMap.begin(), channelMap.end(),
+        if(prevTimetag[separatedEvent.chNo] > separatedEvent.timetag &&
+           prevTimetag[separatedEvent.chNo] > (double)pow(2,32)-20000000) // 20 ms before extTime kicks in
         {
-            extTime[separatedEvent.chNo/2]++;
+            extTime[separatedEvent.chNo]++;
         }
 
         // Check for digitizer error (incrementing extTime before clearing timetag)
-        /*if (extTime[separatedEvent.chNo/2] > extTimePrev && separatedEvent.timetag > pow(2,32)-1000)
+        /*if (extTime[separatedEvent.chNo] > extTimePrev && separatedEvent.timetag > pow(2,32)-1000)
         {
             cerr << "Found a target changer event with a timestamp-reset failure (i.e., extTime incremented before timetag was reset to 0). MacroNo = " << tcEvent.macroNo << ", extTime = " << separatedEvent.extTime << ", extTimePrev = " << extTimePrev << ", timetag = " << separatedEvent.timetag << ", timetagPrev = " << timetagPrev << endl;
             cerr << "Skipping to next target changer event..." << endl;
             continue;
         }*/
 
-        if(prevEvtType[separatedEvent.chNo/2]!=separatedEvent.evtType)
+        if((unsigned int)prevEvtType[separatedEvent.chNo]!=separatedEvent.evtType)
         {
             // mode change
             for(auto &value: evtNo)
@@ -286,17 +264,16 @@ void separateByChannel(string rawFileName, string sortedFileName, vector<TTree*>
             {
                 case 0:
                     // target changer event
-                    addTCEvent(evtNo, extTime, orchardProcessed[0]);
+                    addTCEvent(evtNo, extTime, orchardProcessed[separatedEvent.chNo]);
                     break;
                 case 2:
                     // clear finetime for monitor events!
                     separatedEvent.fineTime=0;
                 case 4:
-                //case 5:
+                case 5:
                 case 6:
                     addDetectorEvent(evtNo, extTime, separatedEvent.chNo, 
-                            orchardProcessed[separatedEvent.chNo/2]);
-                    // main detector event
+                            orchardProcessed[separatedEvent.chNo]);
                     break;
                 default:
                     continue;
@@ -317,12 +294,12 @@ void separateByChannel(string rawFileName, string sortedFileName, vector<TTree*>
         else if(separatedEvent.evtType==2)
         {
             // Waveform mode
-            fillRawTree(orchardProcessedW[separatedEvent.chNo/2]);
+            fillRawTreeW(orchardProcessedW[separatedEvent.chNo]);
         }
 
-        prevEvtType[separatedEvent.chNo/2] = separatedEvent.evtType;
-        prevTimetag[separatedEvent.chNo/2] = procEvent.completeTime; 
-        evtNo[separatedEvent.chNo/2]++;
+        prevEvtType[separatedEvent.chNo] = separatedEvent.evtType;
+        prevTimetag[separatedEvent.chNo] = procEvent.completeTime; 
+        evtNo[separatedEvent.chNo]++;
 
         /*if(index%10000==0)
         {
@@ -331,7 +308,7 @@ void separateByChannel(string rawFileName, string sortedFileName, vector<TTree*>
         }*/
     }
 
-    cout << "Separated " << totalEntries << " events into channels 2, 4 and 6." << endl;
+    cout << "Separated " << totalEntries << " events into channels." << endl;
 
     cout << "Ratio of detector events/monitor events, after separation: " << (double)detEvents/monEvents << endl;
 

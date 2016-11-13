@@ -18,11 +18,17 @@ const double SYNC_WINDOW = 0.02; // as fraction of MACRO_PERIOD
 const int tarGate[12] = {1500,2500,3000,4400,4600,6000,6500,7800,8000,9500,9600,11500};
             // Position: 1low  1hi 2low  2hi 3low  3hi 4low 4hi  5low 5hi  6low   6hi
 
-// Establish which channels are active in each mode
-const std::vector<std::string> activeDPPChannels = {"ch0","ch2","ch4", "ch6"};
-const std::vector<std::string> activeWaveformChannels = {"ch0","ch2","ch4","ch6"};
-
-const int NUMBER_OF_CHANNELS = 4;
+// Establish which channels are active, and map them to function
+const std::vector<std::pair<std::string,std::string>> channelMap = {
+                  std::pair<std::string,std::string>("ch0","targetChanger"),
+                  std::pair<std::string,std::string>("ch1","ch1"),
+                  std::pair<std::string,std::string>("ch2","monitor"),
+                  std::pair<std::string,std::string>("ch3","ch3"),
+                  std::pair<std::string,std::string>("ch4","highThresholdDet"),
+                  std::pair<std::string,std::string>("ch5","lowThresholdDet"),
+                  std::pair<std::string,std::string>("ch6","vetoPaddle"),
+                  std::pair<std::string,std::string>("ch7","ch7"),
+};
 
 const double SCALEDOWN = 1; // (for debugging) only sort (total/SCALEDOWN) events
 

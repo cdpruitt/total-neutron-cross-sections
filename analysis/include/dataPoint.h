@@ -22,6 +22,7 @@ class DataPoint
         friend DataPoint operator-(const DataPoint& minuend, const DataPoint& subtrahend);
         friend DataPoint operator/(const DataPoint& dividend, const DataPoint& divisor);
 
+        friend DataPoint operator*(const DataPoint& multiplicand, const double multiplier);
         friend DataPoint operator/(const DataPoint& dividend, const double divisor);
 
     private:

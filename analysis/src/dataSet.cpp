@@ -255,6 +255,18 @@ const DataSet operator*(const DataSet& set1, const DataSet& set2)
     return multDataSet;
 }
 
+const DataSet operator*(const DataSet& multiplicand, const double multiplier)
+{
+    DataSet product;
+
+    for(int i=0; i<multiplicand.getNumberOfPoints(); i++)
+    {
+        product.addPoint(multiplicand.getPoint(i)*multiplier);
+    }
+
+    return product;
+}
+
 const DataSet operator/(const DataSet& dividend, const double divisor)
 {
     DataSet quotient;

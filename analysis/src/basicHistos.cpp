@@ -34,12 +34,6 @@ vector<TTree*> orchardW; // holds waveform-mode channel-specific trees
 // so that fillHistos can loop through all the trees and make the same histos
 // for each tree
 
-// a small subset of events occur in both channels 4 and 6 in the microTime
-// window of ~275 ns to ~325 ns after a micropulse start. We'd like to plot
-// these on the same axis to make sure they look the same.
-TH1I* waveformCh4;
-TH1I* waveformCh6;
-
 TDirectory *waveformsDir;
 
 // Loop through all trees (one per channel) and populate their data into basic
@@ -60,8 +54,8 @@ void fillHistos()
 
         // create a channel-specific directory for putting histograms inside
         gDirectory->cd("/");
-        gDirectory->mkdir(dirs[i].c_str(),dirs[i].c_str());
-        gDirectory->GetDirectory(dirs[i].c_str())->cd();
+        gDirectory->mkdir(get<1>(channelMap[i]).c_str(),get<1>(channelMap[i]).c_str());
+        gDirectory->GetDirectory(get<1>(channelMap[i]).c_str())->cd();
 
         // instantiate DPP-mode histograms
         TH1I* macroNoH = new TH1I("macroNoH","macroNo",500000,0,500000);
@@ -106,9 +100,14 @@ void fillHistos()
         {
             setBranchesTC(orchard[i]);
         }
-        else
+        else if (i==2 || i==4 || i==5)
         {
             setBranchesHistos(orchard[i]);
+        }
+
+        else
+        {
+            continue;
         }
 
         // create TIME VARIABLES used for filling histograms
@@ -135,16 +134,17 @@ void fillHistos()
         {
             case 0:
                 break;
-            case 1:
+            case 2:
                 // monitor
                 gammaGate[0] = 25;
                 gammaGate[1] = 40;
                 break;
-            case 2:
-            case 3:
+            case 4:
+            case 5:
+            case 6:
                 // summed detector
-                gammaGate[0] = 85;
-                gammaGate[1] = 95;
+                gammaGate[0] = 80;
+                gammaGate[1] = 90;
 
                 // make detector-channel-specific plots
                 for(int i=0; i<NUMBER_OF_TARGETS; i++)
@@ -161,13 +161,11 @@ void fillHistos()
         /*************************************************************************/
         // Loop through sorted trees to calculate advanced histogram variables
 
-        cout << "Populating advanced histograms for channel " << 2*i << endl;
-
         int totalEntries = orchard[i]->GetEntries();
 
         // reduce entries to sort for diagnostic purposes
         //totalEntries /= 2;
-        cout << "Populating " << dirs[i] << " histograms..." << endl;
+        cout << "Populating " << get<1>(channelMap[i]) << " histograms..." << endl;
 
         waveformsDir = (TDirectory*)gDirectory->Get("waveformsDir");
         waveformsDir->cd();
@@ -205,7 +203,7 @@ void fillHistos()
             {
                 stringstream temp;
                 temp << "macroNo " << procEvent.macroNo << ", evtNo " << procEvent.evtNo;
-                waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),procEvent.waveform->size(),0,procEvent.waveform->size()*2);
+                waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),procEvent.waveform->size(),0,procEvent.waveform->size()*SAMPLE_PERIOD);
 
                 // loop through waveform data and fill histo
                 for(int k=0; (size_t)k<procEvent.waveform->size(); k++)
@@ -221,7 +219,7 @@ void fillHistos()
               break;
               }*/
         
-            if(i==2 || i==3)
+            if(i==4 || i==5)
             {
                 // calculate time since start of macro (includes time offsets)
                 double timeDiff = procEvent.completeTime-procEvent.macroTime;
@@ -352,9 +350,9 @@ void fillHistos()
             }
         }
 
-        if(i==2)
+        if(i==4 || i==5)
         {
-            cout << "Processed " << totalEntries << " in " << dirs[i] << " histograms." << endl;
+            cout << "Processed " << totalEntries << " in " << get<1>(channelMap[i]) << " histograms." << endl;
 
             std::vector<long> macrosPerTarget;
             std::vector<long> microsPerTarget;
@@ -362,7 +360,7 @@ void fillHistos()
             long totalMacros = 0;
 
             gDirectory->cd("/");
-            gDirectory->cd(dirs[0].c_str());
+            gDirectory->cd(get<1>(channelMap[0]).c_str());
 
             for(int i=0; i<NUMBER_OF_TARGETS; i++)
             {
@@ -394,7 +392,7 @@ void fillHistos()
     {
         // create a channel-specific directory for each tree
         gDirectory->cd("/");
-        string tempName = dirs[i] + "WaveformMode";
+        string tempName = get<1>(channelMap[i]) + "WaveformMode";
         gDirectory->mkdir(tempName.c_str(),tempName.c_str());
 
         gDirectory->GetDirectory(tempName.c_str())->cd();
@@ -458,7 +456,7 @@ void fillHistos()
 
             for(int k=0; (size_t)k<procEvent.waveform->size(); k++)
             {
-                waveformH->SetBinContent(k+floor((fmod(procEvent.waveform->size()*2,MICRO_LENGTH)+1)*procEvent.evtNo*MICRO_LENGTH/(double)2),procEvent.waveform->at(k));
+                waveformH->SetBinContent(k+floor((fmod(procEvent.waveform->size()*SAMPLE_PERIOD,MICRO_LENGTH)+1)*procEvent.evtNo*MICRO_LENGTH/(double)2),procEvent.waveform->at(k));
             }
         }
     }
@@ -623,25 +621,17 @@ int histos(string sortedFileName, string histoFileName)
         exit(1);
     }
 
-    TTree* ch0Tree = (TTree*)sortedFile->Get("ch0ProcessedTree");
-    TTree* ch2Tree = (TTree*)sortedFile->Get("ch2ProcessedTree");
-    TTree* ch4Tree = (TTree*)sortedFile->Get("ch4ProcessedTree");
-//    TTree* ch6Tree = (TTree*)sortedFile->Get("ch6ProcessedTree");
-    TTree* ch6Tree = (TTree*)sortedFile->Get("ch4ProcessedTree");
-    TTree* ch0TreeW = (TTree*)sortedFile->Get("ch0ProcessedTreeW");
-    TTree* ch2TreeW = (TTree*)sortedFile->Get("ch2ProcessedTreeW");
-    TTree* ch4TreeW = (TTree*)sortedFile->Get("ch4ProcessedTreeW");
-    TTree* ch6TreeW = (TTree*)sortedFile->Get("ch6ProcessedTreeW");
+    for(pair<string,string> p : channelMap)
+    {
+        string treeName = get<1>(p) + "ProcessedTree";
+        orchard.push_back((TTree*)sortedFile->Get(treeName.c_str()));
+    }
 
-    orchard.push_back(ch0Tree);
-    orchard.push_back(ch2Tree);
-    orchard.push_back(ch4Tree);
-    orchard.push_back(ch6Tree);
-
-    orchardW.push_back(ch0TreeW);
-    orchardW.push_back(ch2TreeW);
-    orchardW.push_back(ch4TreeW);
-    orchardW.push_back(ch6TreeW);
+    for(pair<string,string> p : channelMap)
+    {
+        string treeName = get<1>(p) + "ProcessedTreeW";
+        orchardW.push_back((TTree*)sortedFile->Get(treeName.c_str()));
+    }
 
     // increase precision to handle outputted times (for troubleshooting)
     cout.precision(13);
@@ -668,8 +658,8 @@ int histos(string sortedFileName, string histoFileName)
     {
         for(int i=0; i<NUMBER_OF_TARGETS; i++)
         {
-            plots.push_back(new Plots(positionNames[i], histoFile, dirs[2]));
-            plots.push_back(new Plots(positionNames[i], histoFile, dirs[3]));
+            plots.push_back(new Plots(positionNames[i], histoFile, get<1>(channelMap[4])));
+            plots.push_back(new Plots(positionNames[i], histoFile, get<1>(channelMap[5]));
         }
     }*/
 
@@ -686,8 +676,8 @@ int histos(string sortedFileName, string histoFileName)
     // print out waveforms for first 50 events that occur in both ch4 and ch6
     //matchWaveforms();
 
-    //sortedFile->Close();
-    //histoFile->Close();
+    sortedFile->Close();
+    histoFile->Close();
 
     return 0;
 }

@@ -13,8 +13,8 @@ using namespace std;
 
 const int MAX_SUBRUN_NUMBER = 99;
 
-//const vector<string> targetNames = {"shortCarbon", "longCarbon", "Sn112", "NatSn", "Sn124"}; 
-const vector<string> targetNames = {"NatPb", "longCarbon", "Sn112", "NatSn", "Sn124"};
+//const vector<string> targetNames = {"NatPb", "longCarbon", "Sn112", "NatSn", "Sn124"}; 
+const vector<string> targetNames = {"H2O", "D2O", "H218O"};
 
 // Extract each point from a graph and store their positions in two vectors,
 // xValues and yValues
@@ -117,11 +117,22 @@ int main(int, char *argv[])
     string runNumber = argv[1];
     string driveName = argv[2];
 
-    vector<vector<DataSet>> runData;
+    vector<vector<DataSet>> highTData;
+
+    cout << "\nHigh threshold data:" << endl;
 
     for(string t : targetNames)
     {
-        runData.push_back(readGraphs(runNumber, driveName, "cross-sections", t));
+        highTData.push_back(readGraphs(runNumber, driveName, "cross-sections_highT", t));
+    }
+
+    cout << "\nLow threshold data:" << endl;
+
+    vector<vector<DataSet>> lowTData;
+
+    for(string t : targetNames)
+    {
+        lowTData.push_back(readGraphs(runNumber, driveName, "cross-sections_lowT", t));
     }
 
     // Create output file to contain summed histos
@@ -132,7 +143,16 @@ int main(int, char *argv[])
     gDirectory->mkdir("high_threshold","high_threshold");
     gDirectory->cd("high_threshold");
 
-    for(vector<DataSet> target : runData)
+    for(vector<DataSet> target : highTData)
+    {
+        produceAverages(target);
+    }
+
+    gDirectory->cd("/");
+    gDirectory->mkdir("low_threshold","low_threshold");
+    gDirectory->cd("low_threshold");
+
+    for(vector<DataSet> target : lowTData)
     {
         produceAverages(target);
     }
