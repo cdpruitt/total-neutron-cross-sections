@@ -39,6 +39,8 @@ const int DEADTIME_PERIOD = 152;
 // counting gamma rays)
 const double GAMMA_WINDOW[2] = {75,95};
 
+const std::vector<std::string> positionNames = {"blank", "target1", "target2", "target3", "target4", "target5"};
+
 const std::vector<std::string> targetNamesWaveform = {"blankWaveform", "shortCarbonWaveform", "longCarbonWaveform", "Sn112Waveform", "NatSnWaveform", "Sn124Waveform"}; 
 
 

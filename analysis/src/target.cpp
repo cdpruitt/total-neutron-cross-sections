@@ -9,6 +9,10 @@
 
 using namespace std;
 
+Target::Target()
+{
+}
+
 Target::Target(string targetDataLocation)
 {
     ifstream dataFile(targetDataLocation.c_str());

@@ -141,7 +141,7 @@ analyze ()
     # Send error messages to a text file
     2>&1 | tee > "$outputDirectoryName"error.txt
 
-    ./driver "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber"
+    ./driver "$inputFileName" "$outputDirectoryName" "$experiment"
 
     #if [ -s "$outputDirectoryName/temp.root" ]
     #then
@@ -269,11 +269,14 @@ then
             exit
         fi
 
+        printf "\n************************************"
+        printf "\n     Reading subruns from $runNumber"
+        printf "\n************************************\n"
+
         # Check to see if all subruns should be analyzed, or just one
         if [ "$allSubruns" = true ]
         then
             # Sort all sub-runs in the specified run directory
-            printf "Reading all subruns in specified run\n"
             for f in "$datapath"/output/"$runNumber"/data-*;
             do
                 subrunNo=$(echo $f | egrep -o '[0-9]+' | tail -1)
@@ -315,9 +318,6 @@ then
                 analyze "$inputFileName" "$outputDirectoryName" "$runNumber"
             done
 
-            # Last, sum together histograms from all the runs just sorted
-            ./sumRun "$runNumber" "$outpath"
-
         else
             # Sort just the most recent sub-run in the specified run directory
             subrunNo=$(ls -t "$datapath/output/$runNumber/data-*" | head -1 | egrep\
@@ -330,7 +330,10 @@ then
             analyze "$inputFileName" "$outputDirectoryName"
         fi
     done < ../"$experiment"/runsToSort.txt
-    #./sumAll "$experiment"
+
+    # Sum data from all subruns to make cross sections
+    rm "$outpath"/analysis/total.root
+    ./sumAll "$outpath"/analysis "$experiment" "histos"
     exit
 fi
 

@@ -3,8 +3,10 @@
 #include "../include/target.h"
 #include "../include/targetConstants.h"
 #include "../include/crossSection.h"
+#include "../include/CSPrereqs.h"
 #include "../include/dataPoint.h"
 #include "../include/dataSet.h"
+#include "../include/dataStructures.h"
 #include "../include/analysisConstants.h"
 #include "../include/physicalConstants.h"
 #include "../include/plottingConstants.h"
@@ -245,212 +247,109 @@ void correctForDeadtime(string histoFileName, string deadtimeFileName, string di
     histoFile->Close();
 }
 
-vector<Target*> getTargetOrder(string expName, int runNumber)
+int calculateCS(string CSFileName, CSPrereqs& targetData, CSPrereqs& blankData)
 {
-    string targetOrderLocation = "../" + expName + "/targetOrder.txt";
-    ifstream dataFile(targetOrderLocation.c_str());
-    if(!dataFile.is_open())
+    // make sure the monitor recorded counts for both the blank and the target
+    // of interest so we can normalize the flux between them
+    if(targetData.monitorCounts == 0 || blankData.monitorCounts == 0)
     {
-        std::cout << "Failed to find target order data in " << targetOrderLocation << std::endl;
-        exit(1);
+        cerr << "Error - didn't find any monitor counts for target while trying to calculate cross sections. Exiting..." << endl;
+        return 1;
     }
 
-    string str;
-    vector<string> targetOrder;
-
-    while(getline(dataFile,str))
-    {
-        // ignore comments in data file
-        string delimiter = "-";
-        string token = str.substr(0,str.find(delimiter));
-        if(!atoi(token.c_str()))
-        {
-            // This line starts with a non-integer and is thus a comment; ignore
-            continue;
-        }
-
-        // parse data lines into space-delimited tokens
-        vector<string> tokens;
-        istringstream iss(str);
-        copy(istream_iterator<string>(iss),
-                istream_iterator<string>(),
-                back_inserter(tokens));
-
-        // extract run numbers from first token
-        string lowRun = tokens[0].substr(0,tokens[0].find(delimiter));
-        tokens[0] = tokens[0].erase(0,tokens[0].find(delimiter) + delimiter.length());
-
-        delimiter = "\n";
-        string highRun = tokens[0].substr(0,tokens[0].find(delimiter));
-        
-        if(atoi(lowRun.c_str()) <= runNumber && runNumber <= atoi(highRun.c_str()))
-        {
-            for(int i=1; (size_t)i<tokens.size(); i++)
-            {
-                targetOrder.push_back(tokens[i]);
-            }
-            break;
-        }
-    }
-
-    vector<Target*> targets;
-
-    for(string s : targetOrder)
-    {
-        string targetDataLocation = "../" + expName + "/targetData/" + s + ".txt";
-        targets.push_back(
-                new Target(targetDataLocation));
-    }
-    return targets;
-}
-
-void getMonitorCounts(vector<long>& monitorCounts, TFile*& histoFile)
-{
-    histoFile->cd(get<1>(channelMap[2]).c_str());
-
-    for(int i=0; i<6; i++)
-    {
-        monitorCounts.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(i+2));
-    }
-}
-
-void calculateCS(string histoFileName, string directory, string CSFileName, string expName, int runNumber)
-{
-    // Find number of events in the monitor for each target to use in scaling
-    // cross-sections
-    vector<long> monitorCounts;
-
-    TFile* histoFile = new TFile(histoFileName.c_str(),"READ");
-
-    // to normalize flux between all channels, we'll need to keep track of the
-    // number of counts that recorded by the monitor paddle for each target
-    getMonitorCounts(monitorCounts, histoFile);
-
-    histoFile->cd("/");
-    gDirectory->cd(directory.c_str());
-
-    vector<TH1I*> energyHistos;
-    for(int i = 0; i<NUMBER_OF_TARGETS; i++)
-    {
-        string name = positionNames[i] + "CorrectedEnergy";
-        energyHistos.push_back((TH1I*)gDirectory->Get(name.c_str()));
-    }
-
-    // Loop through the relativistic kinetic energy histograms and use them
-    // to populate cross-section for each target
-
-    // calculate cross sections for each bin of each target
+    // define variables to hold cross section information
+    CrossSection crossSection;
     double crossSectionValue;
     double crossSectionError;
     double energyValue;
     double energyError;
 
-    vector<Target*> targets = getTargetOrder(expName,runNumber);
+    // loop through each bin in the energy histo, calculating a cross section
+    // for each bin
+    int numberOfBins = targetData.energyHisto->GetNbinsX();
 
-    TH1I* blankEnergy = energyHistos[0];
-
-    TFile* CSFile = new TFile(CSFileName.c_str(),"RECREATE");
-
-    for(int i=0; (size_t)i<targets.size(); i++)
+    for(int j=1; j<=numberOfBins; j++) // start j at 1 to skip the underflow bin
     {
-        Target* t = targets[i];
-        TH1I* energy = energyHistos[i];
+        energyValue = targetData.energyHisto->GetBinCenter(j);
+        energyError = targetData.energyHisto->GetBinError(j);
 
-        CrossSection crossSection;
-
-        int numberOfBins = blankEnergy->GetNbinsX();
-
-        long targetMonCounts = monitorCounts[i];
-        long blankMonCounts = BLANK_MON_SCALING*monitorCounts[0];
-        if(targetMonCounts == 0 || blankMonCounts == 0)
+        // avoid "divide by 0" and "log of 0" errors
+        if(blankData.energyHisto->GetBinContent(j) <= 0 || targetData.energyHisto->GetBinContent(j) <= 0)
         {
-            cerr << "Error - didn't find any monitor counts for target while trying to calculate cross sections. Exiting..." << endl;
-            exit(1);
-        }
-
-        for(int j=1; j<=numberOfBins; j++) // start j at 1 to skip the underflow bin
-        {
-            energyValue = energy->GetBinCenter(j);
-            energyError = 0;
-
-            // avoid "divide by 0" and "log of 0" errors
-            if(blankEnergy->GetBinContent(j) <= 0 || energy->GetBinContent(j) <= 0)
-            {
-                crossSectionValue = 0;
-                crossSectionError = 0;
-            }
-
-            else
-            {
-                // calculate the cross section
-                crossSectionValue =
-                    -log(
-                            ((double)energy->GetBinContent(j) // counts in target
-                             /blankEnergy->GetBinContent(j))// counts in blank
-                            *(blankMonCounts/(double)targetMonCounts) // scale by monitor counts
-                        )
-                    /
-                        (
-                            t->getMass()
-                            *AVOGADROS_NUMBER
-                            *pow(10.,-24) // convert cm^2 to barns 
-                            /
-                                (pow(t->getDiameter()/2,2)*M_PI // area of cylinder end
-                                *t->getMolMass())
-                        );
-
-                // calculate the statistical error
-                crossSectionError =
-                    pow((1/(double)energy->GetBinContent(j) 
-                        +1/(double)blankEnergy->GetBinContent(j)
-                        +1/(double)blankMonCounts
-                        +1/(double)targetMonCounts
-                        ),0.5)
-                        /(t->getMass()
-                         *AVOGADROS_NUMBER
-                         *pow(10.,-24) // convert cm^2 to barns 
-                         *crossSectionValue // error of log(x) ~ (errorOfX)/x
-                         /
-                         ((pow(t->getDiameter()/2,2)*M_PI // area of cylinder end
-                           *t->getMolMass())));
-            }
-
+            crossSectionValue = 0;
+            crossSectionError = 0;
             crossSection.addDataPoint(
-                    DataPoint(energyValue, energyError, crossSectionValue, crossSectionError));
-
+                DataPoint(energyValue, energyError, crossSectionValue, crossSectionError));
+            continue;
         }
 
-        // get hydrogen data
-        TFile* hydrogenFile = new TFile("../tin2/literatureData/literatureData.root","READ");
-        TGraphErrors* hydrogenGraph = (TGraphErrors*)hydrogenFile->Get("Hydrogen (n,tot)\r");
-        if(!hydrogenGraph)
-        {
-            cerr << "Error: failed to find hydrogen graph in literature data." << endl;
-            exit(1);
-        }
+        // calculate the cross section
+        crossSectionValue =
+            -log(
+                    ((double)targetData.energyHisto->GetBinContent(j) // counts in target
+                     /blankData.energyHisto->GetBinContent(j))// counts in blank
+                    *((blankData.monitorCounts*BLANK_MON_SCALING)/(double)targetData.monitorCounts) // scale by monitor counts
+                    )
+            /
+            (
+             targetData.target.getMass()
+             *AVOGADROS_NUMBER
+             *pow(10.,-24) // convert cm^2 to barns 
+             /
+             (pow(targetData.target.getDiameter()/2,2)*M_PI // area of cylinder end
+              *targetData.target.getMolMass())
+            );
 
-        DataSet hydrogenData = DataSet();
+        // calculate the statistical error
+        crossSectionError =
+            pow((1/(double)targetData.energyHisto->GetBinContent(j) 
+                        +1/(double)blankData.energyHisto->GetBinContent(j)
+                        +1/(double)blankData.monitorCounts
+                        +1/(double)targetData.monitorCounts
+                ),0.5)
+            /(targetData.target.getMass()
+                    *AVOGADROS_NUMBER
+                    *pow(10.,-24) // convert cm^2 to barns 
+                    *crossSectionValue // error of log(x) ~ (errorOfX)/x
+                    /
+                    ((pow(targetData.target.getDiameter()/2,2)*M_PI // area of cylinder end
+                      *targetData.target.getMolMass())));
 
-        DataSet rawData = crossSection.getDataSet();
-
-        for(int j=0; j<rawData.getNumberOfPoints(); j++)
-        {
-            
-            hydrogenData.addPoint(
-                    DataPoint(rawData.getPoint(j).getXValue(),
-                              rawData.getPoint(j).getXError(),
-                              hydrogenGraph->Eval(rawData.getPoint(j).getXValue()),
-                              0)
-                    ); 
-        }
-
-        crossSection.addDataSet(crossSection.getDataSet()-hydrogenData*2);
-
-        CSFile->cd();
-        crossSection.createCSGraph(t->getName());
+        crossSection.addDataPoint(
+                DataPoint(energyValue, energyError, crossSectionValue, crossSectionError));
     }
 
-    histoFile->Close();
+    // get hydrogen data
+    TFile* hydrogenFile = new TFile("../tin2/literatureData/literatureData.root","READ");
+    TGraphErrors* hydrogenGraph = (TGraphErrors*)hydrogenFile->Get("Hydrogen (n,tot)\r");
+    if(!hydrogenGraph)
+    {
+        cerr << "Error: failed to find hydrogen graph in literature data." << endl;
+        exit(1);
+    }
+
+    DataSet hydrogenData = DataSet();
+
+    DataSet rawData = crossSection.getDataSet();
+
+    for(int j=0; j<rawData.getNumberOfPoints(); j++)
+    {
+
+        hydrogenData.addPoint(
+                DataPoint(rawData.getPoint(j).getXValue(),
+                    rawData.getPoint(j).getXError(),
+                    hydrogenGraph->Eval(rawData.getPoint(j).getXValue()),
+                    0)
+                ); 
+    }
+
+    crossSection.addDataSet(crossSection.getDataSet()-hydrogenData*2);
+
+    TFile* CSFile = new TFile(CSFileName.c_str(),"UPDATE");
+    crossSection.createCSGraph(targetData.target.getName());
+
     CSFile->Write();
     CSFile->Close();
+
+    return 0;
 }

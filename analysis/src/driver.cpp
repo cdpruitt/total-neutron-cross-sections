@@ -37,13 +37,9 @@ int main(int, char* argv[])
     // name of experimental directory where target information is located
     string expName = argv[3];
 
-    // run number of data - to figure out which targets were in which positions
-    // during this run
-    int runNumber = stoi(argv[4]);
-
     string analysisDirectory = argv[2];
     string rawTreeFileName = analysisDirectory + "raw.root";
-    string processedFileName = analysisDirectory + "sorted.root";
+    string sortedFileName = analysisDirectory + "sorted.root";
     string waveformFileName = analysisDirectory + "waveform.root";
     string DPPwaveformFileName = analysisDirectory + "DPPwaveform.root";
     string histoFileName = analysisDirectory + "histos.root";
@@ -60,35 +56,33 @@ int main(int, char* argv[])
     /*************************************************************************/
     /* Populate raw event data into a tree */
     /*************************************************************************/
-    TFile* rawTreeFile = new TFile(rawTreeFileName.c_str(),"READ");
-    if(!rawTreeFile->IsOpen())
+    ifstream f(rawTreeFileName);
+    if(!f.good())
     {
-        // create a raw data tree
+        // create a raw data tree for this subrun
         readRawData(rawDataFileName,rawTreeFileName);
     }
 
     else
     {
-        cout << "Found previously existing raw data tree. Skipping import of raw data file..." << endl;
-        rawTreeFile->Close();
+        cout << "Raw data tree already exists." << endl;
+        f.close();
     }
 
     /*************************************************************************/
     /* "Process" raw events by assigning time and target data */
     /*************************************************************************/
-    TFile* processedFile = new TFile(processedFileName.c_str(),"READ");
-    if(!processedFile->IsOpen())
+    ifstream p(sortedFileName);
+    if(!p.good())
     {
-        //vector<TTree*> orchardRaw;
-        //vector<TTree*> orchardRawW;
+        // convert the raw data tree into a processed data tree
+        TFile* sortedFile = new TFile(sortedFileName.c_str(),"CREATE");
 
         vector<TTree*> orchardProcessed; // channel-specific DPP events assigned to macropulses
         vector<TTree*> orchardProcessedW;// channel-specific waveform events assigned to macropulses
 
-        processedFile = new TFile(processedFileName.c_str(),"CREATE");
-
         // separate all data by channel and event type
-        separateByChannel(rawTreeFileName, processedFileName, orchardProcessed, orchardProcessedW);
+        separateByChannel(rawTreeFileName, sortedFile, orchardProcessed, orchardProcessedW);
 
         // uncomment for NEVT_AGGR = 10 behavior
         /*
@@ -97,12 +91,12 @@ int main(int, char* argv[])
         // target changer trees (DPP and waveform), assigning a macropulse to each
         // target changer event. 
 
-        processTargetChanger(rawTreeFileName, processedFile);
+        processTargetChanger(rawTreeFileName, sortedFile);
 
         // Last, now that the macropulse structure is assigned by the target changer
         // events, we can assign detector events to the correct macropulse.
-        processDPPEvents(processedFile, orchardRaw, orchardProcessed);
-        processWaveformEvents(processedFile, orchardRawW, orchardProcessedW);
+        processDPPEvents(sortedFile, orchardRaw, orchardProcessed);
+        processWaveformEvents(sortedFile, orchardRawW, orchardProcessedW);
         */
 
         vetoEvents(orchardProcessed[4],orchardProcessed[6], "highThreshold");
@@ -112,8 +106,8 @@ int main(int, char* argv[])
         //cout << "Total number of ch2 waveform-mode events processed = " << numberOfCh2Waveforms << endl;
         //cout << "Total number of ch4 waveform-mode events processed = " << numberOfCh4Waveforms << endl;
 
-        processedFile->Write();
-        processedFile->Close();
+        sortedFile->Write();
+        sortedFile->Close();
     }
 
     else
@@ -127,17 +121,12 @@ int main(int, char* argv[])
     // analyze the waveform-mode data, including peak-fitting and deadtime extraction
     //if(runWaveform)
 
-    //waveform(processedFileName, waveformFileName);
+    //waveform(sortedFileName, waveformFileName);
 
-    histos(processedFileName, histoFileName);
+    histos(sortedFileName, histoFileName);
 
     // Apply deadtime correction to DPP-mode data
     correctForDeadtime(histoFileName, histoFileName, get<1>(channelMap[4]));
     correctForDeadtime(histoFileName, histoFileName, get<1>(channelMap[5]));
-
-    // calculate cross sections
-    calculateCS(histoFileName,get<1>(channelMap[4]),CSFileNameHighThresh,expName,runNumber);
-    calculateCS(histoFileName,get<1>(channelMap[5]),CSFileNameLowThresh,expName,runNumber);
-
     return 0;
 }

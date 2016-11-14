@@ -146,7 +146,7 @@ void addDetectorEvent(vector<int>& evtNo, vector<int>& extTime, int chNo, TTree*
 }
 
 // Populate events from the input tree into channel-specific trees.
-void separateByChannel(string rawFileName, string sortedFileName, vector<TTree*>& orchardProcessed, vector<TTree*>& orchardProcessedW)
+void separateByChannel(string rawFileName, TFile* sortedFile, vector<TTree*>& orchardProcessed, vector<TTree*>& orchardProcessedW)
 {
     /*separatedNumberOfCh0Waveforms = 0;
     separatedNumberOfCh2Waveforms = 0;
@@ -155,8 +155,6 @@ void separateByChannel(string rawFileName, string sortedFileName, vector<TTree*>
     separatedNumberOfDPPs = 0;
     separatedNumberOfWaveforms = 0;
     */
-
-    TFile* sortedFile = new TFile(sortedFileName.c_str(), "RECREATE");
 
     // Create the new empty trees
     // Each channel has a separate tree for DPP data and for waveform mode data

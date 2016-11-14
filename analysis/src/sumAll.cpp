@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <iomanip>
 #include <string>
 #include "TFile.h"
 #include "TTree.h"
@@ -8,13 +9,17 @@
 #include "TMath.h"
 #include "TLatex.h"
 
+#include "../include/target.h"
 #include "../include/targetConstants.h"
 #include "../include/dataSet.h"
 #include "../include/dataPoint.h"
+#include "../include/CSPrereqs.h"
+#include "../include/analysisConstants.h"
+#include "../include/crossSection.h"
 
 using namespace std;
 
-const double ARTIFICIAL_OFFSET = 0.0;
+const int MAX_SUBRUN_NUMBER = 50;
 
 struct Plots
 {
@@ -52,8 +57,6 @@ double totalRelSysError;
 vector<double> totalSn112Error (200);
 vector<double> totalSn124Error (200);
 vector<double> totalRelError (200);
-
-TFile* infile;
 
 // Extract each point from a graph and store their positions in two vectors,
 // xValues and yValues
@@ -113,7 +116,7 @@ double calculateRMS(vector<double> graph1Data, vector<double> graph2Data)
     return rms;
 }
 
-void createRelativeCSPlot(DataSet set1, DataSet set2,
+/*void createRelativeCSPlot(DataSet set1, DataSet set2,
                           string name, string title, bool listRMS)
 {
     // the relative difference plots are defined as:
@@ -173,9 +176,9 @@ void createRelativeCSPlot(DataSet set1, DataSet set2,
     }
     
     relativeGraph->Write();
-}
+}*/
 
-void createRelativeCSPlot(vector<double>* graph1Data, vector<double>* graph1Error,
+/*void createRelativeCSPlot(vector<double>* graph1Data, vector<double>* graph1Error,
                           vector<double>* graph2Data, vector<double>* graph2Error,
                           vector<double>* energyData ,vector<double>* energyError,
                           string name, string title, bool listRMS)
@@ -271,9 +274,9 @@ void createRelativeCSPlot(vector<double>* graph1Data, vector<double>* graph1Erro
     }
     
     //relativeGraph->Write();
-}
+}*/
 
-DataSet scaleToLit(DataSet setToScale, DataSet expReference, DataSet litReference)
+/*DataSet scaleToLit(DataSet setToScale, DataSet expReference, DataSet litReference)
 {
     DataSet scaleFactor;
 
@@ -287,77 +290,179 @@ DataSet scaleToLit(DataSet setToScale, DataSet expReference, DataSet litReferenc
     DataSet scaledSet = scaleFactor*setToScale;
 
     return scaledSet;
+}*/
+
+vector<string> getTargetOrder(string expName, int runNumber)
+{
+    string targetOrderLocation = "../" + expName + "/targetOrder.txt";
+    ifstream dataFile(targetOrderLocation.c_str());
+    if(!dataFile.is_open())
+    {
+        std::cout << "Failed to find target order data in " << targetOrderLocation << std::endl;
+        exit(1);
+    }
+
+    string str;
+    vector<string> targetOrder;
+
+    while(getline(dataFile,str))
+    {
+        // ignore comments in data file
+        string delimiter = "-";
+        string token = str.substr(0,str.find(delimiter));
+        if(!atoi(token.c_str()))
+        {
+            // This line starts with a non-integer and is thus a comment; ignore
+            continue;
+        }
+
+        // parse data lines into space-delimited tokens
+        vector<string> tokens;
+        istringstream iss(str);
+        copy(istream_iterator<string>(iss),
+                istream_iterator<string>(),
+                back_inserter(tokens));
+
+        // extract run numbers from first token
+        string lowRun = tokens[0].substr(0,tokens[0].find(delimiter));
+        tokens[0] = tokens[0].erase(0,tokens[0].find(delimiter) + delimiter.length());
+
+        delimiter = "\n";
+        string highRun = tokens[0].substr(0,tokens[0].find(delimiter));
+        
+        if(atoi(lowRun.c_str()) <= runNumber && runNumber <= atoi(highRun.c_str()))
+        {
+            for(int i=1; (size_t)i<tokens.size(); i++)
+            {
+                targetOrder.push_back(tokens[i]);
+            }
+            break;
+        }
+    }
+
+    return targetOrder;
 }
 
 int main(int, char* argv[])
 {
-    // Find the total number of runs to read in
+    string dataLocation = argv[1]; // name of directory where analysis is stored
+                                   // (omit trailing slash)
+    string expName = argv[2];      // experiment directory where runs to-be-sorted
+                                   // are listed
+    string ROOTFileName = argv[3]; // name of ROOT files that contain data
+                                   // used to calculate cross sections
+
+    // Create a CSPrereqs for each target to hold data from all the runs
+    vector<CSPrereqs> allData;
+    for(string targetName : targetNames)
+    {
+        string targetDataLocation = "../" + expName + "/targetData/" + targetName + ".txt";
+        allData.push_back(CSPrereqs(targetDataLocation));
+    }
+
+    // Open runlist
+    string runListName = "../" + expName + "/runsToSort.txt";
+    ifstream runList(runListName);
+    if(!runList.is_open())
+    {
+        cerr << "Error: couldn't find runlist at " << runListName << endl;
+        exit(1);
+    }
+
+    cout << endl;
+
+    // Runlist open - loop through all runs
     string runNumber;
-    ifstream runList;
-
-    vector<vector<DataSet*>*> dataSets;
-
-    // Loop through all listed runs and extract cross section data
-
-    string targetName = argv[1];
-    targetName = "../" + targetName + "/runsToSort.txt";
-
-    runList.open(targetName);
-    int i = 0;
     while (runList >> runNumber)
     {
-        // Determine correct drive to find run
-        string driveName;
-        if (stoi(runNumber)<6)
+        // Loop through all subruns of this run
+        for(int subRun=0; subRun<=MAX_SUBRUN_NUMBER; subRun++)
         {
-            driveName = "/data3/analysis/run";
+            stringstream subRunFormatted;
+            subRunFormatted << setfill('0') << setw(4) << subRun;
+
+            // open subrun
+            stringstream inFileName;
+            inFileName << dataLocation << "/" << runNumber << "/"
+                       << subRunFormatted.str() << "/" << ROOTFileName << ".root";
+            ifstream f(inFileName.str());
+            if(!f.good())
+            {
+                // failed to open this sub-run - skip to the next one
+                continue;
+            }
+
+            f.close();
+
+            TFile* inFile = new TFile(inFileName.str().c_str(),"READ");
+
+            // get target order for this run
+            vector<string> targetOrder = getTargetOrder(expName, stoi(runNumber));
+
+            cout << "Adding " << runNumber << ", subrun " << subRun << endl;
+
+            // Loop through all target positions in this subrun
+            for(int j=0; (size_t)j<targetOrder.size(); j++)
+            {
+                // pull data needed for CS calculation from subrun 
+                string targetDataLocation = "../" + expName + "/targetData/" + targetOrder[j] + ".txt";
+                CSPrereqs subRunData(targetDataLocation);
+
+                subRunData.readData(inFile, get<1>(channelMap[5]), j);
+
+                // find the correct CSPrereqs to add this target's data to
+                for(int k=0; (size_t)k<allData.size(); k++)
+                {
+                    if(allData[k].target.getName() == subRunData.target.getName())
+                    {
+                        // add subrun data to total
+                        if(!allData[k].energyHisto)
+                        {
+                            // this is the first subrun to be added
+                            allData[k].monitorCounts = subRunData.monitorCounts;
+                            allData[k].energyHisto = (TH1I*)subRunData.energyHisto->Clone();
+                            // prevent the cloned histogram from being closed
+                            // when the subrun is closed
+                            allData[k].energyHisto->SetDirectory(0);
+                        }
+
+                        else
+                        {
+                            allData[k] = allData[k] + subRunData;
+                        }
+
+                        break;
+                    }
+
+                    if((size_t)k+1==allData.size())
+                    {
+                        cerr << "Failed to find a CSPrereqs to add this subrun to." << endl;
+                        continue;
+                    }
+                }
+            }
+
+            // Close the sub-run input files
+            inFile->Close();
         }
-        else if (stoi(runNumber)>127 && stoi(runNumber)<160)
+    }
+
+    string outFileName = dataLocation + "/total.root";
+
+    cout << "Total statistics over all runs: " << endl << endl;
+
+    for(CSPrereqs p : allData)
+    {
+        long totalCounts = 0;
+        for(int i=0; i<p.energyHisto->GetNbinsX(); i++)
         {
-            driveName = "/data2/analysis/run";
-        }
-        else if (stoi(runNumber)>159 && stoi(runNumber)<178)
-        {
-            driveName = "/data3/analysis/run";
-        }
-        else
-        {
-            cout << "Run directory outside bounds (runs 128-177) - check run number" << endl;
-            exit(1);
+            totalCounts += p.energyHisto->GetBinContent(i);
         }
 
-        // Open run
-
-        TFile* infile;
-
-        stringstream infileName;
-        infileName << driveName << runNumber << "/" << "sum.root";
-        infile = new TFile(infileName.str().c_str());
-
-        if(!infile->IsOpen())
-        {
-            cout << "Can't open sum.root file of run" << runNumber << endl;
-            exit(1);
-        }
-
-        cout << "Adding run" << runNumber << endl;
-
-        dataSets.push_back(new vector<DataSet*>);
-
-        // Pull out the cross section data
-        for(int j=1; (size_t)j<targetNames.size(); j++)
-        {
-            TGraphErrors* graph = (TGraphErrors*)infile->Get(targetNames[j].c_str());
-            
-            dataSets.back()->push_back(new DataSet);
-            extractGraphData(graph, *dataSets.back()->back());
-        }
-
-        // Close the sub-run input files
-        infile->Close();
-
-        // End of loop - move to next sub-run
-        i++;
+        cout << p.target.getName() << ": total events in energy histo = "
+             << totalCounts << ", total monitor events = "
+             << p.monitorCounts << endl;
+        calculateCS(outFileName, p, allData[0]);
     }
 
     // read literature data for natural Sn
@@ -365,10 +470,7 @@ int main(int, char* argv[])
     //litData->ls();
     //TGraphErrors *SnNatLitData = (TGraphErrors*)litData->Get("Natural Sn (n,tot)");
 
-    // Create output file to contain averaged TGraphs of experimental cross section data
-    stringstream outFileName;
-    outFileName << "/data3/analysis/total.root";
-    TFile *outFile = new TFile(outFileName.str().c_str(),"RECREATE");
+    /*
 
     vector<DataSet> dataAverage;
     for(int i=0; i<dataSets[0]->size(); i++)
@@ -388,6 +490,7 @@ int main(int, char* argv[])
         TGraphErrors* graph = dataAverage[i].createPlot(targetNames[i+1]);
         plots.CSGraphs.push_back(graph);
     }
+    */
 
     /*
 
@@ -404,7 +507,7 @@ int main(int, char* argv[])
     // adjusted by matching to the literature SnNat data
 
     // read literature data
-    TFile *litDataFile = new TFile("/data2/analysis/literatureData.root","READ");
+/*    TFile *litDataFile = new TFile("/data2/analysis/literatureData.root","READ");
     TGraphErrors *SnNatLitGraph = (TGraphErrors*)litDataFile->Get("Natural Sn (n,tot)");
     TGraphErrors *CNatLitGraph = (TGraphErrors*)litDataFile->Get("Natural carbon (n,tot)");
 
@@ -440,6 +543,7 @@ int main(int, char* argv[])
     createRelativeCSPlot(dataAverage[4],dataAverage[2],"Sn relative CS",
                          "#frac{#sigma_{^{124}Sn}-#sigma_{^{112}Sn}}{#sigma_{^{124}Sn}+#sigma_{^{112}Sn}}",
                          false);
+                         */
 
     /*createRelativeCSPlot(dataAverage[1],dataAverage[0],"long-to-short carbon relative CS",
                          "long/short carbon relative CS",
@@ -453,21 +557,18 @@ int main(int, char* argv[])
                          "long/short carbon relative CS",
                          false);
     */
-
+/*
     // create isotopic Sn plots, scaled using literature data for natural Sn
     DataSet Sn112Scaled = scaleToLit(dataAverage[2],dataAverage[3],SnNatLitData);
     DataSet Sn124Scaled = scaleToLit(dataAverage[4],dataAverage[3],SnNatLitData);
 
     Sn112Scaled.createPlot("Sn112Scaled");
     Sn124Scaled.createPlot("Sn124Scaled");
+    */
 
     /*for(int i=0; i<crossSectionsAvg[4].size(); i++)
     {
         DataPoint dataPoint(crossSectionsAvg[3][i]
         Sn112Scaled.addDataPoint(DataPoint(crossSectionsAvg[]))
     }*/
-
-    // Write run histograms to sum.root
-    outFile->Write();
-    outFile->Close();
 }

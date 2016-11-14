@@ -43,9 +43,6 @@ void fillHistos()
 {
     cout << endl << "Entering ./histos..." << endl;
     TH1* waveformH;
-    // fill basic histograms for DPP mode in each channel
-
-    // define container to hold cross-section-relevant plots
 
     // first loop through all channel-specific DPP-mode trees
     for(int i=0; (size_t)i<orchard.size(); i++)
@@ -58,10 +55,10 @@ void fillHistos()
         gDirectory->GetDirectory(get<1>(channelMap[i]).c_str())->cd();
 
         // instantiate DPP-mode histograms
-        TH1I* macroNoH = new TH1I("macroNoH","macroNo",500000,0,500000);
+        TH1I* macroNoH = new TH1I("macroNoH","macroNo",200000,0,200000);
         macroNoH->GetXaxis()->SetTitle("macropulse number of each event");
 
-        TH1I* evtNoH = new TH1I("evtNoH","evtNo",2500,0,2500);
+        TH1I* evtNoH = new TH1I("evtNoH","evtNo",150,0,150);
         evtNoH->GetXaxis()->SetTitle("event number of each event");
 
         TH1I* macroTimeH = new TH1I("macroTimeH","macroTime",6000,0,6000000000);
@@ -652,17 +649,6 @@ int histos(string sortedFileName, string histoFileName)
         sortedFile->Close();
         histoFile->Write();
     }
-
-    // uncomment to when histos can avoid bein deleted without messing up plots
-    /*else
-    {
-        for(int i=0; i<NUMBER_OF_TARGETS; i++)
-        {
-            plots.push_back(new Plots(positionNames[i], histoFile, get<1>(channelMap[4])));
-            plots.push_back(new Plots(positionNames[i], histoFile, get<1>(channelMap[5]));
-        }
-    }*/
-
 
     //histoFile->Write();
 

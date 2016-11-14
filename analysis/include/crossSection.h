@@ -5,6 +5,7 @@
 
 #include "../include/dataPoint.h"
 #include "../include/dataSet.h"
+#include "../include/CSPrereqs.h"
 
 class CrossSection
 {
@@ -26,7 +27,7 @@ class CrossSection
         DataSet dataSet;
 };
 
-void calculateCS(std::string histoFileName, std::string directory, std::string CSFileName, std::string expName, int runNumber);
+int calculateCS(std::string CSFileName, CSPrereqs& targetData, CSPrereqs& blankData);
 void correctForDeadtime(std::string histoFileName, std::string deadtimeFileName, std::string directory);
 
 #endif

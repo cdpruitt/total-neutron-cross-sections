@@ -102,7 +102,7 @@ bool readTwoWordVariable(ifstream& evtfile, unsigned int& variable)
         return true;
     }
 
-    cerr << "Error: failed to read a two-word variable from the input file."  << endl;
+    //cerr << "Error: failed to read a two-word variable from the input file."  << endl;
     return false;
 }
 
@@ -126,7 +126,7 @@ bool readEventHeader(ifstream& evtfile)
 
     // finished reading event header
 
-    cerr << "Error: failed to read event header." << endl;
+    //cerr << "Error: failed to read event header." << endl;
     return false;
 }
 
@@ -236,7 +236,7 @@ bool readEvent(ifstream& evtfile)
 
 void readRawData(string inFileName, string outFileName)
 {
-    cout << endl << "Entering raw sort..." << endl;
+    cout << "Creating " << outFileName << endl;
 
     // attempt to open input file
     ifstream inFile;

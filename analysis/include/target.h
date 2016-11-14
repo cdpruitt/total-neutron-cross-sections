@@ -6,12 +6,11 @@
 #include "TH1I.h"
 #include "TGraphErrors.h"
 
-#include "crossSection.h"
-
 class Target
 {
     public:
         // creates a new target, based on a text file in ./targetData/
+        Target();
         Target(std::string targetDataLocation);
         std::string getName();
         double getLength();
