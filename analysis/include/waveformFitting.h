@@ -1,6 +1,8 @@
 #ifndef WAVEFORM_FITTING_H
 #define WAVEFORM_FITTING_H
 
+#include "analysisConstants.h"
+
 /*****************************************************************************/
 // Waveform-fitting parameters
 
@@ -52,8 +54,7 @@ int numberTotalTriggers = 0;
 
 // total number of micropulses processed per target (for performing dead time
 // calculation)
-std::vector<long> microsPerTargetWaveform(NUMBER_OF_TARGETS,0);
-
+std::vector<long> microsPerTargetWaveform(positionNames.size(),0);
 
 
 double onePeakForm(double *x, double *par);

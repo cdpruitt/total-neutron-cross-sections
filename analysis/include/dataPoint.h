@@ -19,6 +19,7 @@ class DataPoint
 
         DataPoint mergePoints(DataPoint point2);
 
+        friend DataPoint operator+(const DataPoint& augend, const DataPoint& addend);
         friend DataPoint operator-(const DataPoint& minuend, const DataPoint& subtrahend);
         friend DataPoint operator/(const DataPoint& dividend, const DataPoint& divisor);
 

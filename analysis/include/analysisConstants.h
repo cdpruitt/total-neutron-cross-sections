@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <utility>
 
 /*****************************************************************************/
 /* Constants used to structure and analyze experimental data */
@@ -15,19 +16,13 @@ const double SYNC_WINDOW = 0.02; // as fraction of MACRO_PERIOD
 
 // "Target changer charge gates" are used to assign the target changer position
 // based on the target changer signal's integrated charge
-const int tarGate[12] = {1500,2500,3000,4400,4600,6000,6500,7800,8000,9500,9600,11500};
-            // Position: 1low  1hi 2low  2hi 3low  3hi 4low 4hi  5low 5hi  6low   6hi
-
-// Establish which channels are active, and map them to function
-const std::vector<std::pair<std::string,std::string>> channelMap = {
-                  std::pair<std::string,std::string>("ch0","targetChanger"),
-                  std::pair<std::string,std::string>("ch1","ch1"),
-                  std::pair<std::string,std::string>("ch2","monitor"),
-                  std::pair<std::string,std::string>("ch3","ch3"),
-                  std::pair<std::string,std::string>("ch4","highThresholdDet"),
-                  std::pair<std::string,std::string>("ch5","lowThresholdDet"),
-                  std::pair<std::string,std::string>("ch6","vetoPaddle"),
-                  std::pair<std::string,std::string>("ch7","ch7"),
+const std::vector<std::pair<int,int>> tarGates = {
+    std::pair<int,int> (1500,2500), // position 1 gates
+    std::pair<int,int> (3000,4400), // position 2 gates
+    std::pair<int,int> (4600,6000), // position 3 gates
+    std::pair<int,int> (6500,7800), // position 4 gates
+    std::pair<int,int> (8000,9500), // position 5 gates
+    std::pair<int,int> (9600,11500) // position 6 gates
 };
 
 const double SCALEDOWN = 1; // (for debugging) only sort (total/SCALEDOWN) events
@@ -43,5 +38,6 @@ const std::vector<std::string> positionNames = {"blank", "target1", "target2", "
 
 const std::vector<std::string> targetNamesWaveform = {"blankWaveform", "shortCarbonWaveform", "longCarbonWaveform", "Sn112Waveform", "NatSnWaveform", "Sn124Waveform"}; 
 
+const std::vector<std::string> detectorNames = {"highThresholdDet","lowThresholdDet"};
 
 #endif

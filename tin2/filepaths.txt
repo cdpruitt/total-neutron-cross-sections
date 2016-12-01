@@ -1,1 +1,1 @@
-0   100   /media/cole/backup1 /media/cole/backup1
+0   75 /media/ExternalDrive1 /media/ExternalDrive1

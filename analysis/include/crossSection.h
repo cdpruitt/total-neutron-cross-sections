@@ -23,11 +23,15 @@ class CrossSection
         std::vector<double> getCrossSectionValues() const;
         std::vector<double> getCrossSectionErrors() const;
 
+        friend CrossSection operator+(const CrossSection& augend, const CrossSection& addend);
+        friend CrossSection operator-(const CrossSection& minuend, const CrossSection& subtrahend);
+        friend CrossSection operator/(const CrossSection& dividend, const CrossSection& divisor);
+
     private:
         DataSet dataSet;
 };
 
-int calculateCS(std::string CSFileName, CSPrereqs& targetData, CSPrereqs& blankData);
-void correctForDeadtime(std::string histoFileName, std::string deadtimeFileName, std::string directory);
+CrossSection calculateCS(std::string CSFileName, CSPrereqs& targetData, CSPrereqs& blankData);
+void correctForDeadtime(std::string histoFileName, std::string deadtimeFileName, std::vector<std::string> detectorChannels);
 
 #endif

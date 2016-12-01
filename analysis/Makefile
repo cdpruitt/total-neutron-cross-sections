@@ -1,8 +1,8 @@
 SHELL = /bin/sh
 COMPILER= clang++ 
-CFLAGS= -lstdc++ -O0 -I$(shell root-config --incdir) -std=c++11 -ggdb -Wall -Wextra
+CFLAGS= -lstdc++ -O2 -I$(shell root-config --incdir) -std=c++11 -ggdb -Wall -Wextra
 
-SOURCES = src/branches.cpp src/crossSection.cpp src/CSPrereqs.cpp src/dataPoint.cpp src/dataSet.cpp src/driver.cpp src/basicHistos.cpp src/plots.cpp src/raw.cpp src/altSeparate.cpp src/target.cpp src/vetoEvents.cpp src/waveform.cpp src/waveformFitting.cpp
+SOURCES = src/branches.cpp src/crossSection.cpp src/CSPrereqs.cpp src/dataPoint.cpp src/dataSet.cpp src/driver.cpp src/histos.cpp src/plots.cpp src/raw.cpp src/altSeparate.cpp src/target.cpp src/veto.cpp src/waveform.cpp src/waveformFitting.cpp
 COMMON = 
 HEADERS = $(shell echo include/*.h)
 OBJECTS = $(SOURCES:.c=.o)

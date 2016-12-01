@@ -1,5 +1,0 @@
-Name:       shortCarbon
-Length:     1.366 cm
-Diameter:   0.826 cm
-Mass:       1.2363 g
-Molar mass: 12.01 g/mol

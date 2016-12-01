@@ -83,15 +83,15 @@ while getopts "fscratow" opt; do
             ;;
         \?)
             # Flags unrecognized - exit script and give user help text
-            printf "\nInvalid option: -$OPTARG.\n\nValid options are:"
-            printf "\n    -f (analyze a single file, given as filepath)\n"
-            printf "\n    -s (analyze a single file, given as runNumber subRunNumber)\n"
-            printf "\n    -c (analyze a chunk of subruns, given as runNumber, first subRunNumber, last subRunNumber)\n"
-            printf "\n    -r (analyze runs listed in ../<experiment>/runsToSort.txt)\n"
-            printf "\n    -a (if using -r, read ALL subruns in each run, not just the most recent)\n"
-            printf "\n    -t (produce text output of event data instead of doing full analysis)\n"
-            printf "\n    -o (overwrite existing event histograms - use if analysis code has been changed)\n"
-            printf "\n    -o (overwrite existing waveform fits - use if waveform fitting code has been changed)\n"
+            printf "\nInvalid flag given.\n\nValid flags are:\n"
+            printf "    -f (analyze a single file, given as filepath)\n"
+            printf "    -s (analyze a single file, given as runNumber subRunNumber)\n"
+            printf "    -c (analyze a chunk of subruns, given as runNumber, first subRunNumber, last subRunNumber)\n"
+            printf "    -r (analyze runs listed in ../<experiment>/runsToSort.txt)\n"
+            printf "    -a (if using -r, read ALL subruns in each run, not just the most recent)\n"
+            printf "    -t (produce text output of event data instead of doing full analysis)\n"
+            printf "    -o (overwrite existing event histograms - use if analysis code has been changed)\n"
+            printf "    -w (overwrite existing waveform fits - use if waveform fitting code has been changed)\n"
 
             exit
             ;;
@@ -141,12 +141,7 @@ analyze ()
     # Send error messages to a text file
     2>&1 | tee > "$outputDirectoryName"error.txt
 
-    ./driver "$inputFileName" "$outputDirectoryName" "$experiment"
-
-    #if [ -s "$outputDirectoryName/temp.root" ]
-    #then
-    #    rm "$outputDirectoryName/temp.root"
-    #fi
+    ./driver "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber"
 }
 
 ################################################################################
@@ -173,6 +168,7 @@ then
     lowSubrun=$3
     highSubrun=$4
     subrunNo="$lowSubrun"
+
     while [ $subrunNo -le $highSubrun ]
     do
         # read input filepath and output filepath
@@ -191,6 +187,12 @@ then
         then
             echo "Failed to find filepath to input data. Exiting..."
             exit
+        fi
+
+        # Create directory to hold the output of our analysis
+        if [ ! -d "$outpath/analysis/$runNumber" ]
+        then
+            mkdir "$outpath"/analysis/"$runNumber"
         fi
 
         inputFileName="$datapath/output/$runNumber/data-$subrunNo.evt"
@@ -332,7 +334,6 @@ then
     done < ../"$experiment"/runsToSort.txt
 
     # Sum data from all subruns to make cross sections
-    rm "$outpath"/analysis/total.root
     ./sumAll "$outpath"/analysis "$experiment" "histos"
     exit
 fi

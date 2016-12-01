@@ -3,7 +3,7 @@
 
 #include "TTree.h"
 
-void separateByChannel(std::string rawFileName, TFile* sortedFile, std::vector<TTree*>& orchardRaw, std::vector<TTree*>& orchardRawW);
+void separateByChannel(std::string rawFileName, std::string sortedFileName, std::vector<std::string>& channelMap);
 
 void processDPPEvents(TFile*& sortedFile, std::vector<TTree*>& orchardRaw, std::vector<TTree*>& orchardProcessed);
 

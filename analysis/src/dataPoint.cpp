@@ -57,9 +57,22 @@ void DataPoint::setYError(double ye)
     yError = ye;
 }
 
+DataPoint operator+(const DataPoint& augend, const DataPoint& addend)
+{
+    DataPoint outputDataPoint((augend.getXValue()+addend.getXValue())/2,
+                              pow(
+                                  pow(augend.getXError(),2)+
+                                  pow(addend.getXError(),2),0.5),
+                              augend.getYValue()+addend.getYValue(),
+                              pow(
+                                  pow(augend.getYError(),2)+
+                                  pow(addend.getYError(),2),0.5));
+    return outputDataPoint;
+}
+
 DataPoint operator-(const DataPoint& minuend, const DataPoint& subtrahend)
 {
-    DataPoint outputDataPoint(minuend.getXValue()-subtrahend.getXValue(),
+    DataPoint outputDataPoint((minuend.getXValue()+subtrahend.getXValue())/2,
                               pow(
                                   pow(minuend.getXError(),2)+
                                   pow(subtrahend.getXError(),2),0.5),
@@ -84,10 +97,10 @@ DataPoint operator/(const DataPoint& dividend, const double divisor)
 
 DataPoint operator/(const DataPoint& dividend, const DataPoint& divisor)
 {
-    if(divisor.getXValue()<=0 || divisor.getYValue()<=0)
+    if(divisor.getXValue()==0 || divisor.getYValue()==0)
     {
         cerr << "Error: cannot divide by <=0 (DataPoint division)" << endl;
-        exit(1);
+        return DataPoint();
     }
 
     DataPoint outputDataPoint(dividend.getXValue(),

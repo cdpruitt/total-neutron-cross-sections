@@ -16,7 +16,7 @@ class Target
         double getLength();
         double getDiameter();
         double getMass();
-        double getMolMass();
+        double getMolarMass();
 
     private:
         // physical target parameters

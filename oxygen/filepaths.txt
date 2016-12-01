@@ -1,3 +1,1 @@
-0   5   /media/cdpruitt/Drive3 /data3
-128 159 /media/cdpruitt/Drive2 /data2
-160 177 /media/cdpruitt/Drive3 /data3
+0   104 /media/cole/backup1 /media/cole/backup1

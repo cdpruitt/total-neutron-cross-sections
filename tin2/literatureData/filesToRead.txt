@@ -1,8 +1,5 @@
 litCarbonTotalXS.dat
-litNatOTotalXS.dat
-lit18OTotalXS.dat
 litNatSnTotalXS.dat
 litNatPbTotalXS.dat
-litHydrogenTotalXS.dat
 DOMSn124TotalXS.dat
 DOMSn112TotalXS.dat

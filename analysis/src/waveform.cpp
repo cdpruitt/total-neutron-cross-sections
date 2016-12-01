@@ -19,7 +19,6 @@
 #include "../include/physicalConstants.h"
 #include "../include/analysisConstants.h"
 #include "../include/plottingConstants.h"
-#include "../include/targetConstants.h"
 #include "../include/dataStructures.h"
 #include "../include/target.h"
 #include "../include/waveformFitting.h"
@@ -444,7 +443,7 @@ void fillTriggerHistos(double triggerTime, double gammaOffset, int waveformNo, v
 
     triggerWalk->Fill(microTime,waveformNo);
 
-    if (procEvent.targetPos>0 && procEvent.targetPos<=NUMBER_OF_TARGETS)
+    if (procEvent.targetPos>0 && procEvent.targetPos<=tarGates.size())
     {
         TH1I* tof = plots[procEvent.targetPos-1]->getTOFHisto();
         TH1I* en = plots[procEvent.targetPos-1]->getEnergyHisto();
@@ -663,7 +662,7 @@ void processWaveforms(TTree* ch4TreeWaveform, vector<Plots*>& plots)
         }
     }
 
-    for(int k=0; (size_t)k<NUMBER_OF_TARGETS; k++)
+    for(int k=0; (size_t)k<tarGates.size(); k++)
     {
         cout << "target position " << k+1 << " counts = " << targetCounts[k] << endl;
     }
@@ -672,15 +671,15 @@ void processWaveforms(TTree* ch4TreeWaveform, vector<Plots*>& plots)
 
 void calculateDeadtime(vector<long> microsPerTarget, vector<Plots*>& plots)
 {
-    vector<vector<double>> eventsPerBinPerMicro(NUMBER_OF_TARGETS,vector<double>(0));
+    vector<vector<double>> eventsPerBinPerMicro(tarGates.size(),vector<double>(0));
 
     // "deadtimeFraction" records the fraction of time that the detector is dead, for
     // neutrons of a certain energy. It is target-dependent.
-    vector<vector<double>> deadtimeFraction(NUMBER_OF_TARGETS, vector<double>(0));
+    vector<vector<double>> deadtimeFraction(tarGates.size(), vector<double>(0));
 
     // Calculate deadtime:
     // for each target,
-    for(int i=0; i<NUMBER_OF_TARGETS; i++)
+    for(unsigned int i=0; i<tarGates.size(); i++)
     {
         if(microsPerTarget[i] <= 0)
         {
@@ -727,7 +726,7 @@ void calculateDeadtime(vector<long> microsPerTarget, vector<Plots*>& plots)
         dtH->Write();
 
         averageDeadtime /= deadtimeFraction[i].size();
-        cout << "Average deadtime for target " << i << ": " << averageDeadtime << endl;
+        //cout << "Average deadtime for target " << i << ": " << averageDeadtime << endl;
     }
 }
 
@@ -752,7 +751,7 @@ void waveform(string inFileName, string outFileName)
     {
         // Extract triggers from waveforms
 
-        for(int i=0; i<NUMBER_OF_TARGETS; i++)
+        for(unsigned int i=0; i<tarGates.size(); i++)
         {
             string name = positionNames[i] + "W";
             plots.push_back(new Plots(name.c_str()));
@@ -774,7 +773,7 @@ void waveform(string inFileName, string outFileName)
     /*
     else
     {
-        for(int i=0; i<NUMBER_OF_TARGETS; i++)
+        for(int i=0; i<tarGates.size(); i++)
         {
             string name = positionNames[i] + "W";
             plots.push_back(new Plots(name, outFile));

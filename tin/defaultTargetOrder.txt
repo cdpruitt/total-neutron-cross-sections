@@ -5,4 +5,4 @@ The data format is:
 Pos. 1  Pos.2       Pos. 3      Pos. 4  Pos. 5       Pos. 6
 ***********************************************************
 
-blank   NatPb       longCarbon  Sn112   NatSn        Sn124
+blank   shortCarbon longCarbon  Sn112   NatSn        Sn124

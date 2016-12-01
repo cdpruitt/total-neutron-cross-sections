@@ -1,0 +1,4 @@
+litNatOTotalXS.dat
+lit18OTotalXS.dat
+litHydrogenTotalXS.dat
+litDeuteriumTotalXS.dat

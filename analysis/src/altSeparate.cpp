@@ -17,7 +17,6 @@
 #include "../include/dataStructures.h"
 #include "../include/analysisConstants.h"
 #include "../include/physicalConstants.h"
-#include "../include/targetConstants.h"
 #include "../include/separate.h"
 #include "../include/branches.h"
 
@@ -26,8 +25,6 @@ using namespace std;
 extern SeparatedEvent separatedEvent;
 extern ProcessedEvent procEvent;
 extern TargetChangerEvent tcEvent;
-
-vector<long> separatedNumberOfWaveforms(channelMap.size(),0);
 
 void fillRawTreeW(TTree* tree)
 {
@@ -39,27 +36,17 @@ void fillRawTreeW(TTree* tree)
       }*/
 
     tree->Fill();
-
-    separatedNumberOfWaveforms[separatedEvent.chNo]++;
 }
-
-/******************************************************************************/
-
-
-
-/******************************************************************************/
-// Event processing functions
-/******************************************************************************/
 
 // Use the lgQ from the target changer to determine the target position
 int assignTargetPos(int lgQ)
 {
-    for(int k=0; k<NUMBER_OF_TARGETS; k++)
+    for(int i=0; (size_t)i<tarGates.size(); i++)
     {
-        if (lgQ>tarGate[2*k] && lgQ<tarGate[2*k+1])
+        if (lgQ>tarGates[i].first && lgQ<tarGates[i].second)
         {
-            // lgQ fits within one of the lgQ gates we defined
-            return k+1;
+            // lgQ fits within this gate
+            return i;
         }
     }
 
@@ -108,6 +95,7 @@ void addDetectorEvent(vector<int>& evtNo, vector<int>& extTime, int chNo, TTree*
         case 2:
             TIME_OFFSET = MACROPULSE_OFFSET;
             break;
+        case 3:
         case 4:
         case 5:
             TIME_OFFSET = MACROPULSE_OFFSET;
@@ -146,40 +134,11 @@ void addDetectorEvent(vector<int>& evtNo, vector<int>& extTime, int chNo, TTree*
 }
 
 // Populate events from the input tree into channel-specific trees.
-void separateByChannel(string rawFileName, TFile* sortedFile, vector<TTree*>& orchardProcessed, vector<TTree*>& orchardProcessedW)
+void separateByChannel(string rawFileName, string sortedFileName, vector<string>& channelMap)
 {
-    /*separatedNumberOfCh0Waveforms = 0;
-    separatedNumberOfCh2Waveforms = 0;
-    separatedNumberOfCh4Waveforms = 0;
-
-    separatedNumberOfDPPs = 0;
-    separatedNumberOfWaveforms = 0;
-    */
-
-    // Create the new empty trees
-    // Each channel has a separate tree for DPP data and for waveform mode data
-    for(int i=0; (size_t)i<channelMap.size(); i++)
-    {
-            orchardProcessed.push_back(new TTree((get<1>(channelMap[i])+"ProcessedTree").c_str(),""));
-            if(i==0)
-            {
-                branchTargetChanger(orchardProcessed[i]);
-                orchardProcessed[i]->SetDirectory(sortedFile);
-                continue;
-            }
-            branchProc(orchardProcessed[i]);
-            orchardProcessed[i]->SetDirectory(sortedFile);
-    }
-
-    for(int i=0; (size_t)i<channelMap.size(); i++)
-    {
-        orchardProcessedW.push_back(new TTree((get<1>(channelMap[i])+"ProcessedTreeW").c_str(),""));
-        branchProcW(orchardProcessedW[i]);
-        orchardProcessedW[i]->SetDirectory(sortedFile);
-    }
-
     cout << "Separating events by channel and event type..." << endl;
 
+    // open the input file
     TFile* rawFile = new TFile(rawFileName.c_str(),"READ");
     TTree* inputTree = (TTree*)rawFile->Get("tree");
 
@@ -191,12 +150,43 @@ void separateByChannel(string rawFileName, TFile* sortedFile, vector<TTree*>& or
 
     // link the tree from the input file to our event variables
     setBranchesSeparated(inputTree);
-    
+
     int totalEntries = inputTree->GetEntries();
 
     totalEntries /= SCALEDOWN; // for debugging:
-                                     // use to separate only a subset of total
-                                     // events and ignore the rest
+                               // use to separate only a subset of total
+                               // events and ignore the rest
+
+    // create an output file
+    TFile* sortedFile = new TFile(sortedFileName.c_str(),"CREATE");
+    vector<TTree*> orchardProcessed; // channel-specific DPP events assigned to macropulses
+    vector<TTree*> orchardProcessedW;// channel-specific waveform events assigned to macropulses
+
+    // Create trees to be filled with sorted data
+    // Each channel has a separate tree for DPP data and for waveform mode data
+    for(int i=0; (size_t)i<channelMap.size(); i++)
+    {
+        orchardProcessed.push_back(new TTree((channelMap[i]).c_str(),""));
+        orchardProcessedW.push_back(new TTree((channelMap[i]+"W").c_str(),""));
+
+        if(i==0)
+        {
+            branchTargetChanger(orchardProcessed[i]);
+            orchardProcessed[i]->SetDirectory(sortedFile);
+            continue;
+        }
+
+        if(channelMap[i]=="-")
+        {
+            continue;
+        }
+
+        branchProc(orchardProcessed[i]);
+        orchardProcessed[i]->SetDirectory(sortedFile);
+
+        branchProcW(orchardProcessedW[i]);
+        orchardProcessedW[i]->SetDirectory(sortedFile);
+    }
 
     // To uniquely identify each event, we assign each channel's events an event
     // number (evtNo), which is the event's order in its macropulse.
@@ -267,6 +257,7 @@ void separateByChannel(string rawFileName, TFile* sortedFile, vector<TTree*>& or
                 case 2:
                     // clear finetime for monitor events!
                     separatedEvent.fineTime=0;
+                case 3:
                 case 4:
                 case 5:
                 case 6:
@@ -323,4 +314,5 @@ void separateByChannel(string rawFileName, TFile* sortedFile, vector<TTree*>& or
         tree->Write();
     }
 
+    sortedFile->Close();
 }

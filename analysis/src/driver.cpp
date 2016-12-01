@@ -8,7 +8,7 @@
 #include "../include/plots.h"
 #include "../include/waveform.h"
 #include "../include/crossSection.h"
-#include "../include/vetoEvents.h"
+#include "../include/veto.h"
 
 // ROOT library classes
 #include "TFile.h"
@@ -22,6 +22,59 @@
 
 using namespace std;
 
+vector<string> getChannelMap(string expName, int runNumber)
+{
+    string channelMapLocation = "../" + expName + "/channelMap.txt";
+    ifstream dataFile(channelMapLocation.c_str());
+    if(!dataFile.is_open())
+    {
+        std::cout << "Failed to find channel mapping in " << channelMapLocation << std::endl;
+        exit(1);
+    }
+
+    string str;
+    vector<string> channelMap;
+
+    while(getline(dataFile,str))
+    {
+        // ignore comments in data file
+        string delimiter = "-";
+        string token = str.substr(0,str.find(delimiter));
+        if(!atoi(token.c_str()))
+        {
+            // This line starts with a non-integer and is thus a comment; ignore
+            continue;
+        }
+
+        // parse data lines into space-delimited tokens
+        vector<string> tokens;
+        istringstream iss(str);
+        copy(istream_iterator<string>(iss),
+                istream_iterator<string>(),
+                back_inserter(tokens));
+
+        // extract run numbers from first token
+        string lowRun = tokens[0].substr(0,tokens[0].find(delimiter));
+        tokens[0] = tokens[0].erase(0,tokens[0].find(delimiter) + delimiter.length());
+
+        delimiter = "\n";
+        string highRun = tokens[0].substr(0,tokens[0].find(delimiter));
+        
+        if(atoi(lowRun.c_str()) <= runNumber && runNumber <= atoi(highRun.c_str()))
+        {
+            for(int i=1; (size_t)i<tokens.size(); i++)
+            {
+                channelMap.push_back(tokens[i]);
+            }
+            break;
+        }
+    }
+
+    return channelMap;
+}
+
+
+
 int main(int, char* argv[])
 {
     /*************************************************************************/
@@ -32,29 +85,26 @@ int main(int, char* argv[])
     string rawDataFileName = argv[1];
 
     // location of directory where all analysis output will be stored
-    string outputDirectoryName = argv[2];
-
-    // name of experimental directory where target information is located
-    string expName = argv[3];
-
     string analysisDirectory = argv[2];
+ 
+    // location of experimental configuration files
+    string experimentName = argv[3];
+
+    int runNumber = atoi(argv[4]);
+
+    // create names of all output files
     string rawTreeFileName = analysisDirectory + "raw.root";
     string sortedFileName = analysisDirectory + "sorted.root";
-    string waveformFileName = analysisDirectory + "waveform.root";
-    string DPPwaveformFileName = analysisDirectory + "DPPwaveform.root";
+    string vetoedFileName = analysisDirectory + "vetoed.root";
     string histoFileName = analysisDirectory + "histos.root";
-    string CSFileNameHighThresh = analysisDirectory + "cross-sections_highT.root";
-    string CSFileNameLowThresh = analysisDirectory + "cross-sections_lowT.root";
-
+    string waveformFileName = analysisDirectory + "waveform.root";
     string errorFileName = analysisDirectory + "error.txt";
-    string tempFileName = analysisDirectory + "temp.root";
+
+    vector<string> channelMap = getChannelMap(experimentName, runNumber);
 
     /*************************************************************************/
-    /* Start analysis */
-    /*************************************************************************/
-
-    /*************************************************************************/
-    /* Populate raw event data into a tree */
+    /* Start analysis:
+     * Populate raw event data into a tree */
     /*************************************************************************/
     ifstream f(rawTreeFileName);
     if(!f.good())
@@ -75,58 +125,52 @@ int main(int, char* argv[])
     ifstream p(sortedFileName);
     if(!p.good())
     {
-        // convert the raw data tree into a processed data tree
-        TFile* sortedFile = new TFile(sortedFileName.c_str(),"CREATE");
-
-        vector<TTree*> orchardProcessed; // channel-specific DPP events assigned to macropulses
-        vector<TTree*> orchardProcessedW;// channel-specific waveform events assigned to macropulses
-
         // separate all data by channel and event type
-        separateByChannel(rawTreeFileName, sortedFile, orchardProcessed, orchardProcessedW);
-
-        // uncomment for NEVT_AGGR = 10 behavior
-        /*
-
-        // Next, extract target changer events from the input tree and add to the
-        // target changer trees (DPP and waveform), assigning a macropulse to each
-        // target changer event. 
-
-        processTargetChanger(rawTreeFileName, sortedFile);
-
-        // Last, now that the macropulse structure is assigned by the target changer
-        // events, we can assign detector events to the correct macropulse.
-        processDPPEvents(sortedFile, orchardRaw, orchardProcessed);
-        processWaveformEvents(sortedFile, orchardRawW, orchardProcessedW);
-        */
-
-        vetoEvents(orchardProcessed[4],orchardProcessed[6], "highThreshold");
-        vetoEvents(orchardProcessed[5],orchardProcessed[6], "lowThreshold");
-
-        //cout << "Total number of ch0 waveform-mode events processed = " << numberOfCh0Waveforms << endl;
-        //cout << "Total number of ch2 waveform-mode events processed = " << numberOfCh2Waveforms << endl;
-        //cout << "Total number of ch4 waveform-mode events processed = " << numberOfCh4Waveforms << endl;
-
-        sortedFile->Write();
-        sortedFile->Close();
+        separateByChannel(rawTreeFileName, sortedFileName, channelMap);
     }
 
     else
     {
-        cout << "Found previously existing processed tree file. Skipping tree processing..." << endl;
+        cout << "Sorted data tree already exists." << endl;
+        p.close();
     }
 
     /*************************************************************************/
-    /* perform fits on DPP wavelets and waveform-mode data */
+    /* Eliminate detector events using the veto paddle */
+    /*************************************************************************/
+    ifstream v(vetoedFileName);
+    if(!v.good())
+    {
+        vetoEvents(sortedFileName, vetoedFileName, detectorNames, "veto");
+    }
 
-    // analyze the waveform-mode data, including peak-fitting and deadtime extraction
-    //if(runWaveform)
+    else
+    {
+        cout << "Vetoed data tree already exists." << endl;
+        v.close();
+    }
 
-    //waveform(sortedFileName, waveformFileName);
+    /*************************************************************************/
+    /* Process events into histograms in preparation for cross section
+     * calculation */
+    /*************************************************************************/
+    ifstream h(histoFileName);
+    if(!h.good())
+    {
+        histos(sortedFileName, vetoedFileName, histoFileName, channelMap);
+    }
 
-    histos(sortedFileName, histoFileName);
+    else
+    {
+        cout << "Histos already exist." << endl;
+        h.close();
+    }
 
-    // Apply deadtime correction to DPP-mode data
-    correctForDeadtime(histoFileName, histoFileName, get<1>(channelMap[4]));
-    correctForDeadtime(histoFileName, histoFileName, get<1>(channelMap[5]));
+    /*************************************************************************/
+    /* Process events into histograms in preparation for cross section
+     * calculation */
+    /*************************************************************************/
+    correctForDeadtime(histoFileName, histoFileName, detectorNames);
+
     return 0;
 }

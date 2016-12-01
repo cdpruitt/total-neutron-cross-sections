@@ -87,7 +87,7 @@ double Target::getMass()
     return mass;
 }
 
-double Target::getMolMass()
+double Target::getMolarMass()
 {
     return molMass;
 }
