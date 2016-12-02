@@ -49,6 +49,28 @@ DataSet::DataSet(string dataSetLocation)
     createPlot(reference);
 }
 
+DataSet::DataSet(TGraphErrors* graph, string ref)
+{
+
+    int numberOfPoints = graph->GetN();
+
+    vector<double> x (numberOfPoints);
+    vector<double> y (numberOfPoints);
+    vector<double> xError (numberOfPoints);
+    vector<double> yError (numberOfPoints);
+
+    for(int i=0; i<numberOfPoints; i++)
+    {
+        graph->GetPoint(i,x[i],y[i]);
+        xError[i] = graph->GetErrorX(i);
+        yError[i] = graph->GetErrorY(i);
+
+        this->addPoint(DataPoint(x[i],xError[i],y[i],yError[i]));
+    }
+
+    reference = ref; 
+}
+
 void DataSet::addPoint(DataPoint dataPoint)
 {
     data.push_back(dataPoint);

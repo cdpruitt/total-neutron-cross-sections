@@ -1,5 +1,5 @@
 Name:       H2O
 Length:     2.00 cm
-Diameter:   0.824 cm
-Mass:       1.07 g
-Molar mass: 18.02 g/mol
+Diameter:   1.00 cm
+Mass:       1.571 g
+Molar mass: 18.015 g/mol

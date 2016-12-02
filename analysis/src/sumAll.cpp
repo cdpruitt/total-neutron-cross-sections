@@ -238,7 +238,8 @@ int main(int, char* argv[])
             // get target order for this run
             vector<string> targetOrder = getTargetOrder(expName, stoi(runNumber));
 
-            cout << "Adding " << runNumber << ", subrun " << subRun << endl;
+            cout << "Adding " << runNumber << ", subrun " << subRun << "\r";
+            fflush(stdout);
 
             // Loop through all target positions in this subrun
             for(int j=0; (size_t)j<targetOrder.size(); j++)
@@ -290,7 +291,7 @@ int main(int, char* argv[])
 
     vector<CrossSection> crossSections;
 
-    cout << "Total statistics over all runs: " << endl << endl;
+    cout << endl << "Total statistics over all runs: " << endl << endl;
 
     for(CSPrereqs p : allData)
     {

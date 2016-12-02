@@ -12,6 +12,7 @@ class DataSet
         DataSet();
         DataSet(std::string dataSetLocation);
         DataSet(std::vector<double> energy, std::vector<double> xsection, std::vector<double> error, std::string reference);
+        DataSet(TGraphErrors* graph, std::string reference);
 
         TGraphErrors* getPlot() const;
         int getNumberOfPoints() const;

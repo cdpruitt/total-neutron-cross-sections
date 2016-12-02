@@ -292,8 +292,7 @@ CrossSection calculateCS(string CSFileName, CSPrereqs& targetData, CSPrereqs& bl
     double energyValue;
     double energyError;
 
-    int numberOfBins = targetData.energyHisto->GetNbinsX()-2;
-    // subtract 2 for the overflow and underflow bins
+    int numberOfBins = targetData.energyHisto->GetNbinsX();
 
     // calculate the ratio of target/blank monitor counts (normalize flux)
     double tMon = targetData.monitorCounts;
@@ -302,10 +301,10 @@ CrossSection calculateCS(string CSFileName, CSPrereqs& targetData, CSPrereqs& bl
 
     // loop through each bin in the energy histo, calculating a cross section
     // for each bin
-    for(int i=0; i<=numberOfBins; i++)
+    for(int i=1; i<=numberOfBins-1; i++) // skip the overflow and underflow bins
     {
         energyValue = targetData.energyHisto->GetBinCenter(i);
-        energyError = targetData.energyHisto->GetBinError(i);
+        energyError = targetData.energyHisto->GetBinWidth(i)/2;
 
         // avoid "divide by 0" and "log of 0" errors
         if(blankData.energyHisto->GetBinContent(i) <= 0 || targetData.energyHisto->GetBinContent(i) <= 0)
@@ -328,7 +327,7 @@ CrossSection calculateCS(string CSFileName, CSPrereqs& targetData, CSPrereqs& bl
         double detectorRatio = tBin/bBin;
 
         // calculate number of atoms in target
-        long numberOfAtoms =
+        long double numberOfAtoms =
              (t.getMass()/t.getMolarMass())*AVOGADROS_NUMBER;
 
         // calculate areal density (atoms/cm^2) in target
@@ -350,32 +349,6 @@ CrossSection calculateCS(string CSFileName, CSPrereqs& targetData, CSPrereqs& bl
         crossSection.addDataPoint(
                 DataPoint(energyValue, energyError, crossSectionValue, crossSectionError));
     }
-
-    // get hydrogen data
-    TFile* hydrogenFile = new TFile("../tin2/literatureData/literatureData.root","READ");
-    TGraphErrors* hydrogenGraph = (TGraphErrors*)hydrogenFile->Get("Hydrogen (n,tot)\r");
-    if(!hydrogenGraph)
-    {
-        cerr << "Error: failed to find hydrogen graph in literature data." << endl;
-        exit(1);
-    }
-
-    DataSet hydrogenData = DataSet();
-
-    DataSet rawData = crossSection.getDataSet();
-
-    for(int j=0; j<rawData.getNumberOfPoints(); j++)
-    {
-
-        hydrogenData.addPoint(
-                DataPoint(rawData.getPoint(j).getXValue(),
-                    rawData.getPoint(j).getXError(),
-                    hydrogenGraph->Eval(rawData.getPoint(j).getXValue()),
-                    0)
-                ); 
-    }
-
-    crossSection.addDataSet(crossSection.getDataSet()-hydrogenData*2);
 
     TFile* CSFile = new TFile(CSFileName.c_str(),"UPDATE");
     crossSection.createCSGraph(targetData.target.getName());

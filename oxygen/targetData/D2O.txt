@@ -1,5 +1,5 @@
 Name:       D2O
 Length:     2.00 cm
-Diameter:   0.824 cm
-Mass:       1.19 g
-Molar mass: 20.03 g/mol
+Diameter:   1.00 cm
+Mass:       1.739 g
+Molar mass: 20.028 g/mol

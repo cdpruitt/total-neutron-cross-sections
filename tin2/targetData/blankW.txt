@@ -1,5 +1,0 @@
-Name:       blankW
-Length:     0 cm
-Diameter:   0 cm
-Mass:       0 g
-Molar mass: 0 g/mol

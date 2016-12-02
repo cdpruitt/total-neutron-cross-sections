@@ -46,7 +46,7 @@ int assignTargetPos(int lgQ)
         if (lgQ>tarGates[i].first && lgQ<tarGates[i].second)
         {
             // lgQ fits within this gate
-            return i;
+            return i+1; // target positions start from 1
         }
     }
 

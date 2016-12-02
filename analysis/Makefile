@@ -1,6 +1,6 @@
 SHELL = /bin/sh
 COMPILER= clang++ 
-CFLAGS= -lstdc++ -O2 -I$(shell root-config --incdir) -std=c++11 -ggdb -Wall -Wextra
+CFLAGS= -lstdc++ -O0 -I$(shell root-config --incdir) -std=c++11 -ggdb -Wall -Wextra
 
 SOURCES = src/branches.cpp src/crossSection.cpp src/CSPrereqs.cpp src/dataPoint.cpp src/dataSet.cpp src/driver.cpp src/histos.cpp src/plots.cpp src/raw.cpp src/altSeparate.cpp src/target.cpp src/veto.cpp src/waveform.cpp src/waveformFitting.cpp
 COMMON = 
@@ -10,7 +10,7 @@ OBJECTS = $(SOURCES:.c=.o)
 ALLOBJECTS := $(patsubst %.cpp,%.o,$(wildcard src/*.cpp))
 LINKOPTION = $(shell root-config --libs)
 
-all: driver sumAll text finetimeCheck readLitData
+all: driver sumAll text finetimeCheck readLitData subtractCS
 
 driver: $(OBJECTS) $(COMMON)
 	$(COMPILER) $(CFLAGS) -o driver $(OBJECTS) $(LINKOPTION)
@@ -29,6 +29,9 @@ finetimeCheck: src/finetimeCheck.cpp src/branches.cpp
 
 makeCSText: src/makeCSText.cpp src/dataPoint.cpp
 	$(COMPILER) $(CFLAGS) -o makeCSText src/makeCSText.cpp src/dataPoint.cpp $(LINKOPTION)
+
+subtractCS: src/subtractCS.cpp src/dataSet.cpp src/dataPoint.cpp src/crossSection.cpp src/target.cpp src/plots.cpp
+	$(COMPILER) $(CFLAGS) -o subtractCS src/subtractCS.cpp src/dataSet.cpp src/dataPoint.cpp src/crossSection.cpp src/target.cpp src/plots.cpp $(LINKOPTION)
 
 %.o : %.cpp $(HEADERS) $(COMMON)
 	$(COMPILER) $(CFLAGS) $< -o $@

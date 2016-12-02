@@ -1,7 +1,6 @@
 blank
-shortCarbon
+NatPb
 longCarbon
 Sn112
 NatSn
 Sn124
-NatPb
