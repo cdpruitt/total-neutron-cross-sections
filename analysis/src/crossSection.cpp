@@ -212,7 +212,7 @@ void correctForDeadtime(string histoFileName, string deadtimeFileName, vector<st
             if(!deadtimeHisto)
             {
                 cout << "Couldn't find deadtimeHisto for target " << i << endl;
-                break;
+                continue;
             }
 
             int deadtimeBins = deadtimeHisto->GetNbinsX();
@@ -281,7 +281,7 @@ CrossSection calculateCS(string CSFileName, CSPrereqs& targetData, CSPrereqs& bl
     // of interest so we can normalize the flux between them
     if(targetData.monitorCounts == 0 || blankData.monitorCounts == 0)
     {
-        cerr << "Error - didn't find any monitor counts for target while trying to calculate cross sections. Exiting..." << endl;
+        cerr << "Error - didn't find any monitor counts for target while trying to calculate cross sections. Returning empty cross section..." << endl;
         return CrossSection();
     }
 

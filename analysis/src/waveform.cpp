@@ -683,7 +683,7 @@ void calculateDeadtime(vector<long> microsPerTarget, vector<Plots*>& plots)
     {
         if(microsPerTarget[i] <= 0)
         {
-            break;
+            continue;
         }
 
         // for each bin,

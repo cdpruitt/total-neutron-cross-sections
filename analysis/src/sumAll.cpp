@@ -307,7 +307,7 @@ int main(int, char* argv[])
         crossSections.push_back(calculateCS(outFileName, p, allData[0]));
     }
 
-    string relativeFileName = dataLocation + "/relative.root";
+    /*string relativeFileName = dataLocation + "/relative.root";
     TFile* relativeFile = new TFile(relativeFileName.c_str(), "RECREATE");
 
     CrossSection relative = (crossSections[3]-crossSections[1])/(crossSections[3]+crossSections[1]);
@@ -318,4 +318,5 @@ int main(int, char* argv[])
 
     relative.createCSGraph(relativeName.c_str());
     relativeFile->Close();
+    */
 }
