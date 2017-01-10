@@ -148,6 +148,14 @@ void separateByChannel(string rawFileName, string sortedFileName, vector<string>
         exit(1);
     }
 
+    // if no channel mapping can be established for this run, no separation can
+    // be done - exit
+    if(!channelMap.size())
+    {
+        cerr << "Error: failed to establish channel mapping for this run. Exiting..." << endl;
+        exit(1);
+    }
+
     // link the tree from the input file to our event variables
     setBranchesSeparated(inputTree);
 

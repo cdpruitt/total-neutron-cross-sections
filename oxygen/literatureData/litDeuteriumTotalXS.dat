@@ -1,5 +1,6 @@
 Literature data from T.W. Phillips et al (1980) and W.P. Abfalterer et al (2001) (above 9.16 MeV)
-MeV      Barns       Error (Barns)      
+Deuterium(n,tot)
+MeV      Barns       Error (Barns)
 1.383    2.71        0.011         
 1.442    2.696       0.013         
 1.504    2.673       0.011         

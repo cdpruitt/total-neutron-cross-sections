@@ -91,3 +91,28 @@ double Target::getMolarMass()
 {
     return molMass;
 }
+
+void Target::setName(string n)
+{
+    name = n;
+}
+
+void Target::setLength(double l)
+{
+    length = l;
+}
+
+void Target::setDiameter(double d)
+{
+    diameter = d;
+}
+
+void Target::setMass(double m)
+{
+    mass = m;
+}
+
+void Target::setMolarMass(double mm)
+{
+    molMass = mm;
+}

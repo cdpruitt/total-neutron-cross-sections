@@ -25,6 +25,7 @@
 #include "../include/waveform.h"
 #include "../include/plots.h"
 #include "../include/branches.h"
+#include "../include/experiment.h"
 
 using namespace std;
 
@@ -730,7 +731,7 @@ void calculateDeadtime(vector<long> microsPerTarget, vector<Plots*>& plots)
     }
 }
 
-void waveform(string inFileName, string outFileName)
+void waveform(string inFileName, string outFileName, string experiment)
 {
     TFile* inFile = new TFile(inFileName.c_str(),"READ");
     if(!inFile->IsOpen())
@@ -738,6 +739,8 @@ void waveform(string inFileName, string outFileName)
         cerr << "Error: failed to open resort.root" << endl;
         exit(1);
     }
+
+    vector<string> positionNames = readExperimentConfig(experiment,"positionNames");
 
     TTree* ch4TreeWaveform = (TTree*)inFile->Get("ch4ProcessedTreeW");
 
@@ -783,6 +786,10 @@ void waveform(string inFileName, string outFileName)
     setBranchesHistosW(ch4TreeWaveform);
 
     int totalEntries = ch4TreeWaveform->GetEntries();
+
+    // total number of micropulses processed per target (for performing dead time
+    // calculation)
+    vector<long> microsPerTargetWaveform(6,0);
 
     for(int i=0; i<totalEntries; i++)
     {

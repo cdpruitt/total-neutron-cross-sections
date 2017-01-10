@@ -2,7 +2,9 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <cmath>
 #include "TMath.h"
+#include "TFile.h"
 
 #include "../include/dataPoint.h"
 #include "../include/dataSet.h"
@@ -34,12 +36,14 @@ DataSet::DataSet(string dataSetLocation)
         exit(1);
     }
 
-    char dummy[200];
-    dataFile.getline(dummy,200);
-    getline(dataFile,reference);
-    dataFile.getline(dummy,200);
+    string dummy;
+    std::getline(dataFile,dummy);
+    std::getline(dataFile,reference);
+    std::getline(dataFile,dummy);
 
     double dum,dum2,dum3;
+
+    //cout << reference;
 
     while(dataFile >> dum >> dum2 >> dum3)
     {
@@ -47,6 +51,7 @@ DataSet::DataSet(string dataSetLocation)
     }
 
     createPlot(reference);
+    dataFile.close();
 }
 
 DataSet::DataSet(TGraphErrors* graph, string ref)
@@ -103,178 +108,99 @@ int DataSet::getNumberOfPoints() const
 
 const DataSet operator+(const DataSet& set1, const DataSet& set2)
 {
-    std::vector<double> sumEnergy;
-    std::vector<double> sumXsection;
-    std::vector<double> sumError;
-
-    std::vector<double> energies1 = set1.getXValues();
-    std::vector<double> xsecs1 = set1.getYValues();
-    std::vector<double> errors1 = set1.getYErrors();
-
-    std::vector<double> energies2 = set2.getXValues();
-    std::vector<double> xsecs2 = set2.getYValues();
-    std::vector<double> errors2 = set2.getYErrors();
-
     DataSet summedDataSet;
-    for (int i=0; i<set2.getNumberOfPoints(); i++)
+    if(set1.getNumberOfPoints() != set2.getNumberOfPoints())
     {
-        if (energies1[i] == energies2[i])
+        cerr << "Error: tried to add data sets with different number of points. Returning empty data set..." << endl;
+        return summedDataSet;
+    }
+
+    for (int i=0; i<set1.getNumberOfPoints(); i++)
+    {
+        if (set1.getPoint(i).getXValue()!=set2.getPoint(i).getXValue())
         {
-            sumEnergy.push_back(energies1[i]);
-            sumXsection.push_back(xsecs1[i] + xsecs2[i]);
-            sumError.push_back(pow(pow(errors1[i],2) + pow(errors2[i],2),0.5));
+            cerr << "Error: there was an energy mismatch between a data point in set 1\
+                and a data point in set 2. Returning summed dataSet." << endl;
+            return summedDataSet;
         }
 
-        else
-        {
-            cerr << "Error: set 1 energies != set 2 energies" << endl;
-            exit(1);
-        }
-        DataPoint d = DataPoint(sumEnergy[i],0,sumXsection[i],sumError[i]);
-        summedDataSet.addPoint(d);
+        double xValue = set1.getPoint(i).getXValue();
+        double xError = set1.getPoint(i).getXError();
+        double yValue = set1.getPoint(i).getYValue() +
+                        set2.getPoint(i).getYValue();
+        double yError = pow(pow(set1.getPoint(i).getYError(),2) +
+                            pow(set2.getPoint(i).getYError(),2),0.5);
+
+        summedDataSet.addPoint(DataPoint(xValue,xError,yValue,yError));
     }
 
     summedDataSet.setReference(set1.getReference() + set2.getReference() + "sum");
     return summedDataSet;
 }
 
-const DataSet DataSet::plus(const DataSet& set2,const string& name)
-{
-    std::vector<double> sumEnergy;
-    std::vector<double> sumXsection;
-    std::vector<double> sumError;
-
-    sumEnergy = getXValues();
-    sumXsection = getYValues();
-    sumError = getYErrors();
-
-    for (int i=0; (size_t)i<getXValues().size(); i++)
-    {
-        if (getXValues()[i] == set2.getXValues()[i])
-        {
-            sumXsection[i] += set2.getYValues()[i];
-            sumError[i] += set2.getYErrors()[i];
-        }
-
-        else
-        {
-            cerr << "Error: set 1 energies != set 2 energies" << endl;
-            exit(1);
-        }
-    }
-
-    return DataSet(sumEnergy, sumXsection, sumError, name);
-}
-
 const DataSet operator-(const DataSet& set1, const DataSet& set2)
 {
-    std::vector<double> diffEnergy;
-    std::vector<double> diffXsection;
-    std::vector<double> diffError;
-
-    std::vector<double> energies1 = set1.getXValues();
-    std::vector<double> xsecs1 = set1.getYValues();
-    std::vector<double> errors1 = set1.getYErrors();
-
-    std::vector<double> energies2 = set2.getXValues();
-    std::vector<double> xsecs2 = set2.getYValues();
-    std::vector<double> errors2 = set2.getYErrors();
-
-    DataSet diffDataSet;
-    for (int i=0; i<set2.getNumberOfPoints(); i++)
+    DataSet differenceDataSet;
+    if(set1.getNumberOfPoints() != set2.getNumberOfPoints())
     {
-        if (energies1[i] == energies2[i])
-        {
-            diffEnergy.push_back(energies1[i]);
-            diffXsection.push_back(xsecs1[i] - xsecs2[i]);
-            diffError.push_back(pow(pow(errors1[i],2) + pow(errors2[i],2),0.5));
-        }
-
-        else
-        {
-            cerr << "Error: set 1 energies != set 2 energies" << endl;
-            exit(1);
-        }
-        DataPoint d = DataPoint(diffEnergy[i],0,diffXsection[i],diffError[i]);
-        diffDataSet.addPoint(d);
+        cerr << "Error: tried to subtract data sets with different number of points. Returning empty data set..." << endl;
+        return differenceDataSet;
     }
 
-    diffDataSet.setReference(set1.getReference() + set2.getReference() + "diff");
-    return diffDataSet;
-}
-
-const DataSet DataSet::minus(const DataSet& set2,const string& name)
-{
-    std::vector<double> sumEnergy;
-    std::vector<double> sumXsection;
-    std::vector<double> sumError;
-
-    sumEnergy = getXValues();
-    sumXsection = getYValues();
-    sumError = getYErrors();
-
-    for (int i=0; (size_t)i<set2.getXValues().size(); i++)
+    for (int i=0; i<set1.getNumberOfPoints(); i++)
     {
-        if (getXValues()[i] == set2.getXValues()[i])
+        if (set1.getPoint(i).getXValue()!=set2.getPoint(i).getXValue())
         {
-            sumXsection[i] -= set2.getYValues()[i];
-            sumError[i] -= set2.getYErrors()[i];
+            cerr << "Error: there was an energy mismatch between a data point in set 1\
+                and a data point in set 2. Returning difference dataSet." << endl;
+            return differenceDataSet;
         }
 
-        else
-        {
-            cerr << "Error: set 1 energies != set 2 energies" << endl;
-            exit(1);
-        }
+        double xValue = set1.getPoint(i).getXValue();
+        double xError = set1.getPoint(i).getXError();
+        double yValue = set1.getPoint(i).getYValue() -
+                        set2.getPoint(i).getYValue();
+        double yError = pow(pow(set1.getPoint(i).getYError(),2) +
+                            pow(set2.getPoint(i).getYError(),2),0.5);
+
+        differenceDataSet.addPoint(DataPoint(xValue,xError,yValue,yError));
     }
 
-    return DataSet(sumEnergy, sumXsection, sumError, name);
+    differenceDataSet.setReference(set1.getReference() + set2.getReference() + "difference");
+    return differenceDataSet;
 }
 
 const DataSet operator*(const DataSet& set1, const DataSet& set2)
 {
-    std::vector<double> multEnergy;
-    std::vector<double> multXsection;
-    std::vector<double> multError;
-
-    std::vector<double> energies1 = set1.getXValues();
-    std::vector<double> xsecs1 = set1.getYValues();
-    std::vector<double> errors1 = set1.getYErrors();
-
-    std::vector<double> energies2 = set2.getXValues();
-    std::vector<double> xsecs2 = set2.getYValues();
-    std::vector<double> errors2 = set2.getYErrors();
-
-    DataSet multDataSet;
-    for (int i=0; i<set2.getNumberOfPoints(); i++)
+    DataSet productDataSet;
+    if(set1.getNumberOfPoints() != set2.getNumberOfPoints())
     {
-        if (energies1[i] == energies2[i])
-        {
-            multEnergy.push_back(energies1[i]);
-            if(xsecs1[i]!=0 && xsecs2[i]!=0)
-            {
-                multXsection.push_back(xsecs1[i]*xsecs2[i]);
-                multError.push_back(pow(pow(errors1[i]/xsecs1[i],2) + pow(errors2[i]/xsecs2[i],2),0.5));
-            }
-
-            else
-            {
-                multXsection.push_back(0);
-                multError.push_back(0);
-            }
-        }
-
-        else
-        {
-            cerr << "Error: set 1 energies != set 2 energies" << endl;
-            exit(1);
-        }
-        DataPoint d = DataPoint(multEnergy[i],0,multXsection[i],multError[i]);
-        multDataSet.addPoint(d);
+        cerr << "Error: tried to multiply data sets with different number of points. Returning empty data set..." << endl;
+        return productDataSet;
     }
 
-    multDataSet.setReference(set1.getReference() + set2.getReference() + "mult");
-    return multDataSet;
+    for (int i=0; i<set1.getNumberOfPoints(); i++)
+    {
+        if (set1.getPoint(i).getXValue()!=set2.getPoint(i).getXValue())
+        {
+            cerr << "Error: there was an energy mismatch between a data point in set 1\
+                and a data point in set 2. Returning product dataSet." << endl;
+            return productDataSet;
+        }
+
+        double xValue = set1.getPoint(i).getXValue();
+        double xError = set1.getPoint(i).getXError();
+        double yValue = set1.getPoint(i).getYValue() *
+                        set2.getPoint(i).getYValue();
+        double yError = abs(yValue)*
+                        pow(pow(set1.getPoint(i).getYError()/set1.getPoint(i).getYValue(),2) +
+                            pow(set2.getPoint(i).getYError()/set1.getPoint(i).getYValue(),2),0.5);
+
+        productDataSet.addPoint(DataPoint(xValue,xError,yValue,yError));
+    }
+
+    productDataSet.setReference(set1.getReference() + set2.getReference() + "product");
+    return productDataSet;
 }
 
 const DataSet operator*(const DataSet& multiplicand, const double multiplier)
@@ -289,6 +215,39 @@ const DataSet operator*(const DataSet& multiplicand, const double multiplier)
     return product;
 }
 
+const DataSet operator/(const DataSet& set1, const DataSet& set2)
+{
+    DataSet quotientDataSet;
+    if(set1.getNumberOfPoints() != set2.getNumberOfPoints())
+    {
+        cerr << "Error: tried to divide data sets with different number of points. Returning empty data set..." << endl;
+        return quotientDataSet;
+    }
+
+    for (int i=0; i<set1.getNumberOfPoints(); i++)
+    {
+        if (set1.getPoint(i).getXValue()!=set2.getPoint(i).getXValue())
+        {
+            cerr << "Error: there was an energy mismatch between a data point in set 1\
+                and a data point in set 2. Returning quotient dataSet." << endl;
+            return quotientDataSet;
+        }
+
+        double xValue = set1.getPoint(i).getXValue();
+        double xError = set1.getPoint(i).getXError();
+        double yValue = set1.getPoint(i).getYValue() /
+                        set2.getPoint(i).getYValue();
+        double yError = abs(yValue)*
+                        pow(pow(set1.getPoint(i).getYError()/set1.getPoint(i).getYValue(),2) +
+                            pow(set2.getPoint(i).getYError()/set1.getPoint(i).getYValue(),2),0.5);
+
+        quotientDataSet.addPoint(DataPoint(xValue,xError,yValue,yError));
+    }
+
+    quotientDataSet.setReference(set1.getReference() + set2.getReference() + "quotient");
+    return quotientDataSet;
+}
+
 const DataSet operator/(const DataSet& dividend, const double divisor)
 {
     DataSet quotient;
@@ -299,99 +258,6 @@ const DataSet operator/(const DataSet& dividend, const double divisor)
     }
 
     return quotient;
-}
-
-const DataSet operator/(const DataSet& set1, const DataSet& set2)
-{
-    std::vector<double> divEnergy;
-    std::vector<double> divXsection;
-    std::vector<double> divError;
-
-    std::vector<double> energies1 = set1.getXValues();
-    std::vector<double> xsecs1 = set1.getYValues();
-    std::vector<double> errors1 = set1.getYErrors();
-
-    std::vector<double> energies2 = set2.getXValues();
-    std::vector<double> xsecs2 = set2.getYValues();
-    std::vector<double> errors2 = set2.getYErrors();
-
-    DataSet divDataSet;
-    for (int i=0; i<set2.getNumberOfPoints(); i++)
-    {
-        if (energies1[i] == energies2[i])
-        {
-            divEnergy.push_back(energies1[i]);
-            if(xsecs1[i]!=0 && xsecs2[i]!=0)
-            {
-                divXsection.push_back(xsecs1[i]/xsecs2[i]);
-                divError.push_back(pow(pow(errors1[i]/xsecs1[i],2) + pow(errors2[i]/xsecs2[i],2),0.5));
-            }
-
-            else
-            {
-                divXsection.push_back(0);
-                divError.push_back(0);
-            }
-        }
-
-        else
-        {
-            cerr << "Error: set 1 energies != set 2 energies" << endl;
-            exit(1);
-        }
-        DataPoint d = DataPoint(divEnergy[i],0,divXsection[i],divError[i]);
-        divDataSet.addPoint(d);
-    }
-
-    divDataSet.setReference(set1.getReference() + set2.getReference() + "div");
-    return divDataSet;
-}
-
-const DataSet DataSet::divideBy(const DataSet& set2, const string& name)
-{
-    std::vector<double> sumEnergy;
-    std::vector<double> sumXsection;
-    std::vector<double> sumError;
-
-    sumEnergy = getXValues();
-    sumXsection = getYValues();
-    sumError = getYErrors();
-
-    for (int i=0; (size_t)i<set2.getXValues().size(); i++)
-    {
-        if (getXValues()[i] == set2.getXValues()[i])
-        {
-            if(set2.getYValues()[i] != 0)
-            {
-                sumXsection[i] /= set2.getYValues()[i];
-            }
-
-            if(set2.getYErrors()[i] != 0)
-            {
-                sumError[i] /= set2.getYErrors()[i];
-            }
-        }
-
-        else
-        {
-            cerr << "Error: set 1 energies != set 2 energies" << endl;
-            exit(1);
-        }
-    }
-
-    return DataSet(sumEnergy, sumXsection, sumError, name);
-}
-
-DataSet DataSet::merge(DataSet set2)
-{
-    DataSet mergedSet;
-    for(int i=0; (size_t)i<data.size(); i++)
-    {
-        DataPoint point1 = this->getPoint(i);
-        DataPoint point2 = set2.getPoint(i);
-        mergedSet.addPoint(point1.mergePoints(point2));
-    }
-    return mergedSet;
 }
 
 vector<double> DataSet::getXValues() const
@@ -437,7 +303,6 @@ vector<double> DataSet::getYErrors() const
 TGraphErrors* DataSet::createPlot(string name)
 {
     dataPlot = new TGraphErrors(this->getXValues().size(),&this->getXValues()[0],&this->getYValues()[0],&this->getXErrors()[0],&this->getYErrors()[0]);
-    dataPlot->SetName(name.c_str());
-    dataPlot->Write();
+    dataPlot->SetNameTitle(name.c_str(),name.c_str());
     return dataPlot;
 }

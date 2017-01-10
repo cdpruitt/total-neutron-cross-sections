@@ -1,5 +1,5 @@
 #include "../include/dataPoint.h"
-#include <math.h>
+#include <cmath>
 #include <iostream>
 
 using namespace std;
@@ -15,6 +15,24 @@ DataPoint::DataPoint(double x, double xE,
     xError = xE;
     yValue = y;
     yError = yE;
+}
+
+DataPoint::DataPoint(double x, double xE,
+                     double y, double yE,
+                     long bMC,
+                     long tMC,
+                     long bDC,
+                     long tDC)
+{
+    xValue = x;
+    xError = xE;
+    yValue = y;
+    yError = yE;
+
+    blankMonitorCounts = bMC;
+    targetMonitorCounts = tMC;
+    blankDetCounts = bDC;
+    targetDetCounts = tDC;
 }
 
 double DataPoint::getXValue() const
@@ -35,6 +53,46 @@ double DataPoint::getYValue() const
 double DataPoint::getYError() const
 {
     return yError;
+}
+
+long DataPoint::getBlankMonitorCounts() const
+{
+    return blankMonitorCounts;
+}
+
+long DataPoint::getTargetMonitorCounts() const
+{
+    return targetMonitorCounts;
+}
+
+long DataPoint::getBlankDetCounts() const
+{
+    return blankDetCounts;
+}
+
+long DataPoint::getTargetDetCounts() const
+{
+    return targetDetCounts;
+}
+
+void DataPoint::setBlankMonitorCounts(long bMC)
+{
+    blankMonitorCounts = bMC;
+}
+
+void DataPoint::setTargetMonitorCounts(long tMC)
+{
+    targetMonitorCounts = tMC;
+}
+
+void DataPoint::setBlankDetCounts(long bDC)
+{
+    blankDetCounts = bDC;
+}
+
+void DataPoint::setTargetDetCounts(long tDC)
+{
+    targetDetCounts = tDC;
 }
 
 void DataPoint::setXValue(double xv)
@@ -97,35 +155,17 @@ DataPoint operator/(const DataPoint& dividend, const double divisor)
 
 DataPoint operator/(const DataPoint& dividend, const DataPoint& divisor)
 {
-    if(divisor.getXValue()==0 || divisor.getYValue()==0)
+    if(divisor.getYValue()==0)
     {
-        cerr << "Error: cannot divide by <=0 (DataPoint division)" << endl;
+        cerr << "Error: cannot divide a DataPoint y-value by 0 (DataPoint division)" << endl;
         return DataPoint();
     }
 
     DataPoint outputDataPoint(dividend.getXValue(),
-                              pow(
-                                  pow(dividend.getXError()/dividend.getXValue(),2)+
-                                  pow(divisor.getXError()/divisor.getXValue(),2),0.5),
+                              dividend.getXError(),
                               dividend.getYValue()/divisor.getYValue(),
-                              pow(
+                              pow(abs((dividend.getYValue()/divisor.getYValue()))*
                                   pow(dividend.getYError()/dividend.getYValue(),2)+
                                   pow(divisor.getYError()/divisor.getYValue(),2),0.5));
     return outputDataPoint;
-}
-
-DataPoint DataPoint::mergePoints(DataPoint point2)
-{
-    DataPoint mergedPoint;
-    if(xValue!=point2.getXValue())
-    {
-        cerr << "Error: tried to merge points with different xValues. Exiting..." << endl;
-    }
-
-    mergedPoint.setXValue(xValue);
-    mergedPoint.setXError(pow(pow(xError,2)+pow(point2.getXError(),2),0.5));
-    mergedPoint.setYValue((yValue+point2.getYValue())/2);
-    mergedPoint.setYError(pow(pow(yError,2)+pow(point2.getYError(),2),0.5));
-
-    return mergedPoint;
 }

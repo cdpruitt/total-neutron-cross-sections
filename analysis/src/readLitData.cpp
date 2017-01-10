@@ -1,5 +1,9 @@
 // this is a short 'script' to read cross section data from a text file
 // and create ROOT graphs of the data
+
+// how to use:
+// ./readLitData path/to/literatureData name/of/outputFile
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -35,25 +39,19 @@ int main(int, char* argv[])
         fileNames.push_back(dummy);
     }
 
-    // open/create output file
+    // recreate output file
     TFile* outFile = new TFile(outFileName.c_str(),"RECREATE");
 
-    vector<DataSet*> allData;
+    vector<DataSet> allData;
 
     for(string s : fileNames)
     {
-        allData.push_back(new DataSet(s));
+        cout << "Creating plot for " << s << endl;
+        allData.push_back(DataSet(s));
+        outFile->cd();
+        allData.back().getPlot()->Write();
     }
 
-    /*if(allData.size()>1)
-    {
-        DataSet Sum124_112 = allData[2].plus(allData[3],"Sn124+Sn112");
-        DataSet Diff124_112 = allData[2].minus(allData[3],"Sn124-Sn112");
-        DataSet RelDiff124_112 = Diff124_112.divideBy(Sum124_112,"(Sn124-Sn112)/(Sn124+Sn112)");
-    }*/
-
-    // clean up
-    outFile->Write();
     outFile->Close();
 
     return 0;

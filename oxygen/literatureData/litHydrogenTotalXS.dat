@@ -1,6 +1,6 @@
-Literature data from J.M.Clement et al (1972) (to 9.02 MeV) and W.P. Abfalterer (2001) (above 9.02 MeV)
-Hydrogen (n,tot)
-MeV          barns       barns (error)   
+Literature data from J.M Clement et al (1972) (to 9.02 MeV) and W.P. Abfalterer (2001) (above 9.02 MeV)
+Hydrogen(n,tot)
+MeV          Barns       Error (Barns)
 0.5011       6.583       0.23962     
 0.5031       5.941       0.1601      
 0.50512      6.1493      0.15516     

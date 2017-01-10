@@ -5,4 +5,4 @@ Run Nos. |  Channel functions
 ********************************************************************************
 
 57-75       targetChanger - monitor - highThresholdDet lowThresholdDet veto -
-102-102     targetChanger - monitor - highThresholdDet lowThresholdDet veto -
+100-101     targetChanger - monitor - highThresholdDet lowThresholdDet veto -

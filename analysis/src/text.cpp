@@ -20,12 +20,11 @@ using namespace std;
 struct TextOutput {
     ofstream ch0;
     ofstream ch2;
+    ofstream ch3;
     ofstream ch4;
-
-    // print left and right detector channels independently (for diagnostics
-    // only)
-    ofstream channel6;
-    ofstream channel7;
+    ofstream ch5;
+    ofstream ch6;
+    ofstream ch7;
 
     // conglomerate of all channels
     ofstream total;
@@ -34,9 +33,11 @@ struct TextOutput {
 
 const string ch0Name = "textOutput/ch0.txt";
 const string ch2Name = "textOutput/ch2.txt";
+const string ch3Name = "textOutput/ch3.txt";
 const string ch4Name = "textOutput/ch4.txt";
-const string channel6Name = "textOutput/channel6.txt";
-const string channel7Name = "textOutput/channel7.txt";
+const string ch5Name = "textOutput/ch5.txt";
+const string ch6Name = "textOutput/ch6.txt";
+const string ch7Name = "textOutput/ch7.txt";
 
 // Pretty-print event data into a text file
 void printEvent(RawEvent& rawEvent, TextOutput& text)
@@ -52,15 +53,24 @@ void printEvent(RawEvent& rawEvent, TextOutput& text)
         case 2:
             out = &text.ch2;
             break;
+        case 3:
+            out = &text.ch3;
+            break;
         case 4:
             out = &text.ch4;
             break;
+        case 5:
+            out = &text.ch5;
+            break;
         case 6:
-            out = &text.channel6;
+            out = &text.ch6;
             break;
         case 7:
-            out = &text.channel7;
+            out = &text.ch7;
             break;
+        default:
+            cerr << "Error: can't output text for channel " << rawEvent.chNo << endl;
+            exit(1);
     }
 
     // Print event's header data (i.e., data that exist in both DPP and waveform mode)
@@ -352,9 +362,11 @@ int main(int, char* argv[])
 
     textOutput.ch0.open(ch0Name);
     textOutput.ch2.open(ch2Name);
+    textOutput.ch3.open(ch3Name);
     textOutput.ch4.open(ch4Name);
-    textOutput.channel6.open(channel6Name);
-    textOutput.channel7.open(channel7Name);
+    textOutput.ch5.open(ch5Name);
+    textOutput.ch6.open(ch6Name);
+    textOutput.ch7.open(ch7Name);
 
     rawEvent.waveform = new vector<int>;
 
@@ -383,7 +395,9 @@ int main(int, char* argv[])
     inFile.close();
     textOutput.ch0.close();
     textOutput.ch2.close();
+    textOutput.ch3.close();
     textOutput.ch4.close();
-    textOutput.channel6.close();
-    textOutput.channel7.close();
+    textOutput.ch5.close();
+    textOutput.ch6.close();
+    textOutput.ch7.close();
 }

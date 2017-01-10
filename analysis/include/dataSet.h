@@ -1,6 +1,7 @@
 #ifndef __DATASET_H__
 #define __DATASET_H__
 
+#include "TFile.h"
 #include "TGraphErrors.h"
 #include <sstream>
 #include "../include/dataPoint.h"
@@ -42,6 +43,7 @@ class DataSet
         std::vector<double> getYErrors() const;
 
         TGraphErrors* createPlot(std::string name);
+        TGraphErrors* createPlot(std::string name, TFile* file);
     private:
 
         TGraphErrors* dataPlot;

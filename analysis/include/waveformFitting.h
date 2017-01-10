@@ -52,11 +52,6 @@ int numberOnePeakExpBackFits = 0; // Successfully fit as one peak riding on
 int numberTwoPeakFits = 0;        // Successfully fit as two peaks
 int numberTotalTriggers = 0;
 
-// total number of micropulses processed per target (for performing dead time
-// calculation)
-std::vector<long> microsPerTargetWaveform(positionNames.size(),0);
-
-
 double onePeakForm(double *x, double *par);
 double onePeakExpBackForm(double *x, double *par);
 double twoPeakForm(double *x, double *par);

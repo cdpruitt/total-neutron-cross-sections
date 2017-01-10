@@ -1,0 +1,10 @@
+Name: NatO
+Length:  2.00 cm
+Diameter: 1.00 cm
+Mass:  0.0003534 g/(cm)^3
+Molar mass: 16.00 g/mol
+Name: NatN
+Length:  2.00 cm
+Diameter: 1.00 cm
+Mass:  0.001160 g/(cm)^3
+Molar mass: 14.01 g/mol

@@ -23,15 +23,33 @@ class CrossSection
         std::vector<double> getCrossSectionValues() const;
         std::vector<double> getCrossSectionErrors() const;
 
+        double getArealDensity() const;
+        void setArealDensity(double arealDensity);
+
         friend CrossSection operator+(const CrossSection& augend, const CrossSection& addend);
         friend CrossSection operator-(const CrossSection& minuend, const CrossSection& subtrahend);
         friend CrossSection operator/(const CrossSection& dividend, const CrossSection& divisor);
 
+        double calculateRMSError();
+
+        CrossSection subtractCS(std::string subtrahendFileName,
+                        std::string subtrahendGraphName, double factor);
+
     private:
         DataSet dataSet;
+        double arealDensity;
 };
 
 CrossSection calculateCS(std::string CSFileName, CSPrereqs& targetData, CSPrereqs& blankData);
 void correctForDeadtime(std::string histoFileName, std::string deadtimeFileName, std::vector<std::string> detectorChannels);
+
+double getPartialError(DataPoint aPoint, DataPoint bPoint, double aArealDensity);
+CrossSection calculateRelative(CrossSection a, CrossSection b);
+
+ CrossSection subtractCS(std::string rawCSFileName, std::string rawCSGraphName,
+                        std::string subtrahendFileName, std::string subtrahendGraphName,
+                        double factor, // multiplies the subtrahend
+                        double divisor // divides the final difference
+                       );
 
 #endif

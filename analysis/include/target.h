@@ -18,6 +18,12 @@ class Target
         double getMass();
         double getMolarMass();
 
+        void setName(std::string n);
+        void setLength(double l);
+        void setDiameter(double d);
+        void setMass(double m);
+        void setMolarMass(double mm);
+
     private:
         // physical target parameters
         std::string name;

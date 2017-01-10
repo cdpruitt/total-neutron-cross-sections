@@ -9,6 +9,8 @@
 #include "TDirectoryFile.h"
 #include "TROOT.h"
 #include "TMath.h"
+#include "TRandom3.h"
+
 #include "../include/physicalConstants.h"
 #include "../include/analysisConstants.h"
 #include "../include/dataStructures.h"
@@ -546,9 +548,128 @@ setBranches(orchard[3]);
 }
 */
 
+void correctForDeadtime(string histoFileName, string deadtimeFileName, vector<string> detectorChannels)
+{
+    TFile* deadtimeFile = new TFile(deadtimeFileName.c_str(),"READ");
+    TFile* histoFile = new TFile(histoFileName.c_str(),"UPDATE");
+
+    for(string directory : detectorChannels)
+    {
+        gDirectory->cd("/");
+        gDirectory->cd(directory.c_str());
+
+        vector<Plots*> uncorrectedPlots;
+        for(unsigned int i=0; i<positionNames.size(); i++)
+        {
+            string name = positionNames[i];
+            uncorrectedPlots.push_back(new Plots(name,histoFile,directory));
+        }
+
+        vector<Plots*> correctedPlots;
+        for(unsigned int i=0; i<positionNames.size(); i++)
+        {
+            string name = positionNames[i] + "Corrected";
+            correctedPlots.push_back(new Plots(name));
+        }
+
+        vector<Plots*> deadtimePlots;
+        for(unsigned int i=0; i<positionNames.size(); i++)
+        {
+            string name = positionNames[i];
+            deadtimePlots.push_back(new Plots(name, deadtimeFile, directory));
+        }
+
+        // extract deadtime from waveform-mode fit
+
+        TRandom3 *randomizeBin = new TRandom3();
+
+        for(unsigned int i=0; i<positionNames.size(); i++)
+        {
+            // "deadtimeFraction" records the fraction of time that the detector is dead, for
+            // neutrons of a certain energy.
+
+            vector<double> deadtimeFraction;
+
+            //string temp;
+            //temp = "deadtime" + t.getName() + "Waveform";
+            //plots.waveformDeadtimes.push_back((TH1I*)deadtimeFile->Get(temp.c_str()));
+
+            /*if(!t.getDeadtime.back())
+              {
+              cerr << "Error: couldn't find waveform deadtime histograms." << endl;
+              exit(1);
+              }*/
+
+            TH1I* deadtimeHisto = deadtimePlots[i]->getDeadtimeHisto();
+            if(!deadtimeHisto)
+            {
+                cout << "Couldn't find deadtimeHisto for target " << i << endl;
+                continue;
+            }
+
+            int deadtimeBins = deadtimeHisto->GetNbinsX();
+
+            for(int j=0; j<deadtimeBins; j++)
+            {
+                deadtimeFraction.push_back(deadtimeHisto->GetBinContent(j)/(double)pow(10,3));
+            }
+
+            // create deadtime-corrected histograms
+
+            deadtimeHisto->Write();
+
+            //vector<vector<double>> eventsPerBinPerMicro(6,vector<double>(0));
+
+            //const double FULL_DEADTIME = 183; // total amount of time after firing when
+            // detector is at least partially dead to
+            // incoming pulses (in ns)
+            //const double PARTIAL_DEADTIME = 9; // amount of time after the end of
+            // FULL_DEADTIME when detector is
+            // becoming live again, depending on
+            // amplitude (in ns)
+
+            /*************************************************************************/
+            // Perform deadtime correction
+            /*************************************************************************/
+
+            // loop through all TOF histos
+
+            TH1I* tof = uncorrectedPlots[i]->getTOFHisto();
+            //TH1I* en = uncorrectedPlots[i]->getEnergyHisto();
+
+            TH1I* tofC = correctedPlots[i]->getTOFHisto();
+            TH1I* enC = correctedPlots[i]->getEnergyHisto();
+
+            int tofBins = tofC->GetNbinsX();
+
+            // apply deadtime correction to TOF histos
+            for(int j=0; j<tofBins; j++)
+            {
+                if(deadtimeFraction[j] > 0)
+                {
+                    tofC->SetBinContent(j,(tof->GetBinContent(j)/(1-deadtimeFraction[j])));
+                }
+
+                // convert microTime into neutron velocity based on flight path distance
+                double velocity = pow(10.,7.)*FLIGHT_DISTANCE/(tofC->GetBinCenter(j)+randomizeBin->Uniform(-TOF_RANGE/(double)(2*TOF_BINS),TOF_RANGE/(double)(2*TOF_BINS))); // in meters/sec 
+
+                // convert velocity to relativistic kinetic energy
+                double rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
+
+                enC->Fill(rKE,tofC->GetBinContent(j));
+                tofC->SetBinError(j,pow(tofC->GetBinContent(j),0.5));
+                enC->SetBinError(j,pow(enC->GetBinContent(j),0.5));
+            }
+        }
+    }
+
+    histoFile->Write();
+    histoFile->Close();
+}
+
 int histos(string sortedFileName, string vetoedFileName, string histoFileName, vector<string> channelMap)
 {
-    cout << endl << "Entering ./histos..." << endl;
+    cout << "Entering ./histos..." << endl;
 
     TFile* sortedFile = new TFile(sortedFileName.c_str(),"READ");
     TFile* vetoedFile = new TFile(vetoedFileName.c_str(),"READ");

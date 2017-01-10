@@ -20,12 +20,9 @@
 #include "TH1.h"
 #include "TFile.h"
 #include "TAxis.h"
-#include "TRandom3.h"
 #include "TGraphErrors.h"
 
 using namespace std;
-
-const double BLANK_MON_SCALING = 1;
 
 CrossSection::CrossSection()
 {
@@ -106,6 +103,16 @@ vector<double> CrossSection::getCrossSectionErrors() const
     return crossSectionErrors;
 }
 
+double CrossSection::getArealDensity() const
+{
+    return arealDensity;
+}
+
+void CrossSection::setArealDensity(double ad)
+{
+    arealDensity = ad;
+}
+
 CrossSection operator+(const CrossSection& augend, const CrossSection& addend)
 {
     int n = augend.getNumberOfPoints();
@@ -156,205 +163,193 @@ void CrossSection::createCSGraph(string name)
     t->Write();
 }
 
-void correctForDeadtime(string histoFileName, string deadtimeFileName, vector<string> detectorChannels)
+double CrossSection::calculateRMSError()
 {
-    TFile* deadtimeFile = new TFile(deadtimeFileName.c_str(),"READ");
-    TFile* histoFile = new TFile(histoFileName.c_str(),"UPDATE");
+    double RMSError = 0;
 
-    for(string directory : detectorChannels)
+    if(!dataSet.getNumberOfPoints())
     {
-        gDirectory->cd("/");
-        gDirectory->cd(directory.c_str());
-
-        vector<Plots*> uncorrectedPlots;
-        for(unsigned int i=0; i<positionNames.size(); i++)
-        {
-            string name = positionNames[i];
-            uncorrectedPlots.push_back(new Plots(name,histoFile,directory));
-        }
-
-        vector<Plots*> correctedPlots;
-        for(unsigned int i=0; i<positionNames.size(); i++)
-        {
-            string name = positionNames[i] + "Corrected";
-            correctedPlots.push_back(new Plots(name));
-        }
-
-        vector<Plots*> deadtimePlots;
-        for(unsigned int i=0; i<positionNames.size(); i++)
-        {
-            string name = positionNames[i];
-            deadtimePlots.push_back(new Plots(name, deadtimeFile, directory));
-        }
-
-        // extract deadtime from waveform-mode fit
-
-        TRandom3 *randomizeBin = new TRandom3();
-
-        for(unsigned int i=0; i<positionNames.size(); i++)
-        {
-            // "deadtimeFraction" records the fraction of time that the detector is dead, for
-            // neutrons of a certain energy.
-
-            vector<double> deadtimeFraction;
-
-            //string temp;
-            //temp = "deadtime" + t.getName() + "Waveform";
-            //plots.waveformDeadtimes.push_back((TH1I*)deadtimeFile->Get(temp.c_str()));
-
-            /*if(!t.getDeadtime.back())
-              {
-              cerr << "Error: couldn't find waveform deadtime histograms." << endl;
-              exit(1);
-              }*/
-
-            TH1I* deadtimeHisto = deadtimePlots[i]->getDeadtimeHisto();
-            if(!deadtimeHisto)
-            {
-                cout << "Couldn't find deadtimeHisto for target " << i << endl;
-                continue;
-            }
-
-            int deadtimeBins = deadtimeHisto->GetNbinsX();
-
-            for(int j=0; j<deadtimeBins; j++)
-            {
-                deadtimeFraction.push_back(deadtimeHisto->GetBinContent(j)/(double)pow(10,3));
-            }
-
-            // create deadtime-corrected histograms
-
-            deadtimeHisto->Write();
-
-            //vector<vector<double>> eventsPerBinPerMicro(6,vector<double>(0));
-
-            //const double FULL_DEADTIME = 183; // total amount of time after firing when
-            // detector is at least partially dead to
-            // incoming pulses (in ns)
-            //const double PARTIAL_DEADTIME = 9; // amount of time after the end of
-            // FULL_DEADTIME when detector is
-            // becoming live again, depending on
-            // amplitude (in ns)
-
-            /*************************************************************************/
-            // Perform deadtime correction
-            /*************************************************************************/
-
-            // loop through all TOF histos
-
-            TH1I* tof = uncorrectedPlots[i]->getTOFHisto();
-            //TH1I* en = uncorrectedPlots[i]->getEnergyHisto();
-
-            TH1I* tofC = correctedPlots[i]->getTOFHisto();
-            TH1I* enC = correctedPlots[i]->getEnergyHisto();
-
-            int tofBins = tofC->GetNbinsX();
-
-            // apply deadtime correction to TOF histos
-            for(int j=0; j<tofBins; j++)
-            {
-                if(deadtimeFraction[j] > 0)
-                {
-                    tofC->SetBinContent(j,(tof->GetBinContent(j)/(1-deadtimeFraction[j])));
-                }
-
-                // convert microTime into neutron velocity based on flight path distance
-                double velocity = pow(10.,7.)*FLIGHT_DISTANCE/(tofC->GetBinCenter(j)+randomizeBin->Uniform(-TOF_RANGE/(double)(2*TOF_BINS),TOF_RANGE/(double)(2*TOF_BINS))); // in meters/sec 
-
-                // convert velocity to relativistic kinetic energy
-                double rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
-
-                enC->Fill(rKE,tofC->GetBinContent(j));
-                tofC->SetBinError(j,pow(tofC->GetBinContent(j),0.5));
-                enC->SetBinError(j,pow(enC->GetBinContent(j),0.5));
-            }
-        }
+        cerr << "Error: no data points found in in data set during RMS error calculation.\
+             Returning 0 for RMS Error." << endl;
+        return RMSError;
     }
 
-    histoFile->Write();
-    histoFile->Close();
+    for(int i=0; i<dataSet.getNumberOfPoints(); i++)
+    {
+        double pointError = dataSet.getPoint(i).getYError();
+        RMSError += pow(pointError,2);
+    }
+
+    RMSError /= dataSet.getNumberOfPoints();
+    RMSError = pow(RMSError,0.5);
+
+    return RMSError;
 }
 
-CrossSection calculateCS(string CSFileName, CSPrereqs& targetData, CSPrereqs& blankData)
+double getPartialError(DataPoint aPoint, DataPoint bPoint, double aArealDensity)
 {
-    // make sure the monitor recorded counts for both the blank and the target
-    // of interest so we can normalize the flux between them
-    if(targetData.monitorCounts == 0 || blankData.monitorCounts == 0)
+    double aYValue = aPoint.getYValue();
+    double bYValue = bPoint.getYValue();
+
+    double aBMon = aPoint.getBlankMonitorCounts();
+    double aTMon = aPoint.getTargetMonitorCounts();
+    double aBDet = aPoint.getBlankDetCounts();
+    double aTDet = aPoint.getTargetDetCounts();
+
+    if(aBMon<=0 || aTMon<=0 || aBDet<=0 || aTDet<=0)
     {
-        cerr << "Error - didn't find any monitor counts for target while trying to calculate cross sections. Returning empty cross section..." << endl;
-        return CrossSection();
+        cerr << "Error: could not calculate partial error with non-finite count ratio. " << endl;
+        return 0;
     }
 
-    // define variables to hold cross section information
-    CrossSection crossSection;
-    double crossSectionValue;
-    double crossSectionError;
-    double energyValue;
-    double energyError;
+    // first calculate ratio of monitor/detector counts for each data set
+    double aCountRatio = (aBDet/aTDet)/(aBMon/aTMon);
 
-    int numberOfBins = targetData.energyHisto->GetNbinsX();
+    // calculate error of aCountRatio
+    double errorACountRatio = aCountRatio * pow(1/aBDet+1/aTDet+1/aBMon+1/aTMon,0.5);
 
-    // calculate the ratio of target/blank monitor counts (normalize flux)
-    double tMon = targetData.monitorCounts;
-    double bMon = blankData.monitorCounts;
-    double monitorRatio = tMon/bMon;
+    // calculate error of data point from data set a partial derivative
+    double leftExpression = errorACountRatio/(aCountRatio*aArealDensity*pow(10,-24)*(aYValue+bYValue));
+    double rightExpression = 1-(aYValue/(aYValue+bYValue));
 
-    // loop through each bin in the energy histo, calculating a cross section
-    // for each bin
-    for(int i=1; i<=numberOfBins-1; i++) // skip the overflow and underflow bins
+    return leftExpression*rightExpression;
+}
+
+CrossSection calculateRelative(CrossSection a, CrossSection b)
+{
+    CrossSection relative; 
+
+    DataSet aData = a.getDataSet();
+    DataSet bData = b.getDataSet();
+
+    if(aData.getNumberOfPoints()!=bData.getNumberOfPoints())
     {
-        energyValue = targetData.energyHisto->GetBinCenter(i);
-        energyError = targetData.energyHisto->GetBinWidth(i)/2;
+        cerr << "Error: can't calculate relative cross section from "
+             << "data sets of different sizes. Returning empty cross section."
+             << endl;
+        return relative;
+    }
 
-        // avoid "divide by 0" and "log of 0" errors
-        if(blankData.energyHisto->GetBinContent(i) <= 0 || targetData.energyHisto->GetBinContent(i) <= 0)
-        {
-            crossSectionValue = 0;
-            crossSectionError = 0;
-            crossSection.addDataPoint(
-                DataPoint(energyValue, energyError, crossSectionValue, crossSectionError));
-            continue;
-        }
+    DataSet relativeDataSet;
 
-        // renaming for simplicity
-        TH1I* tCounts = targetData.energyHisto;
-        TH1I* bCounts = blankData.energyHisto;
-        Target t = targetData.target;
-        double tBin = tCounts->GetBinContent(i);
-        double bBin = bCounts->GetBinContent(i);
+    // for each point, calculate the relative cross section, including error
+    for(int i=0; i<aData.getNumberOfPoints(); i++)
+    {
+        DataPoint aPoint = aData.getPoint(i);
+        DataPoint bPoint = bData.getPoint(i);
+
+        double aXValue = aPoint.getXValue();
+        double bXValue = bPoint.getXValue();
         
-        // calculate the ratio of target/blank counts in the detector
-        double detectorRatio = tBin/bBin;
+        if(aXValue != bXValue)
+        {
+            cerr << "Error: can't calculate relative cross section from "
+                 << "data points with different x values. Returning cross section."
+                 << endl;
+            return relative;
+        }
 
-        // calculate number of atoms in target
-        long double numberOfAtoms =
-             (t.getMass()/t.getMolarMass())*AVOGADROS_NUMBER;
+        double aYValue = aPoint.getYValue();
+        double bYValue = bPoint.getYValue();
 
-        // calculate areal density (atoms/cm^2) in target
-        double arealDensity =
-            numberOfAtoms/(pow(t.getDiameter()/2,2)*M_PI); // area of cylinder end
+        double yValue = (aYValue-bYValue)/(aYValue+bYValue);
 
-        crossSectionValue =
-            -log(detectorRatio/monitorRatio)/arealDensity; // in cm^2
+        // calculate cross section error
+        double aError = getPartialError(aPoint, bPoint, a.getArealDensity());
+        double bError = getPartialError(bPoint, aPoint, b.getArealDensity());
+        double totalError = pow(pow(aError,2)+pow(bError,2),0.5);
 
-        crossSectionValue *= pow(10,24); // in barns 
-            
-        // calculate the statistical error
-
-        crossSectionError =
-            pow(1/tBin+1/bBin+1/bMon+1/tMon,0.5)/arealDensity; // in cm^2
-
-        crossSectionError *= pow(10,24); // in barns
-
-        crossSection.addDataPoint(
-                DataPoint(energyValue, energyError, crossSectionValue, crossSectionError));
+        relativeDataSet.addPoint(
+                DataPoint(aXValue, aPoint.getXError(), yValue, totalError,
+                          aPoint.getBlankMonitorCounts()+bPoint.getBlankMonitorCounts(),
+                          aPoint.getTargetMonitorCounts()+bPoint.getTargetMonitorCounts(),
+                          aPoint.getBlankDetCounts()+bPoint.getBlankDetCounts(),
+                          aPoint.getTargetDetCounts()+bPoint.getTargetDetCounts()));
     }
 
-    TFile* CSFile = new TFile(CSFileName.c_str(),"UPDATE");
-    crossSection.createCSGraph(targetData.target.getName());
-
-    CSFile->Write();
-    CSFile->Close();
-
-    return crossSection;
+    relative.addDataSet(relativeDataSet);
+    return relative;
 }
+
+CrossSection CrossSection::subtractCS(string subtrahendFileName, string subtrahendGraphName, double factor)
+{
+    // get subtrahend graph
+    TFile* subtrahendFile = new TFile(subtrahendFileName.c_str(),"READ");
+    TGraphErrors* subtrahendGraph = (TGraphErrors*)subtrahendFile->Get(subtrahendGraphName.c_str());
+    if(!subtrahendGraph)
+    {
+        cerr << "Error: failed to find " << subtrahendGraphName << " in " << subtrahendFileName << endl;
+        exit(1);
+    }
+
+    DataSet subtrahendData = DataSet();
+    DataSet rawCSData = this->getDataSet();
+
+    // for each y-value of the raw data set, read the y-value of the subtrahend
+    // and the y-error
+    for(int i=0; i<rawCSData.getNumberOfPoints(); i++)
+    {
+        subtrahendData.addPoint(
+                DataPoint(rawCSData.getPoint(i).getXValue(),
+                    rawCSData.getPoint(i).getXError(),
+                    subtrahendGraph->Eval(rawCSData.getPoint(i).getXValue()),
+                    subtrahendGraph->GetErrorY(rawCSData.getPoint(i).getXValue()))); 
+    }
+
+    // perform the subtraction
+    CrossSection differenceCS = CrossSection();
+    differenceCS.addDataSet(rawCSData-subtrahendData*factor);
+
+    return differenceCS;
+}
+
+CrossSection subtractCS(string rawCSFileName, string rawCSGraphName,
+        string subtrahendFileName, string subtrahendGraphName,
+        double factor,double divisor)
+{
+    // get rawCS graph
+    TFile* rawCSFile = new TFile(rawCSFileName.c_str(),"UPDATE");
+    TGraphErrors* rawCSGraph = (TGraphErrors*)rawCSFile->Get(rawCSGraphName.c_str());
+    if(!rawCSGraph)
+    {
+        cerr << "Error: failed to find " << rawCSGraphName << " in " << rawCSFileName << endl;
+        exit(1);
+    }
+
+    // get subtrahend graph
+    TFile* subtrahendFile = new TFile(subtrahendFileName.c_str(),"READ");
+    TGraphErrors* subtrahendGraph = (TGraphErrors*)subtrahendFile->Get(subtrahendGraphName.c_str());
+    if(!subtrahendGraph)
+    {
+        cerr << "Error: failed to find " << subtrahendGraphName << " in " << subtrahendFileName << endl;
+        exit(1);
+    }
+
+    DataSet subtrahendData = DataSet();
+    DataSet rawCSData = DataSet(rawCSGraph, rawCSGraphName);
+
+    // for each y-value of the raw CS graph, read the y-value of the subtrahend
+    // and the y-error
+    for(int i=0; i<rawCSData.getNumberOfPoints(); i++)
+    {
+        subtrahendData.addPoint(
+                DataPoint(rawCSData.getPoint(i).getXValue(),
+                    rawCSData.getPoint(i).getXError(),
+                    subtrahendGraph->Eval(rawCSData.getPoint(i).getXValue()),
+                    subtrahendGraph->GetErrorY(rawCSData.getPoint(i).getXValue()))); 
+    }
+
+    // perform the subtraction
+    CrossSection differenceCS = CrossSection();
+    differenceCS.addDataSet((rawCSData-subtrahendData*factor)/divisor);
+
+    // create graph of difference
+    rawCSFile->cd();
+    string differenceName = "(" + rawCSGraphName + " - " +
+        to_string(factor) + "*" + subtrahendGraphName + ")/" + to_string(divisor);
+    differenceCS.createCSGraph(differenceName);
+
+    return differenceCS;
+}
+
+

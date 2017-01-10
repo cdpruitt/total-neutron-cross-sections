@@ -9,12 +9,14 @@
 #include "TMath.h"
 #include "TLatex.h"
 
+#include "../include/physicalConstants.h"
 #include "../include/target.h"
 #include "../include/dataSet.h"
 #include "../include/dataPoint.h"
 #include "../include/CSPrereqs.h"
 #include "../include/analysisConstants.h"
 #include "../include/crossSection.h"
+#include "../include/experiment.h"
 
 using namespace std;
 
@@ -107,77 +109,180 @@ DataSet scale(DataSet setToScale, DataSet expReference, DataSet litReference)
     return scaledSet;
 }
 
-vector<string> getTargetNames(string expName)
+CrossSection correctForBlank(CrossSection rawCS, double targetNumberDensity, string expName, string graphFileName)
 {
-    string targetNamesLocation = "../" + expName + "/targetNames.txt";
-    ifstream dataFile(targetNamesLocation.c_str());
-    if(!dataFile.is_open())
+    string blankDataLocation = "../" + expName + "/targetData/" + "blank.txt";
+    ifstream blankDataFile(blankDataLocation.c_str());
+    if(!blankDataFile.is_open())
     {
-        std::cout << "Failed to find target names in " << targetNamesLocation << std::endl;
+        std::cout << "Attempted to read blank data, but failed to find data in " << blankDataLocation << std::endl;
         exit(1);
     }
 
-    string str;
-    vector<string> targetNames;
-
-    while(getline(dataFile,str))
-    {
-        targetNames.push_back(str);
-    }
-
-    return targetNames;
-}
-
-// Determine the target order for a given run
-vector<string> getTargetOrder(string expName, int runNumber)
-{
-    string targetOrderLocation = "../" + expName + "/targetOrder.txt";
-    ifstream dataFile(targetOrderLocation.c_str());
-    if(!dataFile.is_open())
-    {
-        std::cout << "Failed to find target order data in " << targetOrderLocation << std::endl;
-        exit(1);
-    }
+    vector<Target> blankComposition; // for holding multiple elements that comprise the blank
 
     string str;
-    vector<string> targetOrder;
 
-    while(getline(dataFile,str))
+    while(getline(blankDataFile,str))
     {
-        // ignore comments in data file
-        string delimiter = "-";
-        string token = str.substr(0,str.find(delimiter));
-        if(!atoi(token.c_str()))
-        {
-            // This line starts with a non-integer and is thus a comment; ignore
-            continue;
-        }
+        // parse into tokens
 
-        // parse data lines into space-delimited tokens
         vector<string> tokens;
         istringstream iss(str);
         copy(istream_iterator<string>(iss),
                 istream_iterator<string>(),
                 back_inserter(tokens));
 
-        // extract run numbers from first token
-        string lowRun = tokens[0].substr(0,tokens[0].find(delimiter));
-        tokens[0] = tokens[0].erase(0,tokens[0].find(delimiter) + delimiter.length());
-
-        delimiter = "\n";
-        string highRun = tokens[0].substr(0,tokens[0].find(delimiter));
-        
-        if(atoi(lowRun.c_str()) <= runNumber && runNumber <= atoi(highRun.c_str()))
+        if(tokens[0]=="Name:")
         {
-            for(int i=1; (size_t)i<tokens.size(); i++)
-            {
-                targetOrder.push_back(tokens[i]);
-            }
-            break;
+            blankComposition.push_back(Target());
+            blankComposition.back().setName(tokens[1]);
+        }
+
+        else if(tokens[0]=="Length:")
+        {
+            blankComposition.back().setLength(atof(tokens[1].c_str()));
+        }
+
+        else if(tokens[0]=="Diameter:")
+        {
+            blankComposition.back().setDiameter(atof(tokens[1].c_str()));
+        }
+
+        else if(tokens[0]=="Mass:")
+        {
+            blankComposition.back().setMass(atof(tokens[1].c_str()));
+        }
+
+        else if(tokens[0]=="Molar")
+        {
+            blankComposition.back().setMolarMass(atof(tokens[2].c_str()));
+        }
+
+        else
+        {
+            cerr << "Error - couldn't parse a line in a targetData text file" << endl;
+            exit(1);
         }
     }
 
-    return targetOrder;
+    CrossSection correctedCS = rawCS;
+
+    for(Target t : blankComposition)
+    {
+        double factor = (t.getMass()/t.getMolarMass())*AVOGADROS_NUMBER/(t.getLength()*M_PI*pow((t.getDiameter()/2),2));
+
+        if(targetNumberDensity==0)
+        {
+            continue;
+        }
+
+        factor /= targetNumberDensity; // ratio of atoms of this element in blank, compared to target
+        factor *= -1; // the correction should be additive, not subtractive
+
+        string graphFileLocation = "../" + expName + "/literatureData/" + graphFileName;
+        string graphFileName = t.getName() + "(n,tot)";
+        correctedCS = correctedCS.subtractCS(graphFileLocation, graphFileName, factor);
+    }
+
+    return correctedCS;
+}
+
+CrossSection calculateCS(string CSFileName, CSPrereqs& targetData, CSPrereqs& blankData, string expName)
+{
+    // make sure the monitor recorded counts for both the blank and the target
+    // of interest so we can normalize the flux between them
+    if(targetData.monitorCounts == 0 || blankData.monitorCounts == 0)
+    {
+        cerr << "Error - didn't find any monitor counts for target while trying to calculate cross sections. Returning empty cross section..." << endl;
+        return CrossSection();
+    }
+
+    // define variables to hold cross section information
+    CrossSection crossSection;
+    double energyValue;
+    double energyError;
+    double crossSectionValue;
+    double crossSectionError;
+
+    int numberOfBins = targetData.energyHisto->GetNbinsX();
+
+    // calculate the ratio of target/blank monitor counts (normalize flux)
+    double tMon = targetData.monitorCounts;
+    double bMon = blankData.monitorCounts;
+    double monitorRatio = tMon/bMon;
+
+    // calculate number of atoms in this target
+    long double numberOfAtoms =
+        (targetData.target.getMass()/targetData.target.getMolarMass())*AVOGADROS_NUMBER;
+
+    // calculate areal density (atoms/cm^2) in target
+    double arealDensity =
+        numberOfAtoms/(pow(targetData.target.getDiameter()/2,2)*M_PI); // area of cylinder end
+
+    // calculate volume density (atoms/cm^3) in target
+    double volumeDensity =
+        arealDensity/targetData.target.getLength();
+
+    // save this areal density for later error propagation
+    crossSection.setArealDensity(arealDensity);
+
+    // loop through each bin in the energy histo, calculating a cross section
+    // for each bin
+    for(int i=1; i<=numberOfBins-1; i++) // skip the overflow and underflow bins
+    {
+        // read data from detector histograms for target and blank
+        TH1I* bCounts = blankData.energyHisto;
+        TH1I* tCounts = targetData.energyHisto;
+
+        energyValue = tCounts->GetBinCenter(i);
+        energyError = tCounts->GetBinWidth(i)/2;
+
+        long bDet = bCounts->GetBinContent(i);
+        long tDet = tCounts->GetBinContent(i);
+
+        // if any essential values are 0, return an empty DataPoint
+        if(bMon <=0 || tMon <=0 || bDet <=0 || tDet <=0)
+        {
+            crossSectionValue = 0;
+            crossSectionError = 0;
+            crossSection.addDataPoint(
+                DataPoint(energyValue, energyError, crossSectionValue, crossSectionError,
+                          bMon, tMon, bDet, tDet));
+            continue;
+        }
+
+        // calculate the ratio of target/blank counts in the detector
+        double detectorRatio = (double)tDet/bDet;
+
+        crossSectionValue =
+            -log(detectorRatio/monitorRatio)/arealDensity; // in cm^2
+
+        crossSectionValue *= pow(10,24); // in barns 
+            
+        // calculate the statistical error
+        crossSectionError =
+            pow(1/tDet+1/bDet+1/bMon+1/tMon,0.5)/arealDensity; // in cm^2
+
+        crossSectionError *= pow(10,24); // in barns
+
+        crossSection.addDataPoint(
+                DataPoint(energyValue, energyError, crossSectionValue, crossSectionError,
+                    bMon, tMon, bDet, tDet));
+    }
+
+    CrossSection corrected = correctForBlank(crossSection, volumeDensity, expName, "literatureData.root");
+
+    TFile* CSFile = new TFile(CSFileName.c_str(),"UPDATE");
+    string name = targetData.target.getName();
+    crossSection.createCSGraph(name);
+    name += "blankCorrected";
+    corrected.createCSGraph(name);
+
+    CSFile->Write();
+    CSFile->Close();
+
+    return corrected;
 }
 
 int main(int, char* argv[])
@@ -192,8 +297,8 @@ int main(int, char* argv[])
     // Create a CSPrereqs for each target to hold data from all the runs
     vector<CSPrereqs> allData;
 
-    vector<string> targetNames = getTargetNames(expName);
-    for(string targetName : targetNames)
+    vector<string> targetNames = readExperimentConfig(expName,"targetNames");
+    for(auto targetName : targetNames)
     {
         string targetDataLocation = "../" + expName + "/targetData/" + targetName + ".txt";
         allData.push_back(CSPrereqs(targetDataLocation));
@@ -304,19 +409,119 @@ int main(int, char* argv[])
         cout << p.target.getName() << ": total events in energy histo = "
              << totalCounts << ", total monitor events = "
              << p.monitorCounts << endl;
-        crossSections.push_back(calculateCS(outFileName, p, allData[0]));
+        crossSections.push_back(calculateCS(outFileName, p, allData[0], expName));
+        cout << "Target " << crossSections.back().getDataSet().getReference() <<
+                " RMS error: " << crossSections.back().calculateRMSError() << endl << endl;
     }
 
-    /*string relativeFileName = dataLocation + "/relative.root";
+    /**************************************************************************
+    Create relative cross section plots
+    **************************************************************************/
+
+    string relativeFileName = dataLocation + "/relative.root";
     TFile* relativeFile = new TFile(relativeFileName.c_str(), "RECREATE");
 
-    CrossSection relative = (crossSections[3]-crossSections[1])/(crossSections[3]+crossSections[1]);
-    string relativeName = "#frac{#sigma_{" + allData[3].target.getName() +
-                          "}-#sigma_{" + allData[1].target.getName() + 
-                          "}}{#sigma_{" + allData[3].target.getName() +
-                          "}+#sigma_{" + allData[1].target.getName() + "}}";
+    // read which relative cross section plots to make from the experimental
+    // directory
+    vector<pair<string,string>> relativeTargets = getRelativePlotNames(expName,"relativePlots.txt");
 
-    relative.createCSGraph(relativeName.c_str());
+    for(pair<string,string> p : relativeTargets)
+    {
+        int largerTarget = -1;
+        int smallerTarget = -1;
+        for(int i=0; (size_t)i<targetNames.size(); i++)
+        {
+            if(targetNames[i]==p.first)
+            {
+                largerTarget = i;
+            }
+            else if(targetNames[i]==p.second)
+            {
+                smallerTarget = i;
+            }
+        }
+
+        if(largerTarget>=0 && smallerTarget>=0)
+        {
+            // found cross section plots for both individual targets,
+            // so use them to make a relative cross section plot
+            cout << "Producing relative cross section plot of " << targetNames[largerTarget] << " and " << targetNames[smallerTarget] << endl;
+
+            //CrossSection sum = crossSections[largerTarget]+crossSections[smallerTarget];
+            //cout << "sum plot " << sum.getDataSet().getReference() <<
+            //        " RMS error: " << sum.calculateRMSError() << endl << endl;
+
+            //CrossSection difference = crossSections[largerTarget]-crossSections[smallerTarget];
+            //cout << "difference plot " << difference.getDataSet().getReference() <<
+            //        " RMS error: " << difference.calculateRMSError() << endl << endl;
+
+            CrossSection relative = calculateRelative(crossSections[largerTarget],crossSections[smallerTarget]);
+            string relativeName = "#frac{#sigma_{" + allData[largerTarget].target.getName() +
+                                      "}-#sigma_{" + allData[smallerTarget].target.getName() + 
+                                     "}}{#sigma_{" + allData[largerTarget].target.getName() +
+                                      "}+#sigma_{" + allData[smallerTarget].target.getName() + "}}";
+            relative.createCSGraph(relativeName.c_str());
+            cout << "Relative plot " << relative.getDataSet().getReference() <<
+                    " RMS error: " << relative.calculateRMSError() << endl;
+        }
+
+        else
+        {
+            cout << "Failed to find cross section plot for either " << targetNames[largerTarget] << " or " << targetNames[smallerTarget] << endl;
+        }
+    }
+
     relativeFile->Close();
-    */
+
+    /**************************************************************************
+    Create subtracted cross section plots
+    **************************************************************************/
+    /*
+    string subtractedFileName = dataLocation + "/subtracted.root";
+    TFile* subtractedFile = new TFile(subtractedFileName.c_str(), "RECREATE");
+
+    // read which subtracted cross section plots to make from the experimental
+    // directory
+    vector<pair<string,string>> subtractedTargets = getSubtractedPlotNames(expName,"subtractedPlots.txt");
+
+    for(pair<string,string> p : subtractedTargets)
+    {
+        int largerTarget = -1;
+        int smallerTarget = -1;
+        for(int i=0; (size_t)i<targetNames.size(); i++)
+        {
+            if(targetNames[i]==p.first)
+            {
+                largerTarget = i;
+            }
+            else if(targetNames[i]==p.second)
+            {
+                smallerTarget = i;
+            }
+        }
+
+        if(largerTarget>=0)
+        {
+            // found experimental cross section plot for this target
+            cout << "Producing subtracted cross section plot of " << targetNames[largerTarget] << " and " << targetNames[smallerTarget] << endl;
+
+            CrossSection litData = 
+
+            CrossSection subtracted = calculateSubtracted(crossSections[largerTarget],litData);
+            string subtractedName = "#sigma_{" + allData[largerTarget].target.getName() + "}-" +
+                                    "#sigma_{" + allData[smallerTarget].target.getName() + "}";
+                                      
+            subtracted.createCSGraph(relativeName.c_str());
+            cout << "subtracted plot " << relative.getDataSet().getReference() <<
+                    " RMS error: " << subtracted.calculateRMSError() << endl;
+        }
+
+        else
+        {
+            cout << "Failed to find cross section plot for either " << targetNames[largerTarget] << " or " << targetNames[smallerTarget] << endl;
+        }
+    }
+
+    subtractedFile->Close();
+*/
 }

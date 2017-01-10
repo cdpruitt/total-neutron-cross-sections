@@ -262,7 +262,6 @@ then
                 outpath=${tokens[3]}
                 break
             fi
-            echo "$outpath"
         done < ../"$experiment"/filepaths.txt
 
         if [ $datapath == 0 ]
@@ -291,7 +290,7 @@ then
                 fi
 
                 outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
-                printf "\n***Starting sort of sub-run $subrunNo***\n"
+                printf "\n\n***Starting sort of sub-run $subrunNo***\n"
 
                 # Skip subruns < 1GB in size
                 runSize=$(du -k "$inputFileName" | cut -f 1)

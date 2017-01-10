@@ -9,6 +9,7 @@
 #include "../include/waveform.h"
 #include "../include/crossSection.h"
 #include "../include/veto.h"
+#include "../include/experiment.h"
 
 // ROOT library classes
 #include "TFile.h"
@@ -21,58 +22,6 @@
 #include <fstream>
 
 using namespace std;
-
-vector<string> getChannelMap(string expName, int runNumber)
-{
-    string channelMapLocation = "../" + expName + "/channelMap.txt";
-    ifstream dataFile(channelMapLocation.c_str());
-    if(!dataFile.is_open())
-    {
-        std::cout << "Failed to find channel mapping in " << channelMapLocation << std::endl;
-        exit(1);
-    }
-
-    string str;
-    vector<string> channelMap;
-
-    while(getline(dataFile,str))
-    {
-        // ignore comments in data file
-        string delimiter = "-";
-        string token = str.substr(0,str.find(delimiter));
-        if(!atoi(token.c_str()))
-        {
-            // This line starts with a non-integer and is thus a comment; ignore
-            continue;
-        }
-
-        // parse data lines into space-delimited tokens
-        vector<string> tokens;
-        istringstream iss(str);
-        copy(istream_iterator<string>(iss),
-                istream_iterator<string>(),
-                back_inserter(tokens));
-
-        // extract run numbers from first token
-        string lowRun = tokens[0].substr(0,tokens[0].find(delimiter));
-        tokens[0] = tokens[0].erase(0,tokens[0].find(delimiter) + delimiter.length());
-
-        delimiter = "\n";
-        string highRun = tokens[0].substr(0,tokens[0].find(delimiter));
-        
-        if(atoi(lowRun.c_str()) <= runNumber && runNumber <= atoi(highRun.c_str()))
-        {
-            for(int i=1; (size_t)i<tokens.size(); i++)
-            {
-                channelMap.push_back(tokens[i]);
-            }
-            break;
-        }
-    }
-
-    return channelMap;
-}
-
 
 
 int main(int, char* argv[])
