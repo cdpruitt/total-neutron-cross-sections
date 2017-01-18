@@ -670,67 +670,6 @@ void processWaveforms(TTree* ch4TreeWaveform, vector<Plots*>& plots)
     cout << endl;
 }
 
-void calculateDeadtime(vector<long> microsPerTarget, vector<Plots*>& plots)
-{
-    vector<vector<double>> eventsPerBinPerMicro(tarGates.size(),vector<double>(0));
-
-    // "deadtimeFraction" records the fraction of time that the detector is dead, for
-    // neutrons of a certain energy. It is target-dependent.
-    vector<vector<double>> deadtimeFraction(tarGates.size(), vector<double>(0));
-
-    // Calculate deadtime:
-    // for each target,
-    for(unsigned int i=0; i<tarGates.size(); i++)
-    {
-        if(microsPerTarget[i] <= 0)
-        {
-            continue;
-        }
-
-        // for each bin,
-        TH1I* tof = plots[i]->getTOFHisto();
-        TH1I* dtH = plots[i]->getDeadtimeHisto();
-
-        for(int j=0; j<TOF_BINS; j++)
-        {
-            eventsPerBinPerMicro[i].push_back(tof->GetBinContent(j+1)/(double)microsPerTarget[i]);
-            deadtimeFraction[i].push_back(0);
-        }
-
-        // find the fraction of the time that the detector is dead for each bin in the micropulse
-        // set deadtime fraction base case
-
-        int deadtimeBins = (TOF_BINS/TOF_RANGE)*DEADTIME_PERIOD;
-
-        // use deadtime base case to calculate deadtime for remaining bins
-        for(int j=0; (size_t)j<TOF_BINS; j++)
-        {
-            for(int k=j-deadtimeBins; k<j; k++)
-            {
-                if(k<0)
-                {
-                    deadtimeFraction[i][j] += eventsPerBinPerMicro[i][k+TOF_BINS]*(1-deadtimeFraction[i][j]);
-                    continue;
-                }
-
-                deadtimeFraction[i][j] += eventsPerBinPerMicro[i][k]*(1-deadtimeFraction[i][j]);
-            }
-        }
-
-        double averageDeadtime = 0;
-
-        for(int j=0; (size_t)j<deadtimeFraction[i].size(); j++)
-        {
-            dtH->SetBinContent(j,1000*deadtimeFraction[i][j]);
-            averageDeadtime += deadtimeFraction[i][j];
-        }
-        dtH->Write();
-
-        averageDeadtime /= deadtimeFraction[i].size();
-        //cout << "Average deadtime for target " << i << ": " << averageDeadtime << endl;
-    }
-}
-
 void waveform(string inFileName, string outFileName, string experiment)
 {
     TFile* inFile = new TFile(inFileName.c_str(),"READ");
@@ -803,7 +742,7 @@ void waveform(string inFileName, string outFileName, string experiment)
     }
 
     // perform a manual dead-time correction
-    calculateDeadtime(microsPerTargetWaveform,plots);
+    //calculateDeadtime(microsPerTargetWaveform,plots);
 
     // Calculate cross-sections from waveforms' trigger time data
     //calculateCS(targets, waveformFile);

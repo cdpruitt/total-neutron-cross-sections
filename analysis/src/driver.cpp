@@ -53,13 +53,13 @@ int main(int, char* argv[])
 
     /*************************************************************************/
     /* Start analysis:
-     * Populate raw event data into a tree */
+     * Separate raw event data by channel and event type into ROOT trees */
     /*************************************************************************/
     ifstream f(rawTreeFileName);
     if(!f.good())
     {
         // create a raw data tree for this subrun
-        readRawData(rawDataFileName,rawTreeFileName);
+        readRawData(rawDataFileName,rawTreeFileName,channelMap);
     }
 
     else
@@ -69,13 +69,13 @@ int main(int, char* argv[])
     }
 
     /*************************************************************************/
-    /* "Process" raw events by assigning time and target data */
+    /* Process raw events: assign time and target data */
     /*************************************************************************/
     ifstream p(sortedFileName);
     if(!p.good())
     {
         // separate all data by channel and event type
-        separateByChannel(rawTreeFileName, sortedFileName, channelMap);
+        assignMacropulses(rawTreeFileName, sortedFileName, channelMap);
     }
 
     else
@@ -119,7 +119,22 @@ int main(int, char* argv[])
     /* Process events into histograms in preparation for cross section
      * calculation */
     /*************************************************************************/
-    correctForDeadtime(histoFileName, histoFileName, detectorNames);
+
+    TFile* histoFile = new TFile(histoFileName.c_str(),"UPDATE");
+    for(string name : detectorNames)
+    {
+        histoFile->cd("/");
+        histoFile->cd(name.c_str());
+
+        for(string positionName : positionNames)
+        {
+            string histoName = positionName + "TOF";
+            TH1I* tof = (TH1I*)gDirectory->Get(histoName.c_str());
+            convertTOFtoEn(tof, positionName + "CorrectedEnergy");
+        }
+    }
+    histoFile->Write();
+    histoFile->Close();
 
     return 0;
 }

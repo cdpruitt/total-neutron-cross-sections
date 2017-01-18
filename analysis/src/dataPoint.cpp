@@ -130,14 +130,18 @@ DataPoint operator+(const DataPoint& augend, const DataPoint& addend)
 
 DataPoint operator-(const DataPoint& minuend, const DataPoint& subtrahend)
 {
-    DataPoint outputDataPoint((minuend.getXValue()+subtrahend.getXValue())/2,
-                              pow(
-                                  pow(minuend.getXError(),2)+
-                                  pow(subtrahend.getXError(),2),0.5),
+    DataPoint outputDataPoint(minuend.getXValue(),
+                              minuend.getXError(),
                               minuend.getYValue()-subtrahend.getYValue(),
                               pow(
                                   pow(minuend.getYError(),2)+
                                   pow(subtrahend.getYError(),2),0.5));
+
+    outputDataPoint.setBlankMonitorCounts(minuend.getBlankMonitorCounts());
+    outputDataPoint.setTargetMonitorCounts(minuend.getTargetMonitorCounts());
+    outputDataPoint.setBlankDetCounts(minuend.getBlankDetCounts());
+    outputDataPoint.setTargetDetCounts(minuend.getTargetDetCounts());
+
     return outputDataPoint;
 }
 

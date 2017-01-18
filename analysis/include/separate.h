@@ -3,6 +3,8 @@
 
 #include "TTree.h"
 
+void assignMacropulses(std::string rawFileName, std::string sortedFileName, std::vector<std::string> channelMap);
+
 void separateByChannel(std::string rawFileName, std::string sortedFileName, std::vector<std::string>& channelMap);
 
 void processDPPEvents(TFile*& sortedFile, std::vector<TTree*>& orchardRaw, std::vector<TTree*>& orchardProcessed);

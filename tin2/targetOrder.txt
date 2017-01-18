@@ -1,13 +1,13 @@
 This file lists the position of the targets during the experiment
 The data format is:
 *******************************************************************************
-Run Nos.    Pos. 1  Pos.2       Pos. 3      Pos. 4  Pos. 5       Pos. 6
+Run Nos.    Pos. 1          Pos.2       Pos. 3      Pos. 4  Pos. 5       Pos. 6
 *******************************************************************************
 
-1-42        blank   shortCarbon longCarbon  Sn112   NatSn        Sn124
-43-44       blank   shortCarbon NatSn       Sn112   longCarbon   Sn124
-45          blank   shortCarbon longCarbon  Sn112   NatSn        Sn124
-46-49       blank   shortCarbon NatSn       Sn112   longCarbon   Sn124
-50-56       blank   shortCarbon longCarbon  Sn112   NatSn        Sn124
-57-75       blank   NatPb       longCarbon  Sn112   NatSn        Sn124
-100-101     blank   Sn112       NatSn       Sn124
+1-42        blankContainer  shortCarbon longCarbon  Sn112   NatSn        Sn124
+43-44       blankContainer  shortCarbon NatSn       Sn112   longCarbon   Sn124
+45          blankContainer  shortCarbon longCarbon  Sn112   NatSn        Sn124
+46-49       blankContainer  shortCarbon NatSn       Sn112   longCarbon   Sn124
+50-56       blankContainer  shortCarbon longCarbon  Sn112   NatSn        Sn124
+57-75       blankContainer  NatPb       longCarbon  Sn112   NatSn        Sn124
+100-101     blankContainer  Sn112       NatSn       Sn124

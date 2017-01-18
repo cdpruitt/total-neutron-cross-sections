@@ -22,4 +22,6 @@ class Plots
         TH1I* deadtimeHisto;
 };
 
+TH1I* timeBinsToRKEBins(TH1I *inputHisto, std::string name);
+
 #endif

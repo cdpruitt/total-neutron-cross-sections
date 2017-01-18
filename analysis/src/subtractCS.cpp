@@ -19,6 +19,6 @@ using namespace std;
 
 int main(int, char* argv[])
 {
-    subtractCS(argv[1], argv[2], argv[3], argv[4], stod(argv[5]), stod(argv[6]));
+    subtractCS(argv[1], argv[2], argv[3], argv[4], stod(argv[5]), stod(argv[6]), argv[7]);
     return 0;
 }

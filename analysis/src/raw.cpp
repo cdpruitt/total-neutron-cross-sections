@@ -73,9 +73,6 @@ long rawNumberOfEvents = 0;
 long rawNumberOfDPPs = 0;
 long rawNumberOfWaveforms = 0;
 
-long monEvents = 0;
-long detEvents = 0;
-
 // read a word off the input file and store in a variable
 bool readWord(ifstream& evtfile, unsigned int& variable)
 {
@@ -234,7 +231,7 @@ bool readEvent(ifstream& evtfile)
     return false;
 }
 
-void readRawData(string inFileName, string outFileName)
+void readRawData(string inFileName, string outFileName, vector<string> channelMap)
 {
     cout << "Creating " << outFileName << endl;
 
@@ -250,30 +247,73 @@ void readRawData(string inFileName, string outFileName)
 
     // create output file and ROOT tree for storing events
     TFile* outFile = new TFile(outFileName.c_str(),"RECREATE");
-    TTree* tree = new TTree("tree","");
-    branchRaw(tree);
+    vector<TTree*> orchardSplit; // channel-specific DPP events
+    vector<TTree*> orchardSplitW;// channel-specific waveform events
+
+    // Create trees to be filled with sorted data
+    // Each channel has a separate tree for DPP data and for waveform mode data
+    for(int i=0; (size_t)i<channelMap.size(); i++)
+    {
+        orchardSplit.push_back(new TTree((channelMap[i]).c_str(),""));
+        orchardSplitW.push_back(new TTree((channelMap[i]+"W").c_str(),""));
+
+        if(channelMap[i]=="-")
+        {
+            continue;
+        }
+
+        branchRaw(orchardSplit[i]);
+        orchardSplit[i]->SetDirectory(outFile);
+
+        branchRaw(orchardSplitW[i]);
+        orchardSplitW[i]->SetDirectory(outFile);
+    }
 
     // create a vector to hold waveform samples
     rawEvent.waveform = new vector<int>;
+
+    int extTime = 0;
+    double prevTimetag = 0;
+    int prevEvtType = 0;
 
     // start looping through the evtfile to extract events
     while(!inFile.eof())
     {
         readEvent(inFile);
 
-        // add event to tree
-
-        if(rawEvent.chNo==2)
+        // manually increment extended time, if necessary
+        if((prevTimetag > (double)pow(2,32) - 50000000) &&
+            rawEvent.timetag < prevTimetag)
         {
-            monEvents++;
+           extTime++; 
         }
 
-        if(rawEvent.chNo==4)
+        // if LED is used instead of CFD, clear the finetime variable
+        if(rawEvent.chNo==0 || rawEvent.chNo==2 || rawEvent.chNo==6)
         {
-            detEvents++;
+            rawEvent.fineTime = 0;
         }
 
-        tree->Fill();
+        if(prevEvtType!=rawEvent.evtType)
+        {
+            extTime=0;
+            prevTimetag=0;
+        }
+
+        rawEvent.extTime = extTime;
+           
+        if(rawEvent.evtType==1)
+        {
+            orchardSplit[rawEvent.chNo]->Fill();
+        }
+
+        if(rawEvent.evtType==2)
+        {
+            orchardSplitW[rawEvent.chNo]->Fill();
+        }
+
+        prevEvtType = rawEvent.evtType;
+        prevTimetag = rawEvent.timetag;
 
         // print progress every 10000 events
         if (rawNumberOfEvents%10000 == 0)
@@ -288,8 +328,6 @@ void readRawData(string inFileName, string outFileName)
     cout << "Total events: " << rawNumberOfEvents << endl;
     cout << "Total number of DPP-mode events processed = " << rawNumberOfDPPs << endl;
     cout << "Total number of waveform-mode events processed = " << rawNumberOfWaveforms << endl;
-
-    cout << "Ratio of detector events/monitor events, before separation: " << (double) detEvents/monEvents << endl;
 
     inFile.close();
     outFile->Write();

@@ -182,7 +182,7 @@ CrossSection correctForBlank(CrossSection rawCS, double targetNumberDensity, str
 
         string graphFileLocation = "../" + expName + "/literatureData/" + graphFileName;
         string graphFileName = t.getName() + "(n,tot)";
-        correctedCS = correctedCS.subtractCS(graphFileLocation, graphFileName, factor);
+        correctedCS.subtractCS(graphFileLocation, graphFileName, factor);
     }
 
     return correctedCS;

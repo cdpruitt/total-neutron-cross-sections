@@ -271,7 +271,7 @@ CrossSection calculateRelative(CrossSection a, CrossSection b)
     return relative;
 }
 
-CrossSection CrossSection::subtractCS(string subtrahendFileName, string subtrahendGraphName, double factor)
+void CrossSection::subtractCS(string subtrahendFileName, string subtrahendGraphName, double factor)
 {
     // get subtrahend graph
     TFile* subtrahendFile = new TFile(subtrahendFileName.c_str(),"READ");
@@ -297,15 +297,12 @@ CrossSection CrossSection::subtractCS(string subtrahendFileName, string subtrahe
     }
 
     // perform the subtraction
-    CrossSection differenceCS = CrossSection();
-    differenceCS.addDataSet(rawCSData-subtrahendData*factor);
-
-    return differenceCS;
+    this->addDataSet(rawCSData-subtrahendData*factor);
 }
 
 CrossSection subtractCS(string rawCSFileName, string rawCSGraphName,
         string subtrahendFileName, string subtrahendGraphName,
-        double factor,double divisor)
+        double factor, double divisor, string name)
 {
     // get rawCS graph
     TFile* rawCSFile = new TFile(rawCSFileName.c_str(),"UPDATE");
@@ -345,9 +342,7 @@ CrossSection subtractCS(string rawCSFileName, string rawCSGraphName,
 
     // create graph of difference
     rawCSFile->cd();
-    string differenceName = "(" + rawCSGraphName + " - " +
-        to_string(factor) + "*" + subtrahendGraphName + ")/" + to_string(divisor);
-    differenceCS.createCSGraph(differenceName);
+    differenceCS.createCSGraph(name);
 
     return differenceCS;
 }

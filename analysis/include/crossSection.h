@@ -32,7 +32,7 @@ class CrossSection
 
         double calculateRMSError();
 
-        CrossSection subtractCS(std::string subtrahendFileName,
+        void subtractCS(std::string subtrahendFileName,
                         std::string subtrahendGraphName, double factor);
 
     private:
@@ -48,8 +48,9 @@ CrossSection calculateRelative(CrossSection a, CrossSection b);
 
  CrossSection subtractCS(std::string rawCSFileName, std::string rawCSGraphName,
                         std::string subtrahendFileName, std::string subtrahendGraphName,
-                        double factor, // multiplies the subtrahend
-                        double divisor // divides the final difference
+                        double factor,  // multiplies the subtrahend
+                        double divisor, // divides the final difference
+                        std::string name // name given to output graph
                        );
 
 #endif

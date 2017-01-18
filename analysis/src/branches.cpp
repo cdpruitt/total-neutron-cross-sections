@@ -25,26 +25,14 @@ void branchRaw(TTree*& tree)
     tree->Branch("waveform",&rawEvent.waveform);
 }
 
-void branchSplit(TTree*& tree)
-{
-    tree->Branch("evtNo",&separatedEvent.evtNo,"evtNo/i");
-    tree->Branch("chNo",&separatedEvent.chNo,"chNo/i");
-    tree->Branch("timetag",&separatedEvent.timetag,"timetag/i");
-    tree->Branch("extTime",&separatedEvent.extTime,"extTime/i");
-    tree->Branch("fineTime",&separatedEvent.fineTime,"fineTime/i");
-    tree->Branch("sgQ",&separatedEvent.sgQ,"sgQ/i");
-    tree->Branch("lgQ",&separatedEvent.lgQ,"lgQ/i");
-    tree->Branch("waveform",&separatedEvent.waveform);
-}
-
 // Used to connect a channel-specific tree to waveform event variables so we can
 // start populating it with waveform events
 void branchSplitW(TTree*& tree)
 {
+    tree->Branch("evtNo",&separatedEvent.evtNo,"evtNo/i");
     tree->Branch("timetag",&separatedEvent.timetag,"timetag/i");
     tree->Branch("extTime",&separatedEvent.extTime,"extTime/i");
     tree->Branch("chNo",&separatedEvent.chNo,"chNo/i");
-    tree->Branch("evtNo",&separatedEvent.evtNo,"evtNo/i");
     tree->Branch("waveform",&separatedEvent.waveform);
 }
 
@@ -84,10 +72,10 @@ void branchTargetChanger(TTree*& tree)
 
 void setBranchesSeparated(TTree* tree)
 {
-   tree->SetBranchAddress("chNo",&separatedEvent.chNo);
    tree->SetBranchAddress("evtType",&separatedEvent.evtType);
-   tree->SetBranchAddress("timetag",&separatedEvent.timetag);
+   tree->SetBranchAddress("chNo",&separatedEvent.chNo);
    tree->SetBranchAddress("extTime",&separatedEvent.extTime);
+   tree->SetBranchAddress("timetag",&separatedEvent.timetag);
    tree->SetBranchAddress("fineTime",&separatedEvent.fineTime);
    tree->SetBranchAddress("sgQ",&separatedEvent.sgQ);
    tree->SetBranchAddress("lgQ",&separatedEvent.lgQ);

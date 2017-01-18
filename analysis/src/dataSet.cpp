@@ -156,14 +156,7 @@ const DataSet operator-(const DataSet& set1, const DataSet& set2)
             return differenceDataSet;
         }
 
-        double xValue = set1.getPoint(i).getXValue();
-        double xError = set1.getPoint(i).getXError();
-        double yValue = set1.getPoint(i).getYValue() -
-                        set2.getPoint(i).getYValue();
-        double yError = pow(pow(set1.getPoint(i).getYError(),2) +
-                            pow(set2.getPoint(i).getYError(),2),0.5);
-
-        differenceDataSet.addPoint(DataPoint(xValue,xError,yValue,yError));
+        differenceDataSet.addPoint(set1.getPoint(i)-set2.getPoint(i));
     }
 
     differenceDataSet.setReference(set1.getReference() + set2.getReference() + "difference");

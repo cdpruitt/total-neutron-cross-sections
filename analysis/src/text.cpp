@@ -376,7 +376,11 @@ int main(int, char* argv[])
     {
         if(readEvent(inFile))
         {
-            printEvent(rawEvent, textOutput);
+            //if(rawEvent.timetag > 2899250918 && rawEvent.timetag < 2932580868)
+            if(rawEvent.timetag == 2899363666)
+            {
+                printEvent(rawEvent, textOutput);
+            }
         }
 
         numberOfEvents++;

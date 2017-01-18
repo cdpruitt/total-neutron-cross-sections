@@ -35,7 +35,7 @@
 #    -w | overwrite previous waveform fitting (use if fitting code has changed)
 #       | (e.g., ./analyze -o)
 #
-# Flags can be combined for additional functionality (e.g., ./analyze -ro)
+# Some flags can be combined for additional functionality (e.g., ./analyze -ro)
 #
 ################################################################################
 

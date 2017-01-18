@@ -36,9 +36,89 @@ vector<TTree*> orchardW; // holds waveform-mode channel-specific trees
 
 TDirectory *waveformsDir;
 
-// Loop through all trees (one per channel) and populate their data into basic
-// histograms. Then, calculate the TOF, cross-section, etc using the channel 4
-// data and produce histograms of these calculated quantities.
+TH1I* convertTOFtoEn(TH1I* tof, string name)
+{
+    if(!tof)
+    {
+        cerr << "Error: cannot convert empty TOF histogram to energy units in convertTOFtoEn()" << endl;
+        exit(1);
+    }
+
+    TRandom3 *randomizeBin = new TRandom3();
+
+    TH1I* en = timeBinsToRKEBins(tof, name); 
+
+    int tofBins = tof->GetNbinsX();
+    for(int j=1; j<tofBins-1; j++)
+    {
+        // convert time into neutron velocity based on flight path distance
+        double velocity = pow(10.,7.)*FLIGHT_DISTANCE/(tof->GetBinCenter(j)+randomizeBin->Uniform(-TOF_RANGE/(double)(2*TOF_BINS),TOF_RANGE/(double)(2*TOF_BINS))); // in meters/sec 
+
+        // convert velocity to relativistic kinetic energy
+        double rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
+
+        en->Fill(rKE,tof->GetBinContent(j));
+        en->SetBinError(j,pow(en->GetBinContent(j),0.5));
+    }
+
+    return en;
+}
+
+// recursive procedure for deadtime-correcting TOF plots
+double correctForDeadtime(TH1I* tof, TH1I* oldTOF, TH1I*& newTOF, long totalNumberOfMicros)
+{
+    vector<double> eventsPerMicroPerBin;
+    vector<double> deadtimesPerBin;
+
+    const int deadtimeBins = (TOF_BINS/TOF_RANGE)*DEADTIME_PERIOD;
+
+    TH1I* diffTOF = (TH1I*)tof->Clone();
+    diffTOF->Add(oldTOF, -1);
+
+    for(int j=1; j<=TOF_BINS; j++)
+    {
+        eventsPerMicroPerBin.push_back(diffTOF->GetBinContent(j)/(double)totalNumberOfMicros);
+        deadtimesPerBin.push_back(0);
+    }
+
+    // find the fraction of the time that the detector is dead for each bin in the micropulse
+    // set deadtime fraction base case
+
+    // use deadtime base case to calculate deadtime for remaining bins
+    for(int j=0; (size_t)j<TOF_BINS; j++)
+    {
+        for(int k=j-deadtimeBins; k<j; k++)
+        {
+            if(k<0)
+            {
+                deadtimesPerBin[j] += eventsPerMicroPerBin[k+TOF_BINS]*(1-deadtimesPerBin[j]);
+                continue;
+            }
+
+            deadtimesPerBin[j] += eventsPerMicroPerBin[k]*(1-deadtimesPerBin[j]);
+        }
+    }
+
+    double averageDeadtime = 0;
+
+    string name = tof->GetName();
+    name = name + "deadtimeH";
+    TH1I* deadtimeH = (TH1I*)tof->Clone(name.c_str());
+    newTOF = (TH1I*)tof->Clone();
+
+    for(int j=0; (size_t)j<deadtimesPerBin.size(); j++)
+    {
+        newTOF->SetBinContent(j,tof->GetBinContent(j)/(1-deadtimesPerBin[j]));
+
+        deadtimeH->SetBinContent(j,pow(10,6)*deadtimesPerBin[j]);
+        averageDeadtime += deadtimesPerBin[j];
+    }
+
+    deadtimeH->Write();
+    newTOF->Write();
+    
+    return averageDeadtime;
+}
 
 void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
 {
@@ -140,11 +220,6 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
                 }
                 /*****************************************************************/
 
-                // GATE: discard events with too low of an integrated charge for their energy
-                //if (procEvent.lgQ>50)
-                //if (procEvent.lgQ>500*exp(-(microTime-100)/87))
-                //if (procEvent.lgQ<30*rKE)
-
                 // tag this event by its order in the micropulse
                 if (microNo==prevMicroNo)
                 {
@@ -159,6 +234,14 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
 
                     // new micropulse => return gamma indicator to false
                     gammaInMicro = false;
+                }
+
+                // GATE: discard events with too low of an integrated charge for their energy
+                //if (procEvent.lgQ>50)
+                //if (procEvent.lgQ>500*exp(-(microTime-100)/87))
+                if (procEvent.lgQ<5*rKE)
+                {
+                    continue;
                 }
 
                 /*****************************************************************/
@@ -196,6 +279,13 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
             }
         }
 
+        triangle->Write();
+        sgQlgQ->Write();
+        QRatio->Write();
+        rKElgQ->Write();
+        triangleRKE->Write();
+        microNoH->Write();
+
         for(unsigned int i=0; i<positionNames.size(); i++)
         {
             plots[i]->getTOFHisto()->Write();
@@ -221,7 +311,24 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
         histoFile->cd("/");
         histoFile->cd(s.c_str());
 
-        calculateDeadtime(microsPerTarget, plots);
+        // perform iterative deadtime correction, until average deadtime changes
+        // <0.01%
+        for(unsigned int i=0; (unsigned int)i<microsPerTarget.size(); i++)
+        {
+            double averageDeadtimeDiff = 0;
+            TH1I* tof = plots[i]->getTOFHisto();
+            TH1I* emptyTOF = (TH1I*)tof->Clone();
+            emptyTOF->Reset();
+
+            TH1I* newTOF;
+
+            averageDeadtimeDiff = correctForDeadtime(tof, emptyTOF, newTOF, microsPerTarget[i]) - averageDeadtimeDiff;
+
+            while(averageDeadtimeDiff>0.0001)
+            {
+                averageDeadtimeDiff = correctForDeadtime(newTOF, tof, newTOF, microsPerTarget[i]) - averageDeadtimeDiff;
+            }
+        }
     }
 }
 
@@ -548,7 +655,7 @@ setBranches(orchard[3]);
 }
 */
 
-void correctForDeadtime(string histoFileName, string deadtimeFileName, vector<string> detectorChannels)
+/*void correctForDeadtime(string histoFileName, string deadtimeFileName, vector<string> detectorChannels)
 {
     TFile* deadtimeFile = new TFile(deadtimeFileName.c_str(),"READ");
     TFile* histoFile = new TFile(histoFileName.c_str(),"UPDATE");
@@ -594,12 +701,6 @@ void correctForDeadtime(string histoFileName, string deadtimeFileName, vector<st
             //temp = "deadtime" + t.getName() + "Waveform";
             //plots.waveformDeadtimes.push_back((TH1I*)deadtimeFile->Get(temp.c_str()));
 
-            /*if(!t.getDeadtime.back())
-              {
-              cerr << "Error: couldn't find waveform deadtime histograms." << endl;
-              exit(1);
-              }*/
-
             TH1I* deadtimeHisto = deadtimePlots[i]->getDeadtimeHisto();
             if(!deadtimeHisto)
             {
@@ -616,7 +717,7 @@ void correctForDeadtime(string histoFileName, string deadtimeFileName, vector<st
 
             // create deadtime-corrected histograms
 
-            deadtimeHisto->Write();
+            //deadtimeHisto->Write();
 
             //vector<vector<double>> eventsPerBinPerMicro(6,vector<double>(0));
 
@@ -627,10 +728,6 @@ void correctForDeadtime(string histoFileName, string deadtimeFileName, vector<st
             // FULL_DEADTIME when detector is
             // becoming live again, depending on
             // amplitude (in ns)
-
-            /*************************************************************************/
-            // Perform deadtime correction
-            /*************************************************************************/
 
             // loop through all TOF histos
 
@@ -665,7 +762,7 @@ void correctForDeadtime(string histoFileName, string deadtimeFileName, vector<st
 
     histoFile->Write();
     histoFile->Close();
-}
+}*/
 
 int histos(string sortedFileName, string vetoedFileName, string histoFileName, vector<string> channelMap)
 {

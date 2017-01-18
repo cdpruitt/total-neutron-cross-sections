@@ -4,7 +4,7 @@
 #include <string>
 #include <fstream>
 
-void readRawData(std::string inFileName, std::string outFileName);
+void readRawData(std::string inFileName, std::string outFileName, std::vector<std::string> channelMap);
 bool readEvent(std::ifstream& evtfile);
 bool readEventHeader(std::ifstream& evtfile);
 bool readDPPEventBody(std::ifstream& evtfile);
