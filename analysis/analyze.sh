@@ -240,6 +240,9 @@ then
 
     # Start analysis
     analyze "$inputFileName" "$outputDirectoryName" "$runNumber"
+
+    # Make cross sections from this single subrun
+    ./sumSingle "$outpath"/analysis "$experiment" "histos" "$runNumber" "$subrunNo"
     exit
 fi
 
@@ -270,6 +273,12 @@ then
             exit
         fi
 
+        # Create directory to hold the output of our analysis
+        if [ ! -d "$outpath/analysis/$runNumber" ]
+        then
+            mkdir "$outpath"/analysis/"$runNumber"
+        fi
+
         printf "\n************************************"
         printf "\n     Reading subruns from $runNumber"
         printf "\n************************************\n"
@@ -283,22 +292,7 @@ then
                 subrunNo=$(echo $f | egrep -o '[0-9]+' | tail -1)
                 inputFileName="$datapath/output/$runNumber/data-$subrunNo.evt"
 
-                # Create directory to hold the output of our analysis
-                if [ ! -d "$outpath/analysis/$runNumber" ]
-                then
-                    mkdir "$outpath"/analysis/"$runNumber"
-                fi
-
-                outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
-                printf "\n\n***Starting sort of sub-run $subrunNo***\n"
-
-                # Skip subruns < 1GB in size
-                runSize=$(du -k "$inputFileName" | cut -f 1)
-                #if [ "$runSize" -lt 1000000 ]
-                #then
-                #    printf "$inputFileName is less than 1 GB in size; ignoring...\n"
-                #    continue
-                #fi
+                echo "$runNumber-$subrunNo"
 
                 # Skip subruns on the blacklist
                 skip=false
@@ -316,7 +310,18 @@ then
                     continue
                 fi
 
+                outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
+                printf "\n\n***Starting sort of sub-run $subrunNo***\n"
                 analyze "$inputFileName" "$outputDirectoryName" "$runNumber"
+
+                # Skip subruns < 1GB in size
+                runSize=$(du -k "$inputFileName" | cut -f 1)
+                #if [ "$runSize" -lt 1000000 ]
+                #then
+                #    printf "$inputFileName is less than 1 GB in size; ignoring...\n"
+                #    continue
+                #fi
+
             done
 
         else

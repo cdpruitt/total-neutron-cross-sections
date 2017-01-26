@@ -223,20 +223,30 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                 procEvent.completeTime = (double)pow(2,32)*separatedEvent.extTime
                     + separatedEvent.timetag + separatedEvent.fineTime + TIME_OFFSET;
 
-                if(i==2)
+/*                if(procEvent.macroNo > 4360 && procEvent.macroNo < 4370)
                 {
-                    if(procEvent.macroNo < 20)
-                    {
-                        cout << "macroNo = " << procEvent.macroNo
-                            << ", completeTime = " << procEvent.completeTime
-                            << ", macroTime = " << tcEvent.macroTime
-                            << ", event macrotime = " << procEvent.macroTime << endl;
-                    }
+                    cout << "macroNo = " << procEvent.macroNo
+                         << "macroTime = " << procEvent.macroTime
+                         << "completeTime = " << procEvent.completeTime
+                         << endl;
                 }
+                */
 
                 if(procEvent.completeTime < prevTimetag)
                 {
-                    // DPP/waveform mode change
+                    // Cycle the macropulse forward to the next DPP/waveform
+                    // mode change, if necessary
+
+                    while(currentTargetChangerEntry+1<targetChangerEntries
+                            && tcEvent.macroTime > procEvent.macroTime) 
+                    {
+                        procEvent.macroNo = tcEvent.macroNo;
+                        procEvent.macroTime = tcEvent.macroTime;
+                        procEvent.targetPos = tcEvent.targetPos;
+                        targetChangerTree->GetEntry(++currentTargetChangerEntry);
+                    }
+ 
+/*                    // DPP/waveform mode change
                     procEvent.macroNo = tcEvent.macroNo;
                     procEvent.macroTime = tcEvent.macroTime;
                     procEvent.targetPos = tcEvent.targetPos;
@@ -245,6 +255,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
 
                     if(currentTargetChangerEntry+1<targetChangerEntries)
                     {
+
                         targetChangerTree->GetEntry(++currentTargetChangerEntry);
                     }
 
@@ -253,6 +264,9 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                         cout << "Reached the end of the target changer tree. Discarding all remaining events." << endl;
                         break;
                     }
+                    */
+
+                    // macropulse is now the first in next DPP/waveform change
 
                     while(currentTargetChangerEntry+1<targetChangerEntries &&
                             tcEvent.macroTime < procEvent.macroTime)

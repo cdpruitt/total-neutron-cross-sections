@@ -7,10 +7,13 @@ OBJECTS = $(SOURCES:.c=.o)
 
 LINKOPTION = $(shell root-config --libs)
 
-all: driver sumAll text finetimeCheck readLitData subtractCS relative
+all: driver sumSingle sumAll text finetimeCheck readLitData subtractCS relative
 
 driver: $(OBJECTS)
 	$(COMPILER) $(CFLAGS) -o driver $(OBJECTS) $(LINKOPTION)
+
+sumSingle: src/sumSingle.cpp src/dataSet.cpp src/dataPoint.cpp src/CSPrereqs.cpp src/experiment.cpp src/target.cpp src/crossSection.cpp src/plots.cpp
+	$(COMPILER) $(CFLAGS) -o sumSingle src/sumSingle.cpp src/dataSet.cpp src/dataPoint.cpp src/CSPrereqs.cpp src/experiment.cpp src/target.cpp src/crossSection.cpp src/plots.cpp $(LINKOPTION)
 
 sumAll: src/sumAll.cpp src/dataSet.cpp src/dataPoint.cpp src/CSPrereqs.cpp src/experiment.cpp src/target.cpp src/crossSection.cpp src/plots.cpp
 	$(COMPILER) $(CFLAGS) -o sumAll src/sumAll.cpp src/dataSet.cpp src/dataPoint.cpp src/CSPrereqs.cpp src/experiment.cpp src/target.cpp src/crossSection.cpp src/plots.cpp $(LINKOPTION)

@@ -390,6 +390,12 @@ void fillBasicHistos(TFile* histoFile)
         {
             t->GetEntry(j);
 
+            // gate on time within macropulse
+            if(procEvent.completeTime > procEvent.macroTime + MACRO_LENGTH)
+            {
+                continue;
+            }
+
             macroNoH->Fill(procEvent.macroNo);
             targetPosH->Fill(procEvent.targetPos);
             macroTimeH->Fill(procEvent.macroTime);
