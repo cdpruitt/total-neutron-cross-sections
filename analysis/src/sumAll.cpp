@@ -3,6 +3,7 @@
 #include <sstream>
 #include <iomanip>
 #include <string>
+
 #include "TFile.h"
 #include "TTree.h"
 #include "TGraphErrors.h"
@@ -188,7 +189,7 @@ CrossSection correctForBlank(CrossSection rawCS, double targetNumberDensity, str
     return correctedCS;
 }
 
-CrossSection calculateCS(string CSFileName, CSPrereqs& targetData, CSPrereqs& blankData, string expName)
+CrossSection calculateCS(CSPrereqs& targetData, CSPrereqs& blankData, string expName)
 {
     // make sure the monitor recorded counts for both the blank and the target
     // of interest so we can normalize the flux between them
@@ -211,6 +212,7 @@ CrossSection calculateCS(string CSFileName, CSPrereqs& targetData, CSPrereqs& bl
     double tMon = targetData.monitorCounts;
     double bMon = blankData.monitorCounts;
     double monitorRatio = tMon/bMon;
+    //double monitorRatio = 1;
 
     // calculate number of atoms in this target
     long double numberOfAtoms =
@@ -271,18 +273,16 @@ CrossSection calculateCS(string CSFileName, CSPrereqs& targetData, CSPrereqs& bl
                     bMon, tMon, bDet, tDet));
     }
 
-    CrossSection corrected = correctForBlank(crossSection, volumeDensity, expName, "literatureData.root");
-
-    TFile* CSFile = new TFile(CSFileName.c_str(),"UPDATE");
     string name = targetData.target.getName();
-    crossSection.createCSGraph(name);
+    crossSection.createCSGraph(name, name);
+
+    /*
+    CrossSection corrected = correctForBlank(crossSection, volumeDensity, expName, "literatureData.root");
     name += "blankCorrected";
     corrected.createCSGraph(name);
+    */
 
-    CSFile->Write();
-    CSFile->Close();
-
-    return corrected;
+    return crossSection;
 }
 
 int main(int, char* argv[])
@@ -291,8 +291,11 @@ int main(int, char* argv[])
                                    // (omit trailing slash)
     string expName = argv[2];      // experiment directory where runs to-be-sorted
                                    // are listed
-    string ROOTFileName = argv[3]; // name of ROOT files that contain data
+    string histosFileType = argv[3]; // name of ROOT files that contain data
                                    // used to calculate cross sections
+
+    string monitorFileType = argv[4];
+
 
     // Create a CSPrereqs for each target to hold data from all the runs
     vector<CSPrereqs> allData;
@@ -303,6 +306,8 @@ int main(int, char* argv[])
         string targetDataLocation = "../" + expName + "/targetData/" + targetName + ".txt";
         allData.push_back(CSPrereqs(targetDataLocation));
     }
+
+    ofstream textOutput;
 
     // Open runlist
     string runListName = "../" + expName + "/runsToSort.txt";
@@ -317,6 +322,7 @@ int main(int, char* argv[])
 
     // Runlist open - loop through all runs
     string runNumber;
+    int runCounter = 0;
     while (runList >> runNumber)
     {
         // Loop through all subruns of this run
@@ -328,7 +334,7 @@ int main(int, char* argv[])
             // open subrun
             stringstream inFileName;
             inFileName << dataLocation << "/" << runNumber << "/"
-                       << subRunFormatted.str() << "/" << ROOTFileName << ".root";
+                       << subRunFormatted.str() << "/" << histosFileType << ".root";
             ifstream f(inFileName.str());
             if(!f.good())
             {
@@ -337,6 +343,16 @@ int main(int, char* argv[])
             }
 
             f.close();
+
+            stringstream monitorFileName;
+            monitorFileName << dataLocation << "/" << runNumber << "/"
+                       << subRunFormatted.str() << "/" << monitorFileType << ".root";
+            ifstream m(monitorFileName.str());
+            if(!m.good())
+            {
+                // failed to open this sub-run - skip to the next one
+                continue;
+            }
 
             TFile* inFile = new TFile(inFileName.str().c_str(),"READ");
 
@@ -353,66 +369,76 @@ int main(int, char* argv[])
                 string targetDataLocation = "../" + expName + "/targetData/" + targetOrder[j] + ".txt";
                 CSPrereqs subRunData(targetDataLocation);
 
-                subRunData.readData(inFile, "lowThresholdDet", j);
+                // for histos
+                //subRunData.readData(inFile, "lowThresholdDet", j);
+
+                // for waveforms
+                subRunData.readData(inFile, "lowThresholdDet", j, monitorFileName.str());
 
                 // find the correct CSPrereqs to add this target's data to
-                for(int k=0; (size_t)k<allData.size(); k++)
+                for(CSPrereqs& csp : allData)
                 {
-                    if(allData[k].target.getName() == subRunData.target.getName())
+                    if(csp.target.getName() == subRunData.target.getName())
                     {
                         // add subrun data to total
-                        if(!allData[k].energyHisto)
-                        {
-                            // this is the first subrun to be added
-                            allData[k].monitorCounts = subRunData.monitorCounts;
-                            allData[k].energyHisto = (TH1I*)subRunData.energyHisto->Clone();
-                            // prevent the cloned histogram from being closed
-                            // when the subrun is closed
-                            allData[k].energyHisto->SetDirectory(0);
-                        }
-
-                        else
-                        {
-                            allData[k] = allData[k] + subRunData;
-                        }
-
-                        break;
-                    }
-
-                    if((size_t)k+1==allData.size())
-                    {
-                        cerr << "Failed to find a CSPrereqs to add this subrun to." << endl;
-                        continue;
+                        csp = csp + subRunData;
                     }
                 }
+
+                /*string outputName = dataLocation + "/" + targetOrder[j] + ".txt";
+                textOutput.open(outputName, ios_base::app);
+
+                long stoppingDetCounts = subRunData.TOFHisto->GetEntries();
+                textOutput << runCounter << " "
+                    << stoppingDetCounts/(double)subRunData.monitorCounts
+                    << endl;
+                textOutput.close();
+                */
             }
 
             // Close the sub-run input files
             inFile->Close();
+
+            runCounter++;
         }
     }
 
     string outFileName = dataLocation + "/total.root";
+    TFile* outFile = new TFile(outFileName.c_str(), "UPDATE");
 
     vector<CrossSection> crossSections;
 
     cout << endl << "Total statistics over all runs: " << endl << endl;
 
-    for(CSPrereqs p : allData)
+    for(CSPrereqs& p : allData)
     {
         long totalCounts = 0;
         for(int i=0; i<p.energyHisto->GetNbinsX(); i++)
         {
-            totalCounts += p.energyHisto->GetBinContent(i);
+            long tempCounts = p.energyHisto->GetBinContent(i);
+            if(tempCounts < 0)
+            {
+                continue;
+            }
+
+            totalCounts += tempCounts;
         }
 
         cout << p.target.getName() << ": total events in energy histo = "
              << totalCounts << ", total monitor events = "
              << p.monitorCounts << endl;
-        crossSections.push_back(calculateCS(outFileName, p, allData[0], expName));
+        crossSections.push_back(calculateCS(p, allData[0], expName));
         cout << "Target " << crossSections.back().getDataSet().getReference() <<
                 " RMS error: " << crossSections.back().calculateRMSError() << endl << endl;
+
+        //p.energyHisto->SetDirectory(outFile);
+        string name = p.target.getName() + "TOF";
+        p.TOFHisto->SetNameTitle(name.c_str(),name.c_str());
+        p.TOFHisto->SetDirectory(outFile);
     }
+
+    outFile->Write();
+    outFile->Close();
 
     /**************************************************************************
     Create relative cross section plots
@@ -456,11 +482,12 @@ int main(int, char* argv[])
             //        " RMS error: " << difference.calculateRMSError() << endl << endl;
 
             CrossSection relative = calculateRelative(crossSections[largerTarget],crossSections[smallerTarget]);
-            string relativeName = "#frac{#sigma_{" + allData[largerTarget].target.getName() +
+            string relativeTitle = "#frac{#sigma_{" + allData[largerTarget].target.getName() +
                                       "}-#sigma_{" + allData[smallerTarget].target.getName() + 
                                      "}}{#sigma_{" + allData[largerTarget].target.getName() +
                                       "}+#sigma_{" + allData[smallerTarget].target.getName() + "}}";
-            relative.createCSGraph(relativeName.c_str());
+            string relativeName = "relative" + allData[largerTarget].target.getName() + allData[smallerTarget].target.getName();
+            relative.createCSGraph(relativeName.c_str(), relativeTitle.c_str());
             cout << "Relative plot " << relative.getDataSet().getReference() <<
                     " RMS error: " << relative.calculateRMSError() << endl;
         }

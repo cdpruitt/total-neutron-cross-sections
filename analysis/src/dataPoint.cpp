@@ -134,8 +134,8 @@ DataPoint operator-(const DataPoint& minuend, const DataPoint& subtrahend)
                               minuend.getXError(),
                               minuend.getYValue()-subtrahend.getYValue(),
                               pow(
-                                  pow(minuend.getYError(),2)+
-                                  pow(subtrahend.getYError(),2),0.5));
+                                  pow(minuend.getYError(),2)/*+
+                                  pow(subtrahend.getYError(),2)*/,0.5));
 
     outputDataPoint.setBlankMonitorCounts(minuend.getBlankMonitorCounts());
     outputDataPoint.setTargetMonitorCounts(minuend.getTargetMonitorCounts());

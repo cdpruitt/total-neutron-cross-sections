@@ -5,6 +5,10 @@
 #include <string>
 #include "../include/dataPoint.h"
 
+// How to use:
+// root
+// .x makeCSText("CSFileName","CSGraphName","outputTextfileName")
+
 void makeCSText(string inputFileName, string graphName, string outputFileName)
 {
     // open cross section file

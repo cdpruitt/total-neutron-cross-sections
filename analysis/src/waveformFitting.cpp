@@ -98,8 +98,6 @@ double onePeakForm(double *x, double *par)
  *  this trigger.
  */
 
-
-
 double onePeakForm(double *x, double *par)
 {
     double fitval;    // fitted value of function
@@ -114,11 +112,44 @@ double onePeakForm(double *x, double *par)
     double arg1 = pow((x[0]-par[1]),1)/par[2];
     double arg2 = pow((x[0]-(par[1]+FERMI_OFFSET)),1)/par[3];
 
-    // Start with linear background
-    fitval = par[4] + par[5]*(x[0]-par[1]);
+    // Flat background
+    fitval = par[4];// + par[5]*(x[0]-par[1]);
 
     // add peak
     fitval += par[0]*exp(-arg1)/(1+exp(-arg2));
+
+    return fitval;
+}
+
+// Variables for manual CFD waveform fitting
+const double CFD_SCALEDOWN = 0.25;
+const double CFD_DELAY = 6;
+
+double CFDForm(double *x, double *par)
+{
+    double fitval;    // fitted value of function
+
+    if (par[2]==0 || par[3]==0)
+    {
+        cerr << "Error: divide by 0 in CFD" << endl;
+        exit(1);
+    }
+
+    // Define exponential*fermi function as peak shape
+    double arg1 = pow((x[0]-par[1]),1)/par[2];
+    double arg2 = pow((x[0]-(par[1]+FERMI_OFFSET)),1)/par[3];
+
+    // Flat background
+    fitval = par[4];// + par[5]*(x[0]-par[1]);
+
+    // add initial, downscaled peak
+    fitval += par[0]*CFD_SCALEDOWN*exp(-arg1)/(1+exp(-arg2));
+
+    double arg3 = pow((x[0]-(par[1]+CFD_DELAY)),1)/par[2];
+    double arg4 = pow((x[0]-(par[1]+CFD_DELAY+FERMI_OFFSET)),1)/par[3];
+
+    // add delayed, fullscale peak
+    fitval -= par[0]*exp(-arg3)/(1+exp(-arg4));
 
     return fitval;
 }

@@ -34,20 +34,22 @@ TH2I *triggerWalk;
 TH1I *peakHisto;
 TF1 *fittingFunc;
 
+unsigned int DPP_WAVEFORM_SAMPLES = 60;
+unsigned int DPP_PEAKFIT_START = 2;
+int DPP_PEAKFIT_OFFSET = -24;
+
 extern struct ProcessedEvent procEvent;
 
 // Declare variables to be used for calculating neutron TOFs
 int microNo;
 double microTime, velocity, rKE;
 
-// Keep track of the number of waveforms collected during each target's period
-// in the beam
-int targetCounts[6] = {0};
+double prevTriggerTime = 0;
+double eventTimeDiff = 0;
 
 /*****************************************************************************/
 
 // Keep track of sample number where triggers are found
-vector<double> triggerList;
 vector<double> triggerValues;
 
 /*****************************************************************************/
@@ -106,14 +108,20 @@ float baselineWithinThreshold(vector<int> bw)
 // Starting at the beginning of a waveform, try to find a window of samples
 // BASELINE_LIMIT long that are all within +/- BASELINE_THRESHOLD ADC units)
 // of each other. Average these points to find the baseline.
-float calculateBaseline()
+float calculateBaseline(const vector<int>& waveform)
 {
+    if(BASELINE_SAMPLES > waveform.size() ||
+       BASELINE_LIMIT > waveform.size())
+    {
+        return BASELINE;
+    }
+
     vector<int> baselineWindow;
 
     // Load the first BASELINE_SAMPLES waveform samples into the baseline window
     for(int i=0; i<BASELINE_SAMPLES; i++)
     {
-        baselineWindow.push_back(procEvent.waveform->at(i));
+        baselineWindow.push_back(waveform[i]);
     }
 
     // Loop through the waveform to try to find a BASELINE_SAMPLES-long stretch
@@ -122,7 +130,7 @@ float calculateBaseline()
 
     for(int i=BASELINE_SAMPLES; i<BASELINE_LIMIT; i++)
     {
-        BASELINE = baselineWithinThreshold(baselineWindow);
+        //BASELINE = baselineWithinThreshold(baselineWindow);
 
         // test to see if the baseline returned by baselineWithinThreshold is
         // non-zero.
@@ -132,7 +140,7 @@ float calculateBaseline()
             // Baseline calculation failed, so move the baseline window forward
             // one step and try to calculate the baseline again.
             baselineWindow.erase(baselineWindow.begin());
-            baselineWindow.push_back(procEvent.waveform->at(i));
+            baselineWindow.push_back(waveform[i]);
         }
 
         else
@@ -155,7 +163,7 @@ float calculateBaseline()
 /*****************************************************************************/
 // Using the waveform value at time i, check for a peak, and return true if
 // there is
-bool isTrigger(int i)
+bool isTrigger(int i, const vector<int>& waveform)
 {
     // Check for triggers using:
     //      - a raw threshold above the baseline
@@ -163,11 +171,11 @@ bool isTrigger(int i)
     //      - by rejecting triggers if the PREVIOUS point was already above
     //      these thresholds
 
-    if((procEvent.waveform->at(i) <= BASELINE-THRESHOLD
-       && (procEvent.waveform->at(i)-procEvent.waveform->at(i-1))/(double)SAMPLE_PERIOD <= DERIVATIVE_THRESHOLD)
+    if((waveform[i] <= BASELINE-THRESHOLD
+       && (waveform[i]-waveform[i-1])/(double)SAMPLE_PERIOD <= DERIVATIVE_THRESHOLD)
 
-       && (procEvent.waveform->at(i-1) > BASELINE-THRESHOLD
-       || (procEvent.waveform->at(i-1)-procEvent.waveform->at(i-2))/(double)SAMPLE_PERIOD > DERIVATIVE_THRESHOLD))
+       && (waveform[i-1] > BASELINE-THRESHOLD
+       /*|| (waveform[i-1]-waveform[i-2])/(double)SAMPLE_PERIOD > DERIVATIVE_THRESHOLD*/))
     {
         return true;
     }
@@ -184,9 +192,11 @@ struct fitData
     double trigger2Time = 0;
     double peak1Amplitude = 0;
     double peak2Amplitude = 0;
+    double peak1TriggerAmplitude = 0;
+    double peak2TriggerAmplitude = 0;
     double peak1Derivative = 0;
     double peak2Derivative = 0;
-    double chiSquare = 0;
+    double chiSquare = 10000;
     bool goodFit = false;
 
     void clear()
@@ -195,27 +205,20 @@ struct fitData
         trigger2Time = 0;
         peak1Amplitude = 0;
         peak2Amplitude = 0;
+        peak1TriggerAmplitude = 0;
+        peak2TriggerAmplitude = 0;
         peak1Derivative = 0;
         peak2Derivative = 0;
-        chiSquare = 0;
+        chiSquare = 10000;
         goodFit = false;
     }
 } data;
-
-/*double cfd(TF1* fit, double triggerTime)
-{
-    // create scaled-down part of CFD
-    TF1* cfdFunc = new TF1("cfdFunc",cfdForm,SAMPLE_PERIOD*PEAKFIT_OFFSET,SAMPLE_PERIOD*(PEAKFIT_OFFSET+PEAKFIT_WINDOW),8);
-    cfdFunc->SetParameters(fit->GetParameters());
-
-    return cfdFunc->GetX(BASELINE,triggerTime-5,triggerTime+5);
-}*/
 
 bool testForEcho(vector<int>* waveform, int triggerSample)
 {
     for(int i=triggerSample; i<triggerSample+PEAKFIT_WINDOW; i++)
     {
-        if(waveform->at(i)>BASELINE+ECHO_THRESHOLD)
+        if(waveform->at(i)>BASELINE)
         {
             return true;
         }
@@ -224,7 +227,7 @@ bool testForEcho(vector<int>* waveform, int triggerSample)
     return false;
 }
 
-fitData fitTrigger(int waveformNo, float triggerSample)
+fitData fitTrigger(int waveformNo, double triggerSample, const vector<int>& waveform)
 {
     // A trigger has been detected on the current waveform; fitTrigger attempts
     // to fit the region around this trigger using a series of progressively
@@ -236,13 +239,7 @@ fitData fitTrigger(int waveformNo, float triggerSample)
     data.clear();
 
     // check to make sure we don't run off the end of the waveform
-    if(triggerSample+PEAKFIT_WINDOW >= procEvent.waveform->size())
-    {
-        return data;
-    }
-
-    // ignore peaks that go above baseline - these are echoes
-    if(testForEcho(procEvent.waveform, triggerSample))
+    if(triggerSample+PEAKFIT_WINDOW+PEAKFIT_OFFSET >= waveform.size() || triggerSample+PEAKFIT_OFFSET<0)
     {
         return data;
     }
@@ -255,7 +252,7 @@ fitData fitTrigger(int waveformNo, float triggerSample)
 
     for (int i=0; i<PEAKFIT_WINDOW; i++)
     {
-        peakHisto->SetBinContent(i,procEvent.waveform->at(triggerSample+PEAKFIT_OFFSET+i));
+        peakHisto->SetBinContent(i,waveform.at(triggerSample+PEAKFIT_OFFSET+i));
     }
 
     /*************************************************************************/
@@ -278,22 +275,37 @@ fitData fitTrigger(int waveformNo, float triggerSample)
 
     // fit peak 
     peakHisto->Fit("fittingFunc","RQ");
+    //peakHisto->Write(); // uncomment to produce a fitted histo for each peak
 
     if(fittingFunc->GetChisquare() < ERROR_LIMIT)
     {
         // Success - we've achieved a good fit with just one peak
         // Output fit data
 
-        data.peak1Amplitude = fittingFunc->GetMinimum(fittingFunc->GetParameter(1),fittingFunc->GetParameter(1)+10);
+        data.peak1Amplitude = fittingFunc->GetMinimum(fittingFunc->GetParameter(1),fittingFunc->GetParameter(1)+30);
 
-        double relativeTriggerSample = fittingFunc->GetX((fittingFunc->GetParameter(4)+data.peak1Amplitude)/2,fittingFunc->GetParameter(1)-10,fittingFunc->GetParameter(1)+20);
+        TF1* CFD = new TF1("CFD",CFDForm,SAMPLE_PERIOD*PEAKFIT_OFFSET,SAMPLE_PERIOD*(PEAKFIT_OFFSET+PEAKFIT_WINDOW),nParamsOnePeak);
 
-        data.trigger1Time = SAMPLE_PERIOD*(triggerSample+relativeTriggerSample);
+        for(int i=0; i<fittingFunc->GetNpar(); i++)
+        {
+            CFD->SetParameter(i,fittingFunc->GetParameter(i));
+        }
+
+        //CFD->Write();
+
+        double relativeTriggerSample = fittingFunc->GetX(fittingFunc->GetParameter(4),fittingFunc->GetParameter(1),fittingFunc->GetParameter(1)+10);
+
+        //double relativeTriggerSample = fittingFunc->GetX((fittingFunc->GetParameter(4)+data.peak1Amplitude)/2,fittingFunc->GetParameter(1),fittingFunc->GetParameter(1)+10);
+        //double relativeTriggerSample = fittingFunc->GetParameter(1);
+
+        data.peak1TriggerAmplitude = fittingFunc->Eval(relativeTriggerSample);
+
+        data.trigger1Time = (triggerSample+relativeTriggerSample)*(double)SAMPLE_PERIOD;
         data.peak1Derivative = fittingFunc->Derivative(relativeTriggerSample);
         data.chiSquare = fittingFunc->GetChisquare();
         data.goodFit = true;
 
-        relativeTriggerSampleHisto->Fill(relativeTriggerSample);
+        //relativeTriggerSampleHisto->Fill(relativeTriggerSample);
 
         //cout << "getX from peakFit = " << relativeTriggerSample << endl;
         //cout << "derivative = " << data.peak1Derivative << endl;
@@ -302,9 +314,15 @@ fitData fitTrigger(int waveformNo, float triggerSample)
 
         numberOnePeakFits++;
     }
+
+    /*if(data.trigger1Time+DPP_PEAKFIT_OFFSET>4)
+    {
+        peakHisto->Write();
+    }*/
+
     /*************************************************************************/
 
-    else
+    /*else
     {
         fittingFunc = new TF1("fittingFunc",onePeakExpBackForm,SAMPLE_PERIOD*PEAKFIT_OFFSET,SAMPLE_PERIOD*(PEAKFIT_OFFSET+PEAKFIT_WINDOW),nParamsOnePeakExpBack);
         fittingFunc->SetParameters(A_init,trig1_init,n_init,d_init,C_init,m_init,E_init,tE_init);
@@ -340,7 +358,7 @@ fitData fitTrigger(int waveformNo, float triggerSample)
 
             numberOnePeakExpBackFits++;
         }
-        /*************************************************************************/
+
         else
         {
             // failed to fit w/ one peak; try allowing two peaks
@@ -384,11 +402,10 @@ fitData fitTrigger(int waveformNo, float triggerSample)
 
                 numberTwoPeakFits++;
             }
-            /*************************************************************************/
         }
     }
+*/
 
-    //peakHisto->Write(); // uncomment to produce a fitted histo for each peak
     delete peakHisto;
     delete fittingFunc;
 
@@ -401,7 +418,7 @@ fitData fitTrigger(int waveformNo, float triggerSample)
     return data;
 }
 
-double calculateGammaOffset()
+double calculateGammaOffset(const vector<double>& triggerList)
 {
     double gammaOffset = 0;
     unsigned int numberOfGammas = 0;
@@ -421,20 +438,21 @@ double calculateGammaOffset()
     if(numberOfGammas > 0)
     {
         gammaOffset/=numberOfGammas;
+        gammaOffset -= pow(10,7)*FLIGHT_DISTANCE/C;
     }
-
-    gammaOffset-=pow(10,7)*FLIGHT_DISTANCE/C;
-    //cout << "gammaOffset = " << gammaOffset << endl;
 
     return gammaOffset;
 }
 
-void fillTriggerHistos(double triggerTime, double gammaOffset, int waveformNo, vector<Plots*>& plots)
+//, int waveformNo
+//triggerWalk->Fill(microTime,waveformNo);
+
+void fillTriggerHistos(double triggerTime, vector<Plots>& plots)
 {
     // Calculate time of flight from trigger time
-    microTime = fmod((triggerTime+WAVEFORM_OFFSET),MICRO_LENGTH)-gammaOffset;
+    microTime = fmod((triggerTime),MICRO_LENGTH);
 
-    microNo = floor((triggerTime+WAVEFORM_OFFSET)/MICRO_LENGTH);
+    microNo = floor((triggerTime)/MICRO_LENGTH);
 
     // convert microTime into neutron velocity based on flight path distance
     velocity = pow(10.,7.)*FLIGHT_DISTANCE/microTime; // in meters/sec 
@@ -442,37 +460,96 @@ void fillTriggerHistos(double triggerTime, double gammaOffset, int waveformNo, v
     // convert velocity to relativistic kinetic energy
     rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
 
-    triggerWalk->Fill(microTime,waveformNo);
-
-    if (procEvent.targetPos>0 && procEvent.targetPos<=tarGates.size())
+    if (procEvent.targetPos>0 && procEvent.targetPos<=tarGates.size()-1)
     {
-        TH1I* tof = plots[procEvent.targetPos-1]->getTOFHisto();
-        TH1I* en = plots[procEvent.targetPos-1]->getEnergyHisto();
+        TH1I* tof = plots[procEvent.targetPos-1].getTOFHisto();
+        TH1I* en = plots[procEvent.targetPos-1].getEnergyHisto();
 
         tof->Fill(microTime);
         en->Fill(rKE);
     }
+
+    eventTimeDiff = triggerTime-prevTriggerTime;
+
+    prevTriggerTime = triggerTime;
 }
 
 /*****************************************************************************/
-void processTrigger(int waveformNo, float triggerSample)
+void processTrigger(int waveformNo, int triggerSample, vector<double>& triggerList, const vector<int>& waveform)
 {
     // Uncomment to use raw trigger sample as trigger time
-    //float triggerTime = triggerSample;
-    //fillTriggerHistos(triggerTime);
-    //triggerList.push_back(triggerSample);
+    //double triggerTime = triggerSample*2;
+    //triggerList.push_back(triggerTime);
 
     // Uncomment to use fitted peak threshold-intercept as trigger time
-    if(fitTrigger(waveformNo, triggerSample).goodFit)
+    if(fitTrigger(waveformNo, triggerSample, waveform).goodFit)
     {
-        triggerList.push_back(data.trigger1Time);
-        triggerValues.push_back(procEvent.waveform->at(data.trigger1Time/2));
+        double timeOffset = 0;
 
-        if(data.peak2Amplitude && data.peak1Amplitude > 13000)
+        if(procEvent.lgQ < 206)
+        {
+            timeOffset = 0.01424*procEvent.lgQ-2.774;
+        }
+
+        else if(procEvent.lgQ < 305)
+        {
+            timeOffset = 0.01646*procEvent.lgQ-3.232;
+        }
+
+        else if(procEvent.lgQ < 417)
+        {
+            timeOffset = 0.009196*procEvent.lgQ-1.0149;
+        }
+        
+        else if(procEvent.lgQ < 566)
+        {
+            timeOffset = 0.005168*procEvent.lgQ+0.6650;
+        }
+        
+        else if(procEvent.lgQ < 929)
+        {
+            timeOffset = 0.002231*procEvent.lgQ+2.327;
+        }
+        
+        else if(procEvent.lgQ < 1482)
+        {
+            timeOffset = 0.001447*procEvent.lgQ+3.056;
+        }
+        
+        else if(procEvent.lgQ < 2149)
+        {
+            timeOffset = 0.0007496*procEvent.lgQ+4.089;
+        }
+        
+        else if(procEvent.lgQ < 5319)
+        {
+            timeOffset = 0.0003785*procEvent.lgQ+4.8865;
+        }
+        
+        else if(procEvent.lgQ < 7808)
+        {
+            timeOffset = 0.0001607*procEvent.lgQ+6.0452;
+        }
+        
+        else if(procEvent.lgQ < 11395)
+        {
+            timeOffset = 0.0001115*procEvent.lgQ+6.4293;
+        }
+        
+        else
+        {
+            timeOffset = 0.00006244*procEvent.lgQ+6.989;
+        }
+
+        data.trigger1Time -= timeOffset;
+
+        triggerList.push_back(data.trigger1Time);
+        triggerValues.push_back(data.peak1TriggerAmplitude);
+
+        /*if(data.peak2Amplitude && data.peak1Amplitude > 13000)
         {
             triggerList.push_back(data.trigger2Time);
-            triggerValues.push_back(procEvent.waveform->at(data.trigger2Time/2));
-        }
+        }*/
 
         numberGoodFits++;
     }
@@ -483,31 +560,32 @@ void processTrigger(int waveformNo, float triggerSample)
         //triggerList.push_back(triggerSample*SAMPLE_PERIOD);
     }
 
+    //cout << data.chiSquare << endl;
 }
 
-void produceTriggerOverlay(int j)
+void produceTriggerOverlay(int j, vector<double>& triggerList, vector<int>& waveform)
 {
     stringstream temp;
     temp << "waveform " << j;
-    waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),procEvent.waveform->size(),0,SAMPLE_PERIOD*procEvent.waveform->size());
+    waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),waveform.size(),0,SAMPLE_PERIOD*waveform.size());
 
-    for(int k=0; (size_t)k<procEvent.waveform->size(); k++)
+    for(int k=0; (size_t)k<waveform.size(); k++)
     {
-        waveformH->SetBinContent(k,procEvent.waveform->at(k));
+        waveformH->SetBinContent(k,waveform.at(k));
     }
 
     waveformH->Write();
 
     temp << "triggers";
-    triggerH = new TH1I(temp.str().c_str(),temp.str().c_str(),procEvent.waveform->size(),0,SAMPLE_PERIOD*(procEvent.waveform->size()));
+    triggerH = new TH1I(temp.str().c_str(),temp.str().c_str(),waveform.size(),0,SAMPLE_PERIOD*(waveform.size()));
 
     for(int k=0; (size_t)k<triggerList.size(); k++)
     {
-        triggerH->SetBinContent(triggerList[k]/SAMPLE_PERIOD,triggerValues[k]);
+        triggerH->SetBinContent(triggerList[k]/(double)SAMPLE_PERIOD,triggerValues[k]);
     }
 
     TCanvas *c1 = new TCanvas;
-    c1->DrawFrame(0,0,procEvent.waveform->size()+10,16383);
+    c1->DrawFrame(0,0,waveform.size()+10,16383);
 
     triggerH->SetOption("P");
 
@@ -518,250 +596,439 @@ void produceTriggerOverlay(int j)
     triggerH->Write();
 }
 
-void processWaveforms(TTree* ch4TreeWaveform, vector<Plots*>& plots)
+void processWaveforms(TTree* treeToSort, vector<Plots>& targetPlots, TFile* outFile, string mode)
 {
-    triggerWalk = new TH2I("triggerWalk","trigger time vs. waveform chunk #",200,0,200,1000,0,1000);
+    TH1I* fittedTimeHisto = new TH1I("raw fitted times", "raw fitted times", TOF_BINS,TOF_LOWER_BOUND,TOF_RANGE);
 
-    relativeTriggerSampleHisto = new TH1I("relativeTriggerSampleHisto","relative trigger time, from start of fitted wavelet",100,PEAKFIT_OFFSET*SAMPLE_PERIOD,(PEAKFIT_OFFSET+PEAKFIT_WINDOW)*SAMPLE_PERIOD);
+    TH2I* deltaTVsPulseHeight = new TH2I("delta T vs. pulse height","delta T vs. pulse height",100, -10, 10, 1000, 0, 16000);
 
-    // Loop through all channel-specific trees
-    for(int i=0; (size_t)i<1; i++)
+    TH2I* deltaTVsPulseIntegral = new TH2I("delta T vs. pulse integral","delta T vs. pulse integral",100, -10, 10, 1000, 0, pow(2,16));
+
+    if(mode=="DPP")
     {
-        // point event variables at the correct tree in preparation for reading
-        // data
-        setBranchesHistosW(ch4TreeWaveform);
+        setBranchesHistos(treeToSort);
 
-        int totalEntries = ch4TreeWaveform->GetEntries();
+        int totalEntries = treeToSort->GetEntries();
         cout << "Total waveforms = " << totalEntries << endl;
 
-        /*TCanvas *mycan = (TCanvas*)gROOT->FindObject("mycan");
+        vector<double> triggerList;
 
-        if(!mycan)
+        waveformWrap = new TMultiGraph("DPP waveforms", "DPP waveforms");
+        vector<TGraph*> waveletGraphs;
+        vector<TGraph*> triggerGraphs;
+
+        for(int j=1; j<totalEntries; j++)
         {
-            mycan = new TCanvas("mycan","mycan");
-        }*/
+            if(j%1000==0)
+            {
+                cout << "Processing triggers on waveform " << j << "\r";
+                fflush(stdout);
+            }
 
-        // EVENT LOOP for sorting through channel-specific waveforms
-        for(int j=0; j<totalEntries; j++)
-        {
-
-            cout << "Processing triggers on waveform " << j << "\r";
-            fflush(stdout);
+            /*if(j>)
+            {
+                break;
+            }*/
 
             triggerList.clear();
             triggerValues.clear();
 
             // pull individual waveform event
-            ch4TreeWaveform->GetEntry(j);
+            treeToSort->GetEntry(j);
+
+            // calculate the baseline for this waveform
+            BASELINE = calculateBaseline(*procEvent.waveform);
+
+            // Loop through all points in the waveform and fit peaks
+            for(int k=DPP_PEAKFIT_START; (size_t)k<procEvent.waveform->size(); k++)
+            {
+                // Check to see if this point creates a new trigger
+                if(isTrigger(k, *procEvent.waveform))
+                {
+                    // trigger found - plot/fit/extract time
+                    processTrigger(j, k, triggerList, *procEvent.waveform);
+
+                    //produceTriggerOverlay(j, triggerList, *procEvent.waveform);
+
+                    break;
+                }
+            }
+
+            for(int m=0; (size_t)m<triggerList.size(); m++)
+            {
+                fillTriggerHistos(triggerList[m]+procEvent.completeTime-procEvent.macroTime+DPP_PEAKFIT_OFFSET, targetPlots);
+                fittedTimeHisto->Fill(triggerList[m]);
+                deltaTVsPulseIntegral->Fill(triggerList[m]+DPP_PEAKFIT_OFFSET, procEvent.lgQ);
+                deltaTVsPulseHeight->Fill(triggerList[m]+DPP_PEAKFIT_OFFSET, data.peak1Amplitude);
+            }
+
+            // Create a new graph for each wavelet
+            //waveletGraphs.push_back(new TGraph());
+
+            // Fill each micropulse graph with waveform samples
+            /*for (int l=0; l<procEvent.waveform->size(); l++)
+            {
+                waveletGraphs.back()->SetPoint(l,l*SAMPLE_PERIOD,procEvent.waveform->at(l));
+            }*/
+            
+            // Create a new graph for each wavelet
+            triggerGraphs.push_back(new TGraph());
+
+            // Fill each micropulse graph with waveform samples
+            triggerGraphs.back()->SetPoint(0,triggerList[0],triggerValues[0]);
+
+            fill(procEvent.waveform->begin(),procEvent.waveform->end(),BASELINE);
+        }
+
+        TGraph* exponentialFit = new TGraph();
+        exponentialFit->SetPoint(0,-0.78,140);
+        exponentialFit->SetPoint(1,0.16,206);
+        exponentialFit->SetPoint(2,1.79,305);
+        exponentialFit->SetPoint(3,2.82,417);
+        exponentialFit->SetPoint(4,3.59,566);
+        exponentialFit->SetPoint(5,4.4,929);
+        exponentialFit->SetPoint(6,5.2,1482);
+        exponentialFit->SetPoint(7,5.7,2149);
+        exponentialFit->SetPoint(8,6.9,5319);
+        exponentialFit->SetPoint(9,7.3,7808);
+        exponentialFit->SetPoint(10,7.7,11395);
+        exponentialFit->SetPoint(11,8.0,16200);
+        exponentialFit->Write();
+
+        // Add each wavelet graph to the MultiGraph
+        for (int m=0; m<waveletGraphs.size(); m++)
+        {
+            //cout << "adding graph " << m << " to multigraph" << endl;
+            waveletGraphs[m]->Draw();
+            waveformWrap->Add(waveletGraphs[m],"l");
+        }
+
+        // Add each trigger graph to the MultiGraph
+        for (int m=0; m<triggerGraphs.size(); m++)
+        {
+            //cout << "adding graph " << m << " to multigraph" << endl;
+            triggerGraphs[m]->SetMarkerSize(2);
+            triggerGraphs[m]->SetMarkerColor(2);
+            triggerGraphs[m]->Draw();
+            waveformWrap->Add(triggerGraphs[m],"*");
+        }
+
+        waveformWrap->Write();
+
+        for(Plots p : targetPlots)
+        {
+            p.getTOFHisto()->Write();
+            p.getEnergyHisto()->Write();
+        }
+
+        fittedTimeHisto->Write();
+        deltaTVsPulseIntegral->Write();
+        deltaTVsPulseHeight->Write();
+    }
+
+    else if(mode=="waveform")
+    {
+        setBranchesHistosW(treeToSort);
+
+        triggerWalk = new TH2I("triggerWalk","trigger time vs. waveform chunk #",200,0,200,1000,0,1000);
+
+        relativeTriggerSampleHisto = new TH1I("relativeTriggerSampleHisto","relative trigger time, from start of fitted wavelet",100,PEAKFIT_OFFSET*SAMPLE_PERIOD,(PEAKFIT_OFFSET+PEAKFIT_WINDOW)*SAMPLE_PERIOD);
+
+        TH1I* monitorHisto = new TH1I("targetPosH", "targetPos", 7, 0, 7);
+        monitorHisto->GetXaxis()->SetTitle("target position of each waveform");
+
+        long triggersWithGamma = 0;
+        vector<int> fullWaveform(MACRO_LENGTH/2, BASELINE);
+        vector<double> triggerList;
+
+        int prevTargetPos = 0;
+        double firstTimetagInSeries = 0;
+
+        int totalEntries = treeToSort->GetEntries();
+        cout << "Total waveforms = " << totalEntries << endl;
+
+        /*TCanvas *mycan = (TCanvas*)gROOT->FindObject("mycan");
+
+          if(!mycan)
+          {
+          mycan = new TCanvas("mycan","mycan");
+          }*/
+
+        // EVENT LOOP for sorting through channel-specific waveforms
+        for(int j=1; j<totalEntries; j++)
+        {
+            cout << "Processing triggers on waveform " << j << "\r";
+            fflush(stdout);
+
+            if(j>30)
+            {
+                break;
+            }
+
+            triggerList.clear();
+            triggerValues.clear();
+
+            prevTargetPos = procEvent.targetPos;
+
+            // pull individual waveform event
+            treeToSort->GetEntry(j);
+
+            if(procEvent.evtNo==1)
+            {
+                // new macropulse; process the previous macropulse's waveform
+
+                // calculate the baseline for this waveform
+                BASELINE = calculateBaseline(fullWaveform);
+
+                // Loop through all points in the waveform and fit peaks
+                for(int k=PEAKFIT_WINDOW; (size_t)k<fullWaveform.size(); k++)
+                {
+                    // Check to see if this point creates a new trigger
+                    if(isTrigger(k, fullWaveform))
+                    {
+                        // trigger found - plot/fit/extract time
+                        processTrigger(j, k, triggerList, fullWaveform);
+
+                        // shift waveform index past the end of this fitting window
+                        // so that we don't refit the same data
+                        k += PEAKFIT_WINDOW;
+                    }
+                    /*if(triggerList.size()>10)
+                      {
+                      for(int m=0; m<triggerList.size(); m++)
+                      {
+                      cout << "triggerList[" << m << "] = " << triggerList[m] << endl;
+                      }
+                      break;
+                      }*/
+                }
+
+                // Use the gamma peaks to find the time offset for this waveform, and
+                // adjust the microTime with this offset
+
+                double gammaOffset = calculateGammaOffset(triggerList);
+
+                /*for(int m=0; (size_t)m<triggerList.size(); m++)
+                  {
+                  fillTriggerHistos(triggerList[m]-gammaOffset, targetPlots);
+                  }*/
+
+                if(gammaOffset!=0)
+                {
+                    for(int m=0; (size_t)m<triggerList.size(); m++)
+                    {
+                        //fillTriggerHistos(triggerList[m]-gammaOffset+WAVEFORM_OFFSET, targetPlots);
+                    }
+
+                    triggersWithGamma++;
+                }
+
+                /*if(j<30)
+                  {
+                  produceTriggerOverlay(j, triggerList, fullWaveform);
+                  }*/
+
+                /*temp.str("");
+                  temp << "waveformWrap" << j;
+
+                  waveformWrap = new TMultiGraph(temp.str().c_str(), temp.str().c_str());
+
+                  vector<TGraph*> microGraphs;
+
+                // Create a new graph for each micropulse period to be plotted
+                for (int m = 0; m<floor(2*procEvent.waveform->size()/MICRO_LENGTH); m++)
+                {
+                microGraphs.push_back(new TGraph());
+                }
+
+                // Fill each micropulse graph with waveform samples
+                for (int l = 0; l<procEvent.waveform->size(); l++)
+                {
+                microGraphs[(int)floor(l/(double)MICRO_LENGTH)]->SetPoint(microGraphs[(int)floor(l/(double)MICRO_LENGTH)]->GetN(),fmod(2*l+WAVEFORM_OFFSET,MICRO_LENGTH),procEvent.waveform->at(l));
+                //cout << "Adding value " << procEvent.waveform->at(l) << " to position " << fmod(l,MICRO_LENGTH) << " in microGraph " << floor(l/(double)MICRO_LENGTH) << endl;
+                }
+
+                // Add each graph to the MultiGraph
+                for (int m = 0; m<microGraphs.size(); m++)
+                {
+                //cout << "adding graph " << m << " to multigraph" << endl;
+                microGraphs[m]->Draw();
+                waveformWrap->Add(microGraphs[m],"l");
+                }
+
+                waveformWrap->Write();
+                */
+
+                //gPad->Modified();
+                //mycan->Update();
+
+                // Fill trigger histogram
+                /*for (int l = 0; l<triggerList.size(); l++)
+                  {
+                  cout << "trigger " << l << " = " << triggerList[l] << ", " << triggerValues[l] << endl;
+                  }*/
+
+                //triggerH->Write();
+                //cout << "Finished processing waveform " << j << endl << endl;
+
+                /*if(j==10)
+                  {
+                  break;
+                  }*/
+
+                monitorHisto->Fill(prevTargetPos);
+
+                fill(fullWaveform.begin(),fullWaveform.end(),BASELINE);
+
+                firstTimetagInSeries = procEvent.completeTime;
+            }
 
             if (procEvent.targetPos == 0)
             {
                 continue;
             }
 
-            //cout << "waveform chunk time = " << procEvent.completeTime << endl;
+            double timeOffset = procEvent.completeTime-firstTimetagInSeries;
 
-            // calculate the baseline for this waveform
-            BASELINE = calculateBaseline();
-
-            // add event to target-position tracker
-            if (procEvent.targetPos > 0)
+            if(timeOffset<MACRO_LENGTH-2*procEvent.waveform->size())
             {
-                targetCounts[procEvent.targetPos-1]++;
-            }
-
-            // Loop through all points in the waveform and fit peaks
-            for(int k=PEAKFIT_WINDOW; (size_t)k<procEvent.waveform->size(); k++)
-            {
-                // Check to see if this point creates a new trigger
-                if(isTrigger(k))
+                for(int k=0; k<procEvent.waveform->size(); k++)
                 {
-                    // trigger found - plot/fit/extract time
-                    processTrigger(j, k);
-
-                    // shift waveform index past the end of this fitting window
-                    // so that we don't refit the same data
-                    k += PEAKFIT_WINDOW;
-                }
-                /*if(triggerList.size()>10)
-                {
-                    for(int m=0; m<triggerList.size(); m++)
-                    {
-                        cout << "triggerList[" << m << "] = " << triggerList[m] << endl;
-                    }
-                    break;
-                }*/
-            }
-
-            // Use the gamma peaks to find the time offset for this waveform, and
-            // adjust the microTime with this offset
-            double gammaOffset = calculateGammaOffset();
-
-            if(gammaOffset!=0)
-            {
-                for(int m=0; (size_t)m<triggerList.size(); m++)
-                {
-                    fillTriggerHistos(triggerList[m], gammaOffset, j, plots);
+                    fullWaveform[timeOffset/SAMPLE_PERIOD+k] = procEvent.waveform->at(k);
                 }
             }
-
-            //produceTriggerOverlay(j);
-
-            /*temp.str("");
-            temp << "waveformWrap" << j;
-
-            waveformWrap = new TMultiGraph(temp.str().c_str(), temp.str().c_str());
-
-            vector<TGraph*> microGraphs;
-
-            // Create a new graph for each micropulse period to be plotted
-            for (int m = 0; m<floor(2*procEvent.waveform->size()/MICRO_LENGTH); m++)
-            {
-                microGraphs.push_back(new TGraph());
-            }
-
-            // Fill each micropulse graph with waveform samples
-            for (int l = 0; l<procEvent.waveform->size(); l++)
-            {
-                microGraphs[(int)floor(l/(double)MICRO_LENGTH)]->SetPoint(microGraphs[(int)floor(l/(double)MICRO_LENGTH)]->GetN(),fmod(2*l+WAVEFORM_OFFSET,MICRO_LENGTH),procEvent.waveform->at(l));
-                //cout << "Adding value " << procEvent.waveform->at(l) << " to position " << fmod(l,MICRO_LENGTH) << " in microGraph " << floor(l/(double)MICRO_LENGTH) << endl;
-            }
-
-            // Add each graph to the MultiGraph
-            for (int m = 0; m<microGraphs.size(); m++)
-            {
-                //cout << "adding graph " << m << " to multigraph" << endl;
-                microGraphs[m]->Draw();
-                waveformWrap->Add(microGraphs[m],"l");
-            }
-
-            waveformWrap->Write();
-            */
-
-            //gPad->Modified();
-            //mycan->Update();
-
-            // Fill trigger histogram
-            /*for (int l = 0; l<triggerList.size(); l++)
-              {
-              cout << "trigger " << l << " = " << triggerList[l] << ", " << triggerValues[l] << endl;
-              }*/
-
-                        //triggerH->Write();
-            //cout << "Finished processing waveform " << j << endl << endl;
-
-            /*if(j==10)
-            {
-                break;
-            }*/
         }
 
-        for(Plots* p : plots)
+        cout << "Triggers with gamma in wavelet: " << triggersWithGamma << endl;
+
+        monitorHisto->Write();
+
+        for(Plots p : targetPlots)
         {
-            p->getTOFHisto()->Write();
-            p->getEnergyHisto()->Write();
+            p.getTOFHisto()->Write();
+            p.getEnergyHisto()->Write();
         }
-    }
-
-    for(int k=0; (size_t)k<tarGates.size(); k++)
-    {
-        cout << "target position " << k+1 << " counts = " << targetCounts[k] << endl;
-    }
-    cout << endl;
-}
-
-void waveform(string inFileName, string outFileName, string experiment)
-{
-    TFile* inFile = new TFile(inFileName.c_str(),"READ");
-    if(!inFile->IsOpen())
-    {
-        cerr << "Error: failed to open resort.root" << endl;
-        exit(1);
-    }
-
-    vector<string> positionNames = readExperimentConfig(experiment,"positionNames");
-
-    TTree* ch4TreeWaveform = (TTree*)inFile->Get("ch4ProcessedTreeW");
-
-    TFile* outFile;
-    outFile = new TFile(outFileName.c_str(),"UPDATE");
-
-    vector<Plots*> plots;
-
-    // if plots are empty
-    if(!(TH1I*)outFile->Get("blankWEnergy"))
-    {
-        // Extract triggers from waveforms
-
-        for(unsigned int i=0; i<tarGates.size(); i++)
-        {
-            string name = positionNames[i] + "W";
-            plots.push_back(new Plots(name.c_str()));
-        }
-
-        processWaveforms(ch4TreeWaveform, plots);
 
         cout << "Number of good fits: " << numberGoodFits << endl;
         cout << "onePeak = " << numberOnePeakFits << endl; 
         cout << "onePeakExpBack = " << numberOnePeakExpBackFits << endl; 
         cout << "twoPeaks = " << numberTwoPeakFits << endl << endl; 
         cout << "Number of bad fits: " << numberBadFits << endl;
-
-     //   outFile->Write();
     }
 
-    // Commented out until waveform.cpp can support 2 detector channels (hi/lo
-    // threshold)
-    /*
     else
     {
-        for(int i=0; i<tarGates.size(); i++)
-        {
-            string name = positionNames[i] + "W";
-            plots.push_back(new Plots(name, outFile));
-        }
-    }*/
+        cerr << "Error: digitizer mode was " << mode << "; only possible options are 'DPP' or 'waveform'. Exiting..." << endl;
+        exit(1);
+    }
+}
 
-    setBranchesHistosW(ch4TreeWaveform);
-
-    int totalEntries = ch4TreeWaveform->GetEntries();
-
-    // total number of micropulses processed per target (for performing dead time
-    // calculation)
-    vector<long> microsPerTargetWaveform(6,0);
-
-    for(int i=0; i<totalEntries; i++)
+void waveform(string inFileName, string outFileName, vector<string>channelMap, string mode)
+{
+    TFile* inFile = new TFile(inFileName.c_str(),"READ");
+    if(!inFile->IsOpen())
     {
+        cerr << "Error: failed to open sorted.root" << endl;
+        exit(1);
+    }
+
+    TFile* outFile = new TFile(outFileName.c_str(),"RECREATE");
+
+    for(int i=0; i<channelMap.size(); i++)
+    {
+        if(channelMap[i]!="lowThresholdDet"/* && channelMap[i]!="monitor"*/)
+        {
+            continue;
+        }
+
+        string treeName;
+
+        if(mode=="DPP")
+        {
+            treeName = channelMap[i];
+        }
+
+        else if(mode=="waveform")
+        {
+            treeName = channelMap[i]+"W";
+        }
+
+        else
+        {
+            cerr << "Error: digitizer mode was " << mode << "; only possible options are 'DPP' or 'waveform'. Exiting..." << endl;
+            exit(1);
+        }
+
+        TTree* treeToSort = (TTree*)inFile->Get(treeName.c_str());
+        
+        if(!treeToSort)
+        {
+            cerr << "Error: couldn't find channel " << i << " tree when attempting to assign macropulses. Exiting... " << endl;
+            exit(1);
+        }
+
+        outFile->cd("/");
+        outFile->mkdir(channelMap[i].c_str(),channelMap[i].c_str());
+        outFile->GetDirectory(channelMap[i].c_str())->cd();
+
+        vector<Plots> targetPlots;
+
+        // Extract triggers from waveforms
+        for(unsigned int i=0; i<tarGates.size()-1; i++)
+        {
+            string name = positionNames[i];
+            if(name=="")
+            {
+                continue;
+            }
+
+            targetPlots.push_back(Plots(name.c_str()));
+        }
+
+        processWaveforms(treeToSort, targetPlots, outFile, mode);
+
+        /*int totalEntries = ch4TreeWaveform->GetEntries();
+
+        // total number of micropulses processed per target (for performing dead time
+        // calculation)
+        vector<long> microsPerTargetWaveform(6,0);
+
+        for(int i=0; i<totalEntries; i++)
+        {
         ch4TreeWaveform->GetEntry(i);
 
         if(procEvent.targetPos==0)
         {
-            continue;
+        continue;
         }
         microsPerTargetWaveform[procEvent.targetPos-1] += SAMPLE_PERIOD*procEvent.waveform->size()/(double)MICRO_LENGTH;
-    }
+        }
 
-    // perform a manual dead-time correction
-    //calculateDeadtime(microsPerTargetWaveform,plots);
+        // perform a manual dead-time correction
+        //calculateDeadtime(microsPerTargetWaveform,plots);
 
-    // Calculate cross-sections from waveforms' trigger time data
-    //calculateCS(targets, waveformFile);
+        // Calculate cross-sections from waveforms' trigger time data
+        //calculateCS(targets, waveformFile);
 
-    int totalMicros = 0;
-    for(int i=0; (size_t)i<microsPerTargetWaveform.size(); i++)
-    {
+        int totalMicros = 0;
+        for(int i=0; (size_t)i<microsPerTargetWaveform.size(); i++)
+        {
         totalMicros += microsPerTargetWaveform[i];
-    }
+        }
 
-    for(Plots* p : plots)
-    {
+        for(Plots* p : plots)
+        {
         numberTotalTriggers += p->getTOFHisto()->GetEntries();
+        }
+
+        cout << "Total micros on ch. : " << totalMicros << endl;
+        cout << "Total number of triggers on ch. : " << numberTotalTriggers << endl;
+        cout << "Triggers/micropulse: " << numberTotalTriggers/(double)totalMicros << endl;
+        */
     }
 
-    cout << "Total micros on ch. : " << totalMicros << endl;
-    cout << "Total number of triggers on ch. : " << numberTotalTriggers << endl;
-    cout << "Triggers/micropulse: " << numberTotalTriggers/(double)totalMicros << endl;
- 
     inFile->Close();
+    outFile->Write();
     outFile->Close();
+    return;
 }

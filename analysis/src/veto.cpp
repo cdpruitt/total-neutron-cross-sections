@@ -111,8 +111,10 @@ void vetoEvents(string sortedFileName, string vetoedFileName, vector<string> eve
                 fflush(stdout);
             }
         }
+
         cleanTree->Write();
         dirtyTree->Write();
     }
+
     vetoedFile->Close();
 }

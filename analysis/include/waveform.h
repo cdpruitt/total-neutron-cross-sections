@@ -5,6 +5,6 @@
 
 #include "plots.h"
 
-void waveform(std::string inFileName,std::string outFileName,std::string experiment);
+void waveform(std::string inFileName,std::string outFileName,std::vector<std::string> channelMap, std::string mode);
 
 #endif

@@ -76,7 +76,8 @@ int main(int, char* argv[])
                               "}-#sigma_{" + p.second +
                               "}}{#sigma_{" + p.first +
                               "}+#sigma_{" + p.second + "}}";
-        relative.createCSGraph(relativeName.c_str());
+        string relativeTitle = "relative" + p.first + p.second;
+        relative.createCSGraph(relativeName, relativeTitle);
         //cout << "Relative plot " << relative.getDataSet().getReference() <<
         //            " RMS error: " << relative.calculateRMSError() << endl;
     }

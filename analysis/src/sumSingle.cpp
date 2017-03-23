@@ -273,9 +273,9 @@ CrossSection calculateCS(string CSFileName, CSPrereqs& targetData, CSPrereqs& bl
 
     TFile* CSFile = new TFile(CSFileName.c_str(),"UPDATE");
     string name = targetData.target.getName();
-    crossSection.createCSGraph(name);
+    crossSection.createCSGraph(name, name);
     name += "blankCorrected";
-    corrected.createCSGraph(name);
+    corrected.createCSGraph(name, name);
 
     CSFile->Write();
     CSFile->Close();
@@ -339,7 +339,7 @@ int main(int, char* argv[])
         string targetDataLocation = "../" + expName + "/targetData/" + targetOrder[j] + ".txt";
         CSPrereqs subRunData(targetDataLocation);
 
-        subRunData.readData(inFile, "lowThresholdDet", j);
+        subRunData.readData(inFile, "highThresholdDet", j);
 
         // find the correct CSPrereqs to add this target's data to
         for(int k=0; (size_t)k<allData.size(); k++)
@@ -444,7 +444,7 @@ int main(int, char* argv[])
                                       "}-#sigma_{" + allData[smallerTarget].target.getName() + 
                                      "}}{#sigma_{" + allData[largerTarget].target.getName() +
                                       "}+#sigma_{" + allData[smallerTarget].target.getName() + "}}";
-            relative.createCSGraph(relativeName.c_str());
+            relative.createCSGraph(relativeName.c_str(), relativeName.c_str());
             cout << "Relative plot " << relative.getDataSet().getReference() <<
                     " RMS error: " << relative.calculateRMSError() << endl;
         }

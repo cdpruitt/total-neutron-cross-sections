@@ -187,7 +187,7 @@ const DataSet operator*(const DataSet& set1, const DataSet& set2)
                         set2.getPoint(i).getYValue();
         double yError = abs(yValue)*
                         pow(pow(set1.getPoint(i).getYError()/set1.getPoint(i).getYValue(),2) +
-                            pow(set2.getPoint(i).getYError()/set1.getPoint(i).getYValue(),2),0.5);
+                            pow(set2.getPoint(i).getYError()/set2.getPoint(i).getYValue(),2),0.5);
 
         productDataSet.addPoint(DataPoint(xValue,xError,yValue,yError));
     }
@@ -232,7 +232,7 @@ const DataSet operator/(const DataSet& set1, const DataSet& set2)
                         set2.getPoint(i).getYValue();
         double yError = abs(yValue)*
                         pow(pow(set1.getPoint(i).getYError()/set1.getPoint(i).getYValue(),2) +
-                            pow(set2.getPoint(i).getYError()/set1.getPoint(i).getYValue(),2),0.5);
+                            pow(set2.getPoint(i).getYError()/set2.getPoint(i).getYValue(),2),0.5);
 
         quotientDataSet.addPoint(DataPoint(xValue,xError,yValue,yError));
     }

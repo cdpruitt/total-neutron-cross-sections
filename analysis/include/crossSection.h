@@ -15,7 +15,7 @@ class CrossSection
         void addDataSet(DataSet dataSet);
         DataPoint getDataPoint(int i) const;
         DataSet getDataSet();
-        void createCSGraph(std::string name);
+        void createCSGraph(std::string name, std::string title);
 
         int getNumberOfPoints() const;
         std::vector<double> getEnergyValues() const;
@@ -50,6 +50,11 @@ CrossSection calculateRelative(CrossSection a, CrossSection b);
                         std::string subtrahendFileName, std::string subtrahendGraphName,
                         double factor,  // multiplies the subtrahend
                         double divisor, // divides the final difference
+                        std::string name // name given to output graph
+                       );
+
+ CrossSection relativeCS(std::string rawCSFileName, std::string rawCSGraphName,
+                        std::string subtrahendFileName, std::string subtrahendGraphName,
                         std::string name // name given to output graph
                        );
 

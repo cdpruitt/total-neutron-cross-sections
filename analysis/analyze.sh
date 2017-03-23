@@ -190,9 +190,9 @@ then
         fi
 
         # Create directory to hold the output of our analysis
-        if [ ! -d "$outpath/analysis/$runNumber" ]
+        if [ ! -d "$outpath/$runNumber" ]
         then
-            mkdir "$outpath"/analysis/"$runNumber"
+            mkdir "$outpath/$runNumber"
         fi
 
         inputFileName="$datapath/output/$runNumber/data-$subrunNo.evt"
@@ -267,7 +267,7 @@ then
             fi
         done < ../"$experiment"/filepaths.txt
 
-        if [ $datapath == 0 ]
+        if [ "$datapath" == 0 ]
         then
             echo "Failed to find filepath to input data. Exiting..."
             exit
@@ -276,7 +276,7 @@ then
         # Create directory to hold the output of our analysis
         if [ ! -d "$outpath/analysis/$runNumber" ]
         then
-            mkdir "$outpath"/analysis/"$runNumber"
+            mkdir "$outpath/analysis/$runNumber"
         fi
 
         printf "\n************************************"
@@ -291,8 +291,6 @@ then
             do
                 subrunNo=$(echo $f | egrep -o '[0-9]+' | tail -1)
                 inputFileName="$datapath/output/$runNumber/data-$subrunNo.evt"
-
-                echo "$runNumber-$subrunNo"
 
                 # Skip subruns on the blacklist
                 skip=false
@@ -338,7 +336,10 @@ then
     done < ../"$experiment"/runsToSort.txt
 
     # Sum data from all subruns to make cross sections
-    ./sumAll "$outpath"/analysis "$experiment" "histos"
+    # for histos
+    #./sumAll "$outpath"/analysis "$experiment" "histos" "histos"
+    # for waveforms
+    ./sumAll "$outpath"/analysis "$experiment" "DPPwaveform" "histos"
     exit
 fi
 

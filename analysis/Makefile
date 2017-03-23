@@ -1,13 +1,13 @@
 SHELL = /bin/sh
 COMPILER= clang++ 
-CFLAGS= -lstdc++ -O2 -I$(shell root-config --incdir) -std=c++11 -ggdb -Wall -Wextra
+CFLAGS= -lstdc++ -O2 -I$(shell root-config --incdir) -std=c++11 -ggdb
 SOURCES = src/branches.cpp src/crossSection.cpp src/CSPrereqs.cpp src/dataPoint.cpp src/dataSet.cpp src/driver.cpp src/experiment.cpp src/histos.cpp src/plots.cpp src/raw.cpp src/separate.cpp src/target.cpp src/veto.cpp src/waveform.cpp src/waveformFitting.cpp
 HEADERS = $(shell echo include/*.h)
 OBJECTS = $(SOURCES:.c=.o)
 
 LINKOPTION = $(shell root-config --libs)
 
-all: driver sumSingle sumAll text finetimeCheck readLitData subtractCS relative
+all: driver sumSingle sumAll text finetimeCheck readLitData subtractCS relativeCS relative
 
 driver: $(OBJECTS)
 	$(COMPILER) $(CFLAGS) -o driver $(OBJECTS) $(LINKOPTION)
@@ -32,6 +32,9 @@ makeCSText: src/makeCSText.cpp src/dataPoint.cpp
 
 subtractCS: src/subtractCS.cpp src/dataSet.cpp src/dataPoint.cpp src/crossSection.cpp src/target.cpp src/plots.cpp
 	$(COMPILER) $(CFLAGS) -o subtractCS src/subtractCS.cpp src/dataSet.cpp src/dataPoint.cpp src/crossSection.cpp src/target.cpp src/plots.cpp $(LINKOPTION)
+
+relativeCS: src/relativeCS.cpp src/dataSet.cpp src/dataPoint.cpp src/crossSection.cpp src/target.cpp src/plots.cpp
+	$(COMPILER) $(CFLAGS) -o relativeCS src/relativeCS.cpp src/dataSet.cpp src/dataPoint.cpp src/crossSection.cpp src/target.cpp src/plots.cpp $(LINKOPTION)
 
 relative: src/dataPoint.cpp src/dataSet.cpp src/experiment.cpp src/crossSection.cpp src/relative.cpp
 	$(COMPILER) $(CFLAGS) -o relative src/dataPoint.cpp src/dataSet.cpp src/experiment.cpp src/crossSection.cpp src/relative.cpp $(LINKOPTION)

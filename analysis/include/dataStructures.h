@@ -37,7 +37,7 @@ struct RawEvent
     unsigned int extTime; // "extended timestamp of event" extends timetag with
     // 16 additional bits for times greater than 2^32
     // sample periods.
-    unsigned int fineTime;// "fine timestamp of event" sub-divides timetag with
+    double fineTime;// "fine timestamp of event" sub-divides timetag with
     // 10 additional bits of time granularity, with units of
     // (sample period)/2^10 units.
     unsigned int PZC; // positive zero-crossing (for manual CFD calculation)
@@ -49,7 +49,7 @@ struct SeparatedEvent
 {
     unsigned int timetag; // 1 sample granularity, 32 bits
     unsigned int extTime;
-    unsigned int fineTime; // provide additional bits of granularity 
+    double fineTime; // provide additional bits of granularity 
     unsigned int evtNo;
     unsigned int evtType;
     unsigned int chNo;

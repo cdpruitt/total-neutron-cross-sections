@@ -1,1 +1,1 @@
-0   104 /media/cole/backup1 /media/cole/backup1
+76 104 /media/cdpruitt/oxygen /data3

@@ -146,7 +146,7 @@ bool readExtras(ifstream& evtfile)
             readWord(evtfile, rawEvent.NZC);
             readWord(evtfile, rawEvent.PZC);
             rawEvent.fineTime = SAMPLE_PERIOD*
-                (8192-rawEvent.NZC)/
+                (double)(8192-rawEvent.NZC)/
                 (rawEvent.PZC-rawEvent.NZC); // in ns
             return true;
 

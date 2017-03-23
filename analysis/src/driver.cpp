@@ -47,6 +47,7 @@ int main(int, char* argv[])
     string vetoedFileName = analysisDirectory + "vetoed.root";
     string histoFileName = analysisDirectory + "histos.root";
     string waveformFileName = analysisDirectory + "waveform.root";
+    string DPPWaveformFileName = analysisDirectory + "DPPwaveform.root";
     string errorFileName = analysisDirectory + "error.txt";
 
     vector<string> channelMap = getChannelMap(experimentName, runNumber);
@@ -100,13 +101,49 @@ int main(int, char* argv[])
     }
 
     /*************************************************************************/
+    /* Process waveform data */
+    /*************************************************************************/
+
+    ifstream w(waveformFileName);
+    if(!w.good())
+    {
+        waveform(sortedFileName, waveformFileName, channelMap, "waveform");
+    }
+
+    else
+    {
+        cout << "Waveform data already processed." << endl;
+        w.close();
+    }
+
+    /*************************************************************************/
+    /* Process DPP waveform data */
+    /*************************************************************************/
+
+    ifstream dppW(DPPWaveformFileName);
+
+    if(!dppW.good())
+    {
+        waveform(sortedFileName, DPPWaveformFileName, channelMap, "DPP");
+    }
+
+    else
+    {
+        cout << "DPP waveform data already processed." << endl;
+        dppW.close();
+    }
+
+    /*************************************************************************/
     /* Process events into histograms in preparation for cross section
      * calculation */
     /*************************************************************************/
     ifstream h(histoFileName);
     if(!h.good())
     {
+        //Uncomment to use vetoed trees
         histos(sortedFileName, vetoedFileName, histoFileName, channelMap);
+        //Uncomment to use unvetoed trees
+        //histos(sortedFileName, sortedFileName, histoFileName, channelMap);
     }
 
     else

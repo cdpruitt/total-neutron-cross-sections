@@ -17,6 +17,7 @@ const double SYNC_WINDOW = 0.02; // as fraction of MACRO_PERIOD
 // "Target changer charge gates" are used to assign the target changer position
 // based on the target changer signal's integrated charge
 const std::vector<std::pair<int,int>> tarGates = {
+    std::pair<int,int> (50,700), // position 0 gates
     std::pair<int,int> (1500,2500), // position 1 gates
     std::pair<int,int> (3000,4400), // position 2 gates
     std::pair<int,int> (4600,6000), // position 3 gates
@@ -27,8 +28,8 @@ const std::vector<std::pair<int,int>> tarGates = {
 
 const double SCALEDOWN = 1; // (for debugging) only sort (total/SCALEDOWN) events
 
-// experimentally-determined  digitizer deadtime
-const int DEADTIME_PERIOD = 152;
+// experimentally-determined digitizer deadtime
+const int DEADTIME_PERIOD = 230; // in ns
 
 // Indicate the range of times considered to be gamma rays (for the purposes of
 // counting gamma rays)
@@ -38,6 +39,7 @@ const std::vector<std::string> positionNames = {"blank", "target1", "target2", "
 
 const std::vector<std::string> targetNamesWaveform = {"blankWaveform", "shortCarbonWaveform", "longCarbonWaveform", "Sn112Waveform", "NatSnWaveform", "Sn124Waveform"}; 
 
+//const std::vector<std::string> detectorNames = {"highThresholdDet"};
 const std::vector<std::string> detectorNames = {"highThresholdDet","lowThresholdDet"};
 
 #endif

@@ -10,6 +10,7 @@ void branchTargetChanger(TTree*& tree);
 void setBranchesSeparated(TTree* tree);
 void setBranchesSeparatedW(TTree* tree);
 void setBranchesProcessed(TTree* tree);
+void setBranchesProcessedW(TTree* tree);
 void setBranchesVeto(TTree* tree);
 void setBranchesProcessedTC(TTree* tree);
 void setBranchesHistos(TTree* tree);

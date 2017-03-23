@@ -152,15 +152,15 @@ CrossSection operator/(const CrossSection& dividend, const CrossSection& divisor
     return outputCS;
 }
 
-void CrossSection::createCSGraph(string name)
+void CrossSection::createCSGraph(string name, string title)
 {
     TGraphErrors* t = new TGraphErrors(getNumberOfPoints(),
                                       &getEnergyValues()[0],
                                       &getCrossSectionValues()[0],
                                       &getEnergyErrors()[0],
                                       &getCrossSectionErrors()[0]);
-    t->SetNameTitle(name.c_str(),name.c_str());
-    t->Write();
+    t->SetNameTitle(name.c_str(),title.c_str());
+    gDirectory->WriteTObject(t);
 }
 
 double CrossSection::calculateRMSError()
@@ -198,7 +198,7 @@ double getPartialError(DataPoint aPoint, DataPoint bPoint, double aArealDensity)
 
     if(aBMon<=0 || aTMon<=0 || aBDet<=0 || aTDet<=0)
     {
-        cerr << "Error: could not calculate partial error with non-finite count ratio. " << endl;
+        //cerr << "Error: could not calculate partial error with non-finite count ratio. " << endl;
         return 0;
     }
 
@@ -342,9 +342,114 @@ CrossSection subtractCS(string rawCSFileName, string rawCSGraphName,
 
     // create graph of difference
     rawCSFile->cd();
-    differenceCS.createCSGraph(name);
+    differenceCS.createCSGraph(name, name);
 
     return differenceCS;
 }
 
+void produceRunningRMS(CrossSection first, CrossSection second, string name)
+{
 
+    DataSet firstDS = first.getDataSet();
+    DataSet secondDS = second.getDataSet();
+
+    DataSet rms;
+
+    for(int i=0; i<firstDS.getNumberOfPoints(); i++)
+    {
+        double diff = 
+            firstDS.getPoint(i).getYValue() -
+            secondDS.getPoint(i).getYValue();
+
+        if(i==0)
+        {
+            rms.addPoint(
+                    DataPoint(firstDS.getPoint(i).getXValue(),
+                        0,
+                        pow(pow(diff,2),0.5),
+                        0)
+                    );
+        }
+
+        else
+        {
+            rms.addPoint(DataPoint(firstDS.getPoint(i).getXValue(),
+                        0,
+                        pow(pow(diff,2)+pow(rms.getPoint(i-1).getYValue(),2)/(i),0.5),
+                        0));
+        }
+    }
+
+    CrossSection rmsPlot = CrossSection();
+    rmsPlot.addDataSet(rms);
+
+    string n = name + "rms";
+    rmsPlot.createCSGraph(n.c_str(), n.c_str());
+}
+
+CrossSection relativeCS(string firstCSFileName, string firstCSGraphName,
+        string secondCSFileName, string secondGraphName,
+        string name)
+{
+    // get firstCS graph
+    TFile* firstCSFile = new TFile(firstCSFileName.c_str(),"UPDATE");
+    TGraphErrors* firstCSGraph = (TGraphErrors*)firstCSFile->Get(firstCSGraphName.c_str());
+    if(!firstCSGraph)
+    {
+        cerr << "Error: failed to find " << firstCSGraphName << " in " << firstCSFileName << endl;
+        exit(1);
+    }
+
+    // get second graph
+    TFile* secondCSFile = new TFile(secondCSFileName.c_str(),"READ");
+    TGraphErrors* secondGraph = (TGraphErrors*)secondCSFile->Get(secondGraphName.c_str());
+    if(!secondGraph)
+    {
+        cerr << "Error: failed to find " << secondGraphName << " in " << secondCSFileName << endl;
+        exit(1);
+    }
+
+    DataSet firstCSData = DataSet(firstCSGraph, firstCSGraphName);
+    DataSet secondCSData = DataSet();
+
+    // for each y-value of the first CS graph, read the y-value of the second
+    // and the y-error
+    for(int i=0; i<firstCSData.getNumberOfPoints(); i++)
+    {
+        secondCSData.addPoint(
+                DataPoint(firstCSData.getPoint(i).getXValue(),
+                    firstCSData.getPoint(i).getXError(),
+                    secondGraph->Eval(firstCSData.getPoint(i).getXValue()),
+                    0
+                    /*secondGraph->GetErrorY(firstCSData.getPoint(i).getXValue())*/)); 
+    }
+
+    // perform the difference
+    CrossSection differenceCS = CrossSection();
+    differenceCS.addDataSet(firstCSData-secondCSData);
+
+    // perform the sum
+    CrossSection sumCS = CrossSection();
+    sumCS.addDataSet(firstCSData+secondCSData);
+
+    // perform the division
+    CrossSection relDiffCS = CrossSection();
+    relDiffCS.addDataSet(differenceCS.getDataSet()/sumCS.getDataSet());
+
+    // create graph of relative difference
+    firstCSFile->cd();
+    relDiffCS.createCSGraph(name, name);
+
+    // create running RMS plot
+    CrossSection firstCS = CrossSection();
+    firstCS.addDataSet(firstCSData);
+
+    CrossSection secondCS = CrossSection();
+    secondCS.addDataSet(secondCSData);
+
+    produceRunningRMS(firstCS, secondCS, name);
+
+    firstCSFile->Close();
+
+    return relDiffCS;
+}

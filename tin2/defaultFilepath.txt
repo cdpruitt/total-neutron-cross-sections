@@ -1,1 +1,1 @@
-/media/ExternalDrive1 /media/ExternalDrive1
+/media/cdpruitt/tin2 /data2/analysis
