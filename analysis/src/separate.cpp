@@ -60,8 +60,9 @@ int assignTargetPos(int lgQ)
 void addTCEvent(TTree* targetChangerTree)
 {
     // fill w/ new macropulse data
-    tcEvent.targetPos = assignTargetPos(separatedEvent.lgQ);
     tcEvent.lgQ = separatedEvent.lgQ;
+    tcEvent.fineTime = separatedEvent.fineTime;
+    tcEvent.waveform = separatedEvent.waveform;
 
     targetChangerTree->Fill();
 
@@ -93,6 +94,38 @@ void addDetectorEvent(long evtNo, TTree* detectorTree)
             << ", evtNo = " << procEvent.evtNo << ", channel = " << chNo <<  ", completeTime = " << procEvent.completeTime << endl;
     }*/
     detectorTree->Fill();
+}
+
+double calculateFineTime(vector<int>* waveform, int targetPos)
+{
+    int triggerSample = 0;
+    double fineTime = 0;
+
+    for(int i=0; i<waveform->size(); i++)
+    {
+        /*if(waveform->at(i)>tcFineTimeThresholds[targetPos-1])
+        {
+            return i-triggerSample+SAMPLE_PERIOD*
+                (double)(tcFineTimeThresholds[targetPos-1]-waveform->at(i-1))/
+                (double)(waveform->at(i)-waveform->at(i-1));
+        }*/
+
+        /*if(waveform->at(i)>tcFineTimeThresholds[targetPos-1])
+        {
+            return SAMPLE_PERIOD*(double)(tcFineTimeThresholds[targetPos-1]-waveform->at(i-1))/
+                   (double)(waveform->at(i)-waveform->at(i-1));
+        }*/
+
+        if(waveform->at(i)>TARGET_CHANGER_LED_THRESHOLD)
+        {
+            return SAMPLE_PERIOD*(i-25+(double)(TARGET_CHANGER_LED_THRESHOLD-waveform->at(i-1))/
+                   (double)(waveform->at(i)-waveform->at(i-1)));
+        }
+
+    }
+    
+    cerr << "Error: failed to calculate a fine time for target changer waveform." << endl;
+    return 0;
 }
 
 void assignMacropulses(string rawFileName, string sortedFileName, vector<string> channelMap)
@@ -158,7 +191,15 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
             {
                 rawTree->GetEntry(j);
 
-                tcEvent.macroTime = (double)pow(2,32)*separatedEvent.extTime + separatedEvent.timetag;
+                tcEvent.targetPos = assignTargetPos(separatedEvent.lgQ);
+
+                // calculate fine time of target changer
+                if(tcEvent.targetPos>0)
+                {
+                    separatedEvent.fineTime = calculateFineTime(separatedEvent.waveform, tcEvent.targetPos);
+                }
+
+                tcEvent.macroTime = (double)pow(2,32)*separatedEvent.extTime + separatedEvent.timetag + separatedEvent.fineTime;
 
                 if(prevTimetag > tcEvent.macroTime)
                 {
@@ -180,7 +221,6 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                     cout << "processed " << j << " events in target changer tree.\r";
                     fflush(stdout);
                 }
-
             }
         }
 
@@ -260,7 +300,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                     }
                 }
 
-                    if(procEvent.completeTime < prevTimetag)
+                if(procEvent.completeTime < prevTimetag)
                 {
                     // Cycle the macropulse forward to the next DPP/waveform
                     // mode change, if necessary

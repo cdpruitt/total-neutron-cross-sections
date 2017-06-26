@@ -103,11 +103,9 @@ bool readTwoWordVariable(ifstream& evtfile, unsigned int& variable)
     return false;
 }
 
-// read an entire event header from the input file
 bool readEventHeader(ifstream& evtfile)
 {
     // start reading the header of the new event
-
     if(readTwoWordVariable(evtfile, rawEvent.size)
     && readTwoWordVariable(evtfile, rawEvent.evtType)
     && readTwoWordVariable(evtfile, rawEvent.chNo)
@@ -121,9 +119,6 @@ bool readEventHeader(ifstream& evtfile)
         return true;
     }
 
-    // finished reading event header
-
-    //cerr << "Error: failed to read event header." << endl;
     return false;
 }
 

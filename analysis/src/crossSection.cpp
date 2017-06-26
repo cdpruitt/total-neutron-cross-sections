@@ -152,6 +152,19 @@ CrossSection operator/(const CrossSection& dividend, const CrossSection& divisor
     return outputCS;
 }
 
+CrossSection operator*(const CrossSection& cs, double factor)
+{
+    int n = cs.getNumberOfPoints();
+    CrossSection outputCS;
+
+    for(int i=0; i<n; i++)
+    {
+        outputCS.addDataPoint(cs.getDataPoint(i)*factor);
+    }
+
+    return outputCS;
+}
+
 void CrossSection::createCSGraph(string name, string title)
 {
     TGraphErrors* t = new TGraphErrors(getNumberOfPoints(),
@@ -260,7 +273,7 @@ CrossSection calculateRelative(CrossSection a, CrossSection b)
         double totalError = pow(pow(aError,2)+pow(bError,2),0.5);
 
         relativeDataSet.addPoint(
-                DataPoint(aXValue, aPoint.getXError(), yValue, totalError,
+                DataPoint(aXValue, aPoint.getXError(), 100*yValue, 100*totalError, /* convert to % */
                           aPoint.getBlankMonitorCounts()+bPoint.getBlankMonitorCounts(),
                           aPoint.getTargetMonitorCounts()+bPoint.getTargetMonitorCounts(),
                           aPoint.getBlankDetCounts()+bPoint.getBlankDetCounts(),
@@ -347,26 +360,51 @@ CrossSection subtractCS(string rawCSFileName, string rawCSGraphName,
     return differenceCS;
 }
 
-void produceRunningRMS(CrossSection first, CrossSection second, string name)
+CrossSection multiplyCS(string rawCSFileName, string rawCSGraphName,
+        double factor, string name)
 {
+    // get rawCS graph
+    TFile* rawCSFile = new TFile(rawCSFileName.c_str(),"UPDATE");
+    TGraphErrors* rawCSGraph = (TGraphErrors*)rawCSFile->Get(rawCSGraphName.c_str());
+    if(!rawCSGraph)
+    {
+        cerr << "Error: failed to find " << rawCSGraphName << " in " << rawCSFileName << endl;
+        exit(1);
+    }
 
-    DataSet firstDS = first.getDataSet();
-    DataSet secondDS = second.getDataSet();
+    DataSet rawDS = DataSet(rawCSGraph,rawCSGraphName);
 
+    // perform the multiplication
+    DataSet productDS = rawDS*factor;
+
+    CrossSection productCS = CrossSection();
+    productCS.addDataSet(productDS);
+
+    // create graph of difference
+    rawCSFile->cd();
+    productCS.createCSGraph(name, name);
+
+    return productCS;
+}
+
+void produceRunningRMS(DataSet firstDS, DataSet secondDS, string name)
+{
     DataSet rms;
 
     for(int i=0; i<firstDS.getNumberOfPoints(); i++)
     {
-        double diff = 
-            firstDS.getPoint(i).getYValue() -
-            secondDS.getPoint(i).getYValue();
+        double relDiff = 
+            (firstDS.getPoint(i).getYValue() -
+            secondDS.getPoint(i).getYValue())/
+            (firstDS.getPoint(i).getYValue() +
+             secondDS.getPoint(i).getYValue());
 
         if(i==0)
         {
             rms.addPoint(
                     DataPoint(firstDS.getPoint(i).getXValue(),
                         0,
-                        pow(pow(diff,2),0.5),
+                        pow(pow(relDiff,2),0.5),
                         0)
                     );
         }
@@ -375,7 +413,7 @@ void produceRunningRMS(CrossSection first, CrossSection second, string name)
         {
             rms.addPoint(DataPoint(firstDS.getPoint(i).getXValue(),
                         0,
-                        pow(pow(diff,2)+pow(rms.getPoint(i-1).getYValue(),2)/(i),0.5),
+                        pow((pow(relDiff,2)+pow(rms.getPoint(i-1).getYValue(),2)*i)/(i+1),0.5),
                         0));
         }
     }
@@ -447,9 +485,111 @@ CrossSection relativeCS(string firstCSFileName, string firstCSGraphName,
     CrossSection secondCS = CrossSection();
     secondCS.addDataSet(secondCSData);
 
-    produceRunningRMS(firstCS, secondCS, name);
+    produceRunningRMS(firstCS.getDataSet(), secondCS.getDataSet(), name);
 
     firstCSFile->Close();
 
     return relDiffCS;
+}
+
+void generateCSCorrection(string CSCorrectionFileName, string CSCorrectionGraphName, string CSToBeCorrectedFileName, string CSToBeCorrectedGraphName, string outputFileName, string outputGraphName)
+{
+    cout << "in generateCSCorrection" << endl;
+    // get CS correction graph
+    TFile* CSCorrectionFile = new TFile(CSCorrectionFileName.c_str(),"READ");
+    TGraphErrors* CSCorrectionGraph = (TGraphErrors*)CSCorrectionFile->Get(CSCorrectionGraphName.c_str());
+    if(!CSCorrectionGraph)
+    {
+        cerr << "Error: failed to find " << CSCorrectionGraphName << " in " << CSCorrectionFileName << endl;
+        exit(1);
+    }
+
+    // get CSToBeCorrected graph
+    TFile* CSToBeCorrectedFile = new TFile(CSToBeCorrectedFileName.c_str(),"READ");
+    TGraphErrors* CSToBeCorrectedGraph = (TGraphErrors*)CSToBeCorrectedFile->Get(CSToBeCorrectedGraphName.c_str());
+    if(!CSToBeCorrectedGraph)
+    {
+        cerr << "Error: failed to find " << CSToBeCorrectedGraphName << " in " << CSToBeCorrectedFileName << endl;
+        exit(1);
+    }
+
+    TFile* outputFile = new TFile(outputFileName.c_str(),"UPDATE");
+
+    DataSet CSToBeCorrectedData = DataSet(CSToBeCorrectedGraph, CSToBeCorrectedGraphName);
+    DataSet CSCorrectionData = DataSet();
+
+    // for each y-value of the CSToBeCorrected graph, read the y-value of the CSCorrection graph
+    for(int i=0; i<CSToBeCorrectedData.getNumberOfPoints(); i++)
+    {
+        CSCorrectionData.addPoint(
+                DataPoint(CSToBeCorrectedData.getPoint(i).getXValue(),
+                    CSToBeCorrectedData.getPoint(i).getXError(),
+                    CSCorrectionGraph->Eval(CSToBeCorrectedData.getPoint(i).getXValue()),
+                    CSCorrectionGraph->GetErrorY(CSToBeCorrectedData.getPoint(i).getXValue())));
+    }
+
+    // perform the correction
+    CrossSection correctedCS = CrossSection();
+    correctedCS.addDataSet(correctCSUsingControl(CSToBeCorrectedData,CSCorrectionData));
+
+    // create graph of correctedCS
+    outputFile->cd();
+    correctedCS.createCSGraph(outputGraphName, outputGraphName);
+
+    outputFile->Close();
+}
+
+void scaledownCS(string CSToBeCorrectedFileName, string CSToBeCorrectedGraphName, int scaledown, string outputFileName, string outputGraphName)
+{
+    // get CSToBeCorrected graph
+    TFile* CSToBeCorrectedFile = new TFile(CSToBeCorrectedFileName.c_str(),"READ");
+    TGraphErrors* CSToBeCorrectedGraph = (TGraphErrors*)CSToBeCorrectedFile->Get(CSToBeCorrectedGraphName.c_str());
+    if(!CSToBeCorrectedGraph)
+    {
+        cerr << "Error: failed to find " << CSToBeCorrectedGraphName << " in " << CSToBeCorrectedFileName << endl;
+        exit(1);
+    }
+
+    TFile* outputFile = new TFile(outputFileName.c_str(),"UPDATE");
+
+    DataSet CSToBeCorrectedData = DataSet(CSToBeCorrectedGraph, CSToBeCorrectedGraphName);
+    DataSet CorrectedCSData = DataSet();
+
+    double rebinnedXValue = 0;
+    double rebinnedYValue = 0;
+    double rebinnedYError = 0;
+    int numberOfPoints = 0;
+
+    // create downscaled CSToBeCorrected graph
+    for(int i=0; i<CSToBeCorrectedData.getNumberOfPoints(); i++)
+    {
+        rebinnedXValue += CSToBeCorrectedData.getPoint(i).getXValue();
+        rebinnedYValue += CSToBeCorrectedData.getPoint(i).getYValue();
+        rebinnedYError += CSToBeCorrectedData.getPoint(i).getYError();
+        numberOfPoints++;
+
+        if(i%scaledown==scaledown-1)
+        {
+            rebinnedYError /= numberOfPoints;
+            CorrectedCSData.addPoint(
+                DataPoint(rebinnedXValue/numberOfPoints,
+                    CSToBeCorrectedData.getPoint(i).getXError(),
+                    rebinnedYValue/numberOfPoints,
+                    rebinnedYError));
+
+            rebinnedXValue = 0;
+            rebinnedYValue = 0;
+            numberOfPoints = 0;
+        }
+    }
+
+    // perform the correction
+    CrossSection correctedCS = CrossSection();
+    correctedCS.addDataSet(CorrectedCSData);
+
+    // create graph of correctedCS
+    outputFile->cd();
+    correctedCS.createCSGraph(outputGraphName, outputGraphName);
+
+    outputFile->Close();
 }

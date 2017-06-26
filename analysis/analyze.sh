@@ -111,8 +111,6 @@ analyze ()
     runNumber=$3
     subrunNumber=$4
 
-
-
     if [ "$produceText" == true ]
     then
         printf "\nText output enabled... \n"
@@ -242,7 +240,7 @@ then
     analyze "$inputFileName" "$outputDirectoryName" "$runNumber"
 
     # Make cross sections from this single subrun
-    ./sumSingle "$outpath"/analysis "$experiment" "histos" "$runNumber" "$subrunNo"
+    #./sumSingle "$outpath"/analysis "$experiment" "histos" "$runNumber" "$subrunNo"
     exit
 fi
 
@@ -337,9 +335,9 @@ then
 
     # Sum data from all subruns to make cross sections
     # for histos
-    #./sumAll "$outpath"/analysis "$experiment" "histos" "histos"
+    ./sumAll "$outpath"/analysis "$experiment" "histos" "histos"
     # for waveforms
-    ./sumAll "$outpath"/analysis "$experiment" "DPPwaveform" "histos"
+    #./sumAll "$outpath"/analysis "$experiment" "DPPwaveform" "histos"
     exit
 fi
 

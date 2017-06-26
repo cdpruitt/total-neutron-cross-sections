@@ -1,12 +1,9 @@
-title           Blank_Target_TOF
-
+title           Micropulse TOF (blank target)
 plotLine        true
 lineColor       2
 lineWidth       1
-
 plotPoint       true
 pointColor      2
 pointSize       0.1
-
-XAxisTitle      time-of-flight_(ns)
-YAxisTitle      counts
+XAxisTitle      Time of Flight (ns)
+YAxisTitle      Counts

@@ -29,14 +29,13 @@
 
 using namespace std;
 
-TH1I *relativeTriggerSampleHisto;
 TH2I *triggerWalk;
 TH1I *peakHisto;
 TF1 *fittingFunc;
 
 unsigned int DPP_WAVEFORM_SAMPLES = 60;
 unsigned int DPP_PEAKFIT_START = 2;
-int DPP_PEAKFIT_OFFSET = -24;
+double DPP_PEAKFIT_OFFSET = -48.3;
 
 extern struct ProcessedEvent procEvent;
 
@@ -172,7 +171,7 @@ bool isTrigger(int i, const vector<int>& waveform)
     //      these thresholds
 
     if((waveform[i] <= BASELINE-THRESHOLD
-       && (waveform[i]-waveform[i-1])/(double)SAMPLE_PERIOD <= DERIVATIVE_THRESHOLD)
+       /*&& (waveform[i]-waveform[i-1])/(double)SAMPLE_PERIOD <= DERIVATIVE_THRESHOLD*/)
 
        && (waveform[i-1] > BASELINE-THRESHOLD
        /*|| (waveform[i-1]-waveform[i-2])/(double)SAMPLE_PERIOD > DERIVATIVE_THRESHOLD*/))
@@ -248,16 +247,17 @@ fitData fitTrigger(int waveformNo, double triggerSample, const vector<int>& wave
     stringstream temp;
     temp << "waveform" << waveformNo << "_peak" << triggerSample;
 
-    peakHisto = new TH1I(temp.str().c_str(),temp.str().c_str(),PEAKFIT_WINDOW,SAMPLE_PERIOD*PEAKFIT_OFFSET,SAMPLE_PERIOD*(PEAKFIT_OFFSET+PEAKFIT_WINDOW));
+    //peakHisto = new TH1I(temp.str().c_str(),temp.str().c_str(),PEAKFIT_WINDOW,SAMPLE_PERIOD*PEAKFIT_OFFSET,SAMPLE_PERIOD*(PEAKFIT_OFFSET+PEAKFIT_WINDOW));
+    peakHisto = new TH1I(temp.str().c_str(),temp.str().c_str(),waveform.size(),0,waveform.size()*SAMPLE_PERIOD);
 
-    for (int i=0; i<PEAKFIT_WINDOW; i++)
+    for (int i=0; i<waveform.size(); i++)
     {
-        peakHisto->SetBinContent(i,waveform.at(triggerSample+PEAKFIT_OFFSET+i));
+        peakHisto->SetBinContent(i,waveform[i]);
     }
 
     /*************************************************************************/
     // first, try fitting with one peak
-    fittingFunc = new TF1("fittingFunc",onePeakForm,SAMPLE_PERIOD*PEAKFIT_OFFSET,SAMPLE_PERIOD*(PEAKFIT_OFFSET+PEAKFIT_WINDOW),nParamsOnePeak);
+    fittingFunc = new TF1("fittingFunc",onePeakForm,0,waveform.size()*SAMPLE_PERIOD,nParamsOnePeak);
     fittingFunc->SetParameters(A_init,trig1_init,n_init,d_init,C_init,m_init);
 
     // Lock in the shape of the peak (manually chosen to match real peak shape)
@@ -275,42 +275,42 @@ fitData fitTrigger(int waveformNo, double triggerSample, const vector<int>& wave
 
     // fit peak 
     peakHisto->Fit("fittingFunc","RQ");
-    //peakHisto->Write(); // uncomment to produce a fitted histo for each peak
+
+    /*if(waveformNo<5000)
+    {
+        peakHisto->Write(); // uncomment to produce a fitted histo for each peak
+    }*/
 
     if(fittingFunc->GetChisquare() < ERROR_LIMIT)
     {
         // Success - we've achieved a good fit with just one peak
         // Output fit data
 
-        data.peak1Amplitude = fittingFunc->GetMinimum(fittingFunc->GetParameter(1),fittingFunc->GetParameter(1)+30);
-
-        TF1* CFD = new TF1("CFD",CFDForm,SAMPLE_PERIOD*PEAKFIT_OFFSET,SAMPLE_PERIOD*(PEAKFIT_OFFSET+PEAKFIT_WINDOW),nParamsOnePeak);
+        data.peak1Amplitude = fittingFunc->GetMinimum(fittingFunc->GetParameter(1),fittingFunc->GetParameter(1)+20);
+        
+        /*TF1* CFD = new TF1("CFD",CFDForm,SAMPLE_PERIOD*PEAKFIT_OFFSET,SAMPLE_PERIOD*(PEAKFIT_OFFSET+PEAKFIT_WINDOW),nParamsOnePeak);
 
         for(int i=0; i<fittingFunc->GetNpar(); i++)
         {
             CFD->SetParameter(i,fittingFunc->GetParameter(i));
-        }
+        }*/
 
         //CFD->Write();
 
-        double relativeTriggerSample = fittingFunc->GetX(fittingFunc->GetParameter(4),fittingFunc->GetParameter(1),fittingFunc->GetParameter(1)+10);
+        //double relativeTriggerTime = CFD->GetX(fittingFunc->GetParameter(4),fittingFunc->GetParameter(1),fittingFunc->GetParameter(1)+10);
 
-        //double relativeTriggerSample = fittingFunc->GetX((fittingFunc->GetParameter(4)+data.peak1Amplitude)/2,fittingFunc->GetParameter(1),fittingFunc->GetParameter(1)+10);
-        //double relativeTriggerSample = fittingFunc->GetParameter(1);
+        //double relativeTriggerTime = fittingFunc->GetX(data.peak1Amplitude,fittingFunc->GetParameter(1),fittingFunc->GetParameter(1)+30);
+        double relativeTriggerTime = fittingFunc->GetX((fittingFunc->GetParameter(4)+data.peak1Amplitude)/2,fittingFunc->GetParameter(1),fittingFunc->GetParameter(1)+20);
+        //double relativeTriggerTime = fittingFunc->GetParameter(1);
+        //double relativeTriggerTime = triggerSample*(double)SAMPLE_PERIOD;
 
-        data.peak1TriggerAmplitude = fittingFunc->Eval(relativeTriggerSample);
+        data.peak1TriggerAmplitude = fittingFunc->Eval(relativeTriggerTime);
 
-        data.trigger1Time = (triggerSample+relativeTriggerSample)*(double)SAMPLE_PERIOD;
-        data.peak1Derivative = fittingFunc->Derivative(relativeTriggerSample);
+        data.trigger1Time = relativeTriggerTime;
+
+        data.peak1Derivative = fittingFunc->Derivative(relativeTriggerTime);
         data.chiSquare = fittingFunc->GetChisquare();
         data.goodFit = true;
-
-        //relativeTriggerSampleHisto->Fill(relativeTriggerSample);
-
-        //cout << "getX from peakFit = " << relativeTriggerSample << endl;
-        //cout << "derivative = " << data.peak1Derivative << endl;
-
-        //cout << "monomial order = " << fittingFunc->GetParameter(2) << endl;
 
         numberOnePeakFits++;
     }
@@ -462,8 +462,8 @@ void fillTriggerHistos(double triggerTime, vector<Plots>& plots)
 
     if (procEvent.targetPos>0 && procEvent.targetPos<=tarGates.size()-1)
     {
-        TH1I* tof = plots[procEvent.targetPos-1].getTOFHisto();
-        TH1I* en = plots[procEvent.targetPos-1].getEnergyHisto();
+        TH1D* tof = plots[procEvent.targetPos-1].getTOFHisto();
+        TH1D* en = plots[procEvent.targetPos-1].getEnergyHisto();
 
         tof->Fill(microTime);
         en->Fill(rKE);
@@ -481,68 +481,11 @@ void processTrigger(int waveformNo, int triggerSample, vector<double>& triggerLi
     //double triggerTime = triggerSample*2;
     //triggerList.push_back(triggerTime);
 
+    double timeOffset = 0;
+
     // Uncomment to use fitted peak threshold-intercept as trigger time
     if(fitTrigger(waveformNo, triggerSample, waveform).goodFit)
     {
-        double timeOffset = 0;
-
-        if(procEvent.lgQ < 206)
-        {
-            timeOffset = 0.01424*procEvent.lgQ-2.774;
-        }
-
-        else if(procEvent.lgQ < 305)
-        {
-            timeOffset = 0.01646*procEvent.lgQ-3.232;
-        }
-
-        else if(procEvent.lgQ < 417)
-        {
-            timeOffset = 0.009196*procEvent.lgQ-1.0149;
-        }
-        
-        else if(procEvent.lgQ < 566)
-        {
-            timeOffset = 0.005168*procEvent.lgQ+0.6650;
-        }
-        
-        else if(procEvent.lgQ < 929)
-        {
-            timeOffset = 0.002231*procEvent.lgQ+2.327;
-        }
-        
-        else if(procEvent.lgQ < 1482)
-        {
-            timeOffset = 0.001447*procEvent.lgQ+3.056;
-        }
-        
-        else if(procEvent.lgQ < 2149)
-        {
-            timeOffset = 0.0007496*procEvent.lgQ+4.089;
-        }
-        
-        else if(procEvent.lgQ < 5319)
-        {
-            timeOffset = 0.0003785*procEvent.lgQ+4.8865;
-        }
-        
-        else if(procEvent.lgQ < 7808)
-        {
-            timeOffset = 0.0001607*procEvent.lgQ+6.0452;
-        }
-        
-        else if(procEvent.lgQ < 11395)
-        {
-            timeOffset = 0.0001115*procEvent.lgQ+6.4293;
-        }
-        
-        else
-        {
-            timeOffset = 0.00006244*procEvent.lgQ+6.989;
-        }
-
-        data.trigger1Time -= timeOffset;
-
         triggerList.push_back(data.trigger1Time);
         triggerValues.push_back(data.peak1TriggerAmplitude);
 
@@ -556,8 +499,8 @@ void processTrigger(int waveformNo, int triggerSample, vector<double>& triggerLi
 
     else
     {
+        //triggerList.push_back(triggerSample*SAMPLE_PERIOD-timeOffset);
         numberBadFits++;
-        //triggerList.push_back(triggerSample*SAMPLE_PERIOD);
     }
 
     //cout << data.chiSquare << endl;
@@ -581,7 +524,7 @@ void produceTriggerOverlay(int j, vector<double>& triggerList, vector<int>& wave
 
     for(int k=0; (size_t)k<triggerList.size(); k++)
     {
-        triggerH->SetBinContent(triggerList[k]/(double)SAMPLE_PERIOD,triggerValues[k]);
+        triggerH->SetBinContent((triggerList[k]/*+DPP_PEAKFIT_OFFSET*/)/(double)SAMPLE_PERIOD,triggerValues[k]);
     }
 
     TCanvas *c1 = new TCanvas;
@@ -598,11 +541,22 @@ void produceTriggerOverlay(int j, vector<double>& triggerList, vector<int>& wave
 
 void processWaveforms(TTree* treeToSort, vector<Plots>& targetPlots, TFile* outFile, string mode)
 {
-    TH1I* fittedTimeHisto = new TH1I("raw fitted times", "raw fitted times", TOF_BINS,TOF_LOWER_BOUND,TOF_RANGE);
+    TH1D* fittedTimeHisto = new TH1D("raw fitted times", "raw fitted times", TOF_BINS,TOF_LOWER_BOUND,TOF_RANGE);
 
-    TH2I* deltaTVsPulseHeight = new TH2I("delta T vs. pulse height","delta T vs. pulse height",100, -10, 10, 1000, 0, 16000);
+    TH2D* deltaTVsPulseHeight = new TH2D("delta T vs. pulse height","delta T vs. pulse height", 200, -10, 10, 1580, 0, 15800);
 
-    TH2I* deltaTVsPulseIntegral = new TH2I("delta T vs. pulse integral","delta T vs. pulse integral",100, -10, 10, 1000, 0, pow(2,16));
+    TH2D* deltaTVsPulseIntegral0 = new TH2D("delta T vs. pulse integral, target 0","delta T vs. pulse integral, target 0",100, -10, 10, pow(2,15), 0, pow(2,15));
+    TH2D* deltaTVsPulseIntegral1 = new TH2D("delta T vs. pulse integral, target 1","delta T vs. pulse integral, target 1",100, -10, 10, pow(2,15), 0, pow(2,15));
+    TH2D* deltaTVsPulseIntegral2 = new TH2D("delta T vs. pulse integral, target 2","delta T vs. pulse integral, target 2",100, -10, 10, pow(2,15), 0, pow(2,15));
+    TH2D* deltaTVsPulseIntegral3 = new TH2D("delta T vs. pulse integral, target 3","delta T vs. pulse integral, target 3",100, -10, 10, pow(2,15), 0, pow(2,15));
+    TH2D* deltaTVsPulseIntegral4 = new TH2D("delta T vs. pulse integral, target 4","delta T vs. pulse integral, target 4",100, -10, 10, pow(2,15), 0, pow(2,15));
+    TH2D* deltaTVsPulseIntegral5 = new TH2D("delta T vs. pulse integral, target 5","delta T vs. pulse integral, target 5",100, -10, 10, pow(2,15), 0, pow(2,15));
+
+    TH1D* triggerAmplitudeHisto = new TH1D("triggerAmplitudeHisto","triggerAmplitudeHisto",pow(2,14),0,pow(2,14));
+    TH1D* relativeTriggerTimeHisto = new TH1D("relativeTriggerTimeHisto","relative trigger time, from start of fitted wavelet",200,-5,5);
+    TH2D* relativeTriggerTimeVsAmplitude = new TH2D("relativeTriggerTimeVSAmplitude","relative trigger time vs amplitude", 200, -5, 5, pow(2,14), 0, pow(2,14));
+
+    TH1D* gammaToGammaTimeH = new TH1D("gammaToGammaTimeH","time between consecutive gammas", 1000, -5, 5);
 
     if(mode=="DPP")
     {
@@ -617,6 +571,10 @@ void processWaveforms(TTree* treeToSort, vector<Plots>& targetPlots, TFile* outF
         vector<TGraph*> waveletGraphs;
         vector<TGraph*> triggerGraphs;
 
+        int gammaGate[2] = {80,90};
+
+        double prevGammaTime = 0;
+
         for(int j=1; j<totalEntries; j++)
         {
             if(j%1000==0)
@@ -625,7 +583,7 @@ void processWaveforms(TTree* treeToSort, vector<Plots>& targetPlots, TFile* outF
                 fflush(stdout);
             }
 
-            /*if(j>)
+            /*if(j>500)
             {
                 break;
             }*/
@@ -646,36 +604,80 @@ void processWaveforms(TTree* treeToSort, vector<Plots>& targetPlots, TFile* outF
                 if(isTrigger(k, *procEvent.waveform))
                 {
                     // trigger found - plot/fit/extract time
-                    processTrigger(j, k, triggerList, *procEvent.waveform);
 
-                    //produceTriggerOverlay(j, triggerList, *procEvent.waveform);
+                    double timeDiff = procEvent.completeTime-procEvent.macroTime;
+                    double microTime = fmod(timeDiff,MICRO_LENGTH);
+
+                    if(microTime > gammaGate[0] && microTime < gammaGate[1])
+                    {
+                        processTrigger(j, k, triggerList, *procEvent.waveform);
+
+                        double fullTime = procEvent.completeTime-procEvent.macroTime+data.trigger1Time+DPP_PEAKFIT_OFFSET;
+                        gammaToGammaTimeH->Fill(fmod(fullTime,MICRO_LENGTH)-prevGammaTime);
+                        prevGammaTime=fmod(fullTime,MICRO_LENGTH);
+
+                        fillTriggerHistos(fullTime, targetPlots);
+                        fittedTimeHisto->Fill(data.trigger1Time);
+                    }
+
+                    //processTrigger(j, k, triggerList, *procEvent.waveform);
 
                     break;
                 }
             }
 
-            for(int m=0; (size_t)m<triggerList.size(); m++)
+            //produceTriggerOverlay(j, triggerList, *procEvent.waveform);
+
+            TH2D* deltaTVsPulseIntegralHisto;
+
+            switch(procEvent.targetPos-1)
             {
-                fillTriggerHistos(triggerList[m]+procEvent.completeTime-procEvent.macroTime+DPP_PEAKFIT_OFFSET, targetPlots);
-                fittedTimeHisto->Fill(triggerList[m]);
-                deltaTVsPulseIntegral->Fill(triggerList[m]+DPP_PEAKFIT_OFFSET, procEvent.lgQ);
-                deltaTVsPulseHeight->Fill(triggerList[m]+DPP_PEAKFIT_OFFSET, data.peak1Amplitude);
+                case 0:
+                    deltaTVsPulseIntegralHisto = deltaTVsPulseIntegral0;
+                    break;
+
+                case 1:
+                    deltaTVsPulseIntegralHisto = deltaTVsPulseIntegral1;
+                    break;
+
+                case 2:
+                    deltaTVsPulseIntegralHisto = deltaTVsPulseIntegral2;
+                    break;
+
+                case 3:
+                    deltaTVsPulseIntegralHisto = deltaTVsPulseIntegral3;
+                    break;
+
+                case 4:
+                    deltaTVsPulseIntegralHisto = deltaTVsPulseIntegral4;
+                    break;
+
+                case 5:
+                    deltaTVsPulseIntegralHisto = deltaTVsPulseIntegral5;
+                    break;
             }
+
+            triggerAmplitudeHisto->Fill(data.peak1Amplitude);
+            relativeTriggerTimeHisto->Fill(data.trigger1Time+DPP_PEAKFIT_OFFSET);
+            relativeTriggerTimeVsAmplitude->Fill(data.trigger1Time+DPP_PEAKFIT_OFFSET,data.peak1Amplitude);
+
+            deltaTVsPulseIntegralHisto->Fill(data.trigger1Time+DPP_PEAKFIT_OFFSET, procEvent.lgQ);
+            deltaTVsPulseHeight->Fill(data.trigger1Time+DPP_PEAKFIT_OFFSET, data.peak1Amplitude);
 
             // Create a new graph for each wavelet
             //waveletGraphs.push_back(new TGraph());
 
             // Fill each micropulse graph with waveform samples
             /*for (int l=0; l<procEvent.waveform->size(); l++)
-            {
-                waveletGraphs.back()->SetPoint(l,l*SAMPLE_PERIOD,procEvent.waveform->at(l));
-            }*/
-            
+              {
+              waveletGraphs.back()->SetPoint(l,l*SAMPLE_PERIOD,procEvent.waveform->at(l));
+              }*/
+
             // Create a new graph for each wavelet
-            triggerGraphs.push_back(new TGraph());
+            //triggerGraphs.push_back(new TGraph());
 
             // Fill each micropulse graph with waveform samples
-            triggerGraphs.back()->SetPoint(0,triggerList[0],triggerValues[0]);
+            //triggerGraphs.back()->SetPoint(0,triggerList[0],triggerValues[0]);
 
             fill(procEvent.waveform->begin(),procEvent.waveform->end(),BASELINE);
         }
@@ -722,8 +724,21 @@ void processWaveforms(TTree* treeToSort, vector<Plots>& targetPlots, TFile* outF
         }
 
         fittedTimeHisto->Write();
-        deltaTVsPulseIntegral->Write();
+
+        deltaTVsPulseIntegral0->Write();
+        deltaTVsPulseIntegral1->Write();
+        deltaTVsPulseIntegral2->Write();
+        deltaTVsPulseIntegral3->Write();
+        deltaTVsPulseIntegral4->Write();
+        deltaTVsPulseIntegral5->Write();
+
         deltaTVsPulseHeight->Write();
+
+        relativeTriggerTimeHisto->Write();
+        triggerAmplitudeHisto->Write();
+        relativeTriggerTimeVsAmplitude->Write();
+
+        gammaToGammaTimeH->Write();
     }
 
     else if(mode=="waveform")
@@ -731,8 +746,6 @@ void processWaveforms(TTree* treeToSort, vector<Plots>& targetPlots, TFile* outF
         setBranchesHistosW(treeToSort);
 
         triggerWalk = new TH2I("triggerWalk","trigger time vs. waveform chunk #",200,0,200,1000,0,1000);
-
-        relativeTriggerSampleHisto = new TH1I("relativeTriggerSampleHisto","relative trigger time, from start of fitted wavelet",100,PEAKFIT_OFFSET*SAMPLE_PERIOD,(PEAKFIT_OFFSET+PEAKFIT_WINDOW)*SAMPLE_PERIOD);
 
         TH1I* monitorHisto = new TH1I("targetPosH", "targetPos", 7, 0, 7);
         monitorHisto->GetXaxis()->SetTitle("target position of each waveform");
@@ -1028,7 +1041,6 @@ void waveform(string inFileName, string outFileName, vector<string>channelMap, s
     }
 
     inFile->Close();
-    outFile->Write();
     outFile->Close();
     return;
 }

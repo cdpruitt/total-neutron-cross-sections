@@ -1,1 +1,8 @@
-**.root
+*
+*/
+!analysis/
+!tin/
+!tin2/
+!oxygen/
+!WashUDAQ/
+!README

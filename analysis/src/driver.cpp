@@ -7,7 +7,7 @@
 #include "../include/histos.h"
 #include "../include/plots.h"
 #include "../include/waveform.h"
-#include "../include/crossSection.h"
+//#include "../include/crossSection.h"
 #include "../include/veto.h"
 #include "../include/experiment.h"
 
@@ -88,7 +88,7 @@ int main(int, char* argv[])
     /*************************************************************************/
     /* Eliminate detector events using the veto paddle */
     /*************************************************************************/
-    ifstream v(vetoedFileName);
+    /*ifstream v(vetoedFileName);
     if(!v.good())
     {
         vetoEvents(sortedFileName, vetoedFileName, detectorNames, "veto");
@@ -98,13 +98,13 @@ int main(int, char* argv[])
     {
         cout << "Vetoed data tree already exists." << endl;
         v.close();
-    }
+    }*/
 
     /*************************************************************************/
     /* Process waveform data */
     /*************************************************************************/
 
-    ifstream w(waveformFileName);
+    /*ifstream w(waveformFileName);
     if(!w.good())
     {
         waveform(sortedFileName, waveformFileName, channelMap, "waveform");
@@ -114,13 +114,13 @@ int main(int, char* argv[])
     {
         cout << "Waveform data already processed." << endl;
         w.close();
-    }
+    }*/
 
     /*************************************************************************/
     /* Process DPP waveform data */
     /*************************************************************************/
 
-    ifstream dppW(DPPWaveformFileName);
+    /*ifstream dppW(DPPWaveformFileName);
 
     if(!dppW.good())
     {
@@ -131,7 +131,7 @@ int main(int, char* argv[])
     {
         cout << "DPP waveform data already processed." << endl;
         dppW.close();
-    }
+    }*/
 
     /*************************************************************************/
     /* Process events into histograms in preparation for cross section
@@ -141,9 +141,33 @@ int main(int, char* argv[])
     if(!h.good())
     {
         //Uncomment to use vetoed trees
-        histos(sortedFileName, vetoedFileName, histoFileName, channelMap);
+        //histos(sortedFileName, vetoedFileName, histoFileName, channelMap);
         //Uncomment to use unvetoed trees
-        //histos(sortedFileName, sortedFileName, histoFileName, channelMap);
+        histos(sortedFileName, sortedFileName, histoFileName, channelMap);
+
+
+        /*************************************************************************/
+        /* Process events into histograms in preparation for cross section
+         * calculation */
+        /*************************************************************************/
+
+        TFile* histoFile = new TFile(histoFileName.c_str(),"UPDATE");
+
+        for(string name : detectorNames)
+        {
+            histoFile->cd("/");
+            histoFile->cd(name.c_str());
+
+            for(string positionName : positionNames)
+            {
+                string histoName = positionName + "TOF";
+                TH1D* tof = (TH1D*)gDirectory->Get(histoName.c_str());
+                convertTOFtoEn(tof, positionName + "CorrectedEnergy");
+            }
+        }
+
+        histoFile->Write();
+        histoFile->Close();
     }
 
     else
@@ -151,27 +175,6 @@ int main(int, char* argv[])
         cout << "Histos already exist." << endl;
         h.close();
     }
-
-    /*************************************************************************/
-    /* Process events into histograms in preparation for cross section
-     * calculation */
-    /*************************************************************************/
-
-    TFile* histoFile = new TFile(histoFileName.c_str(),"UPDATE");
-    for(string name : detectorNames)
-    {
-        histoFile->cd("/");
-        histoFile->cd(name.c_str());
-
-        for(string positionName : positionNames)
-        {
-            string histoName = positionName + "TOF";
-            TH1I* tof = (TH1I*)gDirectory->Get(histoName.c_str());
-            convertTOFtoEn(tof, positionName + "CorrectedEnergy");
-        }
-    }
-    histoFile->Write();
-    histoFile->Close();
-
+    
     return 0;
 }

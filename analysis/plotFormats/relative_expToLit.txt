@@ -1,0 +1,37 @@
+CSFileName        /data2/analysis/relative.root
+natCGraphName     NatC50
+natSnGraphName    NatSn50
+natPbGraphName    NatPb50
+title             Relative difference (#frac{#sigma_{exp}-#sigma_{lit}}{#sigma_{exp}+#sigma_{lit}})
+plotLine          true
+lineColor         2
+lineWidth         4
+lineStyle         0
+plotPoint         true
+pointColor        2
+pointSize         0.9
+pointStyle        20 
+padLeftEdge       0.005
+padRightEdge      0.995
+padTopEdge        0.995
+padBottomEdge     0.005
+padLeftMargin     0.2
+padRightMargin    0.01
+padTopMargin      0.03
+padBottomMargin   0.2
+XAxisTitle        Energy (MeV)
+YAxisTitle        (#frac{#sigma_{exp}-#sigma_{lit}}{#sigma_{exp}+#sigma_{lit}})
+XAxisTitleOffset  1.5
+YAxisTitleOffset  1.6
+XAxisTitleSize    0.05
+YAxisTitleSize    0.06
+XAxisLabelOffset  0.01
+YAxisLabelOffset  0.01
+XAxisLabelSize    0.05
+YAxisLabelSize    0.05
+XAxisLabelFont    2
+YAxisLabelFont    2
+XAxisNDivisions   10
+YAxisNDivisions   10
+XAxisTickLength   0.03
+YAxisTickLength   0.02

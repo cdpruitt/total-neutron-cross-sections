@@ -12,7 +12,7 @@
 
 void examineRuns(string filePath, string run, string fileType, string subDir, string histoType)
 {
-    const unsigned int CANVAS_WIDTH = 6;
+    const unsigned int CANVAS_WIDTH = 3;
     const unsigned int CANVAS_HEIGHT = 8;
 
     //gROOT->SetStyle("Plain");

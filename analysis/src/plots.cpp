@@ -57,7 +57,7 @@ double RKEToTOF(double RKE)
     return TOF; // in ns
 }
 
-TH1I* timeBinsToRKEBins(TH1I *inputHisto, string name)
+TH1D* timeBinsToRKEBins(TH1D *inputHisto, string name)
 {
     // extract the total number of bins in the input Histo (minus the
     // overflow and underflow bins)
@@ -130,7 +130,7 @@ TH1I* timeBinsToRKEBins(TH1I *inputHisto, string name)
     // Downscale bins to desired granularity
     vector<double> scaledEnergyBins = scaleBins(unscaledEnergyBins, nUnscaledEnergyBins/NUMBER_ENERGY_BINS);
 
-    TH1I* outputHisto = new TH1I(name.c_str(),
+    TH1D* outputHisto = new TH1D(name.c_str(),
             name.c_str(),
             scaledEnergyBins.size()-1,
             &scaledEnergyBins[0]);
@@ -147,7 +147,7 @@ TH1I* timeBinsToRKEBins(TH1I *inputHisto, string name)
     return outputHisto;
 }
 
-TH1I* RKEBinsToTimeBins(TH1I *inputHisto, string name)
+TH1D* RKEBinsToTimeBins(TH1D *inputHisto, string name)
 {
     // extract the total number of bins in the input Histo (minus the
     // overflow and underflow bins)
@@ -220,7 +220,7 @@ TH1I* RKEBinsToTimeBins(TH1I *inputHisto, string name)
     vector<double> scaledTimeBins = unscaledTimeBins;
     //scaleBins(unscaledTimeBins, scaledTimeBins, nUnscaledTimeBins/NUMBER_TOF_BINS);
 
-    TH1I* outputHisto = new TH1I(name.c_str(),
+    TH1D* outputHisto = new TH1D(name.c_str(),
             name.c_str(),
             scaledTimeBins.size()-1,
             &scaledTimeBins[0]);
@@ -241,15 +241,17 @@ TH1I* RKEBinsToTimeBins(TH1I *inputHisto, string name)
 Plots::Plots(string name)
 {
     string tofName = name + "TOF";
+    string rawTOFName = name + "rawTOF";
     string energyName = name + "Energy";
     string deadtimeName = name + "Deadtime";
 
-    TOFHisto = new TH1I(tofName.c_str(),tofName.c_str(),TOF_BINS,TOF_LOWER_BOUND,TOF_RANGE);
-    deadtimeHisto = new TH1I(deadtimeName.c_str(),deadtimeName.c_str(),TOF_BINS,TOF_LOWER_BOUND,TOF_RANGE);
+    TOFHisto = new TH1D(tofName.c_str(),tofName.c_str(),TOF_BINS,TOF_LOWER_BOUND,TOF_UPPER_BOUND);
+    rawTOFHisto = new TH1D(rawTOFName.c_str(),rawTOFName.c_str(),TOF_BINS,TOF_LOWER_BOUND,TOF_UPPER_BOUND);
+    deadtimeHisto = new TH1D(deadtimeName.c_str(),deadtimeName.c_str(),TOF_BINS,TOF_LOWER_BOUND,TOF_UPPER_BOUND);
 
     energyHisto = timeBinsToRKEBins(TOFHisto,energyName);
 
-    //energyHisto = new TH1I(energyName.c_str(),energyName.c_str(),ENERGY_BINS,0,ENERGY_RANGE);
+    //energyHisto = new TH1D(energyName.c_str(),energyName.c_str(),ENERGY_BINS,0,ENERGY_RANGE);
     //TOFHisto = RKEBinsToTimeBins(energyHisto,tofName);
     //deadtimeHisto = RKEBinsToTimeBins(energyHisto,deadtimeName);
 }
@@ -258,6 +260,7 @@ Plots::Plots(string name)
 Plots::Plots(string name, TFile*& inputFile, string directory)
 {
     string tofName = name + "TOF";
+    string rawTOFName = name + "rawTOF";
     string energyName = name + "Energy";
     string deadtimeName = name + "Deadtime";
 
@@ -272,25 +275,29 @@ Plots::Plots(string name, TFile*& inputFile, string directory)
         gDirectory->cd("/");
         gDirectory->GetDirectory(directory.c_str())->cd();
 
-        TOFHisto = (TH1I*)gDirectory->Get(tofName.c_str());
-        energyHisto = (TH1I*)gDirectory->Get(energyName.c_str());
-        deadtimeHisto = (TH1I*)gDirectory->Get(deadtimeName.c_str());
+        TOFHisto = (TH1D*)gDirectory->Get(tofName.c_str());
+        rawTOFHisto = (TH1D*)gDirectory->Get(rawTOFName.c_str());
+        energyHisto = (TH1D*)gDirectory->Get(energyName.c_str());
+        deadtimeHisto = (TH1D*)gDirectory->Get(deadtimeName.c_str());
     }
 }
 
-TH1I* Plots::getTOFHisto()
+TH1D* Plots::getTOFHisto()
 {
     return TOFHisto;
 }
 
-TH1I* Plots::getEnergyHisto()
+TH1D* Plots::getRawTOFHisto()
+{
+    return rawTOFHisto;
+}
+
+TH1D* Plots::getEnergyHisto()
 {
     return energyHisto;
 }
 
-TH1I* Plots::getDeadtimeHisto()
+TH1D* Plots::getDeadtimeHisto()
 {
     return deadtimeHisto;
 }
-
-

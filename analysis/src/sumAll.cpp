@@ -23,6 +23,9 @@ using namespace std;
 
 const int MAX_SUBRUN_NUMBER = 200;
 
+const int FIRST_CS_ENERGY = 2; // in MeV
+const int LAST_CS_ENERGY = 600; // in MeV
+
 struct Plots
 {
     vector<TGraphErrors*> CSGraphs;
@@ -212,7 +215,7 @@ CrossSection calculateCS(CSPrereqs& targetData, CSPrereqs& blankData, string exp
     double tMon = targetData.monitorCounts;
     double bMon = blankData.monitorCounts;
     double monitorRatio = tMon/bMon;
-    //double monitorRatio = 1;
+    //monitorRatio *= 1.004;
 
     // calculate number of atoms in this target
     long double numberOfAtoms =
@@ -234,11 +237,18 @@ CrossSection calculateCS(CSPrereqs& targetData, CSPrereqs& blankData, string exp
     for(int i=1; i<=numberOfBins-1; i++) // skip the overflow and underflow bins
     {
         // read data from detector histograms for target and blank
-        TH1I* bCounts = blankData.energyHisto;
-        TH1I* tCounts = targetData.energyHisto;
+        TH1D* bCounts = blankData.energyHisto;
+        TH1D* tCounts = targetData.energyHisto;
 
         energyValue = tCounts->GetBinCenter(i);
         energyError = tCounts->GetBinWidth(i)/2;
+
+        // ignore bins outside the energies of interest
+        if(FIRST_CS_ENERGY>energyValue ||
+                LAST_CS_ENERGY<energyValue)
+        {
+            continue;
+        }
 
         long bDet = bCounts->GetBinContent(i);
         long tDet = tCounts->GetBinContent(i);
@@ -370,10 +380,10 @@ int main(int, char* argv[])
                 CSPrereqs subRunData(targetDataLocation);
 
                 // for histos
-                //subRunData.readData(inFile, "lowThresholdDet", j);
+                subRunData.readData(inFile, "lowThresholdDet", j);
 
                 // for waveforms
-                subRunData.readData(inFile, "lowThresholdDet", j, monitorFileName.str());
+                //subRunData.readData(inFile, "lowThresholdDet", j, monitorFileName.str());
 
                 // find the correct CSPrereqs to add this target's data to
                 for(CSPrereqs& csp : allData)
@@ -445,7 +455,7 @@ int main(int, char* argv[])
     **************************************************************************/
 
     string relativeFileName = dataLocation + "/relative.root";
-    TFile* relativeFile = new TFile(relativeFileName.c_str(), "RECREATE");
+    TFile* relativeFile = new TFile(relativeFileName.c_str(), "UPDATE");
 
     // read which relative cross section plots to make from the experimental
     // directory

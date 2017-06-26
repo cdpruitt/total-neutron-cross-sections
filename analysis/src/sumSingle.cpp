@@ -230,8 +230,8 @@ CrossSection calculateCS(string CSFileName, CSPrereqs& targetData, CSPrereqs& bl
     for(int i=1; i<=numberOfBins-1; i++) // skip the overflow and underflow bins
     {
         // read data from detector histograms for target and blank
-        TH1I* bCounts = blankData.energyHisto;
-        TH1I* tCounts = targetData.energyHisto;
+        TH1D* bCounts = blankData.energyHisto;
+        TH1D* tCounts = targetData.energyHisto;
 
         energyValue = tCounts->GetBinCenter(i);
         energyError = tCounts->GetBinWidth(i)/2;
@@ -351,7 +351,7 @@ int main(int, char* argv[])
                 {
                     // this is the first subrun to be added
                     allData[k].monitorCounts = subRunData.monitorCounts;
-                    allData[k].energyHisto = (TH1I*)subRunData.energyHisto->Clone();
+                    allData[k].energyHisto = (TH1D*)subRunData.energyHisto->Clone();
                     // prevent the cloned histogram from being closed
                     // when the subrun is closed
                     allData[k].energyHisto->SetDirectory(0);

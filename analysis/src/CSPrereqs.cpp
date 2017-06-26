@@ -15,16 +15,16 @@ using namespace std;
 void CSPrereqs::getHisto(TFile* histoFile, string directory, string name)
 {
     // for histos
-    //string energyHistoName = name + "CorrectedEnergy";
+    string energyHistoName = name + "CorrectedEnergy";
 
     // for waveforms
-    string energyHistoName = name + "Energy";
+    //string energyHistoName = name + "Energy";
 
     histoFile->cd(directory.c_str());
-    energyHisto = ((TH1I*)gDirectory->Get(energyHistoName.c_str()));
+    energyHisto = ((TH1D*)gDirectory->Get(energyHistoName.c_str()));
 
     string TOFHistoName = name + "TOF";
-    TOFHisto = ((TH1I*)gDirectory->Get(TOFHistoName.c_str()));
+    TOFHisto = ((TH1D*)gDirectory->Get(TOFHistoName.c_str()));
 }
 
 // for histos
@@ -85,7 +85,7 @@ CSPrereqs operator+(CSPrereqs& augend, CSPrereqs& addend)
 CSPrereqs::CSPrereqs(Target t)
 {
     target = t;
-    TOFHisto = new TH1I("","",TOF_BINS,TOF_LOWER_BOUND,TOF_RANGE),target.getName();
+    TOFHisto = new TH1D("","",TOF_BINS,TOF_LOWER_BOUND,TOF_RANGE),target.getName();
     TOFHisto->SetDirectory(0);
     energyHisto = timeBinsToRKEBins(TOFHisto,target.getName());
     energyHisto->SetDirectory(0);
@@ -94,7 +94,7 @@ CSPrereqs::CSPrereqs(Target t)
 
 CSPrereqs::CSPrereqs(string targetDataLocation) : target(targetDataLocation)
 {
-    TOFHisto = new TH1I("","",TOF_BINS,TOF_LOWER_BOUND,TOF_RANGE),target.getName();
+    TOFHisto = new TH1D("","",TOF_BINS,TOF_LOWER_BOUND,TOF_RANGE),target.getName();
     TOFHisto->SetDirectory(0);
     energyHisto = timeBinsToRKEBins(TOFHisto,target.getName());
     energyHisto->SetDirectory(0);

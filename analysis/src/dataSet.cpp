@@ -241,6 +241,38 @@ const DataSet operator/(const DataSet& set1, const DataSet& set2)
     return quotientDataSet;
 }
 
+const DataSet correctCSUsingControl(const DataSet& dataSetToCorrect, const DataSet& correction)
+{
+    DataSet correctedDataSet;
+    if(dataSetToCorrect.getNumberOfPoints() != correction.getNumberOfPoints())
+    {
+        cerr << "Error: tried to divide data sets with different number of points. Returning empty data set..." << endl;
+        return correctedDataSet;
+    }
+
+    for (int i=0; i<dataSetToCorrect.getNumberOfPoints(); i++)
+    {
+        if (dataSetToCorrect.getPoint(i).getXValue()!=correction.getPoint(i).getXValue())
+        {
+            cerr << "Error: there was an energy mismatch between a data point in set 1\
+                and a data point in set 2. Returning quotient dataSet." << endl;
+            return correctedDataSet;
+        }
+
+        double xValue = dataSetToCorrect.getPoint(i).getXValue();
+        double xError = dataSetToCorrect.getPoint(i).getXError();
+        double yValue = dataSetToCorrect.getPoint(i).getYValue()/
+                        (1+correction.getPoint(i).getYValue());
+        double yError = dataSetToCorrect.getPoint(i).getYError()/
+                        (1+correction.getPoint(i).getYValue());
+
+        correctedDataSet.addPoint(DataPoint(xValue,xError,yValue,yError));
+    }
+
+    correctedDataSet.setReference(dataSetToCorrect.getReference() + correction.getReference() + "correctedByControl");
+    return correctedDataSet;
+}
+
 const DataSet operator/(const DataSet& dividend, const double divisor)
 {
     DataSet quotient;

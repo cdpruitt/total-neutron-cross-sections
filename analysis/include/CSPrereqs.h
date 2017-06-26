@@ -25,8 +25,8 @@ void getHisto(TFile* histoFile, std::string directory, std::string name);
 
         Target target;     // physical data for this target
         long monitorCounts;// target-specific counts on monitor for a subrun
-        TH1I* energyHisto; // target-specific energy histo, corrected for deadtime
-        TH1I* TOFHisto; // target-specific energy histo, corrected for deadtime
+        TH1D* energyHisto; // target-specific energy histo, corrected for deadtime
+        TH1D* TOFHisto; // target-specific energy histo, corrected for deadtime
 };
 
 

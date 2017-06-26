@@ -8,7 +8,7 @@
 
 const int ADC_RANGE  = 16383;  // Range of ADC voltage steps (internal units)
 
-const int THRESHOLD = 80;      // displacement from baseline needed to trigger
+const int THRESHOLD = 40;      // displacement from baseline needed to trigger
                                // software threshold
 const int DERIVATIVE_THRESHOLD = -4; // derivative needed to trigger software
                                       // threshold
@@ -24,7 +24,7 @@ const int WAVEFORM_OFFSET = 540; // in ns
 const int TRIGGER_HOLDOFF = 1; // in samples
 
 // If chi-square of a single-peak fit is worse than this, try fitting as a double-peak
-const float ERROR_LIMIT = 200.0;
+const float ERROR_LIMIT = 500.0;
 
 // If chi-square of the double peak fit is worse than this, throw trigger away
 // and generate error
@@ -65,9 +65,9 @@ const int nParamsOnePeakExpBack = 8;
 const int nParamsTwoPeaks = 8;
 
 // Initial fitting function parameters
-float A_init  = -300;     // amplitude of peak
+float A_init  = -500;     // amplitude of peak
 float B_init  = -300;     // amplitude of peak 2
-float trig1_init = -10;     // first peak trigger time
+float trig1_init = 40;     // first peak trigger time
 float trig2_init = 15;    // second peak trigger time
 float n_init  = 10;        // exponent of peak monomial
 float d_init  = 1.5;      // decay constant of peak exponential
@@ -78,9 +78,9 @@ float tE_init = 0; // previous-peak background: time offset
 
 // Fitting function parameter limits:
 // One-peak fitting
-const float onePeakParamMin[nParamsOnePeak] = {-30000., -15.,  5, 0.2, 15700., -0.2};
+const float onePeakParamMin[nParamsOnePeak] = {-200000., 30.,  5, 0.2, 15700., -0.2};
                                              //       A    t1   n    d       C     m
-const float onePeakParamMax[nParamsOnePeak] = {    -10.,   -5., 20,   3, 15770.,  0.2};
+const float onePeakParamMax[nParamsOnePeak] = {    -200.,   60., 20,   3, 15770.,  0.2};
 
 // One-peak-plus-exponential-tail fitting
 const float onePeakExpBackParamMin[nParamsOnePeakExpBack] = {-30000., -15.,  5, 0.2, 15700., -0.2, -30000, -5};

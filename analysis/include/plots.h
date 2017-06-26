@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "TH1I.h"
+#include "TH1D.h"
 #include "TFile.h"
 
 class Plots
@@ -12,16 +12,18 @@ class Plots
         Plots(std::string name);
         Plots(std::string name, TFile*& inputFile, std::string directory);
 
-        TH1I* getTOFHisto();
-        TH1I* getEnergyHisto();
-        TH1I* getDeadtimeHisto();
+        TH1D* getTOFHisto();
+        TH1D* getRawTOFHisto();
+        TH1D* getEnergyHisto();
+        TH1D* getDeadtimeHisto();
 
     private:
-        TH1I* TOFHisto;
-        TH1I* energyHisto;
-        TH1I* deadtimeHisto;
+        TH1D* TOFHisto;
+        TH1D* rawTOFHisto;
+        TH1D* energyHisto;
+        TH1D* deadtimeHisto;
 };
 
-TH1I* timeBinsToRKEBins(TH1I *inputHisto, std::string name);
+TH1D* timeBinsToRKEBins(TH1D *inputHisto, std::string name);
 
 #endif

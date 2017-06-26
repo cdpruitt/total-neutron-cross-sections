@@ -1,0 +1,25 @@
+title             #sigma_{tot}(^{nat}Pb)
+plotLine          true
+lineColor         2
+lineWidth         3
+lineStyle         0
+plotPoint         true
+pointColor        2
+pointSize         0.9
+pointStyle        20 
+XAxisTitle        Time of Flight (ns)
+YAxisTitle        #sigma (barns)
+XAxisTitleOffset  1.08
+YAxisTitleOffset  0.85
+XAxisTitleSize    0.06
+YAxisTitleSize    0.06
+XAxisLabelOffset  0.01
+YAxisLabelOffset  0.01
+XAxisLabelSize    0.05
+YAxisLabelSize    0.05
+XAxisLabelFont    2
+YAxisLabelFont    2
+XAxisNDivisions   10
+YAxisNDivisions   10
+XAxisTickLength   0.03
+YAxisTickLength   0.02

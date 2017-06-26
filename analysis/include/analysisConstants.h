@@ -12,7 +12,7 @@
 // "Sync window" defines the acceptable time variation between consecutive macropulses
 // (with respect to the macropulse period) in order for those macropulses to be
 // considered still "in sync" with the macropulse period
-const double SYNC_WINDOW = 0.02; // as fraction of MACRO_PERIOD 
+const double SYNC_WINDOW = 0.04; // as fraction of MACRO_PERIOD 
 
 // "Target changer charge gates" are used to assign the target changer position
 // based on the target changer signal's integrated charge
@@ -29,17 +29,23 @@ const std::vector<std::pair<int,int>> tarGates = {
 const double SCALEDOWN = 1; // (for debugging) only sort (total/SCALEDOWN) events
 
 // experimentally-determined digitizer deadtime
-const int DEADTIME_PERIOD = 230; // in ns
+const int DEADTIME_PERIOD = 225; // in ns
+const int DEADTIME_TRANSITION_PERIOD = 8; // in ns
+
+const int TARGET_CHANGER_LED_THRESHOLD = 1500; // in ADC units
+const std::vector<int> tcFineTimeThresholds = {1000, 1750, 2650, 3600, 4400, 5250}; // in ADC units
 
 // Indicate the range of times considered to be gamma rays (for the purposes of
 // counting gamma rays)
-const double GAMMA_WINDOW[2] = {75,95};
+const double GAMMA_WINDOW[2] = {82,88};
 
 const std::vector<std::string> positionNames = {"blank", "target1", "target2", "target3", "target4", "target5"};
 
 const std::vector<std::string> targetNamesWaveform = {"blankWaveform", "shortCarbonWaveform", "longCarbonWaveform", "Sn112Waveform", "NatSnWaveform", "Sn124Waveform"}; 
 
-//const std::vector<std::string> detectorNames = {"highThresholdDet"};
-const std::vector<std::string> detectorNames = {"highThresholdDet","lowThresholdDet"};
+const std::vector<std::string> detectorNames = {"lowThresholdDet"};
+//const std::vector<std::string> detectorNames = {"highThresholdDet","lowThresholdDet"};
+
+const std::vector<double> manualTimeOffsets = {0, -0.7, -1.04, -1.23, -1.39, -1.44};
 
 #endif

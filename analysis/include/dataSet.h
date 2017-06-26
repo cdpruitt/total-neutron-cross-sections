@@ -28,6 +28,7 @@ class DataSet
         friend const DataSet operator-(const DataSet& set1, const DataSet& set2);
         friend const DataSet operator*(const DataSet& set1, const DataSet& set2);
         friend const DataSet operator/(const DataSet& set1, const DataSet& set2);
+        friend const DataSet correctCSUsingControl(const DataSet& dataSetToCorrect, const DataSet& correction);
 
         friend const DataSet operator*(const DataSet& multiplicand, const double multiplier);
         friend const DataSet operator/(const DataSet& dividend, const double divisor);

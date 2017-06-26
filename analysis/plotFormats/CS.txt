@@ -1,0 +1,9 @@
+title           #sigma_{tot}
+plotLine        true
+lineColor       2
+lineWidth       1
+plotPoint       true
+pointColor      2
+pointSize       0.1
+XAxisTitle      Time of Flight (ns)
+YAxisTitle      Counts

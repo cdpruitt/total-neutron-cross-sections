@@ -11,8 +11,8 @@
 
 const double TOF_LOWER_BOUND = 0;   // lower bound of cross-section plots
 const double TOF_UPPER_BOUND = MICRO_LENGTH; // upper bound of cross-section plots
-const int TOF_RANGE = TOF_UPPER_BOUND-TOF_LOWER_BOUND;
-const int TOF_BINS = 3600; // for plots with time units as abscissa
+const double TOF_RANGE = TOF_UPPER_BOUND-TOF_LOWER_BOUND;
+const int TOF_BINS = TOF_RANGE*20; // for plots with time units as abscissa
 
 const double ENERGY_LOWER_BOUND = 1.7;   // lower bound of cross-section plots, in MeV
 const double ENERGY_UPPER_BOUND = 800; // upper bound of cross-section plots, in MeV
