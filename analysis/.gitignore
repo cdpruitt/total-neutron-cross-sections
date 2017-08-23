@@ -1,11 +1,12 @@
 *
-*/
+!bin/
 !src/
-!old_src/
 !include/
 !plotFormats/
+!plots/
 !plotScripts/
-!prettyPrint/
+!textOutput/
+!utilityScripts/
 !*.sh
 !*.txt
 !README

@@ -1,63 +1,88 @@
+# Define important locations
 SHELL = /bin/sh
+BIN=./bin/
+SOURCE=./src/
+INCLUDE=./include/
+
+# Define compilation flags
 COMPILER= clang++ 
 CFLAGS= -lstdc++ -O2 -I$(shell root-config --incdir) -std=c++11 -ggdb
-SOURCES = src/branches.cpp src/dataPoint.cpp src/dataSet.cpp src/driver.cpp src/experiment.cpp src/histos.cpp src/plots.cpp src/raw.cpp src/separate.cpp src/target.cpp src/veto.cpp src/waveform.cpp src/waveformFitting.cpp
-HEADERS = $(shell echo include/*.h)
-OBJECTS = $(SOURCES:.c=.o)
 
+# For integration with ROOT data analysis framework
 LINKOPTION = $(shell root-config --libs)
 
-all: driver sumSingle sumAll text finetimeCheck readLitData subtractCS multiplyCS relativeCS relative generateCSCorrection scaledownCS produceRunningRMS createRelativeCS
+# List all targets
+TARGETS = driver sumSingle sumAll text finetimeCheck readLitData subtractCS multiplyCS relativeCS relative generateCSCorrection scaledownCS produceRunningRMS createRelativeCS
+all: $(addprefix $(BIN), $(TARGETS))
 
-driver: $(OBJECTS)
-	$(COMPILER) $(CFLAGS) -o driver $(OBJECTS) $(LINKOPTION)
+# Build driver (main data analysis engine)
+DRIVER_SOURCES = branches.cpp dataPoint.cpp dataSet.cpp driver.cpp experiment.cpp histos.cpp plots.cpp raw.cpp separate.cpp target.cpp veto.cpp waveform.cpp waveformFitting.cpp
 
-sumSingle: src/sumSingle.cpp src/dataSet.cpp src/dataPoint.cpp src/CSPrereqs.cpp src/experiment.cpp src/target.cpp src/crossSection.cpp src/plots.cpp
-	$(COMPILER) $(CFLAGS) -o sumSingle src/sumSingle.cpp src/dataSet.cpp src/dataPoint.cpp src/CSPrereqs.cpp src/experiment.cpp src/target.cpp src/crossSection.cpp src/plots.cpp $(LINKOPTION)
+$(BIN)driver: $(addprefix $(SOURCE), $(driver_SOURCES))
+	$(COMPILER) $(CFLAGS) -o $(BIN)driver $(addprefix $(SOURCE), $(driver_SOURCES)) $(LINKOPTION)
 
-sumAll: src/sumAll.cpp src/dataSet.cpp src/dataPoint.cpp src/CSPrereqs.cpp src/experiment.cpp src/target.cpp src/crossSection.cpp src/plots.cpp
-	$(COMPILER) $(CFLAGS) -o sumAll src/sumAll.cpp src/dataSet.cpp src/dataPoint.cpp src/CSPrereqs.cpp src/experiment.cpp src/target.cpp src/crossSection.cpp src/plots.cpp $(LINKOPTION)
+# Build sumSingle (for generating cross sections using data from a single run) 
+SUMSINGLE_SOURCES = sumSingle.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp
 
-readLitData: src/readLitData.cpp src/dataSet.cpp src/dataPoint.cpp
-	$(COMPILER) $(CFLAGS) -o readLitData src/readLitData.cpp src/dataSet.cpp src/dataPoint.cpp $(LINKOPTION)
+$(BIN)sumSingle: $(addprefix $(SOURCE), $(SUMSINGLE_SOURCES))
+	$(COMPILER) $(CFLAGS) -o $(BIN)sumSingle $(addprefix $(SOURCE), $(SUMSINGLE_SOURCES)) $(LINKOPTION)
 
-text: src/text.cpp src/raw.cpp src/branches.cpp
-	$(COMPILER) $(CFLAGS) -o text src/text.cpp src/raw.cpp src/branches.cpp $(LINKOPTION)
+# Build sumAll (for generating cross sections using data from all available runs)
+SUMALL_SOURCES = sumAll.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp
 
-finetimeCheck: src/finetimeCheck.cpp src/branches.cpp
-	$(COMPILER) $(CFLAGS) -o finetimeCheck src/finetimeCheck.cpp src/branches.cpp $(LINKOPTION)
+$(BIN)sumAll: $(addprefix $(SOURCE), $(SUMALL_SOURCES))
+	$(COMPILER) $(CFLAGS) -o $(BIN)sumAll $(addprefix $(SOURCE), $(SUMALL_SOURCES)) $(LINKOPTION)
 
-makeCSText: src/makeCSText.cpp src/dataPoint.cpp
-	$(COMPILER) $(CFLAGS) -o makeCSText src/makeCSText.cpp src/dataPoint.cpp $(LINKOPTION)
+# Build readLitData (for reading pre-formatted literature data into ROOT Graphs)
+$(BIN)readLitData: src/readLitData.cpp src/dataSet.cpp src/dataPoint.cpp
+	$(COMPILER) $(CFLAGS) -o $(BIN)readLitData src/readLitData.cpp src/dataSet.cpp src/dataPoint.cpp $(LINKOPTION)
 
-subtractCS: src/subtractCS.cpp src/dataSet.cpp src/dataPoint.cpp src/crossSection.cpp src/target.cpp src/plots.cpp
-	$(COMPILER) $(CFLAGS) -o subtractCS src/subtractCS.cpp src/dataSet.cpp src/dataPoint.cpp src/crossSection.cpp src/target.cpp src/plots.cpp $(LINKOPTION)
+# Build text (for producing human-readable dump of raw event file data)
+$(BIN)text: src/text.cpp src/raw.cpp src/branches.cpp
+	$(COMPILER) $(CFLAGS) -o $(BIN)text src/text.cpp src/raw.cpp src/branches.cpp $(LINKOPTION)
 
-multiplyCS: src/multiplyCS.cpp 
-	$(COMPILER) $(CFLAGS) -o multiplyCS src/multiplyCS.cpp src/dataSet.cpp src/dataPoint.cpp src/crossSection.cpp src/target.cpp src/plots.cpp $(LINKOPTION)
+# Build finetimeCheck (for comparing the timestamps of the same event, but recorded by different digitizer channels)
+$(BIN)finetimeCheck: src/finetimeCheck.cpp src/branches.cpp
+	$(COMPILER) $(CFLAGS) -o $(BIN)finetimeCheck src/finetimeCheck.cpp src/branches.cpp $(LINKOPTION)
 
-relativeCS: src/relativeCS.cpp
-	$(COMPILER) $(CFLAGS) -o relativeCS src/relativeCS.cpp src/dataSet.cpp src/dataPoint.cpp src/crossSection.cpp src/target.cpp src/plots.cpp $(LINKOPTION)
+# Build makeCSText (for writing graphed cross sections to formatted text files)
+$(BIN)makeCSText: src/makeCSText.cpp src/dataPoint.cpp
+	$(COMPILER) $(CFLAGS) -o $(BIN)makeCSText src/makeCSText.cpp src/dataPoint.cpp $(LINKOPTION)
 
-relative: src/dataPoint.cpp src/dataSet.cpp src/experiment.cpp src/crossSection.cpp src/relative.cpp
-	$(COMPILER) $(CFLAGS) -o relative src/dataPoint.cpp src/dataSet.cpp src/experiment.cpp src/crossSection.cpp src/relative.cpp $(LINKOPTION)
+# Build subtractCS (for taking the difference of two cross section graphs)
+$(BIN)subtractCS: src/subtractCS.cpp src/dataSet.cpp src/dataPoint.cpp src/crossSection.cpp src/target.cpp src/plots.cpp
+	$(COMPILER) $(CFLAGS) -o $(BIN)subtractCS src/subtractCS.cpp src/dataSet.cpp src/dataPoint.cpp src/crossSection.cpp src/target.cpp src/plots.cpp $(LINKOPTION)
 
-generateCSCorrection: src/generateCSCorrection.cpp
-	$(COMPILER) $(CFLAGS) -o generateCSCorrection src/generateCSCorrection.cpp src/dataSet.cpp src/dataPoint.cpp src/crossSection.cpp src/target.cpp src/plots.cpp $(LINKOPTION)
+# Build multiplyCS (for multiplying two cross section graphs)
+$(BIN)multiplyCS: src/multiplyCS.cpp 
+	$(COMPILER) $(CFLAGS) -o $(BIN)multiplyCS src/multiplyCS.cpp src/dataSet.cpp src/dataPoint.cpp src/crossSection.cpp src/target.cpp src/plots.cpp $(LINKOPTION)
 
-scaledownCS: src/scaledownCS.cpp src/dataSet.cpp
-	$(COMPILER) $(CFLAGS) -o scaledownCS src/scaledownCS.cpp src/dataSet.cpp src/dataPoint.cpp src/crossSection.cpp src/target.cpp src/plots.cpp $(LINKOPTION)
+# Build relativeCS (for calculating the relative difference of two cross section graphs)
+$(BIN)relativeCS: src/relativeCS.cpp
+	$(COMPILER) $(CFLAGS) -o $(BIN)relativeCS src/relativeCS.cpp src/dataSet.cpp src/dataPoint.cpp src/crossSection.cpp src/target.cpp src/plots.cpp $(LINKOPTION)
 
-produceRunningRMS: src/produceRunningRMS.cpp
-	$(COMPILER) $(CFLAGS) -o produceRunningRMS src/produceRunningRMS.cpp src/dataSet.cpp src/dataPoint.cpp src/crossSection.cpp src/target.cpp src/plots.cpp $(LINKOPTION)
+$(BIN)relative: src/dataPoint.cpp src/dataSet.cpp src/experiment.cpp src/crossSection.cpp src/relative.cpp
+	$(COMPILER) $(CFLAGS) -o $(BIN)relative src/dataPoint.cpp src/dataSet.cpp src/experiment.cpp src/crossSection.cpp src/relative.cpp $(LINKOPTION)
 
-createRelativeCS: src/createRelativeCS.cpp
-	$(COMPILER) $(CFLAGS) -o createRelativeCS src/createRelativeCS.cpp src/dataSet.cpp src/dataPoint.cpp src/crossSection.cpp src/target.cpp src/plots.cpp $(LINKOPTION)
+$(BIN)createRelativeCS: src/createRelativeCS.cpp
+	$(COMPILER) $(CFLAGS) -o $(BIN)createRelativeCS src/createRelativeCS.cpp src/dataSet.cpp src/dataPoint.cpp src/crossSection.cpp src/target.cpp src/plots.cpp $(LINKOPTION)
 
-%.o : %.cpp $(HEADERS)
-	$(COMPILER) $(CFLAGS) $< -o $@
+# Build generateCSCorrection (???)
+$(BIN)generateCSCorrection: src/generateCSCorrection.cpp
+	$(COMPILER) $(CFLAGS) -o $(BIN)generateCSCorrection src/generateCSCorrection.cpp src/dataSet.cpp src/dataPoint.cpp src/crossSection.cpp src/target.cpp src/plots.cpp $(LINKOPTION)
 
-#.PHONY: all
+# Build scaledownCS (for rebinning a cross section with a coarser bin size)
+$(BIN)scaledownCS: src/scaledownCS.cpp src/dataSet.cpp
+	$(COMPILER) $(CFLAGS) -o $(BIN)scaledownCS src/scaledownCS.cpp src/dataSet.cpp src/dataPoint.cpp src/crossSection.cpp src/target.cpp src/plots.cpp $(LINKOPTION)
+
+# Build produceRunningRMS (for plotting the running root-mean-squared difference between two cross
+# section graphs)
+$(BIN)produceRunningRMS: src/produceRunningRMS.cpp
+	$(COMPILER) $(CFLAGS) -o $(BIN)produceRunningRMS src/produceRunningRMS.cpp src/dataSet.cpp src/dataPoint.cpp src/crossSection.cpp src/target.cpp src/plots.cpp $(LINKOPTION)
+
+# Rule for building all targets
+%.o : %.cpp
+	$(COMPILER) $(CFLAGS) $< -o $@ $(LINKOPTION)
 
 clean:
 	rm -f *.o
