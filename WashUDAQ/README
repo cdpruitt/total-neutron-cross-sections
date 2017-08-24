@@ -1,8 +1,100 @@
-How to collect data
+----------------------------- WashUDAQ directory -------------------------------
+
+Contents:
+
+| install.sh
+| wudaq.sh
+|
+| stagingArea.txt
+| storageArea.txt
+| minFreeSpace.txt
+|
+| README
+|
+| firmware/
+| prodConfig/
+| testConfig/
+| documentation/
+
+
+Installing the DAQ software
+---------------------------
+
+Run the install script in this directory with the name of the DAQ version you
+want to install as an argument, e.g.:
+
+    ./install.sh washudaq-2.9-002
+
+
+Verifying/updating digitizer firmware
+---------------------------
+
+Download and run the CAENUpgrader (freely available from CAEN Company:
+www.caen.it). Follow CAENUpgrader documentation for firmware updates. Firmware
+files used in this analysis package are stored in
+
+    firmware/
+
+in this directory.
+
+
+Configuring your setup to start taking data
+-------------------------------------------
+
+The digitizer configuration is specified by 
+
+    config.txt
+    dppconfig.txt
+    waveformconfig.txt
+
+in the prodConfig and testConfig directories. When running in production mode,
+the configuration is read from the prodConfig directory. When running in test
+mode, the configuration is read from the testConfig directory.
+    
+During a run, data are directly recorded from the digitizer to a "staging area"
+(for fastest transfer from the digitizer). The staging area should be able to
+handle incoming data at rates well in excess of your expected average data rate
+to avoid bottlenecking. A staging area must be specified by the user in
+
+    stagingArea.txt
+    
+If a staging area is not specified by the user, wudaq.sh will abort before
+starting the run and complain that it doesn't know where to record data.
+
+After the end of the run, all data are moved to a "storage area" for
+offline analysis and long-term storage. This storage area should be large
+enough to store all run data for an experiment and must be specified by the
+user in
+
+    storageLocation.txt
+    
+If a suitable storage location is not specified by the user, wudaq.sh will not
+move data from the staging area to the storage area at the end of each run.
+Depending on the data rate, the staging area can quickly fill up with data and
+preclude new data acquisition.
+
+The minimum required free space in the staging and storage areas needed to start
+a new run (in MB) is specified in
+
+    minFreeSpace.txt
+
+If a minimum free space is not specified by the user OR the staging and storage
+areas don't have enough free space, wudaq.sh will abort before starting the run.
+
+
+Collecting data (i.e., "starting a run")
 ------------------------
 
-Run ./wudaq.sh to start recording data on the digitizer. Optionally, ./wudaq.sh
-can be run with the following arguments to modify its behavior:
+Running
+
+    ./wudaq.sh -p
+
+          OR
+
+    ./wudaq.sh -t
+    
+tells the digitizer to start a new run in either production (-p) or testing (-t)
+modes.
 
 -------------------------------------------------------------------------------
 | Flag  | Behavior                                                            | 
@@ -10,7 +102,7 @@ can be run with the following arguments to modify its behavior:
 | -p    | Production mode. This will prompt the user for important            |
 |       | experimental details about the run (e.g., voltages of the detectors |
 |       | how many sub-runs to attempt) and save them along with the config   |
-|       | files for the run (in ./prodConfig) for use in analysis.            |
+|       | files for the run for use in analysis.                              |
 |       | Data is recorded as several 'sub-runs' (individual files) under an  |
 |       | umbrella 'run' (a directory).                                       |
 --------+----------------------------------------------------------------------
@@ -18,21 +110,13 @@ can be run with the following arguments to modify its behavior:
 |       | user for a location where this test run should be stored.           |
 -------------------------------------------------------------------------------
 
-When data is recorded from the digitizer, it is first kept in a staging area,
-then moved to a storage location for more permanent storage. The filepaths for
-these locations is set in ./stagingLocation and ./storageLocation.
+Digitizer/WashUDAQ documentation
+-----------------------
+
+CAEN's documentation for the DT5730 digitizer and documentation of the WashUDAQ
+proprietary software (written by Ron Fox) are included in
+
+    documentation/
 
 
-Installing the DAQ software
----------------------------
 
-Run the ./install script in this directory, passing the name of the version to
-install as a parameter (e.g., ./install washudaq-2.9-002).
-
-
-Verifying/updating digitizer firmware
----------------------------
-
-Run the CAENUpgrader from the CAENUpgrader directory. Select the appropriate
-digitizer model and action (e.g., updating firmware) and indicate the location
-of the new firmware (if updating). Firmware files are stored in ./firmware.

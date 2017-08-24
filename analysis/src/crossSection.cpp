@@ -24,13 +24,11 @@
 
 using namespace std;
 
-CrossSection::CrossSection()
-{
-}
+CrossSection::CrossSection() {}
 
-void CrossSection::addDataSet(DataSet dataSet)
+void CrossSection::addDataSet(DataSet dS)
 {
-    this->dataSet = dataSet;
+    dataSet = dS;
 }
 
 void CrossSection::addDataPoint(DataPoint dataPoint)
@@ -40,7 +38,7 @@ void CrossSection::addDataPoint(DataPoint dataPoint)
 
 DataSet CrossSection::getDataSet()
 {
-    return this->dataSet;
+    return dataSet;
 }
 
 int CrossSection::getNumberOfPoints() const
@@ -61,7 +59,6 @@ DataPoint CrossSection::getDataPoint(int i) const
 
     return dataSet.getPoint(i);
 }
-
 
 vector<double> CrossSection::getEnergyValues() const
 {
@@ -492,9 +489,9 @@ CrossSection relativeCS(string firstCSFileName, string firstCSGraphName,
     return relDiffCS;
 }
 
-void generateCSCorrection(string CSCorrectionFileName, string CSCorrectionGraphName, string CSToBeCorrectedFileName, string CSToBeCorrectedGraphName, string outputFileName, string outputGraphName)
+void applyCSCorrectionFactor(string CSCorrectionFileName, string CSCorrectionGraphName, string CSToBeCorrectedFileName, string CSToBeCorrectedGraphName, string outputFileName, string outputGraphName)
 {
-    cout << "in generateCSCorrection" << endl;
+    cout << "in applyCSCorrectionFactor" << endl;
     // get CS correction graph
     TFile* CSCorrectionFile = new TFile(CSCorrectionFileName.c_str(),"READ");
     TGraphErrors* CSCorrectionGraph = (TGraphErrors*)CSCorrectionFile->Get(CSCorrectionGraphName.c_str());

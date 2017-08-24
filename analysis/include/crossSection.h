@@ -64,7 +64,7 @@ CrossSection relativeCS(std::string rawCSFileName, std::string rawCSGraphName,
                         std::string name // name given to output graph
                        );
 
-void generateCSCorrection(std::string CSCorrectionFilename, std::string CSCorrectionGraphName, std::string CSToBeCorrectedFilename, std::string CSToBeCorrectedGraphName, std::string outputFileName, std::string outputGraphName);
+void applyCSCorrectionFactor(std::string CSCorrectionFilename, std::string CSCorrectionGraphName, std::string CSToBeCorrectedFilename, std::string CSToBeCorrectedGraphName, std::string outputFileName, std::string outputGraphName);
 
 void scaledownCS(std::string CSToBeCorrectedFileName, std::string CSToBeCorrectedGraphName, int scaledown, std::string outputFileName, std::string outputGraphName);
 

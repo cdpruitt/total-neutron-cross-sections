@@ -29,9 +29,9 @@ correctedSn112GraphName="Sn112_corrected"
 correctedSnNatGraphName="SnNat_corrected"
 correctedSn124GraphName="Sn124_corrected"
 
-../generateCSCorrection "$expFile" "$correctionAverage" "$expFile" "$expSn112GraphName" "$correctedFile" "$correctedSn112GraphName"
-../generateCSCorrection "$expFile" "$correctionAverage" "$expFile" "$expSnNatGraphName" "$correctedFile" "$correctedSnNatGraphName"
-../generateCSCorrection "$expFile" "$correctionAverage" "$expFile" "$expSn124GraphName" "$correctedFile" "$correctedSn124GraphName"
+../applyCSCorrectionFactor "$expFile" "$correctionAverage" "$expFile" "$expSn112GraphName" "$correctedFile" "$correctedSn112GraphName"
+../applyCSCorrectionFactor "$expFile" "$correctionAverage" "$expFile" "$expSnNatGraphName" "$correctedFile" "$correctedSnNatGraphName"
+../applyCSCorrectionFactor "$expFile" "$correctionAverage" "$expFile" "$expSn124GraphName" "$correctedFile" "$correctedSn124GraphName"
 
 litFile="/data2/analysis/literatureData.root"
 litSnGraphName="Natural Sn (n,tot)"

@@ -2,7 +2,7 @@
  *
  * ./subtractCS [raw cross section filename] [raw cross section graph name]
  *              [subtrahend filename] [subtrahend graph name]
- *              [subtrahend] [multiplier] [output graph name]
+ *              [subtrahend factor] [result divisor] [output graph name]
  */
 
 #include "../include/dataSet.h"
