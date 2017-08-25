@@ -22,8 +22,6 @@
 
 using namespace std;
 
-long totalMicros = 0;
-
 extern ProcessedEvent procEvent;
 
 vector<TTree*> orchard; // holds DPP channel-specific trees
@@ -34,23 +32,20 @@ vector<TTree*> orchardW; // holds waveform-mode channel-specific trees
 // so that fillHistos can loop through all the trees and make the same histos
 // for each tree
 
-TDirectory *waveformsDir;
-
-const int SAMPLE_PERIOD_INT = 2;
-
-TH1D* convertTOFtoEn(TH1D* tof, string name)
+TH1D* convertTOFtoEnergy(TH1D* tof, string name)
 {
     if(!tof)
     {
-        cerr << "Error: cannot convert empty TOF histogram to energy units in convertTOFtoEn()" << endl;
+        cerr << "Error: cannot convert empty TOF histogram to energy units in convertTOFtoEnergy()" << endl;
         exit(1);
     }
 
     TRandom3 *randomizeBin = new TRandom3();
 
-    TH1D* en = timeBinsToRKEBins(tof, name); 
+    TH1D* energy = timeBinsToRKEBins(tof, name); 
 
     int tofBins = tof->GetNbinsX();
+
     for(int j=0; j<tofBins-1; j++)
     {
         // convert time into neutron velocity based on flight path distance
@@ -59,11 +54,11 @@ TH1D* convertTOFtoEn(TH1D* tof, string name)
         // convert velocity to relativistic kinetic energy
         double rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
 
-        en->Fill(rKE,tof->GetBinContent(j));
-        en->SetBinError(j,pow(en->GetBinContent(j),0.5));
+        energy->Fill(rKE,tof->GetBinContent(j));
+        energy->SetBinError(j,pow(energy->GetBinContent(j),0.5));
     }
 
-    return en;
+    return energy;
 }
 
 double applyDeadtimeCorrection(vector<double> deadtimesPerBin, TH1D*& correctedTOF)
@@ -573,7 +568,6 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
             totalMacros+=macrosPerTarget.back();
 
             microsPerTarget.push_back(macrosPerTarget.back()*(MACRO_LENGTH/MICRO_LENGTH));
-            totalMicros+=microsPerTarget.back();
         }
 
         histoFile->cd("/");
@@ -749,7 +743,7 @@ void fillBasicHistos(TFile* histoFile)
 
         cout << "Populating " << t->GetName() << " histograms..." << endl;
 
-        waveformsDir = (TDirectory*)gDirectory->Get("waveformsDir");
+        TDirectory* waveformsDir = (TDirectory*)gDirectory->Get("waveformsDir");
         waveformsDir->cd();
 
         double timeDiff = 0;

@@ -66,12 +66,8 @@
 
 using namespace std;
 
-extern RawEvent rawEvent; // defined in branches.cpp
-
-// keep track of event statistics
-long rawNumberOfEvents = 0;
-long rawNumberOfDPPs = 0;
-long rawNumberOfWaveforms = 0;
+extern RawEvent rawEvent; // struct for storing raw event data;
+                          // defined in branches.cpp
 
 // read a word off the input file and store in a variable
 bool readWord(ifstream& evtfile, unsigned int& variable)
@@ -206,19 +202,15 @@ bool readEvent(ifstream& evtfile)
     {
         return false;
     }
-
-    rawNumberOfEvents++;
     
     // start reading event body
     if(rawEvent.evtType==1)
     {
-        rawNumberOfDPPs++;
         return readDPPEventBody(evtfile);
     }
 
     if (rawEvent.evtType==2)
     {
-        rawNumberOfWaveforms++;
         return readWaveformEventBody(evtfile);
     }
 
@@ -271,10 +263,18 @@ void readRawData(string inFileName, string outFileName, vector<string> channelMa
     double prevTimetag = 0;
     int prevEvtType = 0;
 
+
+    // count the number of events processed
+    long rawNumberOfEvents = 0;
+    long rawNumberOfDPPs = 0;
+    long rawNumberOfWaveforms = 0;
+
     // start looping through the evtfile to extract events
     while(!inFile.eof())
     {
         readEvent(inFile);
+
+        rawNumberOfEvents++;
 
         // manually increment extended time, if necessary
         if((prevTimetag > (double)pow(2,32) - 50000000) &&
@@ -299,11 +299,13 @@ void readRawData(string inFileName, string outFileName, vector<string> channelMa
            
         if(rawEvent.evtType==1)
         {
+            rawNumberOfDPPs++;
             orchardSplit[rawEvent.chNo]->Fill();
         }
 
-        if(rawEvent.evtType==2)
+        else if(rawEvent.evtType==2)
         {
+            rawNumberOfWaveforms++;
             orchardSplitW[rawEvent.chNo]->Fill();
         }
 

@@ -3,61 +3,75 @@
 ################################################################################
 #                               analyze.sh                                     #
 ################################################################################
-
-# This script initiates data analysis. It decides which experimental
-# runs to analyze, then calls C++ programs to process those runs.
-# Several flags can be used with this script to manage this workflow:
+#
+# Running this script initiates data analysis. It decides which experimental
+# runs to analyze, then calls executables in bin/ to process those runs.
+# The flags listed below specify which runs should be analyzed and the type of
+# analysis to be performed on these runs.
+#
+# To specify which runs should be analyzed, use the following flags:
 #
 #  Flag |                           Description
 #-------+-----------------------------------------------------------------------
 #    -f | analyze a single event file, specified by the full filepath
-#       | (e.g., ./analyze -f path/to/input/file path/to/output/file)
+#       | ( ./analyze -f path/to/input/file path/to/output/file)
 #-------+-----------------------------------------------------------------------
 #    -s | analyze a single event file, specified by run and subrun numbers
-#       | (e.g., ./analyze -s <run number> <subrun number>)
+#       | ( ./analyze -s <run number> <subrun number>)
 #-------+-----------------------------------------------------------------------
 #    -c | analyze a chunk of subruns, specified by run, first, and last subruns
-#       | (e.g., ./analyze -s <run number> <subrun number>)
+#       | ( ./analyze -c <run number> <first subrun number> <last subrun number>)
 #-------+-----------------------------------------------------------------------
-#    -r | for each run given in ../<experiment>/runsToSort.txt, analyze the most
-#       | recent subrun
-#       | (e.g., ./analyze -r)
-#-------+-----------------------------------------------------------------------
-#    -a | if using -r, analyze ALL subruns in each run, not just the most recent
-#       | (e.g., ./analyze -ra)
-#-------+-----------------------------------------------------------------------
-#    -t | produce a formatted text file for each data channel, instead of analysis
-#       | (e.g., ./analyze -t)
-#-------+-----------------------------------------------------------------------
-#    -o | overwrite previous analysis histograms (use if analysis code has changed)
-#       | (e.g., ./analyze -o)
-#-------+-----------------------------------------------------------------------
-#    -w | overwrite previous waveform fitting (use if fitting code has changed)
-#       | (e.g., ./analyze -o)
+#    -r | analyze each run given in ../<experiment>/runsToSort.txt
+#       | ( ./analyze -r)
 #
-# Some flags can be combined for additional functionality (e.g., ./analyze -ro)
+# To specify how analysis should proceed, use the following flags:
+#
+#  Flag |                           Description
+#-------+-----------------------------------------------------------------------
+#    -n | normal analysis mode: start with the raw digitizer run data (.evt
+#       | file) and generate cross section graphs from DPP mode event data.
+#-------+-----------------------------------------------------------------------
+#    -t | diagnostic mode: produce a human-readable text dump for each digitizer
+#       | channel; do not produce cross sections or ROOT trees
+#-------+-----------------------------------------------------------------------
+#    -w | waveform analysis mode: 
+#       | 
+#-------+-----------------------------------------------------------------------
+#    -d | DPP waveform analysis mode:
+#       | 
+#
+# Examples:
+#
+#   ./analyze.sh -rn
+#   
+#   Using data from all runs listed in runsToSort.txt, produce cross sections
+#   from DPP event data.
+#
+#
+#   ./analyze.sh -ft myExperiment/1/data-0000.evt
+#
+#   Using the single data file myExperiment/1/data-0000.evt, produce human-
+#   readable text files for each digitizer channel for inspection. No cross
+#   sections, ROOT trees, or histograms will be created.
 #
 ################################################################################
 
 # SECTION 1: recompile analysis code
 
 make
-if [ "$?" != 0 ] # "$?" is return value of previous command
+if [ "$?" != 0 ]
 then
+    # Make failed: abort analysis
     echo "Compilation failed - correct errors in source code."
     exit $?
 fi
 
 ################################################################################
 
-# SECTION 2: process script flags
+# SECTION 2: process flags
 
-# Default analysis behavior is:
-#   - to analyze only the most-recently-modified subrun
-#   - not to produce text output of event data
-
-# Parse runtime flags
-while getopts "fscratow" opt; do
+while getopts "fscrnthw" opt; do
     case ${opt} in
         f)
             fullFilePath=true
@@ -69,29 +83,30 @@ while getopts "fscratow" opt; do
             runChunk=true
             ;;
         r)
-            runlist=true
+            runList=true
             ;;
-        a)
-            allSubruns=true
+        n)
+            normalMode=true
             ;;
         t)
             produceText=true
             ;;
-        o)  overwriteHistos=true
+        h)  
+            overwriteHistos=true
             ;;
         w)  overwriteWaveforms=true
             ;;
         \?)
-            # Flags unrecognized - exit script and give user help text
+            # Flags unrecognized - exit script and give the user a help message
             printf "\nInvalid flag given.\n\nValid flags are:\n"
             printf "    -f (analyze a single file, given as filepath)\n"
             printf "    -s (analyze a single file, given as runNumber subRunNumber)\n"
             printf "    -c (analyze a chunk of subruns, given as runNumber, first subRunNumber, last subRunNumber)\n"
             printf "    -r (analyze runs listed in ../<experiment>/runsToSort.txt)\n"
-            printf "    -a (if using -r, read ALL subruns in each run, not just the most recent)\n"
+            printf "    -n (normal analysis mode: produce cross sections)\n"
             printf "    -t (produce text output of event data instead of doing full analysis)\n"
-            printf "    -o (overwrite existing event histograms - use if analysis code has been changed)\n"
-            printf "    -w (overwrite existing waveform fits - use if waveform fitting code has been changed)\n"
+            printf "    -h (normal analysis mode, but overwrite existing histograms)\n"
+            printf "    -w (normal analysis mode, but overwrite existing waveform analysis)\n"
 
             exit
             ;;
@@ -159,6 +174,45 @@ then
     exit
 fi
 
+# Analyze a single event file, specified by its run number and subrun number
+if [ "$runSubrunPath" = true ]
+then
+    runNumber=$2
+    subrunNo=$3
+
+    # read input filepath and output filepath
+    while read l
+    do
+        filepaths=($l)
+        if [[ ${filepaths[0]} -le $runNumber && ${filepaths[1]} -ge $runNumber ]]
+        then
+            datapath=${filepaths[2]}
+            outpath=${filepaths[3]}
+            break
+        fi
+    done < ../"$experiment"/filepaths.txt
+
+    if [[ $datapath == "" ]]
+    then
+        echo "Failed to find filepath to input data. Exiting..."
+        exit
+    fi
+
+    inputFileName="$datapath/output/$runNumber/data-$subrunNo.evt"
+    outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
+
+    printf "\nSorting single sub-run $inputFileName\n"
+
+    # Start analysis
+    analyze "$inputFileName" "$outputDirectoryName" "$runNumber"
+
+    # Make cross sections from this single subrun
+    #./sumSingle "$outpath"/analysis "$experiment" "histos" "$runNumber" "$subrunNo"
+    exit
+fi
+
+# Analyze a chunk of subruns in a run, specified by the run, the first subrun to
+# analyze, and the last subrun to analyze
 if [ "$runChunk" = true ]
 then
     printf "\nAnalyzing chunk of subruns in $2...\n"
@@ -205,49 +259,10 @@ then
     exit
 fi
 
-
-
-# Analyze a single event file, specified by its run number and subrun number
-if [ "$runSubrunPath" = true ]
-then
-    runNumber=$2
-    subrunNo=$3
-
-    # read input filepath and output filepath
-    while read l
-    do
-        filepaths=($l)
-        if [[ ${filepaths[0]} -le $runNumber && ${filepaths[1]} -ge $runNumber ]]
-        then
-            datapath=${filepaths[2]}
-            outpath=${filepaths[3]}
-            break
-        fi
-    done < ../"$experiment"/filepaths.txt
-
-    if [[ $datapath == "" ]]
-    then
-        echo "Failed to find filepath to input data. Exiting..."
-        exit
-    fi
-
-    inputFileName="$datapath/output/$runNumber/data-$subrunNo.evt"
-    outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
-
-    printf "\nSorting single sub-run $inputFileName\n"
-
-    # Start analysis
-    analyze "$inputFileName" "$outputDirectoryName" "$runNumber"
-
-    # Make cross sections from this single subrun
-    #./sumSingle "$outpath"/analysis "$experiment" "histos" "$runNumber" "$subrunNo"
-    exit
-fi
-
 # Analyze runs listed in runsToSort.txt
-if [[ $runlist = true && -a ../$experiment/runsToSort.txt ]]
+if [[ $runList = true && -a ../$experiment/runsToSort.txt ]]
 then
-    printf "\nRunlist mode enabled. Reading runs from ./runsToSort.txt...\n"
+    printf "\nRunList mode enabled. Reading runs from ./runsToSort.txt...\n"
 
     # loop through all runs listed in runsToSort.txt
     while read runNumber; do
@@ -281,56 +296,42 @@ then
         printf "\n     Reading subruns from $runNumber"
         printf "\n************************************\n"
 
-        # Check to see if all subruns should be analyzed, or just one
-        if [ "$allSubruns" = true ]
-        then
-            # Sort all sub-runs in the specified run directory
-            for f in "$datapath"/output/"$runNumber"/data-*;
-            do
-                subrunNo=$(echo $f | egrep -o '[0-9]+' | tail -1)
-                inputFileName="$datapath/output/$runNumber/data-$subrunNo.evt"
-
-                # Skip subruns on the blacklist
-                skip=false
-                while read l
-                do
-                    if [[ "$runNumber-$subrunNo" == "$l" ]]
-                    then
-                        echo "Found sub-run "$l" on blacklist; skipping..."
-                        skip=true
-                        break
-                    fi
-                done < ../$experiment/blacklist.txt
-                if [ $skip == true ]
-                then
-                    continue
-                fi
-
-                outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
-                printf "\n\n***Starting sort of sub-run $subrunNo***\n"
-                analyze "$inputFileName" "$outputDirectoryName" "$runNumber"
-
-                # Skip subruns < 1GB in size
-                runSize=$(du -k "$inputFileName" | cut -f 1)
-                #if [ "$runSize" -lt 1000000 ]
-                #then
-                #    printf "$inputFileName is less than 1 GB in size; ignoring...\n"
-                #    continue
-                #fi
-
-            done
-
-        else
-            # Sort just the most recent sub-run in the specified run directory
-            subrunNo=$(ls -t "$datapath/output/$runNumber/data-*" | head -1 | egrep\
-                -o '[0-9]+' | tail -1)
+        # Sort all sub-runs in the specified run directory
+        for f in "$datapath"/output/"$runNumber"/data-*;
+        do
+            subrunNo=$(echo $f | egrep -o '[0-9]+' | tail -1)
             inputFileName="$datapath/output/$runNumber/data-$subrunNo.evt"
-            outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
-            printf "\n***Starting sort of sub-run $subrunNo***\n"
 
-            # Sort sub-run
-            analyze "$inputFileName" "$outputDirectoryName"
-        fi
+            # Skip subruns on the blacklist
+            skip=false
+            while read l
+            do
+                if [[ "$runNumber-$subrunNo" == "$l" ]]
+                then
+                    echo "Found sub-run "$l" on blacklist; skipping..."
+                    skip=true
+                    break
+                fi
+            done < ../$experiment/blacklist.txt
+            if [ $skip == true ]
+            then
+                continue
+            fi
+
+            outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
+            printf "\n\n***Starting sort of sub-run $subrunNo***\n"
+            analyze "$inputFileName" "$outputDirectoryName" "$runNumber"
+
+            # Skip subruns < 1GB in size
+            runSize=$(du -k "$inputFileName" | cut -f 1)
+            #if [ "$runSize" -lt 1000000 ]
+            #then
+            #    printf "$inputFileName is less than 1 GB in size; ignoring...\n"
+            #    continue
+            #fi
+
+        done
+
     done < ../"$experiment"/runsToSort.txt
 
     # Sum data from all subruns to make cross sections
@@ -340,22 +341,3 @@ then
     #./sumAll "$outpath"/analysis "$experiment" "DPPwaveform" "histos"
     exit
 fi
-
-# Default behavior: sort only the most recent run (as determined by files
-# modified in defaultFilepath.txt in the experiment directory)
-
-echo "$experiment"
-read -r filepaths<../"$experiment"/defaultFilepath.txt
-datapath=${filepaths[0]}
-outpath=${filepaths[1]}
-
-# Find highest-numbered run directory in datapath
-runNumber=$(ls -t $datapath/output | head -1)
-subrunNo=$(ls -t $datapath/output/$runNumber/data-* | head -1 | egrep\
-    -o '[0-9]+' | tail -1)
-inputFileName="$datapath/output/$runNumber/data-$subrunNo.evt"
-outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
-printf "\nSorting most recent run $outputDirectoryName\n"
-
-# Start sort
-analyze "$inputFileName" "$outputDirectoryName"

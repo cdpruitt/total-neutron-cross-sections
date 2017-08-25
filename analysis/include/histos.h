@@ -5,6 +5,6 @@
 #include "plots.h"
 
 int histos(std::string sortedFileName, std::string vetoedFileName, std::string histoFileName, std::vector<std::string> channelMap);
-TH1D* convertTOFtoEn(TH1D* tof, std::string name);
+TH1D* convertTOFtoEnergy(TH1D* tof, std::string name);
 
 #endif

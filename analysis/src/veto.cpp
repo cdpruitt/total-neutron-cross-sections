@@ -11,7 +11,7 @@ extern ProcessedEvent vetoEvent;
 
 using namespace std;
 
-double VETO_WINDOW = 10; // in ns
+const double VETO_WINDOW = 20; // in ns
 
 void vetoEvents(string sortedFileName, string vetoedFileName, vector<string> eventTreeNames, string vetoTreeName)
 {

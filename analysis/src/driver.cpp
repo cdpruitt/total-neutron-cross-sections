@@ -7,7 +7,6 @@
 #include "../include/histos.h"
 #include "../include/plots.h"
 #include "../include/waveform.h"
-//#include "../include/crossSection.h"
 #include "../include/veto.h"
 #include "../include/experiment.h"
 
@@ -23,11 +22,10 @@
 
 using namespace std;
 
-
 int main(int, char* argv[])
 {
     /*************************************************************************/
-    /* Set up input/output filenames */
+    /* Figure out where analysis input/output should be */
     /*************************************************************************/
 
     // location of digitizer-produced data file
@@ -35,27 +33,50 @@ int main(int, char* argv[])
 
     // location of directory where all analysis output will be stored
     string analysisDirectory = argv[2];
- 
+
     // location of experimental configuration files
     string experimentName = argv[3];
 
+
+    /*************************************************************************/
+    /* Configure how this run should be analyzed */
+    /*************************************************************************/
+
+    // read the mapping from detectors to digitizer channels
+    // (see <experiment-name>/channelMap.txt).
     int runNumber = atoi(argv[4]);
-
-    // create names of all output files
-    string rawTreeFileName = analysisDirectory + "raw.root";
-    string sortedFileName = analysisDirectory + "sorted.root";
-    string vetoedFileName = analysisDirectory + "vetoed.root";
-    string histoFileName = analysisDirectory + "histos.root";
-    string waveformFileName = analysisDirectory + "waveform.root";
-    string DPPWaveformFileName = analysisDirectory + "DPPwaveform.root";
-    string errorFileName = analysisDirectory + "error.txt";
-
     vector<string> channelMap = getChannelMap(experimentName, runNumber);
+
+    // toggle use of the charged-particle veto paddle to reject DPP events
+    string useVetoPaddleString = argv[5];
+    bool useVetoPaddle = false;
+    if(useVetoPaddleString=="true")
+    {
+        useVetoPaddle = true;
+    }
+
+    // toggle use of waveform event data during analysis
+    string processWaveformEventsString = argv[6];
+    bool processWaveformEvents = false;
+    if(processWaveformEventsString=="true")
+    {
+        processWaveformEvents = true;
+    }
+
+    // toggle use of DPP wavelet data during analysis
+    string processDPPWaveformEventsString = argv[7];
+    bool processDPPWaveformEvents = false;
+    if(processDPPWaveformEventsString=="true")
+    {
+        processDPPWaveformEvents = true;
+    }
 
     /*************************************************************************/
     /* Start analysis:
-     * Separate raw event data by channel and event type into ROOT trees */
+     * Separate raw event data by channel and event type and store the results
+     * into ROOT trees */
     /*************************************************************************/
+    string rawTreeFileName = analysisDirectory + "raw.root";
     ifstream f(rawTreeFileName);
     if(!f.good())
     {
@@ -70,8 +91,9 @@ int main(int, char* argv[])
     }
 
     /*************************************************************************/
-    /* Process raw events: assign time and target data */
+    /* Assign macropulse number to each event */
     /*************************************************************************/
+    string sortedFileName = analysisDirectory + "sorted.root";
     ifstream p(sortedFileName);
     if(!p.good())
     {
@@ -86,65 +108,74 @@ int main(int, char* argv[])
     }
 
     /*************************************************************************/
-    /* Eliminate detector events using the veto paddle */
+    /* Veto detector events using the charged-particle paddle */
     /*************************************************************************/
-    /*ifstream v(vetoedFileName);
-    if(!v.good())
+    string vetoedFileName = analysisDirectory + "vetoed.root";
+    if(useVetoPaddle)
     {
-        vetoEvents(sortedFileName, vetoedFileName, detectorNames, "veto");
+        ifstream v(vetoedFileName);
+        if(!v.good())
+        {
+            vetoEvents(sortedFileName, vetoedFileName, detectorNames, "veto");
+        }
+
+        else
+        {
+            cout << "Vetoed data tree already exists." << endl;
+            v.close();
+        }
     }
 
-    else
-    {
-        cout << "Vetoed data tree already exists." << endl;
-        v.close();
-    }*/
-
     /*************************************************************************/
-    /* Process waveform data */
+    /* Process waveform events */
     /*************************************************************************/
-
-    /*ifstream w(waveformFileName);
-    if(!w.good())
+    if(processWaveformEvents)
     {
-        waveform(sortedFileName, waveformFileName, channelMap, "waveform");
+        string waveformFileName = analysisDirectory + "waveform.root";
+        ifstream w(waveformFileName);
+        if(!w.good())
+        {
+            waveform(sortedFileName, waveformFileName, channelMap, "waveform");
+        }
+
+        else
+        {
+            cout << "Waveform events already processed." << endl;
+            w.close();
+        }
     }
 
-    else
-    {
-        cout << "Waveform data already processed." << endl;
-        w.close();
-    }*/
-
     /*************************************************************************/
-    /* Process DPP waveform data */
+    /* Process DPP waveform events */
     /*************************************************************************/
-
-    /*ifstream dppW(DPPWaveformFileName);
-
-    if(!dppW.good())
+    if(processDPPWaveformEvents)
     {
-        waveform(sortedFileName, DPPWaveformFileName, channelMap, "DPP");
+        string DPPWaveformFileName = analysisDirectory + "DPPwaveform.root";
+        ifstream dppW(DPPWaveformFileName);
+        if(!dppW.good())
+        {
+            waveform(sortedFileName, DPPWaveformFileName, channelMap, "DPP");
+        }
+
+        else
+        {
+            cout << "DPP waveform events already processed." << endl;
+            dppW.close();
+        }
     }
 
-    else
-    {
-        cout << "DPP waveform data already processed." << endl;
-        dppW.close();
-    }*/
-
     /*************************************************************************/
-    /* Process events into histograms in preparation for cross section
+    /* Populate each event into TOF histograms in preparation for cross section
      * calculation */
     /*************************************************************************/
+    string histoFileName = analysisDirectory + "histos.root";
     ifstream h(histoFileName);
     if(!h.good())
     {
         //Uncomment to use vetoed trees
-        //histos(sortedFileName, vetoedFileName, histoFileName, channelMap);
+        histos(sortedFileName, vetoedFileName, histoFileName, channelMap);
         //Uncomment to use unvetoed trees
-        histos(sortedFileName, sortedFileName, histoFileName, channelMap);
-
+        //histos(sortedFileName, sortedFileName, histoFileName, channelMap);
 
         /*************************************************************************/
         /* Process events into histograms in preparation for cross section
@@ -162,7 +193,7 @@ int main(int, char* argv[])
             {
                 string histoName = positionName + "TOF";
                 TH1D* tof = (TH1D*)gDirectory->Get(histoName.c_str());
-                convertTOFtoEn(tof, positionName + "CorrectedEnergy");
+                convertTOFtoEnergy(tof, positionName + "CorrectedEnergy");
             }
         }
 
@@ -175,6 +206,6 @@ int main(int, char* argv[])
         cout << "Histos already exist." << endl;
         h.close();
     }
-    
+
     return 0;
 }

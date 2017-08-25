@@ -1,23 +1,26 @@
 ********************************************************************************
-                               Data analysis overview
+                             Data analysis overview
 ********************************************************************************
 
-Data analysis converts a raw data file from the digitizer into cross sections
-for each target, plus several diagnostic plots. This is accomplished by
-producing a series of ROOT files, each building on the analysis completed in the
-previous step.
+The goal of data analysis is to convert raw run data from the digitizer into
+cross sections for each target. In addition, this directory contains several
+diagnostic and plotting tools.
 
-The workflow is as follows:
+The ROOT data analysis framework is required to compile and use the analysis
+code in this directory. Histograms, graphs, and trees representing experimental
+data and results are stored in .root files. Each step of data analysis maps
+an input file to a ROOT file, which is in turn the starting point for the next
+step of analysis, as follows:
 
   Data file     | Contents                                                      
 ----------------+---------------------------------------------------------------
-1) .evt file    | This is the raw data format produced by the digitizer.       
+1) .evt file    | This is the raw run data produced by the digitizer.       
 ----------------+---------------------------------------------------------------
-2) raw.root     | All data from the .evt file, translated into a ROOT tree.    
+2) raw.root     | Data from the .evt file is stored as a ROOT tree.    
 ----------------+---------------------------------------------------------------
-3) sorted.root  | Data from raw.root separated by channel and event type, with 
-                | each event uniquely identified by its macropulse and event   
-                | number within that macropulse.                               
+3) sorted.root  | Data from raw.root is separated by channel and event type,
+                | with each event uniquely identified by its macropulse and
+                | order within that macropulse.                               
 ----------------+---------------------------------------------------------------
 4a) histos.root | DPP-mode data from sorted.root is populated into histograms,
                 | some useful for calculating the cross section and some for
@@ -40,10 +43,7 @@ This tiered approach requires more disk space (the ROOT files contain redundant
 data), but it allows for re-analyzing to be much faster (e.g., once sorted.root
 has been produced, subsequent analysis starts there instead of the beginning).
 
-
-The following lists all C++ executables available for analysis:
-
-File          | Function
+Executable    | Function
 --------------+-----------------------------------------------------------------
 driver        | The main function for conducting analysis. This manages file
               | input/output and calls appropriate sub-routines that produce the
@@ -63,3 +63,4 @@ finetimeCheck | Creates plots showing the time delay between events on two
 --------------+-----------------------------------------------------------------
 readLitData   | Reads in literature data and creates cross section plots,
               | allowing comparison with previous results
+

@@ -27,18 +27,6 @@ extern SeparatedEvent separatedEvent;
 extern ProcessedEvent procEvent;
 extern TargetChangerEvent tcEvent;
 
-void fillRawTreeW(TTree* tree)
-{
-    // To save only 1 DPP event's waveform in every 10000 events, uncomment this
-    // (Note - will reduce output tree size by ~half)
-    /*if ((int)completeTime%10000 != 0 && evtType==1)
-      {
-      waveform->clear(); 
-      }*/
-
-    tree->Fill();
-}
-
 // Use the lgQ from the target changer to determine the target position
 int assignTargetPos(int lgQ)
 {
@@ -79,7 +67,7 @@ void addDetectorEvent(long evtNo, TTree* detectorTree)
     procEvent.waveform = separatedEvent.waveform;
 
     // only add events that come while beam is on, during the macropulse 
-/*    double timeDiff = procEvent.completeTime-tcEvent.macroTime;
+    /*double timeDiff = procEvent.completeTime-tcEvent.macroTime;
     if (timeDiff < 0 && timeDiff > MACRO_LENGTH)
     {
         return;

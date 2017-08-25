@@ -1,0 +1,7 @@
+litCarbonTotalXS.dat
+litNatNTotalXS.dat
+litNatOTotalXS.dat
+litNatNiTotalXS.dat
+litNi58TotalXS.dat
+litNi64TotalXS.dat
+litNatPbTotalXS.dat
