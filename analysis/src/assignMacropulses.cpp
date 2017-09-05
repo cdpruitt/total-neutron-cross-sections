@@ -1,7 +1,7 @@
 /******************************************************************************
-                               separate.cpp 
+                         assignMacropulses.cpp 
 ******************************************************************************/
-// separate.cpp takes a ROOT tree containing all events as input (from ./raw),
+// This method takes a ROOT tree containing all events as input (from ./raw),
 // and splits it into channel-specific ROOT trees. and assigns each event to a
 // macropulse in preparation for producing cross section plots.
 
@@ -18,7 +18,7 @@
 #include "../include/dataStructures.h"
 #include "../include/analysisConstants.h"
 #include "../include/physicalConstants.h"
-#include "../include/separate.h"
+#include "../include/assignMacropulses.h"
 #include "../include/branches.h"
 
 using namespace std;
@@ -84,32 +84,15 @@ void addDetectorEvent(long evtNo, TTree* detectorTree)
     detectorTree->Fill();
 }
 
-double calculateFineTime(vector<int>* waveform, int targetPos)
+double calculateFineTime(vector<int>* waveform)
 {
-    int triggerSample = 0;
-    double fineTime = 0;
-
     for(int i=0; i<waveform->size(); i++)
     {
-        /*if(waveform->at(i)>tcFineTimeThresholds[targetPos-1])
-        {
-            return i-triggerSample+SAMPLE_PERIOD*
-                (double)(tcFineTimeThresholds[targetPos-1]-waveform->at(i-1))/
-                (double)(waveform->at(i)-waveform->at(i-1));
-        }*/
-
-        /*if(waveform->at(i)>tcFineTimeThresholds[targetPos-1])
-        {
-            return SAMPLE_PERIOD*(double)(tcFineTimeThresholds[targetPos-1]-waveform->at(i-1))/
-                   (double)(waveform->at(i)-waveform->at(i-1));
-        }*/
-
         if(waveform->at(i)>TARGET_CHANGER_LED_THRESHOLD)
         {
-            return SAMPLE_PERIOD*(i-25+(double)(TARGET_CHANGER_LED_THRESHOLD-waveform->at(i-1))/
+            return SAMPLE_PERIOD*(i+(double)(TARGET_CHANGER_LED_THRESHOLD-waveform->at(i-1))/
                    (double)(waveform->at(i)-waveform->at(i-1)));
         }
-
     }
     
     cerr << "Error: failed to calculate a fine time for target changer waveform." << endl;
@@ -184,7 +167,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                 // calculate fine time of target changer
                 if(tcEvent.targetPos>0)
                 {
-                    separatedEvent.fineTime = calculateFineTime(separatedEvent.waveform, tcEvent.targetPos);
+                    separatedEvent.fineTime = calculateFineTime(separatedEvent.waveform);
                 }
 
                 tcEvent.macroTime = (double)pow(2,32)*separatedEvent.extTime + separatedEvent.timetag + separatedEvent.fineTime;
@@ -464,121 +447,6 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
     fineTimeHTarget3->Write();
     fineTimeHTarget4->Write();
     fineTimeHTarget5->Write();
-
-    sortedFile->Close();
-}
-
-// Populate events from the input tree into channel-specific trees.
-void separateByChannel(string rawFileName, string sortedFileName, vector<string>& channelMap)
-{
-    cout << "Separating events by channel and event type..." << endl;
-
-    // open the input file
-    TFile* rawFile = new TFile(rawFileName.c_str(),"READ");
-    TTree* inputTree = (TTree*)rawFile->Get("tree");
-
-    if(!rawFile->Get("tree"))
-    {
-        cerr << "Error: failed to find raw tree in " << rawFileName << endl;
-        exit(1);
-    }
-
-    // if no channel mapping can be established for this run, no separation can
-    // be done - exit
-    if(!channelMap.size())
-    {
-        cerr << "Error: failed to establish channel mapping for this run. Exiting..." << endl;
-        exit(1);
-    }
-
-    // link the tree from the input file to our event variables
-    setBranchesSeparated(inputTree);
-
-    int totalEntries = inputTree->GetEntries();
-
-    totalEntries /= SCALEDOWN; // for debugging:
-                               // use to separate only a subset of total
-                               // events and ignore the rest
-
-    // create an output file
-    TFile* sortedFile = new TFile(sortedFileName.c_str(),"CREATE");
-    vector<TTree*> orchardProcessed; // channel-specific DPP events assigned to macropulses
-    vector<TTree*> orchardProcessedW;// channel-specific waveform events assigned to macropulses
-
-    // Create trees to be filled with sorted data
-    // Each channel has a separate tree for DPP data and for waveform mode data
-    for(int i=0; (size_t)i<channelMap.size(); i++)
-    {
-        orchardProcessed.push_back(new TTree((channelMap[i]).c_str(),""));
-        orchardProcessedW.push_back(new TTree((channelMap[i]+"W").c_str(),""));
-
-        if(i==0)
-        {
-            branchTargetChanger(orchardProcessed[i]);
-            orchardProcessed[i]->SetDirectory(sortedFile);
-            continue;
-        }
-
-        if(channelMap[i]=="-")
-        {
-            continue;
-        }
-
-        branchProc(orchardProcessed[i]);
-        orchardProcessed[i]->SetDirectory(sortedFile);
-
-        branchProcW(orchardProcessedW[i]);
-        orchardProcessedW[i]->SetDirectory(sortedFile);
-    }
-
-    for (int index=0; index<totalEntries; index++)
-    {
-        inputTree->GetEntry(index);
-        
-        if(separatedEvent.evtType==1)
-        {
-            // DPP mode
-            orchardProcessed[separatedEvent.chNo]->Fill();
-
-            /*case 0:
-            // target changer event
-            addTCEvent(evtNo, extTime, orchardProcessed[separatedEvent.chNo]);
-            break;
-            case 2:
-            // clear finetime for monitor events!
-            separatedEvent.fineTime=0;
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            addDetectorEvent(evtNo, extTime, separatedEvent.chNo, 
-            orchardProcessed[separatedEvent.chNo]);
-            break;
-            */
-        }
-
-        else if(separatedEvent.evtType==2)
-        {
-            cout << separatedEvent.evtType << endl;
-            // Waveform mode
-            orchardProcessedW[separatedEvent.chNo]->Fill();
-        }
-    }
-
-    cout << "Separated " << totalEntries << " events into channels." << endl;
-
-    rawFile->Close();
-    sortedFile->cd();
-
-    for(TTree* tree : orchardProcessed)
-    {
-        tree->Write();
-    }
-
-    for(TTree* tree : orchardProcessedW)
-    {
-        tree->Write();
-    }
 
     sortedFile->Close();
 }

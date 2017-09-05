@@ -3,7 +3,7 @@
 #include "../include/plottingConstants.h"
 
 #include "../include/raw.h"
-#include "../include/separate.h"
+#include "../include/assignMacropulses.h"
 #include "../include/histos.h"
 #include "../include/plots.h"
 #include "../include/waveform.h"

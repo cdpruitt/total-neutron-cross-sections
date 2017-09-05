@@ -44,6 +44,10 @@
 #include "TTree.h"
 
 #include "../include/dataStructures.h"
+#include "../include/raw.h"
+#include "../include/assignMacropulses.h"
+#include "../include/experiment.h"
+
 
 using namespace std;
 
@@ -59,76 +63,70 @@ unsigned int channelCoin = 1; // used to keep track of coincidence between chann
 // Create histograms for DPP data
 TH2S* FTLR;
 
-double leftChannelTime;
-double rightChannelTime;
-double leftChannelFinetime;
-double rightChannelFinetime;
+const unsigned int NUMBER_OF_EVENTS = 10000;
 
-void compareFineTimes(int numberOfEvents, TTree* tree)
+int main(int argc, char** argv)
 {
-    FTLR = new TH2S("outFTLR","outFTLR",1023,0,2,1023,0,2); // a ROOT plot to show fine time (FT) of events
+    string inFileName = argv[1];
+    ifstream inFile;
+    inFile.open(inFileName,ios::binary);
+
+    if (!inFile)
+    {
+        cout << "Failed to open " << inFileName << ". Please check that the file exists" << endl;
+        exit(1);
+    }
+
+    cout << inFileName << " opened successfully." << endl;
+
+    // get channel mapping to ID the two arms of the main detector
+    string experimentName = argv[2];
+    unsigned int runNumber =  stoi(argv[3]);
+    vector<string> channelMap = getChannelMap(experimentName, runNumber);
+
+    // create a ROOT file for holding time check plots
+    TFile *file; 
+    file = new TFile("output/fineTimeCheck.root","RECREATE");
+
+    FTLR = new TH2S("leftDet","rightDet",200,0,2,200,0,2); // a ROOT plot to show fine time (FT) of events
     FTLR->SetMarkerStyle(20);
 
     // create text output to examine time differences from one event to the next
     ofstream timeDiff ("output/timeDiff.txt");
 
-    int totalEntries = tree->GetEntries();
-    if(totalEntries>numberOfEvents)
+    unsigned int numberOfEventsProcessed = 0;
+
+    unsigned int ch6Timetag = 0;
+    vector<int>* ch6Waveform;
+
+    unsigned int ch7Timetag = 0;
+    vector<int>* ch7Waveform;
+
+    while(!inFile.eof() && numberOfEventsProcessed < NUMBER_OF_EVENTS)
     {
-        totalEntries = numberOfEvents;
-    }
-
-    for(int i=0; i<totalEntries; i++)
-    {
-        tree->GetEntry(i);
-        if(rawEvent.chNo==6)
+        if(readEvent(inFile))
         {
-            leftChannelTime = rawEvent.timetag;
-            leftChannelFinetime = ((double)2000/1024)*rawEvent.fineTime;
-        }
+            if(rawEvent.chNo==6)
+            {
+                ch6Timetag = rawEvent.timetag;
+                ch6Waveform = rawEvent.waveform;
+            }
 
-        if(rawEvent.chNo==7)
-        {
-            rightChannelTime = rawEvent.timetag;
-            rightChannelFinetime = ((double)2000/1024)*rawEvent.fineTime;
-        }
+            if(rawEvent.chNo==7)
+            {
+                ch7Timetag = rawEvent.timetag;
+                ch7Waveform = rawEvent.waveform;
+            }
 
-        if(leftChannelTime == rightChannelTime)
-        {
-            FTLR->Fill(leftChannelFinetime,rightChannelFinetime);
+            if(ch6Timetag==ch7Timetag)
+            {
+                FTLR->Fill(calculateFineTime(ch6Waveform),
+                calculateFineTime(ch7Waveform));
+            }
         }
-
-        cout << "left finetime = " << rawEvent.chNo << endl;
     }
-}
-
-int main(int, char* argv[])
-{
-    cout << setprecision(10);
-
-    int numberOfEvents = atoi(argv[2]);
-
-    string rawFileName = argv[1];
-
-    TFile* rawFile = new TFile(rawFileName.c_str(),"READ");
-    TTree* tree = (TTree*)rawFile->Get("tree");
-
-    if(!rawFile->Get("tree"))
-    {
-        cerr << "Error: failed to find raw tree in " << rawFileName << endl;
-        exit(1);
-    }
-
-    // link the tree from the input file to our event variables
-    tree->SetBranchAddress("chNo",&rawEvent.chNo);
-    tree->SetBranchAddress("timetag",&rawEvent.timetag);
-    tree->SetBranchAddress("fineTime",&rawEvent.fineTime);
-
-    // create a ROOT file
-    TFile *file; 
-    file = new TFile("output/finetimeCheck.root","RECREATE");
-
-    compareFineTimes(numberOfEvents, tree);
 
     file->Write();
+
+    return 0;
 }

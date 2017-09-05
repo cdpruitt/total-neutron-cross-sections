@@ -15,11 +15,11 @@ LINKOPTION = $(shell root-config --libs)
 ############################### DEFINE TARGETS #################################
 
 # List all targets
-TARGETS = driver sumSingle sumAll text finetimeCheck readLitData subtractCS multiplyCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS
+TARGETS = driver sumSingle sumAll text fineTimeCheck readLitData subtractCS multiplyCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS
 all: $(addprefix $(BIN), $(TARGETS))
 
 # Build driver (main data analysis engine)
-DRIVER_SOURCES = branches.cpp dataPoint.cpp dataSet.cpp driver.cpp experiment.cpp histos.cpp plots.cpp raw.cpp separate.cpp target.cpp veto.cpp waveform.cpp waveformFitting.cpp
+DRIVER_SOURCES = branches.cpp dataPoint.cpp dataSet.cpp driver.cpp experiment.cpp histos.cpp plots.cpp raw.cpp assignMacropulses.cpp target.cpp veto.cpp waveform.cpp waveformFitting.cpp
 $(BIN)driver: $(addprefix $(SOURCE), $(DRIVER_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)driver $(addprefix $(SOURCE), $(DRIVER_SOURCES)) $(LINKOPTION)
 
@@ -44,9 +44,9 @@ $(BIN)text: $(addprefix $(SOURCE), $(TEXT_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)text $(addprefix $(SOURCE), $(TEXT_SOURCES)) $(LINKOPTION)
 
 # Build finetimeCheck (for comparing the timestamps of the same event, but recorded by different digitizer channels)
-FINETIMECHECK_SOURCES = finetimeCheck.cpp branches.cpp
-$(BIN)finetimeCheck: $(addprefix $(SOURCE), $(FINETIMECHECK_SOURCES))
-	$(COMPILER) $(CFLAGS) -o $(BIN)finetimeCheck $(addprefix $(SOURCE), $(FINETIMECHECK_SOURCES)) $(LINKOPTION)
+FINETIMECHECK_SOURCES = fineTimeCheck.cpp raw.cpp assignMacropulses.cpp branches.cpp experiment.cpp
+$(BIN)fineTimeCheck: $(addprefix $(SOURCE), $(FINETIMECHECK_SOURCES))
+	$(COMPILER) $(CFLAGS) -o $(BIN)fineTimeCheck $(addprefix $(SOURCE), $(FINETIMECHECK_SOURCES)) $(LINKOPTION)
 
 # Build makeCSText (for writing graphed cross sections to formatted text files)
 MAKECSTEXT_SOURCES = makeCSText.cpp dataPoint.cpp

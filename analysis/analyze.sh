@@ -35,6 +35,9 @@
 #    -t | diagnostic mode: produce a human-readable text dump for each digitizer
 #       | channel; do not produce cross sections or ROOT trees
 #-------+-----------------------------------------------------------------------
+#    -i | timing testing mode: produce plots showing timing coincidence between
+#       | the left and right detectors for every event
+#-------+-----------------------------------------------------------------------
 #    -w | waveform analysis mode: 
 #       | 
 #-------+-----------------------------------------------------------------------
@@ -55,6 +58,12 @@
 #   readable text files for each digitizer channel for inspection. No cross
 #   sections, ROOT trees, or histograms will be created.
 #
+#   ./analyze.sh -fi myExperiment/1/data-0000.evt
+#
+#   Using the single data file myExperiment/1/data-0000.evt, produce plots 
+#   showing timing coincidence between the two main detector arms
+#
+#
 ################################################################################
 
 # SECTION 1: recompile analysis code
@@ -71,7 +80,7 @@ fi
 
 # SECTION 2: process flags
 
-while getopts "fscrnthw" opt; do
+while getopt "fscrnithw" opt; do
     case ${opt} in
         f)
             fullFilePath=true
@@ -87,6 +96,9 @@ while getopts "fscrnthw" opt; do
             ;;
         n)
             normalMode=true
+            ;;
+        i)
+            fineTimeMode=true
             ;;
         t)
             produceText=true
@@ -131,6 +143,13 @@ analyze ()
         printf "\nText output enabled... \n"
         ./text "$inputFileName"
         exit # we just want the text output, so stop analysis here
+    fi
+
+    if [ "$fineTimeCheck" == true ]
+    then
+        printf "\nFine time check enabled... \n"
+        ./fineTimeCheck "$inputFileName" "$experiment" "$runNumber"
+        exit # we just want the time check output, so stop analysis here
     fi
 
     # Create directory to hold the output of our analysis

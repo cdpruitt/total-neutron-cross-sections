@@ -125,8 +125,13 @@ bool readExtras(ifstream& evtfile)
     readWord(evtfile, rawEvent.extraSelect);
     switch(rawEvent.extraSelect)
     {
+        unsigned int dummy;
+        case 0:
+            readWord(evtfile, dummy); // baseline value * 4 (this information currently discarded)
+            readWord(evtfile, rawEvent.extTime);
+            return true;
+
         case 2:
-            unsigned int dummy;
             readWord(evtfile, dummy);
             rawEvent.flags = (dummy & CONFIG_FLAGS_MASK);
             rawEvent.fineTime = (dummy & FINETIME_MASK); // in ns
@@ -137,8 +142,8 @@ bool readExtras(ifstream& evtfile)
             readWord(evtfile, rawEvent.NZC);
             readWord(evtfile, rawEvent.PZC);
             rawEvent.fineTime = SAMPLE_PERIOD*
-                (double)(8192-rawEvent.NZC)/
-                (rawEvent.PZC-rawEvent.NZC); // in ns
+                ((double)(8192-rawEvent.NZC)/
+                (rawEvent.PZC-rawEvent.NZC)); // in ns
             return true;
 
         default:
@@ -277,11 +282,11 @@ void readRawData(string inFileName, string outFileName, vector<string> channelMa
         rawNumberOfEvents++;
 
         // manually increment extended time, if necessary
-        if((prevTimetag > (double)pow(2,32) - 50000000) &&
+        /*if((prevTimetag > (double)pow(2,32) - 50000000) &&
             rawEvent.timetag < prevTimetag)
         {
            extTime++; 
-        }
+        }*/
 
         // if LED is used instead of CFD, clear the finetime variable
         if(rawEvent.chNo==0 || rawEvent.chNo==2 || rawEvent.chNo==6)
