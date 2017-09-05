@@ -1,0 +1,7 @@
+This file lists the mapping between the detectors and the digitizer channels for
+each run. Starting with ch0, the function of each channel is listed in order:
+********************************************************************************
+Run Nos. |  Channel functions
+********************************************************************************
+
+0-100       targetChanger - monitor - lowThresholdDet veto leftDet rightDet

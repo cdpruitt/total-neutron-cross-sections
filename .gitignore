@@ -16,6 +16,9 @@
 !nickel/
 !nickel/*
 
+!rhodium/
+!rhodium/*
+
 !WashUDAQ/
 !WashUDAQ/*
 
