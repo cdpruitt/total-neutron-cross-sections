@@ -7,7 +7,7 @@ SOURCE = src/
 
 # Define compilation flags
 COMPILER = clang++ 
-CFLAGS = -lstdc++ -O2 -I$(shell root-config --incdir) -std=c++11 -ggdb
+CFLAGS = -lstdc++ -I$(shell root-config --incdir) -std=c++11 -ggdb
 
 # For integration with ROOT data analysis framework
 LINKOPTION = $(shell root-config --libs)

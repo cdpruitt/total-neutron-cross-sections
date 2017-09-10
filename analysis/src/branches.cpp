@@ -41,9 +41,9 @@ void branchSplitW(TTree*& tree)
 void branchProc(TTree*& tree)
 {
     tree->Branch("macroNo",&procEvent.macroNo,"macroNo/i");
-    tree->Branch("macroTime",&procEvent.macroTime,"macroTime/d");
+    tree->Branch("macroTime",&procEvent.macroTime,"macroTime/D");
     tree->Branch("evtNo",&procEvent.evtNo,"evtNo/i");
-    tree->Branch("completeTime",&procEvent.completeTime,"completeTime/d");
+    tree->Branch("completeTime",&procEvent.completeTime,"completeTime/D");
     tree->Branch("targetPos",&procEvent.targetPos,"targetPos/i");
     tree->Branch("sgQ",&procEvent.sgQ,"sgQ/i");
     tree->Branch("lgQ",&procEvent.lgQ,"lgQ/i");
@@ -55,9 +55,9 @@ void branchProc(TTree*& tree)
 void branchProcW(TTree*& tree)
 {
     tree->Branch("macroNo",&procEvent.macroNo,"macroNo/i");
-    tree->Branch("macroTime",&procEvent.macroTime,"macroTime/i");
+    tree->Branch("macroTime",&procEvent.macroTime,"macroTime/D");
     tree->Branch("evtNo",&procEvent.evtNo,"evtNo/i");
-    tree->Branch("completeTime",&procEvent.completeTime,"completeTime/d");
+    tree->Branch("completeTime",&procEvent.completeTime,"completeTime/D");
     tree->Branch("targetPos",&procEvent.targetPos,"targetPos/i");
     tree->Branch("waveform",&procEvent.waveform);
 }
@@ -65,7 +65,7 @@ void branchProcW(TTree*& tree)
 void branchTargetChanger(TTree*& tree)
 {
     tree->Branch("macroNo",&tcEvent.macroNo,"macroNo/i");
-    tree->Branch("macroTime",&tcEvent.macroTime,"macroTime/d");
+    tree->Branch("macroTime",&tcEvent.macroTime,"macroTime/D");
     tree->Branch("fineTime",&tcEvent.fineTime,"fineTime/d");
     tree->Branch("modeChange",&tcEvent.modeChange,"modeChange/i");
     tree->Branch("targetPos",&tcEvent.targetPos,"targetPos/i");

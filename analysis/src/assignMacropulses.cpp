@@ -41,8 +41,9 @@ int assignTargetPos(int lgQ)
 
     // lgQ doesn't fit within one of the lgQ gates, so set
     // the target position to 0 (discarded in later analysis).
-    cerr << "Error: lgQ outside target positions." << endl;
-    exit(1);
+    cerr << endl;
+    cerr << "Error: lgQ " << lgQ << " outside target positions." << endl;
+    return 0;
 }
 
 void addTCEvent(TTree* targetChangerTree)
@@ -118,13 +119,6 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
 
     TFile* sortedFile = new TFile(sortedFileName.c_str(), "RECREATE");
 
-    TH1I* fineTimeHBlank = new TH1I("fineTimeHBlank","fineTimeHBlank",6000,-3,3);
-    TH1I* fineTimeHTarget1 = new TH1I("fineTimeHTarget1","fineTimeHTarget1",6000,-3,3);
-    TH1I* fineTimeHTarget2 = new TH1I("fineTimeHTarget2","fineTimeHTarget2",6000,-3,3);
-    TH1I* fineTimeHTarget3 = new TH1I("fineTimeHTarget3","fineTimeHTarget3",6000,-3,3);
-    TH1I* fineTimeHTarget4 = new TH1I("fineTimeHTarget4","fineTimeHTarget4",6000,-3,3);
-    TH1I* fineTimeHTarget5 = new TH1I("fineTimeHTarget5","fineTimeHTarget5",6000,-3,3);
-
     for(int i=0; i<channelMap.size(); i++)
     {
         if(channelMap[i]=="-")
@@ -174,10 +168,10 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                 // calculate fine time of target changer
                 if(tcEvent.targetPos>0)
                 {
-                    separatedEvent.fineTime = calculateFineTime(separatedEvent.waveform, TARGET_CHANGER_LED_THRESHOLD, true);
+                    separatedEvent.fineTime = 0;//calculateFineTime(separatedEvent.waveform, TARGET_CHANGER_LED_THRESHOLD, true);
                 }
 
-                tcEvent.macroTime = (double)pow(2,32)*separatedEvent.extTime + separatedEvent.timetag + separatedEvent.fineTime;
+                tcEvent.macroTime = (long double)pow(2,32)*separatedEvent.extTime + (long double)SAMPLE_PERIOD*separatedEvent.timetag + (long double)SAMPLE_PERIOD*separatedEvent.fineTime;
 
                 if(prevTimetag > tcEvent.macroTime)
                 {
@@ -204,6 +198,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
 
         else
         {
+            continue;
             TTree* targetChangerTree = (TTree*)sortedFile->Get(channelMap[0].c_str());
             setBranchesProcessedTC(targetChangerTree);
             long targetChangerEntries = targetChangerTree->GetEntries();
@@ -231,12 +226,16 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                     break;
                 case 3:
                 case 4:
-                case 5:
                     TIME_OFFSET = MACROPULSE_OFFSET;
                     break;
-                case 6:
+                case 5:
                     TIME_OFFSET = MACROPULSE_OFFSET-VETO_OFFSET;
                     break;
+                case 6:
+                case 7:
+                    TIME_OFFSET = MACROPULSE_OFFSET;
+                    break;
+
                 default:
                     cerr << "Error: non-existent channel index given by detIndex" << endl;
                     exit(1);
@@ -246,10 +245,9 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
             {
                 rawTree->GetEntry(j);
 
-                procEvent.completeTime = (double)pow(2,32)*separatedEvent.extTime
-                    + separatedEvent.timetag + TIME_OFFSET;
+                procEvent.completeTime = (long double)pow(2,32)*separatedEvent.extTime + (long double)SAMPLE_PERIOD*separatedEvent.timetag + TIME_OFFSET;
 
-                if(i==4 || i==5)
+                /*if(i==4 || i==5)
                 {
                     procEvent.completeTime += separatedEvent.fineTime;
 
@@ -276,7 +274,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                         default:
                             break;
                     }
-                }
+                }*/
 
                 if(procEvent.completeTime < prevTimetag)
                 {
@@ -413,7 +411,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
             if(tcEvent.modeChange==1)
             {
                 treeToSort->GetEntry(currentWaveformEvent++);
-                procEvent.completeTime = pow(2,32)*separatedEvent.extTime + separatedEvent.timetag;
+                procEvent.completeTime = pow(2,32)*separatedEvent.extTime + SAMPLE_PERIOD*separatedEvent.timetag;
                 procEvent.macroNo = tcEvent.macroNo;
                 procEvent.macroTime = tcEvent.macroTime;
                 procEvent.targetPos = tcEvent.targetPos;
@@ -431,7 +429,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                     addDetectorEvent(evtNo, sortedTree);
                     prevTimetag = procEvent.completeTime;
                     treeToSort->GetEntry(currentWaveformEvent++);
-                    procEvent.completeTime = pow(2,32)*separatedEvent.extTime + separatedEvent.timetag;
+                    procEvent.completeTime = pow(2,32)*separatedEvent.extTime + SAMPLE_PERIOD*separatedEvent.timetag;
                 }
             }
 
@@ -448,12 +446,13 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
 
     cout << endl;
 
-    fineTimeHBlank->Write();
+    /*fineTimeHBlank->Write();
     fineTimeHTarget1->Write();
     fineTimeHTarget2->Write();
     fineTimeHTarget3->Write();
     fineTimeHTarget4->Write();
     fineTimeHTarget5->Write();
+    */
 
     sortedFile->Close();
 }

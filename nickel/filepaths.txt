@@ -1,1 +1,1 @@
-0 100 /media/cdpruitt/nickel /data2
+0 100 /home/cole/Desktop /home/cole/Desktop

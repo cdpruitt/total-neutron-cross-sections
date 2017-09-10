@@ -108,10 +108,6 @@ bool readEventHeader(ifstream& evtfile)
     && readTwoWordVariable(evtfile, rawEvent.timetag))
     {
         // successfully read event header
-
-        // convert timetag from samples to ns
-        rawEvent.timetag *= SAMPLE_PERIOD;
-
         return true;
     }
 
@@ -135,16 +131,15 @@ bool readExtras(ifstream& evtfile)
         case 2:
             readWord(evtfile, dummy);
             rawEvent.flags = (dummy & CONFIG_FLAGS_MASK);
-            rawEvent.fineTime = (dummy & FINETIME_MASK); // in ns
+            rawEvent.fineTime = (dummy & FINETIME_MASK);
             readWord(evtfile, rawEvent.extTime);
             return true;
 
         case 5:
             readWord(evtfile, rawEvent.NZC);
             readWord(evtfile, rawEvent.PZC);
-            rawEvent.fineTime = SAMPLE_PERIOD*
-                ((double)(8192-rawEvent.NZC)/
-                (rawEvent.PZC-rawEvent.NZC)); // in ns
+            rawEvent.fineTime = ((double)(8192-rawEvent.NZC)/
+                (rawEvent.PZC-rawEvent.NZC));
             return true;
 
         default:
@@ -203,10 +198,10 @@ bool readWaveformEventBody(ifstream& evtfile)
 bool readEvent(ifstream& evtfile)
 {
     // to prepare for reading a new event, reset all DPP-specific event variables
-    rawEvent.extTime = 0;
-    rawEvent.fineTime = 0;
-    rawEvent.sgQ = 0;
-    rawEvent.lgQ = 0;
+    //rawEvent.extTime = 0;
+    //rawEvent.fineTime = 0;
+    //rawEvent.sgQ = 0;
+    //rawEvent.lgQ = 0;
     if(rawEvent.waveform)
     {
         rawEvent.waveform->clear();
@@ -303,13 +298,14 @@ void readRawData(string inFileName, string outFileName, vector<string> channelMa
             rawEvent.fineTime = 0;
         }
 
-        if(prevEvtType!=rawEvent.evtType)
+        /*if(prevEvtType!=rawEvent.evtType)
         {
             extTime=0;
             prevTimetag=0;
         }
 
         rawEvent.extTime = extTime;
+        */
            
         if(rawEvent.evtType==1)
         {

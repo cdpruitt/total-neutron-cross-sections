@@ -154,8 +154,8 @@ analyze ()
     fi
 
     outputDirectoryName=$2
-    runNumber=$3
-    subrunNumber=$4
+    experiment=$3
+    runNumber=$4
 
     # Create directory to hold the output of our analysis
     if [ ! -d "$outputDirectoryName" ]
@@ -178,7 +178,11 @@ analyze ()
     # Send error messages to a text file
     2>&1 | tee > "$outputDirectoryName"error.txt
 
-    ./bin/driver "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber"
+    useVetoPaddle=false
+    processWaveformEvents=false
+    processDPPWaveformEvents=false
+
+    ./bin/driver "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber" "$useVetoPaddle" "$processWaveformEvents" "$processDPPWaveformEvents"
 }
 
 ################################################################################
@@ -223,13 +227,19 @@ then
         exit
     fi
 
+    # Create directory to hold the output of our analysis
+    if [ ! -d "$outpath/$runNumber" ]
+    then
+        mkdir "$outpath/analysis/$runNumber"
+    fi
+
     inputFileName="$datapath/output/$runNumber/data-$subrunNo.evt"
     outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
 
     printf "\nSorting single sub-run $inputFileName\n"
 
     # Start analysis
-    analyze "$inputFileName" "$outputDirectoryName" "$runNumber"
+    analyze "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber"
 
     # Make cross sections from this single subrun
     #./sumSingle "$outpath"/analysis "$experiment" "histos" "$runNumber" "$subrunNo"
@@ -269,7 +279,7 @@ then
         # Create directory to hold the output of our analysis
         if [ ! -d "$outpath/$runNumber" ]
         then
-            mkdir "$outpath/$runNumber"
+            mkdir "$outpath/analysis/$runNumber"
         fi
 
         inputFileName="$datapath/output/$runNumber/data-$subrunNo.evt"
