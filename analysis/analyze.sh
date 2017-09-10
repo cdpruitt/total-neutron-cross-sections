@@ -80,7 +80,7 @@ fi
 
 # SECTION 2: process flags
 
-while getopt "fscrnithw" opt; do
+while getopts "fscrnithw" opt; do
     case ${opt} in
         f)
             fullFilePath=true
@@ -98,7 +98,7 @@ while getopt "fscrnithw" opt; do
             normalMode=true
             ;;
         i)
-            fineTimeMode=true
+            timeCheckMode=true
             ;;
         t)
             produceText=true
@@ -133,24 +133,29 @@ done
 
 analyze ()
 {
-    inputFileName=$1
-    outputDirectoryName=$2
-    runNumber=$3
-    subrunNumber=$4
-
     if [ "$produceText" == true ]
     then
         printf "\nText output enabled... \n"
-        ./text "$inputFileName"
+
+        inputFileName=$1
+
+        ./bin/text "$inputFileName"
         exit # we just want the text output, so stop analysis here
     fi
 
-    if [ "$fineTimeCheck" == true ]
+    if [ "$timeCheckMode" == true ]
     then
         printf "\nFine time check enabled... \n"
-        ./fineTimeCheck "$inputFileName" "$experiment" "$runNumber"
+
+        inputFileName=$1
+
+        ./bin/fineTimeCheck "$inputFileName"
         exit # we just want the time check output, so stop analysis here
     fi
+
+    outputDirectoryName=$2
+    runNumber=$3
+    subrunNumber=$4
 
     # Create directory to hold the output of our analysis
     if [ ! -d "$outputDirectoryName" ]
@@ -173,7 +178,7 @@ analyze ()
     # Send error messages to a text file
     2>&1 | tee > "$outputDirectoryName"error.txt
 
-    ./driver "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber"
+    ./bin/driver "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber"
 }
 
 ################################################################################
@@ -190,6 +195,7 @@ then
     outputDirectoryName=$3
     runNumber=$5
     analyze "$inputFileName" "$outputDirectoryName" "$runNumber"
+    printf "\n here"
     exit
 fi
 

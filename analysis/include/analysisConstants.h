@@ -32,7 +32,11 @@ const double SCALEDOWN = 1; // (for debugging) only sort (total/SCALEDOWN) event
 const int DEADTIME_PERIOD = 225; // in ns
 const int DEADTIME_TRANSITION_PERIOD = 8; // in ns
 
-const int TARGET_CHANGER_LED_THRESHOLD = 1500; // in ADC units
+const unsigned int TARGET_CHANGER_LED_THRESHOLD = 1500; // in ADC units
+const unsigned int MAIN_DETECTOR_LED_THRESHOLD = 3000; // in ADC units
+
+const unsigned int TIME_CHECK_TOLERANCE = 10; // in ns
+
 const std::vector<int> tcFineTimeThresholds = {1000, 1750, 2650, 3600, 4400, 5250}; // in ADC units
 
 // Indicate the range of times considered to be gamma rays (for the purposes of

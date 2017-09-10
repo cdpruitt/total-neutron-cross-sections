@@ -46,6 +46,8 @@
 #include "../include/dataStructures.h"
 #include "../include/raw.h"
 #include "../include/assignMacropulses.h"
+#include "../include/physicalConstants.h"
+#include "../include/analysisConstants.h"
 #include "../include/experiment.h"
 
 
@@ -61,7 +63,8 @@ unsigned long timetag, timetagP, timeCoin;
 unsigned int channelCoin = 1; // used to keep track of coincidence between channels
 
 // Create histograms for DPP data
-TH2S* FTLR;
+TH2I* FTLR;
+TH1I* diffLR;
 
 const unsigned int NUMBER_OF_EVENTS = 10000;
 
@@ -79,28 +82,27 @@ int main(int argc, char** argv)
 
     cout << inFileName << " opened successfully." << endl;
 
-    // get channel mapping to ID the two arms of the main detector
-    string experimentName = argv[2];
-    unsigned int runNumber =  stoi(argv[3]);
-    vector<string> channelMap = getChannelMap(experimentName, runNumber);
-
     // create a ROOT file for holding time check plots
     TFile *file; 
-    file = new TFile("output/fineTimeCheck.root","RECREATE");
+    file = new TFile("timeCheckOutput/fineTimeCheck.root","RECREATE");
 
-    FTLR = new TH2S("leftDet","rightDet",200,0,2,200,0,2); // a ROOT plot to show fine time (FT) of events
+    FTLR = new TH2I("leftDet","rightDet",1000,43,53,1000,43,53); // a ROOT plot to show fine time (FT) of events
     FTLR->SetMarkerStyle(20);
 
+    diffLR = new TH1I("diffLR","diffLR",1000,-3,3); // a ROOT plot to show fine time (FT) of events
+    FTLR->SetMarkerStyle(20);
+
+
     // create text output to examine time differences from one event to the next
-    ofstream timeDiff ("output/timeDiff.txt");
+    ofstream timeDiff ("timeCheckOutput/timeDiff.txt");
 
     unsigned int numberOfEventsProcessed = 0;
 
     unsigned int ch6Timetag = 0;
-    vector<int>* ch6Waveform;
+    double ch6FineTime = 0;
 
     unsigned int ch7Timetag = 0;
-    vector<int>* ch7Waveform;
+    double ch7FineTime = 0;
 
     while(!inFile.eof() && numberOfEventsProcessed < NUMBER_OF_EVENTS)
     {
@@ -109,19 +111,19 @@ int main(int argc, char** argv)
             if(rawEvent.chNo==6)
             {
                 ch6Timetag = rawEvent.timetag;
-                ch6Waveform = rawEvent.waveform;
+                ch6FineTime = calculateFineTime(rawEvent.waveform, rawEvent.baseline-MAIN_DETECTOR_LED_THRESHOLD, false);
             }
 
             if(rawEvent.chNo==7)
             {
                 ch7Timetag = rawEvent.timetag;
-                ch7Waveform = rawEvent.waveform;
+                ch7FineTime = calculateFineTime(rawEvent.waveform, rawEvent.baseline-MAIN_DETECTOR_LED_THRESHOLD, false);
             }
 
-            if(ch6Timetag==ch7Timetag)
+            if(abs((int)ch6Timetag-(int)ch7Timetag)<=TIME_CHECK_TOLERANCE && ch6FineTime>=0 && ch7FineTime>=0)
             {
-                FTLR->Fill(calculateFineTime(ch6Waveform),
-                calculateFineTime(ch7Waveform));
+                FTLR->Fill(ch6FineTime, ch7FineTime+(ch7Timetag-ch6Timetag));
+                diffLR->Fill((ch7FineTime+ch7Timetag)-(ch6FineTime+ch6Timetag));
             }
         }
     }

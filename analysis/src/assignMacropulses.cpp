@@ -84,19 +84,26 @@ void addDetectorEvent(long evtNo, TTree* detectorTree)
     detectorTree->Fill();
 }
 
-double calculateFineTime(vector<int>* waveform)
+double calculateFineTime(vector<int>* waveform, unsigned int threshold, bool isPositiveSignal)
 {
-    for(int i=0; i<waveform->size(); i++)
+    for(unsigned int i=1; i<waveform->size(); i++)
     {
-        if(waveform->at(i)>TARGET_CHANGER_LED_THRESHOLD)
+        if(isPositiveSignal && waveform->at(i)>threshold)
         {
-            return SAMPLE_PERIOD*(i+(double)(TARGET_CHANGER_LED_THRESHOLD-waveform->at(i-1))/
+            return SAMPLE_PERIOD*(i+(double)(threshold-waveform->at(i-1))/
                    (double)(waveform->at(i)-waveform->at(i-1)));
+        }
+
+        else if(!isPositiveSignal && waveform->at(i)<threshold)
+        {
+            return SAMPLE_PERIOD*(i+(double)(waveform->at(i-1)-threshold)/
+                   (double)(waveform->at(i-1)-waveform->at(i)));
         }
     }
     
-    cerr << "Error: failed to calculate a fine time for target changer waveform." << endl;
-    return 0;
+    cerr << "Error: could not calculate fine time of waveform." << endl;
+
+    return -1;
 }
 
 void assignMacropulses(string rawFileName, string sortedFileName, vector<string> channelMap)
@@ -167,7 +174,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                 // calculate fine time of target changer
                 if(tcEvent.targetPos>0)
                 {
-                    separatedEvent.fineTime = calculateFineTime(separatedEvent.waveform);
+                    separatedEvent.fineTime = calculateFineTime(separatedEvent.waveform, TARGET_CHANGER_LED_THRESHOLD, true);
                 }
 
                 tcEvent.macroTime = (double)pow(2,32)*separatedEvent.extTime + separatedEvent.timetag + separatedEvent.fineTime;

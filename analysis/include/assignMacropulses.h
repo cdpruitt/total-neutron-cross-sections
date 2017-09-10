@@ -11,6 +11,6 @@ void processWaveformEvents(TFile*& sortedFile, std::vector<TTree*>& orchardRawW,
 
 void processTargetChanger(std::string rawFileName, TFile*& sortedFile);
 
-double calculateFineTime(std::vector<int>* waveform);
+double calculateFineTime(std::vector<int>* waveform, unsigned int threshold, bool isPositiveSignal);
 
 #endif

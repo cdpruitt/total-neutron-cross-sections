@@ -128,6 +128,7 @@ bool readExtras(ifstream& evtfile)
         unsigned int dummy;
         case 0:
             readWord(evtfile, dummy); // baseline value * 4 (this information currently discarded)
+            rawEvent.baseline = dummy/4;
             readWord(evtfile, rawEvent.extTime);
             return true;
 
@@ -156,6 +157,11 @@ bool readExtras(ifstream& evtfile)
 // read the event's waveform from the input file
 bool readWaveformData(ifstream& evtfile)
 {
+    if(!rawEvent.waveform)
+    {
+        rawEvent.waveform = new vector<int>;
+    }
+
     readTwoWordVariable(evtfile, rawEvent.nSamp);
     for(int i=0;(size_t)i<rawEvent.nSamp;i++)
     {
@@ -201,7 +207,10 @@ bool readEvent(ifstream& evtfile)
     rawEvent.fineTime = 0;
     rawEvent.sgQ = 0;
     rawEvent.lgQ = 0;
-    rawEvent.waveform->clear();
+    if(rawEvent.waveform)
+    {
+        rawEvent.waveform->clear();
+    }
 
     if(!readEventHeader(evtfile))
     {

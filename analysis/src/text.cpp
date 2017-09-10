@@ -114,7 +114,7 @@ void printEvent(RawEvent& rawEvent, TextOutput& text)
         // Determine meaning of 'extras' word based on extraSelect:
         switch(rawEvent.extraSelect)
         {
-            /*case 0: 
+            case 0: 
                 // Extended timestamp + baseline
                 temp.str("");
                 temp << rawEvent.extTime << " *8.59 s";
@@ -124,7 +124,7 @@ void printEvent(RawEvent& rawEvent, TextOutput& text)
                 *out << "| baseline = " << left << setfill(' ') << setw(49) << rawEvent.baseline << "|" << endl;
                 break;
 
-            case 1:
+            /*case 1:
                 // Extended timestamp + configuration file flags
                 temp << rawEvent.extras2 << " *8.59 s";
                 *out << "| extended time stamp = " << left << setfill(' ') << setw(34) << temp.str() << "|" << endl;
@@ -159,7 +159,8 @@ void printEvent(RawEvent& rawEvent, TextOutput& text)
                 const unsigned int extras = (extras2 << 16) | extras1;
                 *out << "| Fixed value of 305419896 (0x12345678) outputted: " << left << setfill(' ') << setw(17) << rawEvent.extras << "|" << endl;
                 break;
-             */
+                */
+
             default:
                 cerr << "Error: found unsupported value of EXTRAS. Exiting..." << endl;
                 exit(1);
