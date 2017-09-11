@@ -26,7 +26,7 @@ const std::vector<std::pair<int,int>> tarGates = {
     std::pair<int,int> (37000,43000) // position 6 gates
 };
 
-const double SCALEDOWN = 10; // (for debugging) only sort (total/SCALEDOWN) events
+const double SCALEDOWN = 1; // (for debugging) only sort (total/SCALEDOWN) events
 
 // experimentally-determined digitizer deadtime
 const int DEADTIME_PERIOD = 225; // in ns

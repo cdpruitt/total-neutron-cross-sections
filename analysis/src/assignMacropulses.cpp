@@ -119,6 +119,8 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
 
     TFile* sortedFile = new TFile(sortedFileName.c_str(), "RECREATE");
 
+    TH1I* tcTreeMacroTimes = new TH1I("macroTimes","macroTimes",1000000,0,pow(2,33));
+
     for(int i=0; i<channelMap.size(); i++)
     {
         if(channelMap[i]=="-")
@@ -149,7 +151,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
             branchProc(sortedTree);
         }
 
-        double prevTimetag = 0;
+        long double prevTimetag = 0;
 
         long totalEntries = rawTree->GetEntries();
 
@@ -171,7 +173,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                     separatedEvent.fineTime = 0;//calculateFineTime(separatedEvent.waveform, TARGET_CHANGER_LED_THRESHOLD, true);
                 }
 
-                tcEvent.macroTime = (long double)pow(2,32)*separatedEvent.extTime + (long double)SAMPLE_PERIOD*separatedEvent.timetag + (long double)SAMPLE_PERIOD*separatedEvent.fineTime;
+                tcEvent.macroTime = pow(2,32)*separatedEvent.extTime + SAMPLE_PERIOD*separatedEvent.timetag + SAMPLE_PERIOD*separatedEvent.fineTime;
 
                 if(prevTimetag > tcEvent.macroTime)
                 {
@@ -198,7 +200,6 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
 
         else
         {
-            continue;
             TTree* targetChangerTree = (TTree*)sortedFile->Get(channelMap[0].c_str());
             setBranchesProcessedTC(targetChangerTree);
             long targetChangerEntries = targetChangerTree->GetEntries();
@@ -241,11 +242,13 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                     exit(1);
             }
 
+            prevTimetag = 0;
+
             for(int j=0; j<totalEntries; j++)
             {
                 rawTree->GetEntry(j);
 
-                procEvent.completeTime = (long double)pow(2,32)*separatedEvent.extTime + (long double)SAMPLE_PERIOD*separatedEvent.timetag + TIME_OFFSET;
+                procEvent.completeTime = pow(2,32)*separatedEvent.extTime + SAMPLE_PERIOD*separatedEvent.timetag + TIME_OFFSET;
 
                 /*if(i==4 || i==5)
                 {
@@ -357,6 +360,8 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                 }
             }
         }
+
+        tcTreeMacroTimes->Write();
 
         // Check for digitizer error (incrementing extTime before clearing timetag)
         /*if (extTime[separatedEvent.chNo] > extTimePrev && separatedEvent.timetag > pow(2,32)-1000)

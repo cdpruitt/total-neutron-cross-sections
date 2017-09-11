@@ -173,9 +173,9 @@ int main(int, char* argv[])
     if(!h.good())
     {
         //Uncomment to use vetoed trees
-        histos(sortedFileName, vetoedFileName, histoFileName, channelMap);
+        //histos(sortedFileName, vetoedFileName, histoFileName, channelMap);
         //Uncomment to use unvetoed trees
-        //histos(sortedFileName, sortedFileName, histoFileName, channelMap);
+        histos(sortedFileName, sortedFileName, histoFileName, channelMap);
 
         /*************************************************************************/
         /* Process events into histograms in preparation for cross section

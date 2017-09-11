@@ -62,9 +62,9 @@ struct SeparatedEvent
 struct ProcessedEvent
 {
     unsigned int macroNo; // label each event by macropulse
-    long double macroTime; // provide the macropulse "zero" time
+    double macroTime; // provide the macropulse "zero" time
     unsigned int evtNo; // uniquely label each event in a macropulse
-    long double completeTime; // the event's 48-bit timestamp
+    double completeTime; // the event's 48-bit timestamp
     double fineTime; // the event's fine time
     unsigned int targetPos; // target position
     unsigned int sgQ, lgQ; // the event's short and long integrated charge gates
@@ -76,7 +76,7 @@ struct TargetChangerEvent
 {
     unsigned int macroNo; // label each event by macropulse
     unsigned int modeChange; // indicate the first event after a mode change
-    long double macroTime; // the event's time-zero reference (the macropulse start)
+    double macroTime; // the event's time-zero reference (the macropulse start)
     double fineTime; // the event's calculated fine time
     unsigned int targetPos; // target position
     unsigned int lgQ; // the event's long integrated charge gate
