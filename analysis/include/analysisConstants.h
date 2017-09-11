@@ -52,4 +52,8 @@ const std::vector<std::string> detectorNames = {"summedDet"};
 
 const std::vector<double> manualTimeOffsets = {0, -0.7, -1.04, -1.23, -1.39, -1.44};
 
+const double CFD_FRACTION = 0.5;
+const double CFD_DELAY = 1;
+const double CFD_ZC_TRIGGER_THRESHOLD = 30*CFD_FRACTION;
+
 #endif

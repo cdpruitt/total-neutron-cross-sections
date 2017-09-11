@@ -1,6 +1,6 @@
 blank
 CNat
 PbNat
-Ni112
+Ni58
 NiNat
-Ni124
+Ni64

@@ -12,9 +12,9 @@
 const double MACRO_FREQUENCY = 120;   // frequency of beam macropulses, in Hz
 const double MACRO_PERIOD = pow(10,9)/MACRO_FREQUENCY;
                                       // macropulse period, in ns
-const double MACRO_LENGTH = 623000;   // macropulse duration, in ns
+const double MACRO_LENGTH = 625000;   // macropulse duration, in ns
 const double MICRO_LENGTH = 1788.814; // micropulse duration, in ns
-const double FLIGHT_DISTANCE = 2559;  // detector distance from neutron
+const double FLIGHT_DISTANCE = 2694;  // detector distance from neutron
                                       // source, in cm
 
 // 348 micropulses/macropulse, from looking at time spectra

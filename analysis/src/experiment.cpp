@@ -129,14 +129,16 @@ vector<string> getTargetOrder(string expName, int runNumber)
     }
 
     string str;
+    unsigned int run;
     vector<string> targetOrder;
 
     while(getline(dataFile,str))
     {
         // ignore comments in data file
         string delimiter = "-";
-        string token = str.substr(0,str.find(delimiter));
-        if(!atoi(token.c_str()))
+        stringstream tokenStream(str.substr(0,str.find(delimiter)));
+
+        if(!(tokenStream>>run))
         {
             // This line starts with a non-integer and is thus a comment; ignore
             continue;

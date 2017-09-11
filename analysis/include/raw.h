@@ -9,5 +9,10 @@ bool readEvent(std::ifstream& evtfile);
 bool readEventHeader(std::ifstream& evtfile);
 bool readDPPEventBody(std::ifstream& evtfile);
 bool readWaveformEventBody(std::ifstream& evtfile);
+double calculateCFDTime(std::vector<int>* waveform,
+        double baseline,
+        double fraction,
+        double delay,
+        bool isPositiveSignal);
 
 #endif

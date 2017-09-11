@@ -269,7 +269,8 @@ CrossSection calculateCS(string CSFileName, CSPrereqs& targetData, CSPrereqs& bl
                     bMon, tMon, bDet, tDet));
     }
 
-    CrossSection corrected = correctForBlank(crossSection, volumeDensity, expName, "literatureData.root");
+    CrossSection corrected = crossSection;
+    //CrossSection corrected = correctForBlank(crossSection, volumeDensity, expName, "literatureData.root");
 
     TFile* CSFile = new TFile(CSFileName.c_str(),"UPDATE");
     string name = targetData.target.getName();
@@ -339,7 +340,7 @@ int main(int, char* argv[])
         string targetDataLocation = "../" + expName + "/targetData/" + targetOrder[j] + ".txt";
         CSPrereqs subRunData(targetDataLocation);
 
-        subRunData.readData(inFile, "highThresholdDet", j);
+        subRunData.readData(inFile, "summedDet", j);
 
         // find the correct CSPrereqs to add this target's data to
         for(int k=0; (size_t)k<allData.size(); k++)

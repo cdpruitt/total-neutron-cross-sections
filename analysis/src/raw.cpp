@@ -63,11 +63,79 @@
 #include "../include/physicalConstants.h"
 #include "../include/digitizerConstants.h"
 #include "../include/branches.h"
+#include "../include/analysisConstants.h"
 
 using namespace std;
 
 extern RawEvent rawEvent; // struct for storing raw event data;
                           // defined in branches.cpp
+
+double calculateCFDTime(vector<int>* waveform, double baseline, double fraction, double delay, bool isPositiveSignal)
+{
+    if(delay<=0 || delay>=waveform->size())
+    {
+        cerr << "Error: cannot calculate CFD time with delay outside range of [0,waveform.size()] (" << delay << " was provided)." << endl;
+        return -1;
+    }
+
+    if(fraction<=0 || fraction>=1)
+    {
+        cerr << "Error: cannot calculate CFD time with CFD fraction outside range of [0,1] (" << fraction << " was provided)." << endl;
+        return -1;
+    }
+
+    bool listenForZC = false;
+    double CFDSample;
+    double prevCFDSample;
+
+    if(isPositiveSignal)
+    {
+        for(unsigned int i=1; i<waveform->size()-(delay+1); i++)
+        {
+            // produce CFD sum: opposite-sign waveform*fraction + normal-sign waveform, centered at
+            // baseline
+            double CFDSample = waveform->at(i)-(fraction*waveform->at(i+delay)+baseline*(1-fraction));
+
+            if(!listenForZC && CFDSample<-CFD_ZC_TRIGGER_THRESHOLD)
+            {
+                // approaching ZC - start looking for a ZC
+                listenForZC = true;
+            }
+
+            if(listenForZC && CFDSample>0)
+            {
+                // found ZC: return time of crossing, i.e., (baseline-NZC)/(PZC-NZC)
+                return i+(baseline-prevCFDSample)/(CFDSample-prevCFDSample);
+            }
+        }
+    }
+
+    if(!isPositiveSignal)
+    {
+        for(unsigned int i=1; i<waveform->size()-(delay+1); i++)
+        {
+            // produce CFD sum: opposite-sign waveform*fraction + normal-sign waveform, centered at
+            // baseline
+            double CFDSample = waveform->at(i)-(fraction*waveform->at(i+delay)+baseline*(1-fraction));
+
+            if(!listenForZC && CFDSample>CFD_ZC_TRIGGER_THRESHOLD)
+            {
+                // approaching ZC - start looking for a ZC
+                listenForZC = true;
+            }
+
+            if(listenForZC && CFDSample<0)
+            {
+                // found ZC: return time of crossing, i.e., (baseline-NZC)/(PZC-NZC)
+                return i+(0-prevCFDSample)/(CFDSample-prevCFDSample);
+            }
+        }
+    }
+    
+    //cerr << "Error: could not calculate fine time of waveform." << endl;
+
+    return -1;
+}
 
 // read a word off the input file and store in a variable
 bool readWord(ifstream& evtfile, unsigned int& variable)
@@ -292,10 +360,21 @@ void readRawData(string inFileName, string outFileName, vector<string> channelMa
            extTime++; 
         }*/
 
-        // if LED is used instead of CFD, clear the finetime variable
-        if(rawEvent.chNo==0 || rawEvent.chNo==2 || rawEvent.chNo==6)
+        // if LED mode is used instead of CFD, calculate fineTime by software CFD
+        switch(rawEvent.chNo)
         {
-            rawEvent.fineTime = 0;
+            case 0:
+                rawEvent.fineTime = calculateCFDTime(rawEvent.waveform,
+                        rawEvent.baseline,
+                        CFD_FRACTION,
+                        CFD_DELAY,
+                        true)-TC_PRETRIGGER_SAMPLES;
+            default:
+                rawEvent.fineTime = calculateCFDTime(rawEvent.waveform,
+                            rawEvent.baseline,
+                            CFD_FRACTION,
+                            CFD_DELAY,
+                            false)-DETECTOR_PRETRIGGER_SAMPLES;
         }
 
         /*if(prevEvtType!=rawEvent.evtType)

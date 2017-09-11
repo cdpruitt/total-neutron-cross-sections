@@ -45,10 +45,10 @@
 
 #include "../include/dataStructures.h"
 #include "../include/raw.h"
-#include "../include/assignMacropulses.h"
 #include "../include/physicalConstants.h"
 #include "../include/analysisConstants.h"
 #include "../include/experiment.h"
+#include "../include/digitizerConstants.h"
 
 
 using namespace std;
@@ -111,13 +111,21 @@ int main(int argc, char** argv)
             if(rawEvent.chNo==6)
             {
                 ch6Timetag = rawEvent.timetag;
-                ch6FineTime = calculateFineTime(rawEvent.waveform, rawEvent.baseline-MAIN_DETECTOR_LED_THRESHOLD, false);
+                ch6FineTime = calculateCFDTime(rawEvent.waveform,
+                            rawEvent.baseline,
+                            CFD_FRACTION,
+                            CFD_DELAY,
+                            false)-DETECTOR_PRETRIGGER_SAMPLES;
             }
 
             if(rawEvent.chNo==7)
             {
                 ch7Timetag = rawEvent.timetag;
-                ch7FineTime = calculateFineTime(rawEvent.waveform, rawEvent.baseline-MAIN_DETECTOR_LED_THRESHOLD, false);
+                ch7FineTime = calculateCFDTime(rawEvent.waveform,
+                            rawEvent.baseline,
+                            CFD_FRACTION,
+                            CFD_DELAY,
+                            false)-DETECTOR_PRETRIGGER_SAMPLES;
             }
 
             if(abs((int)ch6Timetag-(int)ch7Timetag)<=TIME_CHECK_TOLERANCE && ch6FineTime>=0 && ch7FineTime>=0)

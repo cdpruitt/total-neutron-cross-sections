@@ -85,28 +85,6 @@ void addDetectorEvent(long evtNo, TTree* detectorTree)
     detectorTree->Fill();
 }
 
-double calculateFineTime(vector<int>* waveform, unsigned int threshold, bool isPositiveSignal)
-{
-    for(unsigned int i=1; i<waveform->size(); i++)
-    {
-        if(isPositiveSignal && waveform->at(i)>threshold)
-        {
-            return SAMPLE_PERIOD*(i+(double)(threshold-waveform->at(i-1))/
-                   (double)(waveform->at(i)-waveform->at(i-1)));
-        }
-
-        else if(!isPositiveSignal && waveform->at(i)<threshold)
-        {
-            return SAMPLE_PERIOD*(i+(double)(waveform->at(i-1)-threshold)/
-                   (double)(waveform->at(i-1)-waveform->at(i)));
-        }
-    }
-    
-    cerr << "Error: could not calculate fine time of waveform." << endl;
-
-    return -1;
-}
-
 void assignMacropulses(string rawFileName, string sortedFileName, vector<string> channelMap)
 {
     TFile* rawFile = new TFile(rawFileName.c_str(),"READ");
@@ -167,13 +145,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
 
                 tcEvent.targetPos = assignTargetPos(separatedEvent.lgQ);
 
-                // calculate fine time of target changer
-                if(tcEvent.targetPos>0)
-                {
-                    separatedEvent.fineTime = 0;//calculateFineTime(separatedEvent.waveform, TARGET_CHANGER_LED_THRESHOLD, true);
-                }
-
-                tcEvent.macroTime = pow(2,32)*separatedEvent.extTime + SAMPLE_PERIOD*separatedEvent.timetag + SAMPLE_PERIOD*separatedEvent.fineTime;
+                tcEvent.macroTime = SAMPLE_PERIOD*(pow(2,31)*separatedEvent.extTime + separatedEvent.timetag + separatedEvent.fineTime);
 
                 if(prevTimetag > tcEvent.macroTime)
                 {
@@ -248,7 +220,11 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
             {
                 rawTree->GetEntry(j);
 
-                procEvent.completeTime = pow(2,32)*separatedEvent.extTime + SAMPLE_PERIOD*separatedEvent.timetag + TIME_OFFSET;
+                procEvent.completeTime = SAMPLE_PERIOD*
+                    (pow(2,31)*separatedEvent.extTime +
+                    separatedEvent.timetag +
+                    separatedEvent.fineTime) +
+                    TIME_OFFSET;
 
                 /*if(i==4 || i==5)
                 {
