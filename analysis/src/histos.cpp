@@ -434,10 +434,10 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
 
             // GATE: discard events with too low of an integrated charge for their energy
             //if (procEvent.lgQ>500*exp(-(microTime-100)/87))
-            if (procEvent.lgQ<150)
+            /*if (procEvent.lgQ<150)
             {
                 continue;
-            }
+            }*/
 
 
             if(procEvent.targetPos==0)        // discard events during target-changer movement

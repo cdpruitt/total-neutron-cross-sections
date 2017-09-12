@@ -228,7 +228,7 @@ then
     fi
 
     # Create directory to hold the output of our analysis
-    if [ ! -d "$outpath/$runNumber" ]
+    if [ ! -d "$outpath/analysis/$runNumber" ]
     then
         mkdir "$outpath/analysis/$runNumber"
     fi
@@ -277,7 +277,7 @@ then
         fi
 
         # Create directory to hold the output of our analysis
-        if [ ! -d "$outpath/$runNumber" ]
+        if [ ! -d "$outpath/analysis/$runNumber" ]
         then
             mkdir "$outpath/analysis/$runNumber"
         fi
