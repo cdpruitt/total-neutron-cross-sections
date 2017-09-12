@@ -1,6 +1,6 @@
 /******************************************************************************
-                         assignMacropulses.cpp 
-******************************************************************************/
+  assignMacropulses.cpp 
+ ******************************************************************************/
 // This method takes a ROOT tree containing all events as input (from ./raw),
 // and splits it into channel-specific ROOT trees. and assigns each event to a
 // macropulse in preparation for producing cross section plots.
@@ -51,7 +51,11 @@ void addTCEvent(TTree* targetChangerTree)
     // fill w/ new macropulse data
     tcEvent.lgQ = separatedEvent.lgQ;
     tcEvent.fineTime = separatedEvent.fineTime;
-    tcEvent.waveform = separatedEvent.waveform;
+
+    //tcEvent.waveform = separatedEvent.waveform;
+
+    vector<int> tempWaveform = *separatedEvent.waveform;
+    tcEvent.waveform = &tempWaveform;
 
     targetChangerTree->Fill();
 
@@ -69,19 +73,19 @@ void addDetectorEvent(long evtNo, TTree* detectorTree)
 
     // only add events that come while beam is on, during the macropulse 
     /*double timeDiff = procEvent.completeTime-tcEvent.macroTime;
-    if (timeDiff < 0 && timeDiff > MACRO_LENGTH)
-    {
-        return;
-    }
-    */
+      if (timeDiff < 0 && timeDiff > MACRO_LENGTH)
+      {
+      return;
+      }
+      */
 
     // fill tree w/ event data
 
     /*if(tcEvent.macroNo > 12090 && tcEvent.macroNo < 12095)
-    {
-        cout << "macroNo = " << tcEvent.macroNo << ", macroTime = " << tcEvent.macroTime
-            << ", evtNo = " << procEvent.evtNo << ", channel = " << chNo <<  ", completeTime = " << procEvent.completeTime << endl;
-    }*/
+      {
+      cout << "macroNo = " << tcEvent.macroNo << ", macroTime = " << tcEvent.macroTime
+      << ", evtNo = " << procEvent.evtNo << ", channel = " << chNo <<  ", completeTime = " << procEvent.completeTime << endl;
+      }*/
     detectorTree->Fill();
 }
 
@@ -94,10 +98,6 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
         exit(1);
     }
     cout << rawFileName << " opened successfully. Start reading events..." << endl;
-
-    TFile* sortedFile = new TFile(sortedFileName.c_str(), "RECREATE");
-
-    TH1I* tcTreeMacroTimes = new TH1I("macroTimes","macroTimes",1000000,0,pow(2,33));
 
     for(int i=0; i<channelMap.size(); i++)
     {
@@ -113,23 +113,13 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
             exit(1);
         }
 
+        //delete tcEvent.waveform;
+        //tcEvent.waveform = new vector<int>;
+
+        //separatedEvent.waveform = new vector<int>;
         setBranchesSeparated(rawTree);
 
-        TTree* sortedTree = new TTree(channelMap[i].c_str(),"");
-        sortedTree->SetDirectory(sortedFile);
-
-        if(i==0)
-        {
-            // first channel is the target changer
-            branchTargetChanger(sortedTree);
-        }
-
-        else
-        {
-            branchProc(sortedTree);
-        }
-
-        long double prevTimetag = 0;
+        double prevTimetag = 0;
 
         long totalEntries = rawTree->GetEntries();
 
@@ -139,6 +129,26 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
 
         if(i==0)
         {
+            TFile* sortedFile = new TFile(sortedFileName.c_str(), "RECREATE");
+            TTree* sortedTree = new TTree(channelMap[i].c_str(),"");
+            sortedTree->Write();
+            sortedFile->Close();
+            continue;
+        }
+
+        /*if(separatedEvent.waveform->size() > 48)
+          {
+          cerr << "separatedEvent.waveform size > 48. i = " << i << endl;
+          exit(1);
+          }*/
+
+        else if(i==1)
+        {
+            TFile* sortedFile = new TFile(sortedFileName.c_str(), "UPDATE");
+            TTree* sortedTree = new TTree(channelMap[i].c_str(),"");
+
+            branchTargetChanger(sortedTree);
+
             for(int j=0; j<totalEntries; j++)
             {
                 rawTree->GetEntry(j);
@@ -146,6 +156,11 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                 tcEvent.targetPos = assignTargetPos(separatedEvent.lgQ);
 
                 tcEvent.macroTime = SAMPLE_PERIOD*(pow(2,31)*separatedEvent.extTime + separatedEvent.timetag + separatedEvent.fineTime);
+
+                /*if(tcEvent.targetPos > 0)
+                  {
+                  tcEvent.macroTime += MACROTIME_TARGET_DRIFT[tcEvent.targetPos-1];
+                  }*/
 
                 if(prevTimetag > tcEvent.macroTime)
                 {
@@ -168,14 +183,24 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                     fflush(stdout);
                 }
             }
+
+            sortedTree->Write();
+            sortedFile->Close();
         }
 
         else
         {
-            TTree* targetChangerTree = (TTree*)sortedFile->Get(channelMap[0].c_str());
+            TFile* sortedFile = new TFile(sortedFileName.c_str(), "UPDATE");
+            TTree* sortedTree = new TTree(channelMap[i].c_str(),"");
+            sortedTree->SetDirectory(sortedFile);
+
+            branchProc(sortedTree);
+
+            TTree* targetChangerTree = (TTree*)sortedFile->Get(channelMap[1].c_str());
             setBranchesProcessedTC(targetChangerTree);
             long targetChangerEntries = targetChangerTree->GetEntries();
             long currentTargetChangerEntry = 0;
+
             targetChangerTree->GetEntry(currentTargetChangerEntry);
 
             procEvent.macroNo = tcEvent.macroNo;
@@ -222,38 +247,9 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
 
                 procEvent.completeTime = SAMPLE_PERIOD*
                     (pow(2,31)*separatedEvent.extTime +
-                    separatedEvent.timetag +
-                    separatedEvent.fineTime) +
+                     separatedEvent.timetag +
+                     separatedEvent.fineTime) +
                     TIME_OFFSET;
-
-                /*if(i==4 || i==5)
-                {
-                    procEvent.completeTime += separatedEvent.fineTime;
-
-                    switch(procEvent.targetPos)
-                    {
-                        case 1:
-                            fineTimeHBlank->Fill(separatedEvent.fineTime);
-                            break;
-                        case 2:
-                            fineTimeHTarget1->Fill(separatedEvent.fineTime);
-                            break;
-                        case 3:
-                            fineTimeHTarget2->Fill(separatedEvent.fineTime);
-                            break;
-                        case 4:
-                            fineTimeHTarget3->Fill(separatedEvent.fineTime);
-                            break;
-                        case 5:
-                            fineTimeHTarget4->Fill(separatedEvent.fineTime);
-                            break;
-                        case 6:
-                            fineTimeHTarget5->Fill(separatedEvent.fineTime);
-                            break;
-                        default:
-                            break;
-                    }
-                }*/
 
                 if(procEvent.completeTime < prevTimetag)
                 {
@@ -324,6 +320,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                     }
                 }
 
+
                 addDetectorEvent(evtNo, sortedTree);
 
                 prevTimetag = procEvent.completeTime; 
@@ -335,9 +332,11 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                     fflush(stdout);
                 }
             }
-        }
 
-        tcTreeMacroTimes->Write();
+            sortedTree->Write();
+            sortedFile->Close();
+
+        }
 
         // Check for digitizer error (incrementing extTime before clearing timetag)
         /*if (extTime[separatedEvent.chNo] > extTimePrev && separatedEvent.timetag > pow(2,32)-1000)
@@ -346,8 +345,6 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
           cerr << "Skipping to next target changer event..." << endl;
           continue;
           }*/
-
-        sortedTree->Write();
 
         cout << endl;
     }
@@ -359,6 +356,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
             continue;
         }
 
+
         string treeName = channelMap[i]+"W";
         TTree* treeToSort = (TTree*)rawFile->Get(treeName.c_str());
         if(!treeToSort)
@@ -367,15 +365,17 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
             exit(1);
         }
 
+        delete separatedEvent.waveform;
+        separatedEvent.waveform = new vector<int>;
         setBranchesSeparated(treeToSort);
 
+        TFile* sortedFile = new TFile(sortedFileName.c_str(), "UPDATE");
         TTree* sortedTree = new TTree(treeName.c_str(),"");
-        sortedTree->SetDirectory(sortedFile);
         branchProcW(sortedTree);
 
         long totalEntries = treeToSort->GetEntries();
 
-        TTree* targetChangerTree = (TTree*)sortedFile->Get(channelMap[0].c_str());
+        TTree* targetChangerTree = (TTree*)sortedFile->Get(channelMap[1].c_str());
         setBranchesProcessedTC(targetChangerTree);
         long targetChangerEntries = targetChangerTree->GetEntries();
 
@@ -423,17 +423,6 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
         }
 
         sortedTree->Write();
+        sortedFile->Close();
     }
-
-    cout << endl;
-
-    /*fineTimeHBlank->Write();
-    fineTimeHTarget1->Write();
-    fineTimeHTarget2->Write();
-    fineTimeHTarget3->Write();
-    fineTimeHTarget4->Write();
-    fineTimeHTarget5->Write();
-    */
-
-    sortedFile->Close();
 }

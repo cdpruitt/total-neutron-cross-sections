@@ -22,7 +22,7 @@ const double FLIGHT_DISTANCE = 2694;  // detector distance from neutron
 // Digitizer constants
 
 const double SAMPLE_PERIOD = 2;       // digitizer sample rate, in ns
-const double MACROPULSE_OFFSET = 689.25; // timing delay between the digitizer (channel 0)
+const double MACROPULSE_OFFSET = 782.25; // timing delay between the digitizer (channel 0)
                                       // and the facility's RF clock (due to cable delay,
                                       // NIM logic, etc.), in ns
 const double VETO_OFFSET = 8;         // timing delay of the veto paddle after the main

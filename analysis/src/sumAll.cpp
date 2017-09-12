@@ -380,7 +380,7 @@ int main(int, char* argv[])
                 CSPrereqs subRunData(targetDataLocation);
 
                 // for histos
-                subRunData.readData(inFile, "lowThresholdDet", j);
+                subRunData.readData(inFile, "summedDet", j);
 
                 // for waveforms
                 //subRunData.readData(inFile, "lowThresholdDet", j, monitorFileName.str());

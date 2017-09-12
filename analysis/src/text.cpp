@@ -19,6 +19,7 @@ using namespace std;
 // Organize formatted text output by channel number:
 struct TextOutput {
     ofstream ch0;
+    ofstream ch1;
     ofstream ch2;
     ofstream ch3;
     ofstream ch4;
@@ -32,6 +33,7 @@ struct TextOutput {
 } textOutput;
 
 const string ch0Name = "textOutput/ch0.txt";
+const string ch1Name = "textOutput/ch1.txt";
 const string ch2Name = "textOutput/ch2.txt";
 const string ch3Name = "textOutput/ch3.txt";
 const string ch4Name = "textOutput/ch4.txt";
@@ -49,6 +51,9 @@ void printEvent(RawEvent& rawEvent, TextOutput& text)
     {
         case 0:
             out = &text.ch0;
+            break;
+        case 1:
+            out = &text.ch1;
             break;
         case 2:
             out = &text.ch2;
@@ -362,6 +367,7 @@ int main(int, char* argv[])
     cout << inFileName << " opened successfully. Start reading events..." << endl;
 
     textOutput.ch0.open(ch0Name);
+    textOutput.ch1.open(ch1Name);
     textOutput.ch2.open(ch2Name);
     textOutput.ch3.open(ch3Name);
     textOutput.ch4.open(ch4Name);
@@ -395,6 +401,7 @@ int main(int, char* argv[])
 
     inFile.close();
     textOutput.ch0.close();
+    textOutput.ch1.close();
     textOutput.ch2.close();
     textOutput.ch3.close();
     textOutput.ch4.close();

@@ -29,8 +29,8 @@ const std::vector<std::pair<int,int>> tarGates = {
 const double SCALEDOWN = 1; // (for debugging) only sort (total/SCALEDOWN) events
 
 // experimentally-determined digitizer deadtime
-const int DEADTIME_PERIOD = 225; // in ns
-const int DEADTIME_TRANSITION_PERIOD = 8; // in ns
+const int DEADTIME_PERIOD = 147; // in ns
+const int DEADTIME_TRANSITION_PERIOD = 13; // in ns
 
 const unsigned int TARGET_CHANGER_LED_THRESHOLD = 1500; // in ADC units
 const unsigned int MAIN_DETECTOR_LED_THRESHOLD = 3000; // in ADC units
@@ -50,10 +50,16 @@ const std::vector<std::string> targetNamesWaveform = {"blankWaveform", "shortCar
 const std::vector<std::string> detectorNames = {"summedDet"};
 //const std::vector<std::string> detectorNames = {"highThresholdDet","lowThresholdDet"};
 
-const std::vector<double> manualTimeOffsets = {0, -0.7, -1.04, -1.23, -1.39, -1.44};
+const std::vector<double> MACROTIME_TARGET_DRIFT = {0, 0.30, 0.42, 0.52, 0.58, 0.66};
 
-const double CFD_FRACTION = 0.5;
-const double CFD_DELAY = 1;
-const double CFD_ZC_TRIGGER_THRESHOLD = 30*CFD_FRACTION;
+const double CFD_FRACTION = 0.75;
+const unsigned int CFD_DELAY = 2;
+const double CFD_ZC_TRIGGER_THRESHOLD = 50*CFD_FRACTION;
+
+const double TC_CFD_FRACTION = 0.5;
+const unsigned int TC_CFD_DELAY = 2;
+const double TC_ZC_TRIGGER_THRESHOLD = 500*TC_CFD_FRACTION;
+
+const double TC_FINETIME_THRESHOLD = 3000;
 
 #endif

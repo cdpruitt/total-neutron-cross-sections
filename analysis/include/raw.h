@@ -12,7 +12,7 @@ bool readWaveformEventBody(std::ifstream& evtfile);
 double calculateCFDTime(std::vector<int>* waveform,
         double baseline,
         double fraction,
-        double delay,
+        unsigned int delay,
         bool isPositiveSignal);
 
 #endif

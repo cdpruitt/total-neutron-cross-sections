@@ -288,7 +288,7 @@ then
         printf "\nSorting sub-run $inputFileName\n"
 
         # Start analysis
-        analyze "$inputFileName" "$outputDirectoryName" "$runNumber"
+        analyze "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber"
         subrunNo=$(printf "%04d" $((10#$subrunNo+1)))
     done
     exit

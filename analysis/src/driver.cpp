@@ -99,6 +99,8 @@ int main(int, char* argv[])
     {
         // separate all data by channel and event type
         assignMacropulses(rawTreeFileName, sortedFileName, channelMap);
+
+        cout << "finished assignment" << endl;
     }
 
     else

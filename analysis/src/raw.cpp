@@ -70,23 +70,23 @@ using namespace std;
 extern RawEvent rawEvent; // struct for storing raw event data;
                           // defined in branches.cpp
 
-double calculateCFDTime(vector<int>* waveform, double baseline, double fraction, double delay, bool isPositiveSignal)
+double calculateCFDTime(vector<int>* waveform, double baseline, double fraction, unsigned int delay, bool isPositiveSignal)
 {
     if(delay<=0 || delay>=waveform->size())
     {
-        cerr << "Error: cannot calculate CFD time with delay outside range of [0,waveform.size()] (" << delay << " was provided)." << endl;
-        return -1;
+        cerr << "Error: cannot calculate CFD time with delay outside range of [0,waveform size] (" << delay << " was provided; waveform size() = " << waveform->size() << ")." << endl;
+        return 0;
     }
 
     if(fraction<=0 || fraction>=1)
     {
         cerr << "Error: cannot calculate CFD time with CFD fraction outside range of [0,1] (" << fraction << " was provided)." << endl;
-        return -1;
+        return 0;
     }
 
     bool listenForZC = false;
     double CFDSample;
-    double prevCFDSample;
+    double prevCFDSample = 0;
 
     if(isPositiveSignal)
     {
@@ -105,8 +105,10 @@ double calculateCFDTime(vector<int>* waveform, double baseline, double fraction,
             if(listenForZC && CFDSample>0)
             {
                 // found ZC: return time of crossing, i.e., (baseline-NZC)/(PZC-NZC)
-                return i+(baseline-prevCFDSample)/(CFDSample-prevCFDSample);
+                return i+(0-prevCFDSample)/(CFDSample-prevCFDSample)-TC_PRETRIGGER_SAMPLES;
             }
+
+            prevCFDSample = CFDSample;
         }
     }
 
@@ -127,15 +129,75 @@ double calculateCFDTime(vector<int>* waveform, double baseline, double fraction,
             if(listenForZC && CFDSample<0)
             {
                 // found ZC: return time of crossing, i.e., (baseline-NZC)/(PZC-NZC)
-                return i+(0-prevCFDSample)/(CFDSample-prevCFDSample);
+                return i+(0-prevCFDSample)/(CFDSample-prevCFDSample)-DETECTOR_PRETRIGGER_SAMPLES;
             }
+
+            prevCFDSample = CFDSample;
+
         }
     }
     
     //cerr << "Error: could not calculate fine time of waveform." << endl;
 
-    return -1;
+    return 0;
 }
+
+double calculateTCFineTime(vector<int>* waveform, double threshold)
+{
+    for(unsigned int i=1; i<waveform->size(); i++)
+    {
+        if(waveform->at(i) < threshold)
+        {
+            // found LED trigger; extract time via linear interpolation
+            return i+(threshold-waveform->at(i-1))/(waveform->at(i)-waveform->at(i-1));
+        }
+    }
+
+    cerr << "Error: failed to calculate macropulse start fine time. Exiting..." << endl;
+    exit(1);
+}
+
+/*double calculateTCFineTime(vector<int>* waveform, double baseline, double fraction, unsigned int delay)
+{
+    if(delay<=0 || delay>=waveform->size())
+    {
+        cerr << "Error: cannot calculate CFD time with delay outside range of [0,waveform.size()] (" << delay << " was provided)." << endl;
+        return 0;
+    }
+
+    if(fraction<=0 || fraction>=1)
+    {
+        cerr << "Error: cannot calculate CFD time with CFD fraction outside range of [0,1] (" << fraction << " was provided)." << endl;
+        return 0;
+    }
+
+    bool listenForZC = false;
+    double CFDSample;
+    double prevCFDSample=0;
+
+    for(unsigned int i=1; i<waveform->size()-(delay+1); i++)
+    {
+        // produce CFD sum: opposite-sign waveform*fraction + normal-sign waveform, centered at
+        // baseline
+        double CFDSample = waveform->at(i)-(fraction*waveform->at(i+delay)+baseline*(1-fraction));
+
+        if(!listenForZC && CFDSample<-TC_ZC_TRIGGER_THRESHOLD)
+        {
+            // approaching ZC - start looking for a ZC
+            listenForZC = true;
+        }
+
+        if(listenForZC && CFDSample>0)
+        {
+            // found ZC: return time of crossing, i.e., (baseline-NZC)/(PZC-NZC)
+            return i+(0-prevCFDSample)/(CFDSample-prevCFDSample)-TC_PRETRIGGER_SAMPLES;
+        }
+
+        prevCFDSample = CFDSample;
+    }
+
+    return 0;
+}*/
 
 // read a word off the input file and store in a variable
 bool readWord(ifstream& evtfile, unsigned int& variable)
@@ -220,8 +282,9 @@ bool readExtras(ifstream& evtfile)
 // read the event's waveform from the input file
 bool readWaveformData(ifstream& evtfile)
 {
-    if(!rawEvent.waveform)
+    if(rawEvent.waveform)
     {
+        delete rawEvent.waveform;
         rawEvent.waveform = new vector<int>;
     }
 
@@ -265,16 +328,6 @@ bool readWaveformEventBody(ifstream& evtfile)
 // read a single event from the input file
 bool readEvent(ifstream& evtfile)
 {
-    // to prepare for reading a new event, reset all DPP-specific event variables
-    //rawEvent.extTime = 0;
-    //rawEvent.fineTime = 0;
-    //rawEvent.sgQ = 0;
-    //rawEvent.lgQ = 0;
-    if(rawEvent.waveform)
-    {
-        rawEvent.waveform->clear();
-    }
-
     if(!readEventHeader(evtfile))
     {
         return false;
@@ -340,6 +393,8 @@ void readRawData(string inFileName, string outFileName, vector<string> channelMa
     double prevTimetag = 0;
     int prevEvtType = 0;
 
+    unsigned int lgQTargetChanger = 0;
+
 
     // count the number of events processed
     long rawNumberOfEvents = 0;
@@ -360,21 +415,34 @@ void readRawData(string inFileName, string outFileName, vector<string> channelMa
            extTime++; 
         }*/
 
-        // if LED mode is used instead of CFD, calculate fineTime by software CFD
-        switch(rawEvent.chNo)
+        // if fineTime is not provided in extras, calculate fineTime by software CFD
+        if(rawEvent.extraSelect==0)
         {
-            case 0:
-                rawEvent.fineTime = calculateCFDTime(rawEvent.waveform,
-                        rawEvent.baseline,
-                        CFD_FRACTION,
-                        CFD_DELAY,
-                        true)-TC_PRETRIGGER_SAMPLES;
-            default:
-                rawEvent.fineTime = calculateCFDTime(rawEvent.waveform,
+            switch(rawEvent.chNo)
+            {
+                case 0:
+                    rawEvent.fineTime = calculateTCFineTime(
+                            rawEvent.waveform,
+                            rawEvent.baseline-TC_FINETIME_THRESHOLD);
+                    break;
+                default:
+                    rawEvent.fineTime = calculateCFDTime(rawEvent.waveform,
                             rawEvent.baseline,
                             CFD_FRACTION,
                             CFD_DELAY,
-                            false)-DETECTOR_PRETRIGGER_SAMPLES;
+                            false);
+                    break;
+            }
+        }
+
+        if(rawEvent.chNo==0)
+        {
+            lgQTargetChanger = rawEvent.lgQ;
+        }
+
+        if(rawEvent.chNo==1)
+        {
+            rawEvent.lgQ = lgQTargetChanger;
         }
 
         /*if(prevEvtType!=rawEvent.evtType)
@@ -408,6 +476,8 @@ void readRawData(string inFileName, string outFileName, vector<string> channelMa
             fflush(stdout);
         }
     }
+
+    delete rawEvent.waveform;
 
     // reached end of input file - print statistics and clean up
     cout << "Finished processing event file" << endl;

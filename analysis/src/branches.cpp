@@ -151,12 +151,9 @@ void setBranchesVeto(TTree* tree)
 void setBranchesProcessedTC(TTree* tree)
 {
     tree->SetBranchAddress("macroTime",&tcEvent.macroTime);
-    tree->SetBranchAddress("fineTime",&tcEvent.fineTime);
     tree->SetBranchAddress("macroNo",&tcEvent.macroNo);
     tree->SetBranchAddress("modeChange",&tcEvent.modeChange);
     tree->SetBranchAddress("targetPos",&tcEvent.targetPos);
-    tree->SetBranchAddress("lgQ",&tcEvent.lgQ);
-    tree->SetBranchAddress("waveform",&tcEvent.waveform);
 }
 
 void setBranchesTC(TTree* tree)

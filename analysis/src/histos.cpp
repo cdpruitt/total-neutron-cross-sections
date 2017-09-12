@@ -392,11 +392,6 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
                 procEvent.completeTime -= gammaOffsets[procEvent.macroNo].first;
             }*/
 
-            if(procEvent.targetPos!=0)
-            {
-                procEvent.completeTime += manualTimeOffsets[procEvent.targetPos-1];
-            }
-
             double timeDiff = procEvent.completeTime-procEvent.macroTime;
             eventTimeDiff = procEvent.completeTime-prevCompleteTime;
 
@@ -439,10 +434,10 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
 
             // GATE: discard events with too low of an integrated charge for their energy
             //if (procEvent.lgQ>500*exp(-(microTime-100)/87))
-            /*if (procEvent.lgQ>100*rKE || procEvent.lgQ<10*rKE)
-              {
-              continue;
-              }*/
+            if (procEvent.lgQ<150)
+            {
+                continue;
+            }
 
 
             if(procEvent.targetPos==0)        // discard events during target-changer movement
@@ -560,7 +555,7 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
 
         long totalMacros = 0;
 
-        histoFile->cd("/targetChanger");
+        histoFile->cd("/macroTime");
 
         for(unsigned int i=0; i<tarGates.size()-1; i++)
         {
@@ -713,7 +708,7 @@ void fillBasicHistos(TFile* histoFile)
         TH1I* completeTimeH = new TH1I("completeTimeH","completeTime",pow(2,20),0,pow(2,32));
         completeTimeH->GetXaxis()->SetTitle("complete time of event");
 
-        TH1I* fineTimeH = new TH1I("fineTimeH","fineTimeH",300,-0.5,2.5);
+        TH1I* fineTimeH = new TH1I("fineTimeH","fineTimeH",1000,-5,5);
         fineTimeH->GetXaxis()->SetTitle("fine time of event");
 
         TH1I* diffCompleteTimeH = new TH1I("diffCompleteTimeH","diffCompleteTime",pow(2,20),0,pow(2,26));
@@ -729,7 +724,7 @@ void fillBasicHistos(TFile* histoFile)
         // Loop through sorted trees to calculate advanced histogram variables
 
         string name = t->GetName();
-        if(name=="targetChanger")
+        if(name=="macroTime")
         {
             setBranchesTC(t);
         }
@@ -849,7 +844,7 @@ void fillBasicHistos(TFile* histoFile)
 
             diffMacroCompleteTimesH->Fill(procEvent.completeTime-procEvent.macroTime);
 
-            if(name=="targetChanger")
+            if(name=="macroTime" || name=="targetChanger")
             {
                 continue;
             }
