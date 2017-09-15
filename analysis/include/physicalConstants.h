@@ -14,7 +14,7 @@ const double MACRO_PERIOD = pow(10,9)/MACRO_FREQUENCY;
                                       // macropulse period, in ns
 const double MACRO_LENGTH = 625000;   // macropulse duration, in ns
 const double MICRO_LENGTH = 1788.814; // micropulse duration, in ns
-const double FLIGHT_DISTANCE = 2720;  // detector distance from neutron
+const double FLIGHT_DISTANCE = 2710;  // detector distance from neutron
                                       // source, in cm
 
 // 348 micropulses/macropulse, from looking at time spectra
@@ -22,7 +22,7 @@ const double FLIGHT_DISTANCE = 2720;  // detector distance from neutron
 // Digitizer constants
 
 const double SAMPLE_PERIOD = 2;       // digitizer sample rate, in ns
-const double MACROPULSE_OFFSET = 784.2; // timing delay between the digitizer (channel 0)
+const double MACROPULSE_OFFSET = 779.35; // timing delay between the digitizer (channel 0)
                                       // and the facility's RF clock (due to cable delay,
                                       // NIM logic, etc.), in ns
 const double VETO_OFFSET = 8;         // timing delay of the veto paddle after the main

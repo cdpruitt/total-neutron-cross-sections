@@ -29,8 +29,8 @@ const std::vector<std::pair<int,int>> tarGates = {
 const double SCALEDOWN = 1; // (for debugging) only sort (total/SCALEDOWN) events
 
 // experimentally-determined digitizer deadtime
-const int DEADTIME_PERIOD = 147; // in ns
-const int DEADTIME_TRANSITION_PERIOD = 13; // in ns
+const int DEADTIME_PERIOD = 150; // in ns
+const int DEADTIME_TRANSITION_PERIOD = 15; // in ns
 
 const unsigned int TARGET_CHANGER_LED_THRESHOLD = 1500; // in ADC units
 const unsigned int MAIN_DETECTOR_LED_THRESHOLD = 3000; // in ADC units
@@ -54,7 +54,7 @@ const std::vector<double> MACROTIME_TARGET_DRIFT = {0, 0.30, 0.42, 0.52, 0.58, 0
 
 const double CFD_FRACTION = 0.75;
 const unsigned int CFD_DELAY = 2;
-const double CFD_ZC_TRIGGER_THRESHOLD = 50*CFD_FRACTION;
+const double CFD_ZC_TRIGGER_THRESHOLD = 30*CFD_FRACTION;
 
 const double TC_CFD_FRACTION = 0.5;
 const unsigned int TC_CFD_DELAY = 2;

@@ -69,6 +69,7 @@ void addDetectorEvent(long evtNo, TTree* detectorTree)
     procEvent.evtNo = evtNo;
     procEvent.sgQ = separatedEvent.sgQ;
     procEvent.lgQ = separatedEvent.lgQ;
+    procEvent.fineTime = separatedEvent.fineTime;
     procEvent.waveform = separatedEvent.waveform;
 
     // only add events that come while beam is on, during the macropulse 
@@ -190,6 +191,8 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
 
         else
         {
+            string fineTimeHName = channelMap[i]+"fineTimeH";
+            TH1I* fineTimeH = new TH1I(fineTimeHName.c_str(),fineTimeHName.c_str(),1000,-50,50);
             TFile* sortedFile = new TFile(sortedFileName.c_str(), "UPDATE");
             TTree* sortedTree = new TTree(channelMap[i].c_str(),"");
             sortedTree->SetDirectory(sortedFile);
@@ -250,6 +253,8 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                      separatedEvent.timetag +
                      separatedEvent.fineTime) +
                     TIME_OFFSET;
+
+                fineTimeH->Fill(separatedEvent.fineTime);
 
                 if(procEvent.completeTime < prevTimetag)
                 {
@@ -333,6 +338,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                 }
             }
 
+            fineTimeH->Write();
             sortedTree->Write();
             sortedFile->Close();
 

@@ -89,7 +89,8 @@ void examineRuns(string filePath, string run, string fileType, string subDir, st
         if(subDir.c_str())
         {
             gDirectory->cd("/");
-            gDirectory->GetDirectory(subDir.c_str())->cd();
+            TDirectory* newDir = gDirectory->GetDirectory(subDir.c_str());
+            newDir->cd();
         }
 
         histoToAdd = (TH1I*)gDirectory->Get(histoType.c_str());

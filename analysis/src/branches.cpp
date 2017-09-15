@@ -42,6 +42,7 @@ void branchProc(TTree*& tree)
 {
     tree->Branch("macroTime",&procEvent.macroTime,"macroTime/D");
     tree->Branch("completeTime",&procEvent.completeTime,"completeTime/D");
+    tree->Branch("fineTime",&procEvent.fineTime,"fineTime/D");
     tree->Branch("macroNo",&procEvent.macroNo,"macroNo/i");
     tree->Branch("evtNo",&procEvent.evtNo,"evtNo/i");
     tree->Branch("targetPos",&procEvent.targetPos,"targetPos/i");
@@ -119,6 +120,7 @@ void setBranchesHistos(TTree* tree)
 {
    tree->SetBranchAddress("macroNo",&procEvent.macroNo);
    tree->SetBranchAddress("macroTime",&procEvent.macroTime);
+   tree->SetBranchAddress("fineTime",&procEvent.fineTime);
    tree->SetBranchAddress("evtNo",&procEvent.evtNo);
    tree->SetBranchAddress("completeTime",&procEvent.completeTime);
    tree->SetBranchAddress("targetPos",&procEvent.targetPos);

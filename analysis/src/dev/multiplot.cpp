@@ -10,7 +10,7 @@
 // subDir = directory within ROOT file to look for plots (i.e., detS)
 // histoType = name of histogram to plot (i.e., target1CS)
 
-void multiplot()
+void multiplot(string filePath, string run, string subDir, string histoType)
 {
     const unsigned int CANVAS_WIDTH = 6;
     const unsigned int CANVAS_HEIGHT = 4;

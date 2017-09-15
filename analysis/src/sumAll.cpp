@@ -286,13 +286,11 @@ CrossSection calculateCS(CSPrereqs& targetData, CSPrereqs& blankData, string exp
     string name = targetData.target.getName();
     crossSection.createCSGraph(name, name);
 
-    /*
     CrossSection corrected = correctForBlank(crossSection, volumeDensity, expName, "literatureData.root");
     name += "blankCorrected";
-    corrected.createCSGraph(name);
-    */
+    corrected.createCSGraph(name, name);
 
-    return crossSection;
+    return corrected;
 }
 
 int main(int, char* argv[])

@@ -61,32 +61,37 @@ TH1D* convertTOFtoEnergy(TH1D* tof, string name)
     return energy;
 }
 
-double applyDeadtimeCorrection(vector<double> deadtimesPerBin, TH1D*& correctedTOF)
+double applyDeadtimeCorrection(TH1D*& rawTOF, TH1D*& correctedTOF, vector<double> deadtimesPerBin)
 {
-    double averageDeadtime = 0;
-
+    // produce histo showing deadtime for each bin
     string name = correctedTOF->GetName();
-    TH1D* uncorrectedTOF = (TH1D*)correctedTOF->Clone();
-
     name = name + "deadtimeH";
     TH1D* deadtimeH = (TH1D*)correctedTOF->Clone(name.c_str());
 
+    double sumOfDeadtimes = 0; // for computing average deadtime per bin
+
     for(int i=0; (size_t)i<deadtimesPerBin.size(); i++)
     {
-        correctedTOF->SetBinContent(i,uncorrectedTOF->GetBinContent(i)/(1-deadtimesPerBin[i]));
+        if(deadtimesPerBin[i]>=1)
+        {
+            cerr << "Error: attempted to correct for deadtime, but encountered deadtime >100%. Exiting." << endl;
+            exit(1);
+        }
+
+        correctedTOF->SetBinContent(i,rawTOF->GetBinContent(i)/(1-deadtimesPerBin[i]));
 
         deadtimeH->SetBinContent(i,pow(10,3)*deadtimesPerBin[i]);
-        averageDeadtime += deadtimesPerBin[i];
+        sumOfDeadtimes += deadtimesPerBin[i];
     }
 
     deadtimeH->Write();
     correctedTOF->Write();
     
-    return averageDeadtime/deadtimesPerBin.size();
+    return sumOfDeadtimes/deadtimesPerBin.size();
 }
 
 // recursive procedure for deadtime-correcting TOF plots
-vector<double> generateDeadtimeCorrection(TH1D* tof, TH1D* oldTOF, long totalNumberOfMicros)
+vector<double> generateDeadtimeCorrection(TH1D* tof, long totalNumberOfMicros)
 {
     vector<double> eventsPerMicroPerBin;
     vector<double> deadtimesPerBin(TOF_BINS,0);
@@ -100,12 +105,9 @@ vector<double> generateDeadtimeCorrection(TH1D* tof, TH1D* oldTOF, long totalNum
     const int deadtimeBins = (TOF_BINS/TOF_RANGE)*DEADTIME_PERIOD;
     const int deadtimeTransitionBins = (TOF_BINS/TOF_RANGE)*DEADTIME_TRANSITION_PERIOD;
 
-    TH1D* diffTOF = (TH1D*)tof->Clone();
-    diffTOF->Add(oldTOF, -1);
-
     for(int j=0; j<=TOF_BINS; j++)
     {
-        eventsPerMicroPerBin.push_back(diffTOF->GetBinContent(j)/((double)totalNumberOfMicros));
+        eventsPerMicroPerBin.push_back(tof->GetBinContent(j)/((double)totalNumberOfMicros));
     }
 
     // find the fraction of the time that the detector is dead for each bin in the micropulse
@@ -120,7 +122,7 @@ vector<double> generateDeadtimeCorrection(TH1D* tof, TH1D* oldTOF, long totalNum
             {
                 if(k<0)
                 {
-                    deadtimesPerBin[j] += eventsPerMicroPerBin[k+TOF_BINS]*(1-deadtimesPerBin[j])*((deadtimeBins+deadtimeTransitionBins-(j-k))/(double)deadtimeTransitionBins);
+                    deadtimesPerBin[j] += eventsPerMicroPerBin[k+TOF_BINS]*(1-deadtimesPerBin[j])*((deadtimeBins+deadtimeTransitionBins-(j-(k+TOF_BINS)))/(double)deadtimeTransitionBins);
                 }
 
                 else
@@ -143,7 +145,7 @@ vector<double> generateDeadtimeCorrection(TH1D* tof, TH1D* oldTOF, long totalNum
             }
         }
 
-        deadtimesPerBin[j] += eventsPerMicroPerBin[j]/2;
+        deadtimesPerBin[j] += eventsPerMicroPerBin[j]/2*(1-deadtimesPerBin[j]); // last bin contributes 1/2 its value
     }
 
     return deadtimesPerBin;
@@ -167,12 +169,17 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
         histoFile->cd(s.c_str());
 
         // create diagnostic histograms
-        TH2I *triangle = new TH2I("triangle","TOF vs. lgQ",TOF_RANGE,TOF_LOWER_BOUND,TOF_UPPER_BOUND,2048,0,65536);
+        TH2I *triangle = new TH2I("triangle","TOF vs. lgQ",TOF_RANGE,TOF_LOWER_BOUND,TOF_UPPER_BOUND/10,8192,0,65536);
         TH2I *triangleRKE = new TH2I("triangleRKE","relativistic KE vs. lgQ",NUMBER_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND,2048,0,65536);
         TH2I *sgQlgQ = new TH2I("sgQlgQ","short gate Q vs. long gate Q",2048,0,65536,2048,0,65536);
         TH1I *QRatio = new TH1I("QRatio","short gate Q/long gate Q",1000,0,1);
 
-        TH1I* timeDiffHisto = new TH1I("time since last event","time since last event",TOF_RANGE,0,TOF_RANGE);
+        TH1I* timeDiffHistoBlank = new TH1I("time since last event, blank","time since last event",TOF_RANGE,0,TOF_RANGE);
+        TH1I* timeDiffHistoTarget1 = new TH1I("time since last event, target 1","time since last event",TOF_RANGE,0,TOF_RANGE);
+        TH1I* timeDiffHistoTarget2 = new TH1I("time since last event, target 2","time since last event",TOF_RANGE,0,TOF_RANGE);
+        TH1I* timeDiffHistoTarget3 = new TH1I("time since last event, target 3","time since last event",TOF_RANGE,0,TOF_RANGE);
+        TH1I* timeDiffHistoTarget4 = new TH1I("time since last event, target 4","time since last event",TOF_RANGE,0,TOF_RANGE);
+        TH1I* timeDiffHistoTarget5 = new TH1I("time since last event, target 5","time since last event",TOF_RANGE,0,TOF_RANGE);
 
         TH2I *timeDiffVEnergy1 = new TH2I("time difference vs. energy of first","time difference vs. energy of first",TOF_RANGE,0,TOF_RANGE,500,2,700);
         TH2I *timeDiffVEnergy2 = new TH2I("time difference vs. energy of second","time difference vs. energy of second",TOF_RANGE,0,TOF_RANGE,NUMBER_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND);
@@ -346,18 +353,18 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
             }
         }*/
 
-        gammaOffsetHBlank->Write();
-        gammaOffsetHTarget1->Write();
-        gammaOffsetHTarget2->Write();
-        gammaOffsetHTarget3->Write();
-        gammaOffsetHTarget4->Write();
-        gammaOffsetHTarget5->Write();
+        //gammaOffsetHBlank->Write();
+        //gammaOffsetHTarget1->Write();
+        //gammaOffsetHTarget2->Write();
+        //gammaOffsetHTarget3->Write();
+        //gammaOffsetHTarget4->Write();
+        //gammaOffsetHTarget5->Write();
 
-        gammaOffsetByGammaNumber->Write();
+        //gammaOffsetByGammaNumber->Write();
 
-        numberOfGammasH->Write();
+        //numberOfGammasH->Write();
 
-        gammaToGammaTimeH->Write();
+        //gammaToGammaTimeH->Write();
 
         // add the very last macro's gammas into the gamma offsets
         //gammaOffsets.push_back(gammaTimes/numberOfGammas-(FLIGHT_DISTANCE/C)*pow(10,7));
@@ -393,6 +400,7 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
             }*/
 
             double timeDiff = procEvent.completeTime-procEvent.macroTime;
+
             eventTimeDiff = procEvent.completeTime-prevCompleteTime;
 
             /*****************************************************************/
@@ -453,11 +461,11 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
                     //&& (procEvent.sgQ/(double)procEvent.lgQ < 0.495
                     //|| procEvent.sgQ/(double)procEvent.lgQ > 0.505)
 
-                    && procEvent.lgQ < 65000
+                    /*&& procEvent.lgQ < 65000
                     && procEvent.sgQ < 32500
 
                     && procEvent.lgQ>50
-                    && procEvent.sgQ>50
+                    && procEvent.sgQ>50*/
                )
             {
                 /*****************************************************************/
@@ -474,7 +482,6 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
                     lgQ1VlgQ2_background->Fill(prevlgQ,procEvent.lgQ);
                 }*/
 
-                timeDiffHisto->Fill(eventTimeDiff);
                 timeDiffVEnergy1->Fill(eventTimeDiff,prevRKE);
                 timeDiffVEnergy2->Fill(eventTimeDiff,rKE);
                 energy1VEnergy2->Fill(prevRKE,rKE);
@@ -536,7 +543,13 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
         microNoH->Write();
         orderInMicroH->Write();
 
-        timeDiffHisto->Write();
+        timeDiffHistoBlank->Write();
+        timeDiffHistoTarget1->Write();
+        timeDiffHistoTarget2->Write();
+        timeDiffHistoTarget3->Write();
+        timeDiffHistoTarget4->Write();
+        timeDiffHistoTarget5->Write();
+
         timeDiffVEnergy1->Write();
         timeDiffVEnergy2->Write();
         energy1VEnergy2->Write();
@@ -573,25 +586,36 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
         for(unsigned int i=0; (unsigned int)i<microsPerTarget.size(); i++)
         {
             TH1D* rawTOF = ((TH1D*)plots[i]->getRawTOFHisto());
-            TH1D* prevRawTOF = (TH1D*)rawTOF->Clone();
-            prevRawTOF->Reset();
+            //TH1D* prevRawTOF = (TH1D*)rawTOF->Clone();
+            //prevRawTOF->Reset();
             //TH1D* correctedRawTOF;
 
-            TH1D* TOFToCorrect = ((TH1D*)plots[i]->getTOFHisto());
+            vector<double> deadtimeBins = generateDeadtimeCorrection(rawTOF, microsPerTarget[i]);
 
-            vector<double> deadtimeBins = generateDeadtimeCorrection(rawTOF, prevRawTOF, microsPerTarget[i]);
-            applyDeadtimeCorrection(deadtimeBins,TOFToCorrect);
-            prevRawTOF = (TH1D*)rawTOF->Clone();
-            double averageDeadtimeDiff = applyDeadtimeCorrection(deadtimeBins,rawTOF);
+            TH1D* correctedTOF = ((TH1D*)plots[i]->getTOFHisto());
+            double averageDeadtimeDiff = applyDeadtimeCorrection(rawTOF, correctedTOF, deadtimeBins) - 0;
+            //prevRawTOF = (TH1D*)rawTOF->Clone();
+            //double averageDeadtimeDiff = applyDeadtimeCorrection(deadtimeBins,rawTOF);
 
-            //double averageDeadtimeDiff = 0;
+            //TH1D* diffTOF = (TH1D*)correctedTOF->Clone();
+            //diffTOF->Add(oldTOF, -1);
 
             while(averageDeadtimeDiff>0.001)
             {
-                deadtimeBins = generateDeadtimeCorrection(rawTOF,prevRawTOF,microsPerTarget[i]);
-                applyDeadtimeCorrection(deadtimeBins,TOFToCorrect);
-                prevRawTOF = (TH1D*)rawTOF->Clone();
-                averageDeadtimeDiff = applyDeadtimeCorrection(deadtimeBins,rawTOF) - averageDeadtimeDiff;
+                rawTOF = correctedTOF;
+
+                vector<double> prevDeadtimeBins = deadtimeBins;
+                deadtimeBins = generateDeadtimeCorrection(rawTOF, microsPerTarget[i]);
+
+                for(unsigned int j=0; j<deadtimeBins.size(); j++)
+                {
+                    deadtimeBins[j] = deadtimeBins[j]-prevDeadtimeBins[j];
+                }
+
+                correctedTOF = ((TH1D*)plots[i]->getTOFHisto());
+                averageDeadtimeDiff = applyDeadtimeCorrection(rawTOF, correctedTOF, deadtimeBins) - averageDeadtimeDiff;
+                //prevRawTOF = (TH1D*)rawTOF->Clone();
+                //averageDeadtimeDiff = applyDeadtimeCorrection(deadtimeBins,rawTOF) - averageDeadtimeDiff;
             }
         }
 
@@ -669,22 +693,22 @@ void fillBasicHistos(TFile* histoFile)
         TH1I* macroNoHTarget5 = new TH1I("macroNoHTarget5","macroNoTarget5",200000,0,200000);
         macroNoHTarget5->GetXaxis()->SetTitle("macropulse number of each event, target 5");
 
-        TH1I* fineTimeHBlank = new TH1I("fineTimeHBlank","fineTimeBlank",6000,-2,4);
+        TH1I* fineTimeHBlank = new TH1I("fineTimeHBlank","fineTimeBlank",6000,-10,10);
         fineTimeHBlank->GetXaxis()->SetTitle("fine time, blank target");
 
-        TH1I* fineTimeHTarget1 = new TH1I("fineTimeHTarget1","fineTimeTarget1",6000,-2,4);
+        TH1I* fineTimeHTarget1 = new TH1I("fineTimeHTarget1","fineTimeTarget1",6000,-10,10);
         fineTimeHTarget1->GetXaxis()->SetTitle("fine time, target 1");
 
-        TH1I* fineTimeHTarget2 = new TH1I("fineTimeHTarget2","fineTimeTarget2",6000,-2,4);
+        TH1I* fineTimeHTarget2 = new TH1I("fineTimeHTarget2","fineTimeTarget2",6000,-10,10);
         fineTimeHTarget2->GetXaxis()->SetTitle("fine time, target 2");
 
-        TH1I* fineTimeHTarget3 = new TH1I("fineTimeHTarget3","fineTimeTarget3",6000,-2,4);
+        TH1I* fineTimeHTarget3 = new TH1I("fineTimeHTarget3","fineTimeTarget3",6000,-10,10);
         fineTimeHTarget3->GetXaxis()->SetTitle("fine time, target 3");
 
-        TH1I* fineTimeHTarget4 = new TH1I("fineTimeHTarget4","fineTimeTarget4",6000,-2,4);
+        TH1I* fineTimeHTarget4 = new TH1I("fineTimeHTarget4","fineTimeTarget4",6000,-10,10);
         fineTimeHTarget4->GetXaxis()->SetTitle("fine time, target 4");
 
-        TH1I* fineTimeHTarget5 = new TH1I("fineTimeHTarget5","fineTimeTarget5",6000,-2,4);
+        TH1I* fineTimeHTarget5 = new TH1I("fineTimeHTarget5","fineTimeTarget5",6000,-10,10);
         fineTimeHTarget5->GetXaxis()->SetTitle("fine time, target 5");
 
         TH1I* evtNoH = new TH1I("evtNoH","evtNo",150,0,150);
@@ -741,39 +765,41 @@ void fillBasicHistos(TFile* histoFile)
         TDirectory* waveformsDir = (TDirectory*)gDirectory->Get("waveformsDir");
         waveformsDir->cd();
 
-        double timeDiff = 0;
         int prevMacroNo = 0;
         double prevCompleteTime = 0;
+
+        double timeDiff;
+        double microTime;
 
         // loop through the channel-specific tree and populate histos
         for(long j=0; j<totalEntries; j++)
         {
             t->GetEntry(j);
 
+            timeDiff = procEvent.completeTime-procEvent.macroTime;
+            microTime = fmod(timeDiff,MICRO_LENGTH);
+
             if (procEvent.targetPos == 0)         // discard events during target-changer movement
             {
                 continue;
             }
 
-            if(j%1000==0)
+            if(j%50000==0)
             {
                 cout << "Processed " << j << " events through basic histos...\r";
                 fflush(stdout);
 
-                if(procEvent.targetPos==1)
+                stringstream temp;
+                temp << "macroNo " << procEvent.macroNo << ", evtNo " << procEvent.evtNo;
+                TH1I* waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),procEvent.waveform->size(),0,procEvent.waveform->size()*SAMPLE_PERIOD);
+
+                // loop through waveform data and fill histo
+                for(int k=0; (size_t)k<procEvent.waveform->size(); k++)
                 {
-                    stringstream temp;
-                    temp << "macroNo " << procEvent.macroNo << ", evtNo " << procEvent.evtNo;
-                    TH1I* waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),procEvent.waveform->size(),0,procEvent.waveform->size()*SAMPLE_PERIOD);
-
-                    // loop through waveform data and fill histo
-                    for(int k=0; (size_t)k<procEvent.waveform->size(); k++)
-                    {
-                        waveformH->SetBinContent(k,procEvent.waveform->at(k));
-                    }
-
-                    waveformH->Write();
+                    waveformH->SetBinContent(k,procEvent.waveform->at(k));
                 }
+
+                waveformH->Write();
             }
 
             /*if (name!="targetChanger" &&
