@@ -44,9 +44,9 @@ TH1D* convertTOFtoEnergy(TH1D* tof, string name)
 
     TH1D* energy = timeBinsToRKEBins(tof, name); 
 
-    int tofBins = tof->GetNbinsX();
+    unsigned int tofBins = tof->GetNbinsX();
 
-    for(int j=0; j<tofBins-1; j++)
+    for(unsigned int j=0; j<tofBins-1; j++)
     {
         // convert time into neutron velocity based on flight path distance
         double velocity = pow(10.,7.)*FLIGHT_DISTANCE/(tof->GetBinCenter(j)+randomizeBin->Uniform(-TOF_RANGE/(double)(2*TOF_BINS),TOF_RANGE/(double)(2*TOF_BINS))); // in meters/sec 
@@ -61,40 +61,48 @@ TH1D* convertTOFtoEnergy(TH1D* tof, string name)
     return energy;
 }
 
-double applyDeadtimeCorrection(TH1D*& rawTOF, TH1D*& correctedTOF, vector<double> deadtimesPerBin)
+double applyDeadtimeCorrection(TH1D*& rawTOF, vector<double> deadtimesPerBin)
 {
     // produce histo showing deadtime for each bin
-    string name = correctedTOF->GetName();
-    name = name + "deadtimeH";
-    TH1D* deadtimeH = (TH1D*)correctedTOF->Clone(name.c_str());
+    //string name = correctedTOF->GetName();
+    //name = name + "deadtimeH";
+    //TH1D* deadtimeH = (TH1D*)correctedTOF->Clone(name.c_str());
 
     double sumOfDeadtimes = 0; // for computing average deadtime per bin
+
+    string name = rawTOF->GetName();
+    name += "Corrected";
+    TH1D* correctedTOFHisto = (TH1D*)rawTOF->Clone(name.c_str());
 
     for(int i=0; (size_t)i<deadtimesPerBin.size(); i++)
     {
         if(deadtimesPerBin[i]>=1)
         {
-            cerr << "Error: attempted to correct for deadtime, but encountered deadtime >100%. Exiting." << endl;
+            cerr << "Error: attempted to correct for deadtime, but encountered deadtime >100% (deadtime was "
+                << deadtimesPerBin[i] << "). Exiting." << endl;
             exit(1);
         }
 
-        correctedTOF->SetBinContent(i,rawTOF->GetBinContent(i)/(1-deadtimesPerBin[i]));
-
-        deadtimeH->SetBinContent(i,pow(10,3)*deadtimesPerBin[i]);
+        correctedTOFHisto->SetBinContent(i+1,rawTOF->GetBinContent(i+1)/(1-deadtimesPerBin[i]));
         sumOfDeadtimes += deadtimesPerBin[i];
     }
 
-    deadtimeH->Write();
-    correctedTOF->Write();
+    correctedTOFHisto->Write();
     
     return sumOfDeadtimes/deadtimesPerBin.size();
 }
 
-// recursive procedure for deadtime-correcting TOF plots
 vector<double> generateDeadtimeCorrection(TH1D* tof, long totalNumberOfMicros)
 {
-    vector<double> eventsPerMicroPerBin;
+    vector<double> eventsPerMicroPerBin(TOF_BINS, 0);
     vector<double> deadtimesPerBin(TOF_BINS,0);
+
+    string name = tof->GetName();
+    string eventsPerMicroName = name + "EventsPerMicro";
+    TH1D* eventsPerMicroPerBinH = new TH1D(eventsPerMicroName.c_str(), eventsPerMicroName.c_str(),TOF_BINS,TOF_LOWER_BOUND,TOF_UPPER_BOUND);
+
+    string deadtimeName = name + "Deadtime";
+    TH1D* deadtimeHisto = new TH1D(deadtimeName.c_str(), deadtimeName.c_str(),TOF_BINS,TOF_LOWER_BOUND,TOF_UPPER_BOUND);
 
     if(totalNumberOfMicros==0)
     {
@@ -102,19 +110,23 @@ vector<double> generateDeadtimeCorrection(TH1D* tof, long totalNumberOfMicros)
         return deadtimesPerBin;
     }
 
-    const int deadtimeBins = (TOF_BINS/TOF_RANGE)*DEADTIME_PERIOD;
-    const int deadtimeTransitionBins = (TOF_BINS/TOF_RANGE)*DEADTIME_TRANSITION_PERIOD;
+    const int deadtimeBins = ((double)TOF_BINS/TOF_RANGE)*DEADTIME_PERIOD;
+    const int deadtimeTransitionBins = ((double)TOF_BINS/TOF_RANGE)*DEADTIME_TRANSITION_PERIOD;
 
-    for(int j=0; j<=TOF_BINS; j++)
+    for(int j=0; j<eventsPerMicroPerBin.size(); j++)
     {
-        eventsPerMicroPerBin.push_back(tof->GetBinContent(j)/((double)totalNumberOfMicros));
+        eventsPerMicroPerBin[j] = tof->GetBinContent(j+1)/((double)totalNumberOfMicros);
+        eventsPerMicroPerBinH->SetBinContent(j+1,eventsPerMicroPerBin[j]);
     }
+
+    eventsPerMicroPerBinH->Write();
 
     // find the fraction of the time that the detector is dead for each bin in the micropulse
     // set deadtime fraction base case
 
     // use deadtime base case to calculate deadtime for remaining bins
-    for(int j=0; (size_t)j<TOF_BINS; j++)
+
+    for(int j=0; j<TOF_BINS; j++)
     {
         for(int k=j-(deadtimeBins+deadtimeTransitionBins); k<j; k++)
         {
@@ -122,12 +134,12 @@ vector<double> generateDeadtimeCorrection(TH1D* tof, long totalNumberOfMicros)
             {
                 if(k<0)
                 {
-                    deadtimesPerBin[j] += eventsPerMicroPerBin[k+TOF_BINS]*(1-deadtimesPerBin[j])*((deadtimeBins+deadtimeTransitionBins-(j-(k+TOF_BINS)))/(double)deadtimeTransitionBins);
+                    deadtimesPerBin[j] += eventsPerMicroPerBin[k+TOF_BINS]/*(double)(1-deadtimesPerBin[j])*/*((deadtimeBins+deadtimeTransitionBins-(j-k))/(double)deadtimeTransitionBins);
                 }
 
                 else
                 {
-                    deadtimesPerBin[j] += eventsPerMicroPerBin[k]*(1-deadtimesPerBin[j])*((deadtimeBins+deadtimeTransitionBins-(j-k))/(double)deadtimeTransitionBins);
+                    deadtimesPerBin[j] += eventsPerMicroPerBin[k]/*(double)(1-deadtimesPerBin[j])*/*((deadtimeBins+deadtimeTransitionBins-(j-k))/(double)deadtimeTransitionBins);
                 }
             }
 
@@ -135,18 +147,23 @@ vector<double> generateDeadtimeCorrection(TH1D* tof, long totalNumberOfMicros)
             {
                 if(k<0)
                 {
-                    deadtimesPerBin[j] += eventsPerMicroPerBin[k+TOF_BINS]*(double)(1-deadtimesPerBin[j]);
+                    deadtimesPerBin[j] += eventsPerMicroPerBin[k+TOF_BINS]/*(double)(1-deadtimesPerBin[j])*/;
                 }
 
                 else
                 {
-                    deadtimesPerBin[j] += eventsPerMicroPerBin[k]*(double)(1-deadtimesPerBin[j]);
+                    deadtimesPerBin[j] += eventsPerMicroPerBin[k]/*(double)(1-deadtimesPerBin[j])*/;
                 }
             }
         }
 
-        deadtimesPerBin[j] += eventsPerMicroPerBin[j]/2*(1-deadtimesPerBin[j]); // last bin contributes 1/2 its value
+        deadtimesPerBin[j] += eventsPerMicroPerBin[j]/2/*(1-deadtimesPerBin[j])*/; // last bin contributes 1/2 its value
+
+        deadtimeHisto->SetBinContent(j+1,deadtimesPerBin[j]);
+
     }
+
+    deadtimeHisto->Write();
 
     return deadtimesPerBin;
 }
@@ -212,10 +229,18 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
         TH1I* numberOfGammasH = new TH1I("numberOfGammasH", "number of gammas in each macropulse", 20, 0, 20);
 
         // make target-specific plots
-        vector<Plots*> plots;
+        //vector<Plots*> plots;
+
+        vector<TH1D*> TOFHistos;
+        vector<TH1D*> energyHistos;
+
         for(unsigned int i=0; i<positionNames.size(); i++)
         {
-            plots.push_back(new Plots(positionNames[i]));
+            string TOFName = positionNames[i] + "TOF";
+            TOFHistos.push_back(new TH1D(TOFName.c_str(),TOFName.c_str(),TOF_BINS,TOF_LOWER_BOUND,TOF_UPPER_BOUND));
+
+            string energyName =  positionNames[i] + "Energy";
+            energyHistos.push_back(timeBinsToRKEBins(TOFHistos.back(),energyName));
         }
 
         // reattach to the channel-specific tree for reading out data
@@ -238,7 +263,7 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
 
         // channel-dependent time offset relative to the target changer's macropulse
         // start time
-        int gammaGate[2] = {83,88};
+        const unsigned int gammaGate[2] = {83,88};
 
         double eventTimeDiff = 0;
         double prevCompleteTime = 0;
@@ -265,7 +290,7 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
         int prevTargetPos = 0;
         double prevGammaTime = 0;
 
-        TH1I* histoToFill;
+        //TH1I* histoToFill;
 
         double timeOffset = 0;
 
@@ -454,7 +479,9 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
             }
 
             // Fill raw TOF before gates:
-            ((TH1D*)plots[procEvent.targetPos-1]->getRawTOFHisto())->Fill(microTime);
+
+            TOFHistos[procEvent.targetPos-1]->Fill(microTime);
+            energyHistos[procEvent.targetPos-1]->Fill(rKE);
 
             // Apply gates:
             if (timeDiff < MACRO_LENGTH && timeDiff > 0 // omit events outside beam-on period
@@ -492,9 +519,6 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
 
                 /*****************************************************************/
                 // Fill target-specific plots
-
-                ((TH1D*)plots[procEvent.targetPos-1]->getTOFHisto())->Fill(microTime);
-                ((TH1D*)plots[procEvent.targetPos-1]->getEnergyHisto())->Fill(rKE);
 
                 /*if(!gammaInMicro)
                   {
@@ -557,24 +581,24 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
         lgQ1VlgQ2->Write();
         lgQ1VlgQ2_background->Write();
 
-        for(unsigned int i=0; i<positionNames.size(); i++)
+        for(auto histo : TOFHistos)
         {
-            ((TH1D*)plots[i]->getTOFHisto())->Write();
-            ((TH1D*)plots[i]->getEnergyHisto())->Write();
+            histo->Write();
+        }
+
+        for(auto histo : energyHistos)
+        {
+            histo->Write();
         }
 
         std::vector<long> macrosPerTarget;
         std::vector<long> microsPerTarget;
-
-        long totalMacros = 0;
 
         histoFile->cd("/macroTime");
 
         for(unsigned int i=0; i<tarGates.size()-1; i++)
         {
             macrosPerTarget.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(i+2));
-            totalMacros+=macrosPerTarget.back();
-
             microsPerTarget.push_back(macrosPerTarget.back()*(MACRO_LENGTH/MICRO_LENGTH));
         }
 
@@ -585,22 +609,11 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
         // <0.1%
         for(unsigned int i=0; (unsigned int)i<microsPerTarget.size(); i++)
         {
-            TH1D* rawTOF = ((TH1D*)plots[i]->getRawTOFHisto());
-            //TH1D* prevRawTOF = (TH1D*)rawTOF->Clone();
-            //prevRawTOF->Reset();
-            //TH1D* correctedRawTOF;
+            vector<double> deadtimeBins = generateDeadtimeCorrection(TOFHistos[i], microsPerTarget[i]);
 
-            vector<double> deadtimeBins = generateDeadtimeCorrection(rawTOF, microsPerTarget[i]);
+            double averageDeadtimeDiff = applyDeadtimeCorrection(TOFHistos[i], deadtimeBins) - 0;
 
-            TH1D* correctedTOF = ((TH1D*)plots[i]->getTOFHisto());
-            double averageDeadtimeDiff = applyDeadtimeCorrection(rawTOF, correctedTOF, deadtimeBins) - 0;
-            //prevRawTOF = (TH1D*)rawTOF->Clone();
-            //double averageDeadtimeDiff = applyDeadtimeCorrection(deadtimeBins,rawTOF);
-
-            //TH1D* diffTOF = (TH1D*)correctedTOF->Clone();
-            //diffTOF->Add(oldTOF, -1);
-
-            while(averageDeadtimeDiff>0.001)
+            /*while(averageDeadtimeDiff>0.001)
             {
                 rawTOF = correctedTOF;
 
@@ -613,28 +626,26 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
                 }
 
                 correctedTOF = ((TH1D*)plots[i]->getTOFHisto());
-                averageDeadtimeDiff = applyDeadtimeCorrection(rawTOF, correctedTOF, deadtimeBins) - averageDeadtimeDiff;
-                //prevRawTOF = (TH1D*)rawTOF->Clone();
-                //averageDeadtimeDiff = applyDeadtimeCorrection(deadtimeBins,rawTOF) - averageDeadtimeDiff;
-            }
+                deadtimeH = ((TH1D*)plots[i]->getDeadtimeHisto());
+                averageDeadtimeDiff = applyDeadtimeCorrection(rawTOF, correctedTOF, deadtimeH, deadtimeBins) - averageDeadtimeDiff;
+            }*/
         }
 
         // calculate likelihood of double peak in wavelet, for each TOF bin
-        if(microsPerTarget[0]==0)
-        {
-            cerr << "Error: can't calculate double peak likelihood with 0 total micros" << endl;
-            continue;
-        }
-
         const int waveletBins = (TOF_BINS/TOF_RANGE)*WAVELET_PERIOD;
 
         vector<double> eventsPerMicroPerBin(TOF_BINS);
         vector<double> doublePeakOddsPerBin(TOF_BINS);
 
-        TH1D* tof = (TH1D*)plots[0]->getTOFHisto();
-
-        for(int i=0; i<eventsPerMicroPerBin.size(); i++)
+        //TH1D* tof = (TH1D*)plots[0]->getTOFHisto();
+        /*for(int i=0; i<eventsPerMicroPerBin.size(); i++)
         {
+            if(microsPerTarget[0]==0)
+            {
+                cerr << "Error: can't calculate double peak likelihood with 0 total micros" << endl;
+                continue;
+            }
+
             eventsPerMicroPerBin[i] = tof->GetBinContent(i)/(double)microsPerTarget[0];
         }
 
@@ -658,6 +669,7 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
         }
 
         doublePeakH->Write();
+        */
     }
 }
 

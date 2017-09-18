@@ -193,7 +193,7 @@ int main(int, char* argv[])
 
             for(string positionName : positionNames)
             {
-                string histoName = positionName + "TOF";
+                string histoName = positionName + "TOFCorrected";
                 TH1D* tof = (TH1D*)gDirectory->Get(histoName.c_str());
                 convertTOFtoEnergy(tof, positionName + "CorrectedEnergy");
             }

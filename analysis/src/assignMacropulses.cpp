@@ -163,6 +163,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                   tcEvent.macroTime += MACROTIME_TARGET_DRIFT[tcEvent.targetPos-1];
                   }*/
 
+                
                 if(prevTimetag > tcEvent.macroTime)
                 {
                     // mode change
@@ -173,6 +174,16 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                 {
                     tcEvent.modeChange = 0;
                 }
+
+                // Check for digitizer error (incrementing extTime before clearing timetag)
+                if ((separatedEvent.extTime>0) && separatedEvent.timetag > pow(2,32)-1000)
+                {
+                    cerr << "Found a target changer event with a timestamp-reset failure (i.e., extTime incremented before timetag was reset to 0). MacroNo = " << tcEvent.macroNo << ", extTime = " << separatedEvent.extTime << ", timetag = " << separatedEvent.timetag << endl;
+                    cerr << "Skipping to next target changer event..." << endl;
+                    continue;
+                }
+
+                cout << endl;
 
                 addTCEvent(sortedTree);
 
@@ -344,15 +355,6 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
 
         }
 
-        // Check for digitizer error (incrementing extTime before clearing timetag)
-        /*if (extTime[separatedEvent.chNo] > extTimePrev && separatedEvent.timetag > pow(2,32)-1000)
-          {
-          cerr << "Found a target changer event with a timestamp-reset failure (i.e., extTime incremented before timetag was reset to 0). MacroNo = " << tcEvent.macroNo << ", extTime = " << separatedEvent.extTime << ", extTimePrev = " << extTimePrev << ", timetag = " << separatedEvent.timetag << ", timetagPrev = " << timetagPrev << endl;
-          cerr << "Skipping to next target changer event..." << endl;
-          continue;
-          }*/
-
-        cout << endl;
     }
 
     for(int i=0; i<channelMap.size(); i++)

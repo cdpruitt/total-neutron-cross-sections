@@ -355,7 +355,7 @@ then
 
             outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
             printf "\n\n***Starting sort of sub-run $subrunNo***\n"
-            analyze "$inputFileName" "$outputDirectoryName" "$runNumber"
+            analyze "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber"
 
             # Skip subruns < 1GB in size
             runSize=$(du -k "$inputFileName" | cut -f 1)

@@ -308,6 +308,7 @@ void CrossSection::subtractCS(string subtrahendFileName, string subtrahendGraphN
 
     // perform the subtraction
     this->addDataSet(rawCSData-subtrahendData*factor);
+    subtrahendFile->Close();
 }
 
 CrossSection subtractCS(string rawCSFileName, string rawCSGraphName,

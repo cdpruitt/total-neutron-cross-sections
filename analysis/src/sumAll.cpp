@@ -286,11 +286,13 @@ CrossSection calculateCS(CSPrereqs& targetData, CSPrereqs& blankData, string exp
     string name = targetData.target.getName();
     crossSection.createCSGraph(name, name);
 
-    CrossSection corrected = correctForBlank(crossSection, volumeDensity, expName, "literatureData.root");
-    name += "blankCorrected";
-    corrected.createCSGraph(name, name);
+    //CrossSection corrected = correctForBlank(crossSection, volumeDensity, expName, "literatureData.root");
+    //name += "blankCorrected";
 
-    return corrected;
+    //corrected.createCSGraph(name, name);
+
+    //return corrected;
+    return crossSection;
 }
 
 int main(int, char* argv[])
@@ -367,8 +369,7 @@ int main(int, char* argv[])
             // get target order for this run
             vector<string> targetOrder = getTargetOrder(expName, stoi(runNumber));
 
-            cout << "Adding " << runNumber << ", subrun " << subRun << "\r";
-            fflush(stdout);
+            cout << "Adding " << runNumber << ", subrun " << subRun << endl;
 
             // Loop through all target positions in this subrun
             for(int j=0; (size_t)j<targetOrder.size(); j++)
