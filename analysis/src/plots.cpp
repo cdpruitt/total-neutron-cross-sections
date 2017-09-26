@@ -57,7 +57,7 @@ double RKEToTOF(double RKE)
     return TOF; // in ns
 }
 
-TH1D* timeBinsToRKEBins(TH1D *inputHisto, string name)
+TH1D* timeBinsToRKEBins(TH1D* inputHisto, string name)
 {
     // extract the total number of bins in the input Histo (minus the
     // overflow and underflow bins)
@@ -66,7 +66,7 @@ TH1D* timeBinsToRKEBins(TH1D *inputHisto, string name)
     double minimumTime = (((TAxis*)inputHisto->GetXaxis())->GetXmin());
     int minimumBin = 0;
 
-    for(int i=0; i<nOldBins; i++)
+    for(int i=1; i<nOldBins+1; i++)
     {
         if(tofToRKE(minimumTime)>0 && tofToRKE(minimumTime)<ENERGY_UPPER_BOUND)
         {
@@ -95,7 +95,8 @@ TH1D* timeBinsToRKEBins(TH1D *inputHisto, string name)
         {
             break;
         }
-        maximumTime = inputHisto->GetBinLowEdge(i);
+
+        maximumTime = inputHisto->GetBinLowEdge(i) + inputHisto->GetBinWidth(i);
         maximumBin = i;
     }
 
@@ -118,14 +119,17 @@ TH1D* timeBinsToRKEBins(TH1D *inputHisto, string name)
     // n bins are defined n+1 points (like fence sections and fence posts)
     for(int i=0; i<nUnscaledEnergyBins; i++)
     {
-        double newBin = tofToRKE(oldAxis->GetBinLowEdge(maximumBin-i));
+        double newBin = tofToRKE(oldAxis->GetBinLowEdge(maximumBin-i)+oldAxis->GetBinWidth(maximumBin-i));
         if(newBin<=0)
         {
             cerr << "Error: tried to make negative energy bin." << endl;
             exit(1);
         }
+
         unscaledEnergyBins.push_back(newBin);
     }
+
+    unscaledEnergyBins.push_back(tofToRKE(oldAxis->GetBinLowEdge(minimumBin)));
     
     // Downscale bins to desired granularity
     vector<double> scaledEnergyBins = scaleBins(unscaledEnergyBins, nUnscaledEnergyBins/NUMBER_ENERGY_BINS);

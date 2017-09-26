@@ -332,7 +332,6 @@ int main(int, char* argv[])
 
     // Runlist open - loop through all runs
     string runNumber;
-    int runCounter = 0;
     while (runList >> runNumber)
     {
         // Loop through all subruns of this run
@@ -379,7 +378,7 @@ int main(int, char* argv[])
                 CSPrereqs subRunData(targetDataLocation);
 
                 // for histos
-                subRunData.readData(inFile, "summedDet", j);
+                subRunData.readData(inFile, "highTDet", j);
 
                 // for waveforms
                 //subRunData.readData(inFile, "lowThresholdDet", j, monitorFileName.str());
@@ -393,22 +392,10 @@ int main(int, char* argv[])
                         csp = csp + subRunData;
                     }
                 }
-
-                /*string outputName = dataLocation + "/" + targetOrder[j] + ".txt";
-                textOutput.open(outputName, ios_base::app);
-
-                long stoppingDetCounts = subRunData.TOFHisto->GetEntries();
-                textOutput << runCounter << " "
-                    << stoppingDetCounts/(double)subRunData.monitorCounts
-                    << endl;
-                textOutput.close();
-                */
             }
 
             // Close the sub-run input files
             inFile->Close();
-
-            runCounter++;
         }
     }
 

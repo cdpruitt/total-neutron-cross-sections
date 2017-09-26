@@ -30,8 +30,13 @@ void CSPrereqs::getHisto(TFile* histoFile, string directory, string name)
 // for histos
 void CSPrereqs::getMonitorCounts(TFile* histoFile, string directory, int targetPosition)
 {
+    histoFile->cd("highTDet");
+    double badMacroRatio = ((TH1I*)gDirectory->Get("ratio of bad macros"))->GetBinContent(targetPosition+2);
+
+    cout << "bad macro ratio = " << badMacroRatio << endl;
+
     histoFile->cd(directory.c_str());
-    monitorCounts = ((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(targetPosition+2);
+    monitorCounts = ((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(targetPosition+2)*(1-badMacroRatio);
 }
 
 // for waveforms

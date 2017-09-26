@@ -32,6 +32,11 @@ vector<TTree*> orchardW; // holds waveform-mode channel-specific trees
 // so that fillHistos can loop through all the trees and make the same histos
 // for each tree
 
+const unsigned int MACRO_EVENTS_LOW_THRESHOLD = 100;
+const unsigned int MACRO_EVENTS_HIGH_THRESHOLD = 280;
+
+vector<pair<double,long>> gammaOffsets;
+
 TH1D* convertTOFtoEnergy(TH1D* tof, string name)
 {
     if(!tof)
@@ -44,9 +49,9 @@ TH1D* convertTOFtoEnergy(TH1D* tof, string name)
 
     TH1D* energy = timeBinsToRKEBins(tof, name); 
 
-    unsigned int tofBins = tof->GetNbinsX();
+    unsigned int tofBins = tof->GetNbinsX()-2;
 
-    for(unsigned int j=0; j<tofBins-1; j++)
+    for(unsigned int j=1; j<tofBins+1; j++)
     {
         // convert time into neutron velocity based on flight path distance
         double velocity = pow(10.,7.)*FLIGHT_DISTANCE/(tof->GetBinCenter(j)+randomizeBin->Uniform(-TOF_RANGE/(double)(2*TOF_BINS),TOF_RANGE/(double)(2*TOF_BINS))); // in meters/sec 
@@ -134,12 +139,12 @@ vector<double> generateDeadtimeCorrection(TH1D* tof, long totalNumberOfMicros)
             {
                 if(k<0)
                 {
-                    deadtimesPerBin[j] += eventsPerMicroPerBin[k+TOF_BINS]/*(double)(1-deadtimesPerBin[j])*/*((deadtimeBins+deadtimeTransitionBins-(j-k))/(double)deadtimeTransitionBins);
+                    deadtimesPerBin[j] += eventsPerMicroPerBin[k+TOF_BINS]*(double)(1-deadtimesPerBin[j])*((deadtimeBins+deadtimeTransitionBins-(j-k))/(double)deadtimeTransitionBins);
                 }
 
                 else
                 {
-                    deadtimesPerBin[j] += eventsPerMicroPerBin[k]/*(double)(1-deadtimesPerBin[j])*/*((deadtimeBins+deadtimeTransitionBins-(j-k))/(double)deadtimeTransitionBins);
+                    deadtimesPerBin[j] += eventsPerMicroPerBin[k]*(double)(1-deadtimesPerBin[j])*((deadtimeBins+deadtimeTransitionBins-(j-k))/(double)deadtimeTransitionBins);
                 }
             }
 
@@ -147,20 +152,22 @@ vector<double> generateDeadtimeCorrection(TH1D* tof, long totalNumberOfMicros)
             {
                 if(k<0)
                 {
-                    deadtimesPerBin[j] += eventsPerMicroPerBin[k+TOF_BINS]/*(double)(1-deadtimesPerBin[j])*/;
+                    deadtimesPerBin[j] += eventsPerMicroPerBin[k+TOF_BINS]*(double)(1-deadtimesPerBin[j]);
                 }
 
                 else
                 {
-                    deadtimesPerBin[j] += eventsPerMicroPerBin[k]/*(double)(1-deadtimesPerBin[j])*/;
+                    deadtimesPerBin[j] += eventsPerMicroPerBin[k]*(double)(1-deadtimesPerBin[j]);
                 }
             }
         }
 
-        deadtimesPerBin[j] += eventsPerMicroPerBin[j]/2/*(1-deadtimesPerBin[j])*/; // last bin contributes 1/2 its value
+        deadtimesPerBin[j] += (eventsPerMicroPerBin[j]/2)*(1-deadtimesPerBin[j]); // last bin contributes 1/2 its value
+
+        // scale up events per micro on-the-fly
+        //eventsPerMicroPerBin[j] *= (1-deadtimesPerBin[j]);
 
         deadtimeHisto->SetBinContent(j+1,deadtimesPerBin[j]);
-
     }
 
     deadtimeHisto->Write();
@@ -198,6 +205,14 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
         TH1I* timeDiffHistoTarget4 = new TH1I("time since last event, target 4","time since last event",TOF_RANGE,0,TOF_RANGE);
         TH1I* timeDiffHistoTarget5 = new TH1I("time since last event, target 5","time since last event",TOF_RANGE,0,TOF_RANGE);
 
+        TH1I* goodMacroNoH = new TH1I("good macros","good macros",200000,0,200000);
+        TH1I* goodMacroNoHBlank = new TH1I("good macros, blank","good macros, blank",200000,0,200000);
+        TH1I* goodMacroNoHTarget1 = new TH1I("good macros, target 1","good macros, target 1",200000,0,200000);
+        TH1I* goodMacroNoHTarget2 = new TH1I("good macros, target 2","good macros, target 2",200000,0,200000);
+        TH1I* goodMacroNoHTarget3 = new TH1I("good macros, target 3","good macros, target 3",200000,0,200000);
+        TH1I* goodMacroNoHTarget4 = new TH1I("good macros, target 4","good macros, target 4",200000,0,200000);
+        TH1I* goodMacroNoHTarget5 = new TH1I("good macros, target 5","good macros, target 5",200000,0,200000);
+
         TH2I *timeDiffVEnergy1 = new TH2I("time difference vs. energy of first","time difference vs. energy of first",TOF_RANGE,0,TOF_RANGE,500,2,700);
         TH2I *timeDiffVEnergy2 = new TH2I("time difference vs. energy of second","time difference vs. energy of second",TOF_RANGE,0,TOF_RANGE,NUMBER_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND);
         TH2I *energy1VEnergy2 = new TH2I("energy of first vs. energy of second","energy of first vs. energy of second",10*NUMBER_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND,10*NUMBER_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND);
@@ -227,6 +242,8 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
         TH2I* gammaOffsetByGammaNumber = new TH2I("gammaOffsetByGammaNumber","gammaOffsetByGammaNumber",12,0,12,1000,-5,5);
 
         TH1I* numberOfGammasH = new TH1I("numberOfGammasH", "number of gammas in each macropulse", 20, 0, 20);
+
+        TH1D* ratioBadMacrosH = new TH1D("ratio of bad macros","ratio of bad macros",7,0,7);
 
         // make target-specific plots
         //vector<Plots*> plots;
@@ -263,8 +280,6 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
 
         // channel-dependent time offset relative to the target changer's macropulse
         // start time
-        const unsigned int gammaGate[2] = {83,88};
-
         double eventTimeDiff = 0;
         double prevCompleteTime = 0;
         double prevMicroTime = 0;
@@ -279,150 +294,176 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
         unsigned int numberOfGammas = 0;
         double gammaTimesSum = 0;
 
-        vector<pair<double,long>> gammaOffsets;
-        //vector<pair<double,int>> gammaOffsetsByTarget;
-
         vector<int> macrosByTarget;
 
         long totalEntries = tree->GetEntries();
 
         long prevMacroNo = 0;
         int prevTargetPos = 0;
-        double prevGammaTime = 0;
-
-        //TH1I* histoToFill;
 
         double timeOffset = 0;
 
         // calculate time offset using gammas
-        /*for(long i=0; i<totalEntries; i++)
+        if(s=="summedDet")
         {
-            tree->GetEntry(i);
-
-            if(procEvent.macroNo!=prevMacroNo)
+            for(long i=0; i<totalEntries; i++)
             {
-                //macrosByTarget.push_back(prevTargetPos);
+                tree->GetEntry(i);
 
-                numberOfGammasH->Fill(numberOfGammas);
-
-                if(numberOfGammas>=1)
+                if(procEvent.macroNo!=prevMacroNo)
                 {
-                    // calculate average gamma offset for previous macro
-                    gammaOffsets.push_back(make_pair(gammaTimesSum/(double)numberOfGammas-(FLIGHT_DISTANCE/C)*pow(10,7),prevMacroNo));
-                }
+                    numberOfGammasH->Fill(numberOfGammas);
 
-                else
-                {
-                    if(gammaOffsets.size())
+                    if(numberOfGammas>=1)
                     {
-                        gammaOffsets.push_back(make_pair(gammaOffsets.back().first, prevMacroNo));
+                        // calculate average gamma offset for previous macro
+                        gammaOffsets.push_back(make_pair(gammaTimesSum/(double)numberOfGammas-(FLIGHT_DISTANCE/C)*pow(10,7),prevMacroNo));
                     }
 
                     else
                     {
-                        gammaOffsets.push_back(make_pair(0, prevMacroNo));
+                        if(gammaOffsets.size())
+                        {
+                            gammaOffsets.push_back(make_pair(gammaOffsets.back().first, prevMacroNo));
+                        }
+
+                        else
+                        {
+                            gammaOffsets.push_back(make_pair(0, prevMacroNo));
+                        }
                     }
+
+                    gammaOffsetByGammaNumber->Fill(numberOfGammas,gammaOffsets.back().first);
+
+                    switch(procEvent.targetPos)
+                    {
+                        case 1:
+                            gammaOffsetHBlank->Fill(gammaOffsets.back().first);
+                            break;
+                        case 2:
+                            gammaOffsetHTarget1->Fill(gammaOffsets.back().first);
+                            break;
+                        case 3:
+                            gammaOffsetHTarget2->Fill(gammaOffsets.back().first);
+                            break;
+                        case 4:
+                            gammaOffsetHTarget3->Fill(gammaOffsets.back().first);
+                            break;
+                        case 5:
+                            gammaOffsetHTarget4->Fill(gammaOffsets.back().first);
+                            break;
+                        case 6:
+                            gammaOffsetHTarget5->Fill(gammaOffsets.back().first);
+                            break;
+                        default:
+                            break;
+                    }
+
+                    numberOfGammas=0;
+                    gammaTimesSum=0;
                 }
 
-                gammaOffsetByGammaNumber->Fill(numberOfGammas,gammaOffsets.back().first);
+                double timeDiff = procEvent.completeTime-procEvent.macroTime;
+                microTime = fmod(timeDiff,MICRO_LENGTH);
 
-                switch(procEvent.targetPos)
+                // test if gamma
+                if(microTime<GAMMA_WINDOW[1] && microTime>GAMMA_WINDOW[0])
                 {
-                    case 1:
-                        histoToFill = gammaOffsetHBlank;
-                        break;
-                    case 2:
-                        histoToFill = gammaOffsetHTarget1;
-                        break;
-                    case 3:
-                        histoToFill = gammaOffsetHTarget2;
-                        break;
-                    case 4:
-                        histoToFill = gammaOffsetHTarget3;
-                        break;
-                    case 5:
-                        histoToFill = gammaOffsetHTarget4;
-                        break;
-                    case 6:
-                        histoToFill = gammaOffsetHTarget5;
-                        break;
-                    default:
-                        break;
+                    numberOfGammas++;
+                    gammaTimesSum += microTime;
                 }
 
-                histoToFill->Fill(gammaOffsets.back().first);
+                prevMacroNo = procEvent.macroNo;
 
-                numberOfGammas=0;
-                gammaTimesSum=0;
+                if(i%10000==0)
+                {
+                    cout << "Processed " << i << " events through gamma offset correction...\r";
+                }
             }
 
-            double timeDiff = procEvent.completeTime-procEvent.macroTime;
-            microTime = fmod(timeDiff,MICRO_LENGTH);
+            // add the very last macro's gammas into the gamma offsets
+            gammaOffsets.push_back(make_pair(gammaTimesSum/numberOfGammas-(FLIGHT_DISTANCE/C)*pow(10,7),prevMacroNo));
 
-            // test if gamma
-            if(microTime<gammaGate[1] && microTime>gammaGate[0] && procEvent.lgQ > 300)
-            {
-                numberOfGammas++;
-                gammaTimesSum += microTime;
+            gammaOffsetHBlank->Write();
+            gammaOffsetHTarget1->Write();
+            gammaOffsetHTarget2->Write();
+            gammaOffsetHTarget3->Write();
+            gammaOffsetHTarget4->Write();
+            gammaOffsetHTarget5->Write();
 
-                gammaToGammaTimeH->Fill(microTime-prevGammaTime);
+            gammaOffsetByGammaNumber->Write();
 
-                prevGammaTime = microTime;
-            }
+            numberOfGammasH->Write();
+        }
 
-            prevMacroNo = procEvent.macroNo;
+        int currentMacroNo = -1;
+        unsigned int numberOfEventsInCurrentMacro = 0;
+        unsigned int targetPosOfCurrentMacro = 0;
+        vector<long> goodMacrosByTarget(7,0);
+        vector<long> badMacrosByTarget(7,0);
 
-            if(i%10000==0)
-            {
-                cout << "Processed " << i << " events through gamma offset correction...\r";
-            }
-        }*/
-
-        //gammaOffsetHBlank->Write();
-        //gammaOffsetHTarget1->Write();
-        //gammaOffsetHTarget2->Write();
-        //gammaOffsetHTarget3->Write();
-        //gammaOffsetHTarget4->Write();
-        //gammaOffsetHTarget5->Write();
-
-        //gammaOffsetByGammaNumber->Write();
-
-        //numberOfGammasH->Write();
-
-        //gammaToGammaTimeH->Write();
-
-        // add the very last macro's gammas into the gamma offsets
-        //gammaOffsets.push_back(gammaTimes/numberOfGammas-(FLIGHT_DISTANCE/C)*pow(10,7));
-
-        // add the very last macro's target position into counter
-        //macrosByTarget.push_back(procEvent.targetPos);
-
-        //vector<int> totalMacrosInTarget(positionNames.size(),0);
-
-        /*for(int i=0; i<macrosByTarget.size(); i++)
-        {
-            if(macrosByTarget[i]==0)
-            {
-                continue;
-            }
-
-            gammaOffsetsByTarget[macrosByTarget[i]-1] += gammaOffsets[i];
-            totalMacrosInTarget[macrosByTarget[i]-1]++;
-        }*/
+        unsigned long currentGammaOffset = 0;
 
         for(long i=0; i<totalEntries; i++)
         {
             tree->GetEntry(i);
 
-            /*if(i>10000)
+            while(gammaOffsets[currentGammaOffset].second>procEvent.macroNo && currentGammaOffset<gammaOffsets.size())
             {
-                break;
+                currentGammaOffset++;
+            }
+
+            if(procEvent.targetPos==0)        // discard events during target-changer movement
+            {
+                continue;
+            }
+
+            /*if(currentMacroNo!=procEvent.macroNo)
+            {
+                // new macropulse; test if "good macropulse"
+                currentMacroNo = procEvent.macroNo;
+                long j = i;
+
+                while(currentMacroNo==procEvent.macroNo)
+                {
+                    numberOfEventsInCurrentMacro = procEvent.evtNo;
+                    targetPosOfCurrentMacro = procEvent.targetPos;
+
+                    j++;
+                    if(j>=totalEntries)
+                    {
+                        // reached end of tree
+                        break;
+                    }
+
+                    tree->GetEntry(j);
+                }
+
+                if(j>=totalEntries)
+                {
+                    break;
+                }
+
+                //cout << "macroNo = " << currentMacroNo << ", number of events = " << numberOfEventsInCurrentMacro << endl;
+
+                if(numberOfEventsInCurrentMacro > MACRO_EVENTS_LOW_THRESHOLD
+                        && numberOfEventsInCurrentMacro < MACRO_EVENTS_HIGH_THRESHOLD)
+                {
+                    // this macropulse is OK; start again at the first event and populate histos
+                    goodMacrosByTarget[targetPosOfCurrentMacro]++;
+                    tree->GetEntry(i);
+                }
+
+                else
+                {
+                    // this macropulse is not OK; start at the first event of the next macro
+                    badMacrosByTarget[targetPosOfCurrentMacro]++;
+                    i = j-1;
+                    continue;
+                }
             }*/
 
-            /*if(procEvent.targetPos!=0)
-            {
-                procEvent.completeTime -= gammaOffsets[procEvent.macroNo].first;
-            }*/
+            procEvent.completeTime -= gammaOffsets[currentGammaOffset].first;
 
             double timeDiff = procEvent.completeTime-procEvent.macroTime;
 
@@ -468,35 +509,61 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
             // GATE: discard events with too low of an integrated charge for their energy
             //if (procEvent.lgQ>500*exp(-(microTime-100)/87))
             /*if (procEvent.lgQ<150)
-            {
-                continue;
-            }*/
+              {
+              continue;
+              }*/
 
-
-            if(procEvent.targetPos==0)        // discard events during target-changer movement
-            {
-                continue;
-            }
 
             // Fill raw TOF before gates:
 
-            TOFHistos[procEvent.targetPos-1]->Fill(microTime);
-            energyHistos[procEvent.targetPos-1]->Fill(rKE);
-
             // Apply gates:
             if (timeDiff < MACRO_LENGTH && timeDiff > 0 // omit events outside beam-on period
+                    //&& procEvent.sgQ >= procEvent.lgQ
                     //&& (procEvent.sgQ/(double)procEvent.lgQ < 0.495
                     //|| procEvent.sgQ/(double)procEvent.lgQ > 0.505)
 
                     /*&& procEvent.lgQ < 65000
-                    && procEvent.sgQ < 32500
+                      && procEvent.sgQ < 32500
 
-                    && procEvent.lgQ>50
-                    && procEvent.sgQ>50*/
+                      && procEvent.lgQ>50
+                      && procEvent.sgQ>50*/
                )
             {
                 /*****************************************************************/
                 // Fill troubleshooting plots with event variables (rKE, microtime, etc.)
+
+                TOFHistos[procEvent.targetPos-1]->Fill(microTime);
+                energyHistos[procEvent.targetPos-1]->Fill(rKE);
+
+                goodMacroNoH->Fill(procEvent.macroNo);
+
+                switch(procEvent.targetPos)
+                {
+                    case 1:
+                        timeDiffHistoBlank->Fill(eventTimeDiff);
+                        goodMacroNoHBlank->Fill(procEvent.macroNo);
+                        break;
+                    case 2:
+                        timeDiffHistoTarget1->Fill(eventTimeDiff);
+                        goodMacroNoHTarget1->Fill(procEvent.macroNo);
+                        break;
+                    case 3:
+                        timeDiffHistoTarget2->Fill(eventTimeDiff);
+                        goodMacroNoHTarget2->Fill(procEvent.macroNo);
+                        break;
+                    case 4:
+                        timeDiffHistoTarget3->Fill(eventTimeDiff);
+                        goodMacroNoHTarget3->Fill(procEvent.macroNo);
+                        break;
+                    case 5:
+                        timeDiffHistoTarget4->Fill(eventTimeDiff);
+                        goodMacroNoHTarget4->Fill(procEvent.macroNo);
+                        break;
+                    case 6:
+                        timeDiffHistoTarget5->Fill(eventTimeDiff);
+                        goodMacroNoHTarget5->Fill(procEvent.macroNo);
+                        break;
+                }
 
                 triangle->Fill(microTime,procEvent.lgQ);
                 sgQlgQ->Fill(procEvent.sgQ,procEvent.lgQ);
@@ -505,9 +572,9 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
                 orderInMicroH->Fill(orderInMicro);
 
                 /*if(abs(eventTimeDiff)>300 && abs(eventTimeDiff)<400)
-                {
-                    lgQ1VlgQ2_background->Fill(prevlgQ,procEvent.lgQ);
-                }*/
+                  {
+                  lgQ1VlgQ2_background->Fill(prevlgQ,procEvent.lgQ);
+                  }*/
 
                 timeDiffVEnergy1->Fill(eventTimeDiff,prevRKE);
                 timeDiffVEnergy2->Fill(eventTimeDiff,rKE);
@@ -532,18 +599,18 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
                   */
 
                 /*if(microTime>100 && microTime<110 && procEvent.waveform->size() > 0 && i%1000==0)
+                  {
+                  stringstream temp;
+                  temp << "macroNo " << procEvent.macroNo << ", evtNo " << procEvent.evtNo;
+                  TH1I* waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),procEvent.waveform->size(),0,procEvent.waveform->size()*SAMPLE_PERIOD);
+
+                // loop through waveform data and fill histo
+                for(int k=0; (size_t)k<procEvent.waveform->size(); k++)
                 {
-                    stringstream temp;
-                    temp << "macroNo " << procEvent.macroNo << ", evtNo " << procEvent.evtNo;
-                    TH1I* waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),procEvent.waveform->size(),0,procEvent.waveform->size()*SAMPLE_PERIOD);
+                waveformH->SetBinContent(k,procEvent.waveform->at(k));
+                }
 
-                    // loop through waveform data and fill histo
-                    for(int k=0; (size_t)k<procEvent.waveform->size(); k++)
-                    {
-                        waveformH->SetBinContent(k,procEvent.waveform->at(k));
-                    }
-
-                    waveformH->Write();
+                waveformH->Write();
                 }*/
             }
 
@@ -560,6 +627,18 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
             }
         }
 
+        for(size_t i=1; i<goodMacrosByTarget.size(); i++)
+        {
+            if((badMacrosByTarget[i]==0) && goodMacrosByTarget[i]==(0))
+            {
+                continue;
+            }
+
+            ratioBadMacrosH->SetBinContent(i+1,
+                    (double)(badMacrosByTarget[i])/
+                    (double)(badMacrosByTarget[i]+goodMacrosByTarget[i]));
+        }
+
         triangle->Write();
         sgQlgQ->Write();
         QRatio->Write();
@@ -574,12 +653,22 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
         timeDiffHistoTarget4->Write();
         timeDiffHistoTarget5->Write();
 
+        goodMacroNoH->Write();
+        goodMacroNoHBlank->Write();
+        goodMacroNoHTarget1->Write();
+        goodMacroNoHTarget2->Write();
+        goodMacroNoHTarget3->Write();
+        goodMacroNoHTarget4->Write();
+        goodMacroNoHTarget5->Write();
+
         timeDiffVEnergy1->Write();
         timeDiffVEnergy2->Write();
         energy1VEnergy2->Write();
         time1Vtime2->Write();
         lgQ1VlgQ2->Write();
         lgQ1VlgQ2_background->Write();
+
+        ratioBadMacrosH->Write();
 
         for(auto histo : TOFHistos)
         {
@@ -599,7 +688,8 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
         for(unsigned int i=0; i<tarGates.size()-1; i++)
         {
             macrosPerTarget.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(i+2));
-            microsPerTarget.push_back(macrosPerTarget.back()*(MACRO_LENGTH/MICRO_LENGTH));
+            //double badMacroRatio = ((TH1D*)gDirectory->Get("ratioBadMacrosH"))->GetBinContent(i+2);
+            microsPerTarget.push_back(macrosPerTarget.back()/*(1-badMacroRatio)*/*(MACRO_LENGTH/MICRO_LENGTH));
         }
 
         histoFile->cd("/");
@@ -723,7 +813,7 @@ void fillBasicHistos(TFile* histoFile)
         TH1I* fineTimeHTarget5 = new TH1I("fineTimeHTarget5","fineTimeTarget5",6000,-10,10);
         fineTimeHTarget5->GetXaxis()->SetTitle("fine time, target 5");
 
-        TH1I* evtNoH = new TH1I("evtNoH","evtNo",150,0,150);
+        TH1I* evtNoH = new TH1I("evtNoH","evtNo",300,0,300);
         evtNoH->GetXaxis()->SetTitle("event number of each event");
 
         TH1I* macroTimeH = new TH1I("macroTimeH","macroTime",6000,0,6000000000);
@@ -752,6 +842,13 @@ void fillBasicHistos(TFile* histoFile)
 
         TH1I* diffMacroCompleteTimesH = new TH1I("diffMacroCompleteTimesH","diffMacroCompleteTime",pow(2,20),0,pow(2,20));
         diffMacroCompleteTimesH->GetXaxis()->SetTitle("difference between complete time of event and its macrotime");
+
+        vector<TH1D*> TOFHistos;
+        for(unsigned int i=0; i<positionNames.size(); i++)
+        {
+            string TOFName = positionNames[i] + "TOFBasic";
+            TOFHistos.push_back(new TH1D(TOFName.c_str(),TOFName.c_str(),TOF_BINS,TOF_LOWER_BOUND,TOF_UPPER_BOUND));
+        }
 
         // create a subdirectory for holding DPP-mode waveform data
         gDirectory->mkdir("waveformsDir","raw DPP waveforms");
@@ -842,26 +939,32 @@ void fillBasicHistos(TFile* histoFile)
             switch(procEvent.targetPos)
             {
                 case 1:
+                    TOFHistos[0]->Fill(microTime);
                     fineTimeHBlank->Fill(procEvent.fineTime);
                     macroNoHBlank->Fill(procEvent.macroNo);
                     break;
                 case 2:
+                    TOFHistos[1]->Fill(microTime);
                     fineTimeHTarget1->Fill(procEvent.fineTime);
                     macroNoHTarget1->Fill(procEvent.macroNo);
                     break;
                 case 3:
+                    TOFHistos[2]->Fill(microTime);
                     fineTimeHTarget2->Fill(procEvent.fineTime);
                     macroNoHTarget2->Fill(procEvent.macroNo);
                     break;
                 case 4:
+                    TOFHistos[3]->Fill(microTime);
                     fineTimeHTarget3->Fill(procEvent.fineTime);
                     macroNoHTarget3->Fill(procEvent.macroNo);
                     break;
                 case 5:
+                    TOFHistos[4]->Fill(microTime);
                     fineTimeHTarget4->Fill(procEvent.fineTime);
                     macroNoHTarget4->Fill(procEvent.macroNo);
                     break;
                 case 6:
+                    TOFHistos[5]->Fill(microTime);
                     fineTimeHTarget5->Fill(procEvent.fineTime);
                     macroNoHTarget5->Fill(procEvent.macroNo);
                     break;
@@ -971,6 +1074,11 @@ void fillBasicHistos(TFile* histoFile)
     waveformH->Write();
     }
     }
+    }*/
+
+    /*for(auto histo : TOFHistos)
+    {
+        histo->Write();
     }*/
 
     histoFile->Write();

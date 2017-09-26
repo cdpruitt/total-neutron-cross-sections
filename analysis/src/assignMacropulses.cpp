@@ -32,7 +32,7 @@ int assignTargetPos(int lgQ)
 {
     for(int i=0; (size_t)i<tarGates.size(); i++)
     {
-        if (lgQ>tarGates[i].first && lgQ<tarGates[i].second)
+        if (lgQ>=tarGates[i].first && lgQ<=tarGates[i].second)
         {
             // lgQ fits within this gate
             return i; // target positions start from 1
@@ -183,8 +183,6 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                     continue;
                 }
 
-                cout << endl;
-
                 addTCEvent(sortedTree);
 
                 prevTimetag = tcEvent.macroTime;
@@ -222,7 +220,8 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
             procEvent.targetPos = tcEvent.targetPos;
             // procEvent now has data from the first macropulse
 
-            targetChangerTree->GetEntry(++currentTargetChangerEntry);
+            currentTargetChangerEntry += 1;
+            targetChangerTree->GetEntry(currentTargetChangerEntry);
 
             long evtNo = 0;
 
@@ -278,7 +277,8 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                         procEvent.macroNo = tcEvent.macroNo;
                         procEvent.macroTime = tcEvent.macroTime;
                         procEvent.targetPos = tcEvent.targetPos;
-                        targetChangerTree->GetEntry(++currentTargetChangerEntry);
+                        currentTargetChangerEntry += 1;
+                        targetChangerTree->GetEntry(currentTargetChangerEntry);
                     }
 
                     /*                    // DPP/waveform mode change
@@ -309,7 +309,8 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                         procEvent.macroNo = tcEvent.macroNo;
                         procEvent.macroTime = tcEvent.macroTime;
                         procEvent.targetPos = tcEvent.targetPos;
-                        targetChangerTree->GetEntry(++currentTargetChangerEntry);
+                        currentTargetChangerEntry += 1;
+                        targetChangerTree->GetEntry(currentTargetChangerEntry);
                     }
                 }
 
@@ -325,7 +326,8 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
 
                         if(currentTargetChangerEntry+1<targetChangerEntries)
                         {
-                            targetChangerTree->GetEntry(++currentTargetChangerEntry);
+                            currentTargetChangerEntry += 1;
+                            targetChangerTree->GetEntry(currentTargetChangerEntry);
                         }
 
                         else

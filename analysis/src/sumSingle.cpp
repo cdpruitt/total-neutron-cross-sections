@@ -340,7 +340,7 @@ int main(int, char* argv[])
         string targetDataLocation = "../" + expName + "/targetData/" + targetOrder[j] + ".txt";
         CSPrereqs subRunData(targetDataLocation);
 
-        subRunData.readData(inFile, "summedDet", j);
+        subRunData.readData(inFile, "highTDet", j);
 
         // find the correct CSPrereqs to add this target's data to
         for(int k=0; (size_t)k<allData.size(); k++)

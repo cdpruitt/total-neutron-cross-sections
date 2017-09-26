@@ -41,13 +41,13 @@ const std::vector<int> tcFineTimeThresholds = {1000, 1750, 2650, 3600, 4400, 525
 
 // Indicate the range of times considered to be gamma rays (for the purposes of
 // counting gamma rays)
-const double GAMMA_WINDOW[2] = {82,88};
+const double GAMMA_WINDOW[2] = {90,99};
 
 const std::vector<std::string> positionNames = {"blank", "target1", "target2", "target3", "target4", "target5"};
 
 const std::vector<std::string> targetNamesWaveform = {"blankWaveform", "shortCarbonWaveform", "longCarbonWaveform", "Sn112Waveform", "NatSnWaveform", "Sn124Waveform"}; 
 
-const std::vector<std::string> detectorNames = {"summedDet"};
+const std::vector<std::string> detectorNames = {"summedDet","highTDet"};
 //const std::vector<std::string> detectorNames = {"highThresholdDet","lowThresholdDet"};
 
 const std::vector<double> MACROTIME_TARGET_DRIFT = {0, 0.30, 0.42, 0.52, 0.58, 0.66};

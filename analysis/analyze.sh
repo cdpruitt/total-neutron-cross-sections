@@ -68,7 +68,7 @@
 
 # SECTION 1: recompile analysis code
 
-make
+make -j
 if [ "$?" != 0 ]
 then
     # Make failed: abort analysis
@@ -106,7 +106,11 @@ while getopts "fscrnithw" opt; do
         h)  
             overwriteHistos=true
             ;;
-        w)  overwriteWaveforms=true
+        v)  
+            useVetoPaddle=true
+            ;;
+        w)  
+            overwriteWaveforms=true
             ;;
         \?)
             # Flags unrecognized - exit script and give the user a help message
@@ -178,9 +182,9 @@ analyze ()
     # Send error messages to a text file
     2>&1 | tee > "$outputDirectoryName"error.txt
 
-    useVetoPaddle=false
-    processWaveformEvents=false
-    processDPPWaveformEvents=false
+    useVetoPaddle=$5
+    processWaveformEvents=$6
+    processDPPWaveformEvents=$7
 
     ./bin/driver "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber" "$useVetoPaddle" "$processWaveformEvents" "$processDPPWaveformEvents"
 }
@@ -239,7 +243,8 @@ then
     printf "\nSorting single sub-run $inputFileName\n"
 
     # Start analysis
-    analyze "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber"
+    analyze "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber" "$useVetoPaddle"
+    "false" "false"
 
     # Make cross sections from this single subrun
     #./sumSingle "$outpath"/analysis "$experiment" "histos" "$runNumber" "$subrunNo"
@@ -288,7 +293,8 @@ then
         printf "\nSorting sub-run $inputFileName\n"
 
         # Start analysis
-        analyze "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber"
+        analyze "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber" "$useVetoPaddle"
+        "false" "false"
         subrunNo=$(printf "%04d" $((10#$subrunNo+1)))
     done
     exit
@@ -355,7 +361,7 @@ then
 
             outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
             printf "\n\n***Starting sort of sub-run $subrunNo***\n"
-            analyze "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber"
+            analyze "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber" "$useVetoPaddle" "false" "false"
 
             # Skip subruns < 1GB in size
             runSize=$(du -k "$inputFileName" | cut -f 1)
