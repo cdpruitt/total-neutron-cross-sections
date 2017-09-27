@@ -6,9 +6,6 @@
 #include "../include/dataStructures.h"
 #include "../include/branches.h"
 
-extern ProcessedEvent procEvent;
-extern ProcessedEvent vetoEvent;
-
 using namespace std;
 
 const double VETO_WINDOW = 30; // in ns
@@ -18,24 +15,26 @@ void vetoEvents(string sortedFileName, string vetoedFileName, vector<string> eve
     TFile* sortedFile = new TFile(sortedFileName.c_str(),"READ");
 
     TTree* vetoTree = (TTree*)sortedFile->Get(vetoTreeName.c_str());
-    setBranchesVeto(vetoTree);
+    ProcessedEvent vetoEvent;
+    setBranchesVeto(vetoTree, vetoEvent);
 
     TFile* vetoedFile = new TFile(vetoedFileName.c_str(),"RECREATE");
 
     for(string s : eventTreeNames)
     {
         TTree* eventTree = (TTree*)sortedFile->Get(s.c_str());
-        setBranchesProcessed(eventTree);
+        ProcessedEvent procEvent;
+        setBranchesProcessed(eventTree, procEvent);
 
         // cleanTree holds events that have survived the veto
         string clean = s + "Clean";
         TTree* cleanTree = new TTree(clean.c_str(),clean.c_str());
-        branchProc(cleanTree);
+        branchProc(cleanTree, procEvent);
 
         // dirtyTree holds events that have been vetoed
         string dirty = s + "Dirty";
         TTree* dirtyTree = new TTree(dirty.c_str(),dirty.c_str());
-        branchProc(dirtyTree);
+        branchProc(dirtyTree, procEvent);
 
         long eventTreeEntries = eventTree->GetEntries();
         long vetoTreeEntries = vetoTree->GetEntries();

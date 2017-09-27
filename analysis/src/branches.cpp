@@ -5,15 +5,9 @@
 #include "TTree.h"
 #include "../include/dataStructures.h"
 
-RawEvent rawEvent;
-SeparatedEvent separatedEvent;
-ProcessedEvent procEvent;
-ProcessedEvent vetoEvent;
-TargetChangerEvent tcEvent;
-
 // Used to connect a channel-specific tree to DPP event variables so we can
 // start populating it with DPP events
-void branchRaw(TTree*& tree)
+void branchRaw(TTree*& tree, RawEvent& rawEvent)
 {
     tree->Branch("fineTime",&rawEvent.fineTime,"fineTime/d");
     tree->Branch("evtType",&rawEvent.evtType,"evtType/i");
@@ -25,20 +19,9 @@ void branchRaw(TTree*& tree)
     tree->Branch("waveform",&rawEvent.waveform);
 }
 
-// Used to connect a channel-specific tree to waveform event variables so we can
-// start populating it with waveform events
-void branchSplitW(TTree*& tree)
-{
-    tree->Branch("evtNo",&separatedEvent.evtNo,"evtNo/i");
-    tree->Branch("timetag",&separatedEvent.timetag,"timetag/i");
-    tree->Branch("extTime",&separatedEvent.extTime,"extTime/i");
-    tree->Branch("chNo",&separatedEvent.chNo,"chNo/i");
-    tree->Branch("waveform",&separatedEvent.waveform);
-}
-
 // Used to connect a channel-specific tree to DPP event variables so we can
 // start populating it with DPP events
-void branchProc(TTree*& tree)
+void branchProc(TTree*& tree, ProcessedEvent& procEvent)
 {
     tree->Branch("macroTime",&procEvent.macroTime,"macroTime/D");
     tree->Branch("completeTime",&procEvent.completeTime,"completeTime/D");
@@ -53,7 +36,7 @@ void branchProc(TTree*& tree)
 
 // Used to connect a channel-specific tree to waveform procEvent variables so we can
 // start populating it with waveform procEvents
-void branchProcW(TTree*& tree)
+void branchProcW(TTree*& tree, ProcessedEvent& procEvent)
 {
     tree->Branch("macroTime",&procEvent.macroTime,"macroTime/D");
     tree->Branch("completeTime",&procEvent.completeTime,"completeTime/D");
@@ -63,7 +46,7 @@ void branchProcW(TTree*& tree)
     tree->Branch("waveform",&procEvent.waveform);
 }
 
-void branchTargetChanger(TTree*& tree)
+void branchTargetChanger(TTree*& tree, TargetChangerEvent& tcEvent)
 {
     tree->Branch("macroTime",&tcEvent.macroTime,"macroTime/D");
     tree->Branch("fineTime",&tcEvent.fineTime,"fineTime/d");
@@ -74,7 +57,7 @@ void branchTargetChanger(TTree*& tree)
     tree->Branch("waveform",&tcEvent.waveform);
 }
 
-void setBranchesSeparated(TTree* tree)
+void setBranchesSeparated(TTree* tree, SeparatedEvent& separatedEvent)
 {
    tree->SetBranchAddress("evtType",&separatedEvent.evtType);
    tree->SetBranchAddress("chNo",&separatedEvent.chNo);
@@ -86,7 +69,7 @@ void setBranchesSeparated(TTree* tree)
    tree->SetBranchAddress("waveform",&separatedEvent.waveform);
 }
 
-void setBranchesSeparatedW(TTree* tree)
+void setBranchesSeparatedW(TTree* tree, SeparatedEvent& separatedEvent)
 {
     tree->SetBranchAddress("timetag",&separatedEvent.timetag);
     tree->SetBranchAddress("extTime",&separatedEvent.extTime);
@@ -94,7 +77,7 @@ void setBranchesSeparatedW(TTree* tree)
     tree->SetBranchAddress("waveform",&separatedEvent.waveform);
 }
 
-void setBranchesProcessed(TTree* tree)
+void setBranchesProcessed(TTree* tree, ProcessedEvent& procEvent)
 {
    tree->SetBranchAddress("macroNo",&procEvent.macroNo);
    tree->SetBranchAddress("macroTime",&procEvent.macroTime);
@@ -107,7 +90,7 @@ void setBranchesProcessed(TTree* tree)
    tree->SetBranchAddress("waveform",&procEvent.waveform);
 }
 
-void setBranchesProcessedW(TTree* tree)
+void setBranchesProcessedW(TTree* tree, ProcessedEvent& procEvent)
 {
     tree->SetBranchAddress("macroNo",&procEvent.macroNo);
     tree->SetBranchAddress("evtNo",&procEvent.evtNo);
@@ -116,7 +99,7 @@ void setBranchesProcessedW(TTree* tree)
     tree->SetBranchAddress("waveform",&procEvent.waveform);
 }
 
-void setBranchesHistos(TTree* tree)
+void setBranchesHistos(TTree* tree, ProcessedEvent& procEvent)
 {
    tree->SetBranchAddress("macroNo",&procEvent.macroNo);
    tree->SetBranchAddress("macroTime",&procEvent.macroTime);
@@ -129,7 +112,7 @@ void setBranchesHistos(TTree* tree)
    tree->SetBranchAddress("waveform",&procEvent.waveform);
 }
 
-void setBranchesHistosW(TTree* tree)
+void setBranchesHistosW(TTree* tree, ProcessedEvent& procEvent)
 {
     tree->SetBranchAddress("macroNo",&procEvent.macroNo);
     tree->SetBranchAddress("evtNo",&procEvent.evtNo);
@@ -138,7 +121,7 @@ void setBranchesHistosW(TTree* tree)
     tree->SetBranchAddress("waveform",&procEvent.waveform);
 }
 
-void setBranchesVeto(TTree* tree)
+void setBranchesVeto(TTree* tree, ProcessedEvent& vetoEvent)
 {
    tree->SetBranchAddress("macroNo",&vetoEvent.macroNo);
    tree->SetBranchAddress("macroTime",&vetoEvent.macroTime);
@@ -150,7 +133,7 @@ void setBranchesVeto(TTree* tree)
    tree->SetBranchAddress("waveform",&vetoEvent.waveform);
 }
 
-void setBranchesProcessedTC(TTree* tree)
+void setBranchesProcessedTC(TTree* tree, TargetChangerEvent& tcEvent)
 {
     tree->SetBranchAddress("macroTime",&tcEvent.macroTime);
     tree->SetBranchAddress("macroNo",&tcEvent.macroNo);
@@ -158,7 +141,7 @@ void setBranchesProcessedTC(TTree* tree)
     tree->SetBranchAddress("targetPos",&tcEvent.targetPos);
 }
 
-void setBranchesTC(TTree* tree)
+void setBranchesTC(TTree* tree, ProcessedEvent& procEvent)
 {
     tree->SetBranchAddress("macroNo",&procEvent.macroNo);
     tree->SetBranchAddress("macroTime",&procEvent.macroTime);

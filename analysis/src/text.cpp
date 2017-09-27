@@ -375,13 +375,13 @@ int main(int, char* argv[])
     textOutput.ch6.open(ch6Name);
     textOutput.ch7.open(ch7Name);
 
-    rawEvent.waveform = new vector<int>;
+    RawEvent rawEvent;
 
     // we're now pointing at the first 16-bit word in the data stream
     // start looping through the evtfile to extract events
     while(!inFile.eof() /* use to truncate sort && numberOfEvents<1000000*/)
     {
-        if(readEvent(inFile))
+        if(readEvent(inFile, rawEvent))
         {
             printEvent(rawEvent, textOutput);
         }

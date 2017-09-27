@@ -1,8 +1,10 @@
 #ifndef PLOTTING_CONSTANTS_H
 #define PLOTTING_CONSTANTS_H
 
+#include <math.h>
+
 #include "physicalConstants.h"
-#include "analysisConstants.h"
+#include "runSpecificConstants.h"
 #include <vector>
 #include <string>
 
@@ -26,4 +28,4 @@ const unsigned int ENERGY_RANGE = 300; // upper bound of time-of-flight plots, i
 const unsigned int ENERGY_BINS = 300; // for plots with time units as abscissa
 
 
-#endif
+#endif /* PLOTTING_CONSTANT_H */

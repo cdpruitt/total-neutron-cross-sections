@@ -1,20 +1,23 @@
 #ifndef BRANCHES_H
 #define BRANCHES_H
 
-void branchRaw(TTree*& tree);
-void branchSplit(TTree*& tree);
-void branchSplitW(TTree*& tree);
-void branchProc(TTree*& tree);
-void branchProcW(TTree*& tree);
-void branchTargetChanger(TTree*& tree);
-void setBranchesSeparated(TTree* tree);
-void setBranchesSeparatedW(TTree* tree);
-void setBranchesProcessed(TTree* tree);
-void setBranchesProcessedW(TTree* tree);
-void setBranchesVeto(TTree* tree);
-void setBranchesProcessedTC(TTree* tree);
-void setBranchesHistos(TTree* tree);
-void setBranchesHistosW(TTree* tree);
-void setBranchesTC(TTree* tree);
+void branchRaw(TTree*& tree, RawEvent& rawEvent);
+void branchProc(TTree*& tree, ProcessedEvent& procEvent);
+void branchProcW(TTree*& tree, ProcessedEvent& procEvent);
+void branchTargetChanger(TTree*& tree, TargetChangerEvent& tcEvent);
+
+void setBranchesSeparated(TTree* tree, SeparatedEvent& separatedEvent);
+void setBranchesSeparatedW(TTree* tree, SeparatedEvent& separatedEvent);
+
+void setBranchesTC(TTree* tree, ProcessedEvent& procEvent);
+
+void setBranchesProcessed(TTree* tree, ProcessedEvent& procEvent);
+void setBranchesProcessedW(TTree* tree, ProcessedEvent& procEvent);
+void setBranchesProcessedTC(TTree* tree, TargetChangerEvent& tcEvent);
+
+void setBranchesVeto(TTree* tree, ProcessedEvent& vetoEvent);
+
+void setBranchesHistos(TTree* tree, ProcessedEvent& procEvent);
+void setBranchesHistosW(TTree* tree, ProcessedEvent& procEvent);
 
 #endif

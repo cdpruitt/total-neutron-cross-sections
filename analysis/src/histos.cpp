@@ -24,6 +24,14 @@ using namespace std;
 
 extern ProcessedEvent procEvent;
 
+// Indicate the range of times considered to be gamma rays (for the purposes of
+// counting gamma rays)
+const double GAMMA_WINDOW[2] = {90,99};
+
+// experimentally-determined digitizer deadtime
+const int DEADTIME_PERIOD = 150; // in ns
+const int DEADTIME_TRANSITION_PERIOD = 15; // in ns
+
 vector<TTree*> orchard; // holds DPP channel-specific trees
 // so that fillHistos can loop through all the trees and make the same histos
 // for each tree
@@ -251,17 +259,18 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
         vector<TH1D*> TOFHistos;
         vector<TH1D*> energyHistos;
 
-        for(unsigned int i=0; i<positionNames.size(); i++)
+        for(unsigned int i=0; i<POSITION_NAMES.size(); i++)
         {
-            string TOFName = positionNames[i] + "TOF";
+            string TOFName = POSITION_NAMES[i] + "TOF";
             TOFHistos.push_back(new TH1D(TOFName.c_str(),TOFName.c_str(),TOF_BINS,TOF_LOWER_BOUND,TOF_UPPER_BOUND));
 
-            string energyName =  positionNames[i] + "Energy";
+            string energyName =  POSITION_NAMES[i] + "Energy";
             energyHistos.push_back(timeBinsToRKEBins(TOFHistos.back(),energyName));
         }
 
         // reattach to the channel-specific tree for reading out data
-        setBranchesHistos(tree);
+        ProcessedEvent procEvent;
+        setBranchesHistos(tree, procEvent);
 
         // create TIME VARIABLES used for filling histograms
         double microTime;
@@ -602,7 +611,7 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
                   {
                   stringstream temp;
                   temp << "macroNo " << procEvent.macroNo << ", evtNo " << procEvent.evtNo;
-                  TH1I* waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),procEvent.waveform->size(),0,procEvent.waveform->size()*SAMPLE_PERIOD);
+                  TH1I* waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),procEvent.waveform->size(),0,procEvent.waveform->size());
 
                 // loop through waveform data and fill histo
                 for(int k=0; (size_t)k<procEvent.waveform->size(); k++)
@@ -685,7 +694,7 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
 
         histoFile->cd("/macroTime");
 
-        for(unsigned int i=0; i<tarGates.size()-1; i++)
+        for(unsigned int i=0; i<POSITION_NAMES.size(); i++)
         {
             macrosPerTarget.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(i+2));
             //double badMacroRatio = ((TH1D*)gDirectory->Get("ratioBadMacrosH"))->GetBinContent(i+2);
@@ -722,7 +731,7 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
         }
 
         // calculate likelihood of double peak in wavelet, for each TOF bin
-        const int waveletBins = (TOF_BINS/TOF_RANGE)*WAVELET_PERIOD;
+        //const int waveletBins = (TOF_BINS/TOF_RANGE)*WAVELET_PERIOD;
 
         vector<double> eventsPerMicroPerBin(TOF_BINS);
         vector<double> doublePeakOddsPerBin(TOF_BINS);
@@ -844,9 +853,9 @@ void fillBasicHistos(TFile* histoFile)
         diffMacroCompleteTimesH->GetXaxis()->SetTitle("difference between complete time of event and its macrotime");
 
         vector<TH1D*> TOFHistos;
-        for(unsigned int i=0; i<positionNames.size(); i++)
+        for(unsigned int i=0; i<POSITION_NAMES.size(); i++)
         {
-            string TOFName = positionNames[i] + "TOFBasic";
+            string TOFName = POSITION_NAMES[i] + "TOFBasic";
             TOFHistos.push_back(new TH1D(TOFName.c_str(),TOFName.c_str(),TOF_BINS,TOF_LOWER_BOUND,TOF_UPPER_BOUND));
         }
 
@@ -856,15 +865,17 @@ void fillBasicHistos(TFile* histoFile)
         /*************************************************************************/
         // Loop through sorted trees to calculate advanced histogram variables
 
+        ProcessedEvent procEvent;
+
         string name = t->GetName();
         if(name=="macroTime")
         {
-            setBranchesTC(t);
+            setBranchesTC(t, procEvent);
         }
 
         else
         {
-            setBranchesHistos(t);
+            setBranchesHistos(t, procEvent);
         }
 
         long totalEntries = t->GetEntries();
@@ -900,7 +911,7 @@ void fillBasicHistos(TFile* histoFile)
 
                 stringstream temp;
                 temp << "macroNo " << procEvent.macroNo << ", evtNo " << procEvent.evtNo;
-                TH1I* waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),procEvent.waveform->size(),0,procEvent.waveform->size()*SAMPLE_PERIOD);
+                TH1I* waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),procEvent.waveform->size(),0,procEvent.waveform->size());
 
                 // loop through waveform data and fill histo
                 for(int k=0; (size_t)k<procEvent.waveform->size(); k++)
@@ -1037,7 +1048,7 @@ void fillBasicHistos(TFile* histoFile)
     waveformsDir = (TDirectory*)gDirectory->Get("waveformsDir");
     waveformsDir->cd();
 
-    setBranchesHistosW(t);
+    setBranchesHistosW(t, procEvent);
 
     long totalEntries = t->GetEntries();
 
@@ -1070,7 +1081,7 @@ void fillBasicHistos(TFile* histoFile)
 
     for(int k=0; (size_t)k<procEvent.waveform->size(); k++)
     {
-    waveformH->SetBinContent(k+floor((fmod(procEvent.waveform->size()*SAMPLE_PERIOD,MICRO_LENGTH)+1)*procEvent.evtNo*MICRO_LENGTH/(double)2),procEvent.waveform->at(k));
+    waveformH->SetBinContent(k+floor((fmod(procEvent.waveform->size(),MICRO_LENGTH)+1)*procEvent.evtNo*MICRO_LENGTH/(double)2),procEvent.waveform->at(k));
     waveformH->Write();
     }
     }

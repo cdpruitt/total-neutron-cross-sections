@@ -52,7 +52,7 @@ void CSPrereqs::getMonitorCounts(string monitorFileName, string directory, int t
 void CSPrereqs::readData(TFile* histoFile, string directory, int targetPosition)
 {
     // Find deadtime-corrected energy histo for this target
-    string histoName = positionNames[targetPosition];
+    string histoName = POSITION_NAMES[targetPosition];
     getHisto(histoFile, directory, histoName);
 
     // Find number of events in the monitor for each target to use in scaling
@@ -64,7 +64,7 @@ void CSPrereqs::readData(TFile* histoFile, string directory, int targetPosition)
 void CSPrereqs::readData(TFile* histoFile, string directory, int targetPosition, string monitorFileName)
 {
     // Find deadtime-corrected energy histo for this target
-    string histoName = positionNames[targetPosition];
+    string histoName = POSITION_NAMES[targetPosition];
     getHisto(histoFile, directory, histoName);
 
     // Find number of events in the monitor for each target to use in scaling

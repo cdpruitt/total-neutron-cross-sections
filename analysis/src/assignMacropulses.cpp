@@ -11,21 +11,32 @@
 #include <string>
 #include <sstream>
 #include <utility>
+
 #include "TFile.h"
 #include "TTree.h"
 #include "TH1.h"
 
-#include "../include/dataStructures.h"
-#include "../include/analysisConstants.h"
-#include "../include/physicalConstants.h"
-#include "../include/assignMacropulses.h"
-#include "../include/branches.h"
+#include "../include/dataStructures.h" // defines the C-structs that hold each event's data
+#include "../include/branches.h" // used to map C-structs that hold raw data to ROOT trees, and vice-versa
+#include "../include/runSpecificConstants.h"
+
+#include "../include/assignMacropulses.h" // declarations of functions used to assign times and macropulses to events
 
 using namespace std;
 
-extern SeparatedEvent separatedEvent;
-extern ProcessedEvent procEvent;
-extern TargetChangerEvent tcEvent;
+// "Target changer charge gates" are used to assign the target changer position
+// based on the target changer signal's integrated charge
+const std::vector<std::pair<int,int>> tarGates = {
+    std::pair<int,int> (50,2500), // position 0 gates
+    std::pair<int,int> (5000,10000), // position 1 gates
+    std::pair<int,int> (12000,17000), // position 2 gates
+    std::pair<int,int> (18000,23000), // position 3 gates
+    std::pair<int,int> (25000,30000), // position 4 gates
+    std::pair<int,int> (31000,36000), // position 5 gates
+    std::pair<int,int> (37000,43000) // position 6 gates
+};
+
+const double SAMPLE_PERIOD = 2; // digitizer sample rate, in ns
 
 // Use the lgQ from the target changer to determine the target position
 int assignTargetPos(int lgQ)
@@ -46,49 +57,9 @@ int assignTargetPos(int lgQ)
     return 0;
 }
 
-void addTCEvent(TTree* targetChangerTree)
-{
-    // fill w/ new macropulse data
-    tcEvent.lgQ = separatedEvent.lgQ;
-    tcEvent.fineTime = separatedEvent.fineTime;
-
-    //tcEvent.waveform = separatedEvent.waveform;
-
-    vector<int> tempWaveform = *separatedEvent.waveform;
-    tcEvent.waveform = &tempWaveform;
-
-    targetChangerTree->Fill();
-
-    // update macropulse counters
-    tcEvent.macroNo++;
-}
-
 void addDetectorEvent(long evtNo, TTree* detectorTree)
 {
-    // update unique event information
-    procEvent.evtNo = evtNo;
-    procEvent.sgQ = separatedEvent.sgQ;
-    procEvent.lgQ = separatedEvent.lgQ;
-    procEvent.fineTime = separatedEvent.fineTime;
-    procEvent.waveform = separatedEvent.waveform;
-
-    // only add events that come while beam is on, during the macropulse 
-    /*double timeDiff = procEvent.completeTime-tcEvent.macroTime;
-      if (timeDiff < 0 && timeDiff > MACRO_LENGTH)
-      {
-      return;
-      }
-      */
-
-    // fill tree w/ event data
-
-    /*if(tcEvent.macroNo > 12090 && tcEvent.macroNo < 12095)
-      {
-      cout << "macroNo = " << tcEvent.macroNo << ", macroTime = " << tcEvent.macroTime
-      << ", evtNo = " << procEvent.evtNo << ", channel = " << chNo <<  ", completeTime = " << procEvent.completeTime << endl;
-      }*/
-    detectorTree->Fill();
-}
+    }
 
 void assignMacropulses(string rawFileName, string sortedFileName, vector<string> channelMap)
 {
@@ -117,13 +88,16 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
         //delete tcEvent.waveform;
         //tcEvent.waveform = new vector<int>;
 
+        SeparatedEvent separatedEvent;
+
         //separatedEvent.waveform = new vector<int>;
-        setBranchesSeparated(rawTree);
+        setBranchesSeparated(rawTree, separatedEvent);
 
         double prevTimetag = 0;
 
         long totalEntries = rawTree->GetEntries();
 
+        const double SCALEDOWN = 1;
         totalEntries /= SCALEDOWN; // for debugging:
         // use to separate only a subset of total
         // events and ignore the rest
@@ -143,12 +117,63 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
           exit(1);
           }*/
 
+        // FIX: extended time increment
+        // manually increment extended time, if necessary
+        /*if((prevTimetag > (double)pow(2,32) - 50000000) &&
+            rawEvent.timetag < prevTimetag)
+        {
+           extTime++; 
+        }*/
+
+        // FIX: fine time calculation
+        /*if(rawEvent.extraSelect==0)
+        {
+            switch(rawEvent.chNo)
+            {
+                case 0:
+                    rawEvent.fineTime = calculateTCFineTime(
+                            rawEvent.waveform,
+                            rawEvent.baseline-TC_FINETIME_THRESHOLD);
+                    break;
+                default:
+                    rawEvent.fineTime = calculateCFDTime(rawEvent.waveform,
+                            rawEvent.baseline,
+                            CFD_FRACTION,
+                            CFD_DELAY,
+                            false);
+                    break;
+            }
+        }*/
+
+        // FIX: assign target changer position to macropulse
+        /*if(rawEvent.chNo==0)
+          {
+          lgQTargetChanger = rawEvent.lgQ;
+          }*/
+
+        /*if(rawEvent.chNo==1)
+          {
+          rawEvent.lgQ = lgQTargetChanger;
+          }*/
+
+        /*if(prevEvtType!=rawEvent.evtType)
+          {
+          extTime=0;
+          prevTimetag=0;
+          }
+
+          rawEvent.extTime = extTime;
+          */
+
+
         else if(i==1)
         {
             TFile* sortedFile = new TFile(sortedFileName.c_str(), "UPDATE");
             TTree* sortedTree = new TTree(channelMap[i].c_str(),"");
 
-            branchTargetChanger(sortedTree);
+            TargetChangerEvent tcEvent;
+
+            branchTargetChanger(sortedTree, tcEvent);
 
             for(int j=0; j<totalEntries; j++)
             {
@@ -163,7 +188,6 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                   tcEvent.macroTime += MACROTIME_TARGET_DRIFT[tcEvent.targetPos-1];
                   }*/
 
-                
                 if(prevTimetag > tcEvent.macroTime)
                 {
                     // mode change
@@ -183,7 +207,19 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                     continue;
                 }
 
-                addTCEvent(sortedTree);
+                // fill w/ new macropulse data
+                tcEvent.lgQ = separatedEvent.lgQ;
+                tcEvent.fineTime = separatedEvent.fineTime;
+
+                //tcEvent.waveform = separatedEvent.waveform;
+
+                vector<int> tempWaveform = *separatedEvent.waveform;
+                tcEvent.waveform = &tempWaveform;
+
+                sortedTree->Fill();
+
+                // update macropulse counters
+                tcEvent.macroNo++;
 
                 prevTimetag = tcEvent.macroTime;
 
@@ -206,10 +242,13 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
             TTree* sortedTree = new TTree(channelMap[i].c_str(),"");
             sortedTree->SetDirectory(sortedFile);
 
-            branchProc(sortedTree);
+            ProcessedEvent procEvent;
+            branchProc(sortedTree, procEvent);
 
             TTree* targetChangerTree = (TTree*)sortedFile->Get(channelMap[1].c_str());
-            setBranchesProcessedTC(targetChangerTree);
+            TargetChangerEvent tcEvent;
+            setBranchesProcessedTC(targetChangerTree, tcEvent);
+
             long targetChangerEntries = targetChangerTree->GetEntries();
             long currentTargetChangerEntry = 0;
 
@@ -338,8 +377,29 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                     }
                 }
 
+                // update unique event information
+                procEvent.evtNo = evtNo;
+                procEvent.sgQ = separatedEvent.sgQ;
+                procEvent.lgQ = separatedEvent.lgQ;
+                procEvent.fineTime = separatedEvent.fineTime;
+                procEvent.waveform = separatedEvent.waveform;
 
-                addDetectorEvent(evtNo, sortedTree);
+                // only add events that come while beam is on, during the macropulse 
+                /*double timeDiff = procEvent.completeTime-tcEvent.macroTime;
+                  if (timeDiff < 0 && timeDiff > MACRO_LENGTH)
+                  {
+                  return;
+                  }
+                  */
+
+                // fill tree w/ event data
+
+                /*if(tcEvent.macroNo > 12090 && tcEvent.macroNo < 12095)
+                  {
+                  cout << "macroNo = " << tcEvent.macroNo << ", macroTime = " << tcEvent.macroTime
+                  << ", evtNo = " << procEvent.evtNo << ", channel = " << chNo <<  ", completeTime = " << procEvent.completeTime << endl;
+                  }*/
+                sortedTree->Fill();
 
                 prevTimetag = procEvent.completeTime; 
                 evtNo++;
@@ -375,18 +435,21 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
             exit(1);
         }
 
-        delete separatedEvent.waveform;
-        separatedEvent.waveform = new vector<int>;
-        setBranchesSeparated(treeToSort);
+        //delete separatedEvent.waveform;
+        //separatedEvent.waveform = new vector<int>;
+        SeparatedEvent separatedEvent;
+        setBranchesSeparated(treeToSort, separatedEvent);
 
         TFile* sortedFile = new TFile(sortedFileName.c_str(), "UPDATE");
         TTree* sortedTree = new TTree(treeName.c_str(),"");
-        branchProcW(sortedTree);
+        ProcessedEvent procEvent;
+        branchProcW(sortedTree, procEvent);
 
         long totalEntries = treeToSort->GetEntries();
 
         TTree* targetChangerTree = (TTree*)sortedFile->Get(channelMap[1].c_str());
-        setBranchesProcessedTC(targetChangerTree);
+        TargetChangerEvent tcEvent;
+        setBranchesProcessedTC(targetChangerTree, tcEvent);
         long targetChangerEntries = targetChangerTree->GetEntries();
 
         // procEvent now has data from the first macropulse

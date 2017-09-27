@@ -26,6 +26,7 @@
 #include "../include/plots.h"
 #include "../include/branches.h"
 #include "../include/experiment.h"
+#include "../include/digitizerConstants.h"
 
 using namespace std;
 
@@ -989,7 +990,7 @@ void waveform(string inFileName, string outFileName, vector<string>channelMap, s
         // Extract triggers from waveforms
         for(unsigned int i=0; i<tarGates.size()-1; i++)
         {
-            string name = positionNames[i];
+            string name = POSITION_NAMES[i];
             if(name=="")
             {
                 continue;

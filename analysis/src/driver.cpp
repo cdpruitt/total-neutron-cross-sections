@@ -90,6 +90,8 @@ int main(int, char* argv[])
         f.close();
     }
 
+    return 0;
+
     /*************************************************************************/
     /* Assign macropulse number to each event */
     /*************************************************************************/
@@ -131,7 +133,7 @@ int main(int, char* argv[])
     /*************************************************************************/
     /* Process waveform events */
     /*************************************************************************/
-    if(processWaveformEvents)
+    /*if(processWaveformEvents)
     {
         string waveformFileName = analysisDirectory + "waveform.root";
         ifstream w(waveformFileName);
@@ -145,7 +147,7 @@ int main(int, char* argv[])
             cout << "Waveform events already processed." << endl;
             w.close();
         }
-    }
+    }*/
 
     /*************************************************************************/
     /* Process DPP waveform events */
@@ -191,7 +193,7 @@ int main(int, char* argv[])
             histoFile->cd("/");
             histoFile->cd(name.c_str());
 
-            for(string positionName : positionNames)
+            for(string positionName : POSITION_NAMES)
             {
                 string histoName = positionName + "TOFCorrected";
                 TH1D* tof = (TH1D*)gDirectory->Get(histoName.c_str());
