@@ -18,6 +18,7 @@
 using namespace std;
 
 const unsigned int TIME_CHECK_TOLERANCE = 5; // in ns
+const unsigned int TIME_CHECK_Q_THRESHOLD = 4500; // in ns
 const unsigned int NUMBER_OF_EVENTS = 1000000;  // number of events to examine for time correlation
 
 ExperimentalConfig experimentalConfig;
@@ -63,6 +64,9 @@ int main(int argc, char** argv)
     double ch7Timetag = 0;
     double ch7FineTime = 0;
 
+    unsigned int ch6lgQ = 0;
+    unsigned int ch7lgQ = 0;
+
     unsigned long numberOfBadCh6FineTime = 0;
     unsigned long numberOfBadCh7FineTime = 0;
     unsigned long numberOfCh6Events = 0;
@@ -86,6 +90,8 @@ int main(int argc, char** argv)
                         )*experimentalConfig.timeConfig.SAMPLE_PERIOD;
 
                 ch6FineTimeH->Fill(ch6FineTime);
+
+                ch6lgQ = rawEvent.lgQ;
 
                 if(ch6FineTime<0)
                 {
@@ -118,6 +124,8 @@ int main(int argc, char** argv)
 
                 ch7FineTimeH->Fill(ch7FineTime);
 
+                ch7lgQ = rawEvent.lgQ;
+
                 if(ch7FineTime<0)
                 {
                     numberOfBadCh7FineTime++;
@@ -127,7 +135,10 @@ int main(int argc, char** argv)
             }
         }
 
-        if(abs(ch6Timetag-ch7Timetag)<=TIME_CHECK_TOLERANCE && ch6FineTime>=0 && ch7FineTime>=0)
+        if(
+                abs(ch6Timetag-ch7Timetag)<=TIME_CHECK_TOLERANCE
+                && ch6FineTime>=0 && ch7FineTime>=0
+                && ch6lgQ+ch7lgQ > TIME_CHECK_Q_THRESHOLD)
         {
             detTimeCorrelation->Fill(ch7FineTime, ch6FineTime+(ch6Timetag-ch7Timetag));
             detTimeDifference->Fill((ch6FineTime+ch6Timetag)-(ch7FineTime+ch7Timetag));
