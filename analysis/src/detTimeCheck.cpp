@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <math.h>
 
@@ -11,11 +12,15 @@
 #include "../include/dataStructures.h"
 #include "../include/raw.h"
 #include "../include/experiment.h"
+#include "../include/experimentalConfig.h"
+#include "../include/softwareCFD.h"
 
 using namespace std;
 
-const unsigned int TIME_CHECK_TOLERANCE = 10; // in ns
-const unsigned int NUMBER_OF_EVENTS = 10000;  // number of events to examine for time correlation
+const unsigned int TIME_CHECK_TOLERANCE = 5; // in ns
+const unsigned int NUMBER_OF_EVENTS = 1000000;  // number of events to examine for time correlation
+
+ExperimentalConfig experimentalConfig;
 
 int main(int argc, char** argv)
 {
@@ -35,14 +40,17 @@ int main(int argc, char** argv)
     // create a ROOT file for holding time correlation plots
     TFile* file = new TFile("timeCheckOutput/detTimeCheck.root","RECREATE");
 
-    TH2D* detTimeCorrelation = new TH2D("left/right time correlation","left/right time correlation",1000,43,53,1000,43,53);
+    TH2D* detTimeCorrelation = new TH2D("left/right time correlation","left/right time correlation",300,30,60,300,30,60);
     detTimeCorrelation->GetXaxis()->SetTitle("right detector");
     detTimeCorrelation->GetYaxis()->SetTitle("left detector");
-    detTimeCorrelation->SetMarkerStyle(20);
+    detTimeCorrelation->SetMarkerStyle(7);
 
-    TH1D* detTimeDifference = new TH1D("time difference","diffLR",1000,-3,3);
+    TH1D* detTimeDifference = new TH1D("time difference","diffLR",1000,-50,50);
     detTimeDifference->GetXaxis()->SetTitle("left detector time - right detector time");
-    detTimeDifference->SetMarkerStyle(20);
+    detTimeDifference->SetMarkerStyle(7);
+
+    TH1D* ch6FineTimeH = new TH1D("ch6 fine time", "ch6 fine time", 600, 0, 60);
+    TH1D* ch7FineTimeH = new TH1D("ch7 fine time", "ch7 fine time", 600, 0, 60);
 
     unsigned long numberOfEventsProcessed = 0;
 
@@ -52,6 +60,11 @@ int main(int argc, char** argv)
     double ch7Timetag = 0;
     double ch7FineTime = 0;
 
+    unsigned long numberOfBadCh6FineTime = 0;
+    unsigned long numberOfBadCh7FineTime = 0;
+    unsigned long numberOfCh6Events = 0;
+    unsigned long numberOfCh7Events = 0;
+
     RawEvent rawEvent;
 
     while(!inFile.eof() && numberOfEventsProcessed < NUMBER_OF_EVENTS)
@@ -60,22 +73,54 @@ int main(int argc, char** argv)
         {
             if(rawEvent.chNo==6)
             {
-                ch6Timetag = rawEvent.timetag;
-                ch6FineTime = calculateCFDTime(rawEvent.waveform,
-                            rawEvent.baseline,
-                            CFD_FRACTION,
-                            CFD_DELAY,
-                            false);
+                ch6Timetag = rawEvent.timetag*experimentalConfig.timeConfig.SAMPLE_PERIOD;
+                ch6FineTime = calculateCFDTime(
+                        rawEvent.waveform,
+                        rawEvent.baseline,
+                        experimentalConfig.timeConfig.CFD_FRACTION,
+                        experimentalConfig.timeConfig.CFD_DELAY,
+                        false
+                        )*experimentalConfig.timeConfig.SAMPLE_PERIOD;
+
+                ch6FineTimeH->Fill(ch6FineTime);
+
+                if(ch6FineTime<0)
+                {
+                    stringstream name;
+                    name << "Event" << numberOfEventsProcessed;
+                    //TH1D* badFineTimeHisto = new TH1D(name.str().c_str(),name.str().c_str(),rawEvent.waveform->size(),0,rawEvent.waveform->size());
+                    /*for(unsigned int i=0; i<rawEvent.waveform->size(); i++)
+                    {
+                        badFineTimeHisto->SetBinContent(i+1,rawEvent.waveform->at(i));
+                    }
+                    badFineTimeHisto->Write();
+                    */
+
+                    numberOfBadCh6FineTime++;
+                }
+
+                numberOfCh6Events++;
             }
 
             else if(rawEvent.chNo==7)
             {
-                ch7Timetag = rawEvent.timetag;
-                ch7FineTime = calculateCFDTime(rawEvent.waveform,
-                            rawEvent.baseline,
-                            CFD_FRACTION,
-                            CFD_DELAY,
-                            false);
+                ch7Timetag = rawEvent.timetag*experimentalConfig.timeConfig.SAMPLE_PERIOD;
+                ch7FineTime = calculateCFDTime(
+                        rawEvent.waveform,
+                        rawEvent.baseline,
+                        experimentalConfig.timeConfig.CFD_FRACTION,
+                        experimentalConfig.timeConfig.CFD_DELAY,
+                        false
+                        )*experimentalConfig.timeConfig.SAMPLE_PERIOD;
+
+                ch7FineTimeH->Fill(ch7FineTime);
+
+                if(ch7FineTime<0)
+                {
+                    numberOfBadCh7FineTime++;
+                }
+
+                numberOfCh7Events++;
             }
         }
 
@@ -84,7 +129,21 @@ int main(int argc, char** argv)
             detTimeCorrelation->Fill(ch7FineTime, ch6FineTime+(ch6Timetag-ch7Timetag));
             detTimeDifference->Fill((ch6FineTime+ch6Timetag)-(ch7FineTime+ch7Timetag));
         }
+
+        if(numberOfEventsProcessed%10000==0)
+        {
+            cout << "Processed " << numberOfEventsProcessed << " events through time check\r";
+            fflush(stdout);
+        }
+
+        numberOfEventsProcessed++;
     }
+
+    cout << endl;
+    cout << "Finished processing " << numberOfEventsProcessed << " events through time check." << endl;
+
+    cout << "Successfully calculated a fine time on " << 100*(double)(numberOfCh6Events-numberOfBadCh6FineTime)/(numberOfCh6Events) << "% of ch6 events." << endl;
+    cout << "Successfully calculated a fine time on " << 100*(double)(numberOfCh7Events-numberOfBadCh7FineTime)/(numberOfCh7Events) << "% of ch7 events." << endl;
 
     file->Write();
 

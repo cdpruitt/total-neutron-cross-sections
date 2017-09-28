@@ -6,11 +6,12 @@
 
 #include "../include/target.h"
 #include "../include/CSPrereqs.h"
-#include "../include/analysisConstants.h"
-#include "../include/plottingConstants.h"
 #include "../include/plots.h"
+#include "../include/experimentalConfig.h"
 
 using namespace std;
+
+ExperimentalConfig experimentalConfig;
 
 void CSPrereqs::getHisto(TFile* histoFile, string directory, string name)
 {
@@ -52,7 +53,7 @@ void CSPrereqs::getMonitorCounts(string monitorFileName, string directory, int t
 void CSPrereqs::readData(TFile* histoFile, string directory, int targetPosition)
 {
     // Find deadtime-corrected energy histo for this target
-    string histoName = POSITION_NAMES[targetPosition];
+    string histoName = experimentalConfig.targetConfig.POSITION_NAMES[targetPosition];
     getHisto(histoFile, directory, histoName);
 
     // Find number of events in the monitor for each target to use in scaling
@@ -64,7 +65,7 @@ void CSPrereqs::readData(TFile* histoFile, string directory, int targetPosition)
 void CSPrereqs::readData(TFile* histoFile, string directory, int targetPosition, string monitorFileName)
 {
     // Find deadtime-corrected energy histo for this target
-    string histoName = POSITION_NAMES[targetPosition];
+    string histoName = experimentalConfig.targetConfig.POSITION_NAMES[targetPosition];
     getHisto(histoFile, directory, histoName);
 
     // Find number of events in the monitor for each target to use in scaling
@@ -90,7 +91,7 @@ CSPrereqs operator+(CSPrereqs& augend, CSPrereqs& addend)
 CSPrereqs::CSPrereqs(Target t)
 {
     target = t;
-    TOFHisto = new TH1D("","",TOF_BINS,TOF_LOWER_BOUND,TOF_RANGE),target.getName();
+    TOFHisto = new TH1D("","",experimentalConfig.plotConfig.TOF_BINS,experimentalConfig.plotConfig.TOF_LOWER_BOUND,experimentalConfig.plotConfig.TOF_RANGE),target.getName();
     TOFHisto->SetDirectory(0);
     energyHisto = timeBinsToRKEBins(TOFHisto,target.getName());
     energyHisto->SetDirectory(0);
@@ -99,7 +100,7 @@ CSPrereqs::CSPrereqs(Target t)
 
 CSPrereqs::CSPrereqs(string targetDataLocation) : target(targetDataLocation)
 {
-    TOFHisto = new TH1D("","",TOF_BINS,TOF_LOWER_BOUND,TOF_RANGE),target.getName();
+    TOFHisto = new TH1D("","",experimentalConfig.plotConfig.TOF_BINS,experimentalConfig.plotConfig.TOF_LOWER_BOUND,experimentalConfig.plotConfig.TOF_RANGE),target.getName();
     TOFHisto->SetDirectory(0);
     energyHisto = timeBinsToRKEBins(TOFHisto,target.getName());
     energyHisto->SetDirectory(0);

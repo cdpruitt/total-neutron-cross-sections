@@ -1,7 +1,4 @@
 // project-specific classes
-#include "../include/analysisConstants.h"
-#include "../include/plottingConstants.h"
-
 #include "../include/raw.h"
 #include "../include/assignMacropulses.h"
 #include "../include/histos.h"
@@ -9,6 +6,7 @@
 #include "../include/waveform.h"
 #include "../include/veto.h"
 #include "../include/experiment.h"
+#include "../include/experimentalConfig.h"
 
 // ROOT library classes
 #include "TFile.h"
@@ -21,6 +19,8 @@
 #include <fstream>
 
 using namespace std;
+
+ExperimentalConfig experimentalConfig;
 
 int main(int, char* argv[])
 {
@@ -120,7 +120,7 @@ int main(int, char* argv[])
         ifstream v(vetoedFileName);
         if(!v.good())
         {
-            vetoEvents(sortedFileName, vetoedFileName, detectorNames, "veto");
+            vetoEvents(sortedFileName, vetoedFileName, experimentalConfig.csConfig.DETECTOR_NAMES, "veto");
         }
 
         else
@@ -188,12 +188,12 @@ int main(int, char* argv[])
 
         TFile* histoFile = new TFile(histoFileName.c_str(),"UPDATE");
 
-        for(string name : detectorNames)
+        for(string name : experimentalConfig.csConfig.DETECTOR_NAMES)
         {
             histoFile->cd("/");
             histoFile->cd(name.c_str());
 
-            for(string positionName : POSITION_NAMES)
+            for(string positionName : experimentalConfig.targetConfig.POSITION_NAMES)
             {
                 string histoName = positionName + "TOFCorrected";
                 TH1D* tof = (TH1D*)gDirectory->Get(histoName.c_str());

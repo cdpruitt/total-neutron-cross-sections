@@ -1,10 +1,9 @@
-// header
-double calculateCFDTime(std::vector<int>* waveform,
-        double baseline,
-        double fraction,
-        unsigned int delay,
-        bool isPositiveSignal);
+#include <iostream>
+#include <vector>
 
+#include "../include/experimentalConfig.h"
+
+using namespace std;
 
 double calculateCFDTime(vector<int>* waveform, double baseline, double fraction, unsigned int delay, bool isPositiveSignal)
 {
@@ -32,7 +31,7 @@ double calculateCFDTime(vector<int>* waveform, double baseline, double fraction,
             // baseline
             double CFDSample = waveform->at(i)-(fraction*waveform->at(i+delay)+baseline*(1-fraction));
 
-            if(!listenForZC && CFDSample<-CFD_ZC_TRIGGER_THRESHOLD)
+            if(!listenForZC && CFDSample<=-(experimentalConfig.timeConfig.CFD_ZC_TRIGGER_THRESHOLD))
             {
                 // approaching ZC - start looking for a ZC
                 listenForZC = true;
@@ -41,7 +40,7 @@ double calculateCFDTime(vector<int>* waveform, double baseline, double fraction,
             if(listenForZC && CFDSample>0)
             {
                 // found ZC: return time of crossing, i.e., (baseline-NZC)/(PZC-NZC)
-                return i+(0-prevCFDSample)/(CFDSample-prevCFDSample)-TC_PRETRIGGER_SAMPLES;
+                return i+(0-prevCFDSample)/(CFDSample-prevCFDSample);
             }
 
             prevCFDSample = CFDSample;
@@ -56,7 +55,7 @@ double calculateCFDTime(vector<int>* waveform, double baseline, double fraction,
             // baseline
             double CFDSample = waveform->at(i)-(fraction*waveform->at(i+delay)+baseline*(1-fraction));
 
-            if(!listenForZC && CFDSample>CFD_ZC_TRIGGER_THRESHOLD)
+            if(!listenForZC && CFDSample>(experimentalConfig.timeConfig.CFD_ZC_TRIGGER_THRESHOLD))
             {
                 // approaching ZC - start looking for a ZC
                 listenForZC = true;
@@ -65,7 +64,7 @@ double calculateCFDTime(vector<int>* waveform, double baseline, double fraction,
             if(listenForZC && CFDSample<0)
             {
                 // found ZC: return time of crossing, i.e., (baseline-NZC)/(PZC-NZC)
-                return i+(0-prevCFDSample)/(CFDSample-prevCFDSample)-DETECTOR_PRETRIGGER_SAMPLES;
+                return i+(0-prevCFDSample)/(CFDSample-prevCFDSample);
             }
 
             prevCFDSample = CFDSample;
@@ -75,7 +74,7 @@ double calculateCFDTime(vector<int>* waveform, double baseline, double fraction,
     
     //cerr << "Error: could not calculate fine time of waveform." << endl;
 
-    return 0;
+    return -1;
 }
 
 double calculateTCFineTime(vector<int>* waveform, double threshold)

@@ -15,11 +15,11 @@ LINKOPTION = $(shell root-config --libs)
 ############################### DEFINE TARGETS #################################
 
 # List all targets
-TARGETS = driver sumSingle sumAll text readLitData subtractCS multiplyCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS
+TARGETS = driver sumSingle sumAll text readLitData subtractCS multiplyCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck
 all: $(addprefix $(BIN), $(TARGETS))
 
 # Build driver (main data analysis engine)
-DRIVER_SOURCES = branches.cpp dataPoint.cpp dataSet.cpp driver.cpp experiment.cpp histos.cpp plots.cpp raw.cpp assignMacropulses.cpp target.cpp veto.cpp detTimeCheck.cpp
+DRIVER_SOURCES = branches.cpp dataPoint.cpp dataSet.cpp driver.cpp experiment.cpp histos.cpp plots.cpp raw.cpp assignMacropulses.cpp target.cpp veto.cpp
 
 #DRIVER_SOURCES = branches.cpp dataPoint.cpp dataSet.cpp driver.cpp experiment.cpp histos.cpp plots.cpp raw.cpp assignMacropulses.cpp target.cpp veto.cpp waveform.cpp waveformFitting.cpp
 $(BIN)driver: $(addprefix $(SOURCE), $(DRIVER_SOURCES))
@@ -46,7 +46,7 @@ $(BIN)text: $(addprefix $(SOURCE), $(TEXT_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)text $(addprefix $(SOURCE), $(TEXT_SOURCES)) $(LINKOPTION)
 
 # Build detTimeCheck (for comparing the timestamps of the same event, but recorded by different digitizer channels)
-DETTIMECHECK_SOURCES = detTimeCheck.cpp raw.cpp branches.cpp experiment.cpp
+DETTIMECHECK_SOURCES = detTimeCheck.cpp raw.cpp branches.cpp experiment.cpp softwareCFD.cpp
 $(BIN)detTimeCheck: $(addprefix $(SOURCE), $(DETTIMECHECK_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)detTimeCheck $(addprefix $(SOURCE), $(DETTIMECHECK_SOURCES)) $(LINKOPTION)
 

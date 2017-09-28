@@ -6,9 +6,6 @@
 #include "../include/dataPoint.h"
 #include "../include/dataSet.h"
 #include "../include/dataStructures.h"
-#include "../include/analysisConstants.h"
-#include "../include/physicalConstants.h"
-#include "../include/plottingConstants.h"
 #include "../include/plots.h"
 
 #include <iostream>

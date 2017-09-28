@@ -20,6 +20,9 @@
 !utilityScripts/
 !utilityScripts/*
 
+!prettyPrint/
+!prettyPrint/*
+
 !*.sh
 !*.txt
 !README

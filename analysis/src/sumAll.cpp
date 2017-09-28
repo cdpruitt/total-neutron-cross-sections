@@ -15,7 +15,6 @@
 #include "../include/dataSet.h"
 #include "../include/dataPoint.h"
 #include "../include/CSPrereqs.h"
-#include "../include/analysisConstants.h"
 #include "../include/crossSection.h"
 #include "../include/experiment.h"
 

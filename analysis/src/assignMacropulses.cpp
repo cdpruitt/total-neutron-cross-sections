@@ -18,32 +18,20 @@
 
 #include "../include/dataStructures.h" // defines the C-structs that hold each event's data
 #include "../include/branches.h" // used to map C-structs that hold raw data to ROOT trees, and vice-versa
-#include "../include/runSpecificConstants.h"
 
 #include "../include/assignMacropulses.h" // declarations of functions used to assign times and macropulses to events
+#include "../include/experimentalConfig.h"
+
+extern ExperimentalConfig experimentalConfig;
 
 using namespace std;
-
-// "Target changer charge gates" are used to assign the target changer position
-// based on the target changer signal's integrated charge
-const std::vector<std::pair<int,int>> tarGates = {
-    std::pair<int,int> (50,2500), // position 0 gates
-    std::pair<int,int> (5000,10000), // position 1 gates
-    std::pair<int,int> (12000,17000), // position 2 gates
-    std::pair<int,int> (18000,23000), // position 3 gates
-    std::pair<int,int> (25000,30000), // position 4 gates
-    std::pair<int,int> (31000,36000), // position 5 gates
-    std::pair<int,int> (37000,43000) // position 6 gates
-};
-
-const double SAMPLE_PERIOD = 2; // digitizer sample rate, in ns
 
 // Use the lgQ from the target changer to determine the target position
 int assignTargetPos(int lgQ)
 {
-    for(int i=0; (size_t)i<tarGates.size(); i++)
+    for(int i=0; (size_t)i<experimentalConfig.targetConfig.TARGET_GATES.size(); i++)
     {
-        if (lgQ>=tarGates[i].first && lgQ<=tarGates[i].second)
+        if (lgQ>=experimentalConfig.targetConfig.TARGET_GATES[i].first && lgQ<=experimentalConfig.targetConfig.TARGET_GATES[i].second)
         {
             // lgQ fits within this gate
             return i; // target positions start from 1
@@ -181,7 +169,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
 
                 tcEvent.targetPos = assignTargetPos(separatedEvent.lgQ);
 
-                tcEvent.macroTime = SAMPLE_PERIOD*(pow(2,31)*separatedEvent.extTime + separatedEvent.timetag + separatedEvent.fineTime);
+                tcEvent.macroTime = experimentalConfig.timeConfig.SAMPLE_PERIOD*(pow(2,31)*separatedEvent.extTime + separatedEvent.timetag + separatedEvent.fineTime);
 
                 /*if(tcEvent.targetPos > 0)
                   {
@@ -272,18 +260,18 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
             switch(i)
             {
                 case 2:
-                    TIME_OFFSET = MACROPULSE_OFFSET;
+                    TIME_OFFSET = experimentalConfig.timeConfig.MACROPULSE_OFFSET;
                     break;
                 case 3:
                 case 4:
-                    TIME_OFFSET = MACROPULSE_OFFSET;
+                    TIME_OFFSET = experimentalConfig.timeConfig.MACROPULSE_OFFSET;
                     break;
                 case 5:
-                    TIME_OFFSET = MACROPULSE_OFFSET-VETO_OFFSET;
+                    TIME_OFFSET = experimentalConfig.timeConfig.MACROPULSE_OFFSET-experimentalConfig.timeConfig.VETO_OFFSET;
                     break;
                 case 6:
                 case 7:
-                    TIME_OFFSET = MACROPULSE_OFFSET;
+                    TIME_OFFSET = experimentalConfig.timeConfig.MACROPULSE_OFFSET;
                     break;
 
                 default:
@@ -297,7 +285,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
             {
                 rawTree->GetEntry(j);
 
-                procEvent.completeTime = SAMPLE_PERIOD*
+                procEvent.completeTime = experimentalConfig.timeConfig.SAMPLE_PERIOD*
                     (pow(2,31)*separatedEvent.extTime +
                      separatedEvent.timetag +
                      separatedEvent.fineTime) +
@@ -465,7 +453,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
             if(tcEvent.modeChange==1)
             {
                 treeToSort->GetEntry(currentWaveformEvent++);
-                procEvent.completeTime = pow(2,32)*separatedEvent.extTime + SAMPLE_PERIOD*separatedEvent.timetag;
+                procEvent.completeTime = pow(2,32)*separatedEvent.extTime + experimentalConfig.timeConfig.SAMPLE_PERIOD*separatedEvent.timetag;
                 procEvent.macroNo = tcEvent.macroNo;
                 procEvent.macroTime = tcEvent.macroTime;
                 procEvent.targetPos = tcEvent.targetPos;
@@ -474,7 +462,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                 prevTimetag = 0;
                 while(prevTimetag < procEvent.completeTime)
                 {
-                    if(prevTimetag+MACRO_LENGTH < procEvent.completeTime)
+                    if(prevTimetag+experimentalConfig.facilityConfig.MACRO_LENGTH < procEvent.completeTime)
                     {
                         evtNo=0;
                     }
@@ -483,7 +471,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                     addDetectorEvent(evtNo, sortedTree);
                     prevTimetag = procEvent.completeTime;
                     treeToSort->GetEntry(currentWaveformEvent++);
-                    procEvent.completeTime = pow(2,32)*separatedEvent.extTime + SAMPLE_PERIOD*separatedEvent.timetag;
+                    procEvent.completeTime = pow(2,32)*separatedEvent.extTime + experimentalConfig.timeConfig.SAMPLE_PERIOD*separatedEvent.timetag;
                 }
             }
 

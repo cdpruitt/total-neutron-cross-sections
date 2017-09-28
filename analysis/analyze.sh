@@ -153,7 +153,7 @@ analyze ()
 
         inputFileName=$1
 
-        ./bin/fineTimeCheck "$inputFileName"
+        ./bin/detTimeCheck "$inputFileName"
         exit # we just want the time check output, so stop analysis here
     fi
 

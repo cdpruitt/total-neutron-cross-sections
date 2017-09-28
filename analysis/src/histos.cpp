@@ -12,17 +12,18 @@
 #include "TRandom3.h"
 
 #include "../include/physicalConstants.h"
-#include "../include/analysisConstants.h"
 #include "../include/dataStructures.h"
-#include "../include/plottingConstants.h"
 #include "../include/branches.h"
 #include "../include/plots.h"
 #include "../include/histos.h"
 #include "../include/waveform.h"
+#include "../include/experimentalConfig.h"
 
 using namespace std;
 
 extern ProcessedEvent procEvent;
+
+extern ExperimentalConfig experimentalConfig;
 
 // Indicate the range of times considered to be gamma rays (for the purposes of
 // counting gamma rays)
@@ -62,7 +63,13 @@ TH1D* convertTOFtoEnergy(TH1D* tof, string name)
     for(unsigned int j=1; j<tofBins+1; j++)
     {
         // convert time into neutron velocity based on flight path distance
-        double velocity = pow(10.,7.)*FLIGHT_DISTANCE/(tof->GetBinCenter(j)+randomizeBin->Uniform(-TOF_RANGE/(double)(2*TOF_BINS),TOF_RANGE/(double)(2*TOF_BINS))); // in meters/sec 
+        double velocity = pow(10.,7.)*(experimentalConfig.facilityConfig.FLIGHT_DISTANCE)
+            /(tof->GetBinCenter(j)
+                    +randomizeBin->Uniform(
+                        -(experimentalConfig.plotConfig.TOF_RANGE)/(double)(2*experimentalConfig.plotConfig.TOF_BINS),
+                         (experimentalConfig.plotConfig.TOF_RANGE)/(double)(2*experimentalConfig.plotConfig.TOF_BINS)
+                        )
+             ); // in meters/sec 
 
         // convert velocity to relativistic kinetic energy
         double rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
@@ -107,15 +114,15 @@ double applyDeadtimeCorrection(TH1D*& rawTOF, vector<double> deadtimesPerBin)
 
 vector<double> generateDeadtimeCorrection(TH1D* tof, long totalNumberOfMicros)
 {
-    vector<double> eventsPerMicroPerBin(TOF_BINS, 0);
-    vector<double> deadtimesPerBin(TOF_BINS,0);
+    vector<double> eventsPerMicroPerBin(experimentalConfig.plotConfig.TOF_BINS, 0);
+    vector<double> deadtimesPerBin(experimentalConfig.plotConfig.TOF_BINS,0);
 
     string name = tof->GetName();
     string eventsPerMicroName = name + "EventsPerMicro";
-    TH1D* eventsPerMicroPerBinH = new TH1D(eventsPerMicroName.c_str(), eventsPerMicroName.c_str(),TOF_BINS,TOF_LOWER_BOUND,TOF_UPPER_BOUND);
+    TH1D* eventsPerMicroPerBinH = new TH1D(eventsPerMicroName.c_str(), eventsPerMicroName.c_str(),experimentalConfig.plotConfig.TOF_BINS,experimentalConfig.plotConfig.TOF_LOWER_BOUND,experimentalConfig.plotConfig.TOF_UPPER_BOUND);
 
     string deadtimeName = name + "Deadtime";
-    TH1D* deadtimeHisto = new TH1D(deadtimeName.c_str(), deadtimeName.c_str(),TOF_BINS,TOF_LOWER_BOUND,TOF_UPPER_BOUND);
+    TH1D* deadtimeHisto = new TH1D(deadtimeName.c_str(), deadtimeName.c_str(),experimentalConfig.plotConfig.TOF_BINS,experimentalConfig.plotConfig.TOF_LOWER_BOUND,experimentalConfig.plotConfig.TOF_UPPER_BOUND);
 
     if(totalNumberOfMicros==0)
     {
@@ -123,8 +130,8 @@ vector<double> generateDeadtimeCorrection(TH1D* tof, long totalNumberOfMicros)
         return deadtimesPerBin;
     }
 
-    const int deadtimeBins = ((double)TOF_BINS/TOF_RANGE)*DEADTIME_PERIOD;
-    const int deadtimeTransitionBins = ((double)TOF_BINS/TOF_RANGE)*DEADTIME_TRANSITION_PERIOD;
+    const int deadtimeBins = ((double)experimentalConfig.plotConfig.TOF_BINS/experimentalConfig.plotConfig.TOF_RANGE)*DEADTIME_PERIOD;
+    const int deadtimeTransitionBins = ((double)experimentalConfig.plotConfig.TOF_BINS/experimentalConfig.plotConfig.TOF_RANGE)*DEADTIME_TRANSITION_PERIOD;
 
     for(int j=0; j<eventsPerMicroPerBin.size(); j++)
     {
@@ -139,7 +146,7 @@ vector<double> generateDeadtimeCorrection(TH1D* tof, long totalNumberOfMicros)
 
     // use deadtime base case to calculate deadtime for remaining bins
 
-    for(int j=0; j<TOF_BINS; j++)
+    for(int j=0; j<experimentalConfig.plotConfig.TOF_BINS; j++)
     {
         for(int k=j-(deadtimeBins+deadtimeTransitionBins); k<j; k++)
         {
@@ -147,7 +154,7 @@ vector<double> generateDeadtimeCorrection(TH1D* tof, long totalNumberOfMicros)
             {
                 if(k<0)
                 {
-                    deadtimesPerBin[j] += eventsPerMicroPerBin[k+TOF_BINS]*(double)(1-deadtimesPerBin[j])*((deadtimeBins+deadtimeTransitionBins-(j-k))/(double)deadtimeTransitionBins);
+                    deadtimesPerBin[j] += eventsPerMicroPerBin[k+experimentalConfig.plotConfig.TOF_BINS]*(double)(1-deadtimesPerBin[j])*((deadtimeBins+deadtimeTransitionBins-(j-k))/(double)deadtimeTransitionBins);
                 }
 
                 else
@@ -160,7 +167,7 @@ vector<double> generateDeadtimeCorrection(TH1D* tof, long totalNumberOfMicros)
             {
                 if(k<0)
                 {
-                    deadtimesPerBin[j] += eventsPerMicroPerBin[k+TOF_BINS]*(double)(1-deadtimesPerBin[j]);
+                    deadtimesPerBin[j] += eventsPerMicroPerBin[k+experimentalConfig.plotConfig.TOF_BINS]*(double)(1-deadtimesPerBin[j]);
                 }
 
                 else
@@ -185,7 +192,7 @@ vector<double> generateDeadtimeCorrection(TH1D* tof, long totalNumberOfMicros)
 
 void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
 {
-    for(string s : detectorNames)
+    for(string s : experimentalConfig.csConfig.DETECTOR_NAMES)
     {
         vetoFile->cd();
         //string treeName = s;
@@ -201,17 +208,17 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
         histoFile->cd(s.c_str());
 
         // create diagnostic histograms
-        TH2I *triangle = new TH2I("triangle","TOF vs. lgQ",TOF_RANGE,TOF_LOWER_BOUND,TOF_UPPER_BOUND/10,8192,0,65536);
-        TH2I *triangleRKE = new TH2I("triangleRKE","relativistic KE vs. lgQ",NUMBER_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND,2048,0,65536);
+        TH2I *triangle = new TH2I("triangle","TOF vs. lgQ",experimentalConfig.plotConfig.TOF_RANGE,experimentalConfig.plotConfig.TOF_LOWER_BOUND,experimentalConfig.plotConfig.TOF_UPPER_BOUND/10,8192,0,65536);
+        TH2I *triangleRKE = new TH2I("triangleRKE","relativistic KE vs. lgQ",experimentalConfig.plotConfig.NUMBER_ENERGY_BINS,experimentalConfig.plotConfig.ENERGY_LOWER_BOUND,experimentalConfig.plotConfig.ENERGY_UPPER_BOUND,2048,0,65536);
         TH2I *sgQlgQ = new TH2I("sgQlgQ","short gate Q vs. long gate Q",2048,0,65536,2048,0,65536);
         TH1I *QRatio = new TH1I("QRatio","short gate Q/long gate Q",1000,0,1);
 
-        TH1I* timeDiffHistoBlank = new TH1I("time since last event, blank","time since last event",TOF_RANGE,0,TOF_RANGE);
-        TH1I* timeDiffHistoTarget1 = new TH1I("time since last event, target 1","time since last event",TOF_RANGE,0,TOF_RANGE);
-        TH1I* timeDiffHistoTarget2 = new TH1I("time since last event, target 2","time since last event",TOF_RANGE,0,TOF_RANGE);
-        TH1I* timeDiffHistoTarget3 = new TH1I("time since last event, target 3","time since last event",TOF_RANGE,0,TOF_RANGE);
-        TH1I* timeDiffHistoTarget4 = new TH1I("time since last event, target 4","time since last event",TOF_RANGE,0,TOF_RANGE);
-        TH1I* timeDiffHistoTarget5 = new TH1I("time since last event, target 5","time since last event",TOF_RANGE,0,TOF_RANGE);
+        TH1I* timeDiffHistoBlank = new TH1I("time since last event, blank","time since last event",experimentalConfig.plotConfig.TOF_RANGE,0,experimentalConfig.plotConfig.TOF_RANGE);
+        TH1I* timeDiffHistoTarget1 = new TH1I("time since last event, target 1","time since last event",experimentalConfig.plotConfig.TOF_RANGE,0,experimentalConfig.plotConfig.TOF_RANGE);
+        TH1I* timeDiffHistoTarget2 = new TH1I("time since last event, target 2","time since last event",experimentalConfig.plotConfig.TOF_RANGE,0,experimentalConfig.plotConfig.TOF_RANGE);
+        TH1I* timeDiffHistoTarget3 = new TH1I("time since last event, target 3","time since last event",experimentalConfig.plotConfig.TOF_RANGE,0,experimentalConfig.plotConfig.TOF_RANGE);
+        TH1I* timeDiffHistoTarget4 = new TH1I("time since last event, target 4","time since last event",experimentalConfig.plotConfig.TOF_RANGE,0,experimentalConfig.plotConfig.TOF_RANGE);
+        TH1I* timeDiffHistoTarget5 = new TH1I("time since last event, target 5","time since last event",experimentalConfig.plotConfig.TOF_RANGE,0,experimentalConfig.plotConfig.TOF_RANGE);
 
         TH1I* goodMacroNoH = new TH1I("good macros","good macros",200000,0,200000);
         TH1I* goodMacroNoHBlank = new TH1I("good macros, blank","good macros, blank",200000,0,200000);
@@ -221,14 +228,14 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
         TH1I* goodMacroNoHTarget4 = new TH1I("good macros, target 4","good macros, target 4",200000,0,200000);
         TH1I* goodMacroNoHTarget5 = new TH1I("good macros, target 5","good macros, target 5",200000,0,200000);
 
-        TH2I *timeDiffVEnergy1 = new TH2I("time difference vs. energy of first","time difference vs. energy of first",TOF_RANGE,0,TOF_RANGE,500,2,700);
-        TH2I *timeDiffVEnergy2 = new TH2I("time difference vs. energy of second","time difference vs. energy of second",TOF_RANGE,0,TOF_RANGE,NUMBER_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND);
-        TH2I *energy1VEnergy2 = new TH2I("energy of first vs. energy of second","energy of first vs. energy of second",10*NUMBER_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND,10*NUMBER_ENERGY_BINS,ENERGY_LOWER_BOUND,ENERGY_UPPER_BOUND);
-        TH2I *time1Vtime2 = new TH2I("time of first vs. time of second","time of first vs. time of second",TOF_RANGE,0,TOF_RANGE,TOF_RANGE,0,TOF_RANGE);
+        TH2I *timeDiffVEnergy1 = new TH2I("time difference vs. energy of first","time difference vs. energy of first",experimentalConfig.plotConfig.TOF_RANGE,0,experimentalConfig.plotConfig.TOF_RANGE,500,2,700);
+        TH2I *timeDiffVEnergy2 = new TH2I("time difference vs. energy of second","time difference vs. energy of second",experimentalConfig.plotConfig.TOF_RANGE,0,experimentalConfig.plotConfig.TOF_RANGE,experimentalConfig.plotConfig.NUMBER_ENERGY_BINS,experimentalConfig.plotConfig.ENERGY_LOWER_BOUND,experimentalConfig.plotConfig.ENERGY_UPPER_BOUND);
+        TH2I *energy1VEnergy2 = new TH2I("energy of first vs. energy of second","energy of first vs. energy of second",10*experimentalConfig.plotConfig.NUMBER_ENERGY_BINS,experimentalConfig.plotConfig.ENERGY_LOWER_BOUND,experimentalConfig.plotConfig.ENERGY_UPPER_BOUND,10*experimentalConfig.plotConfig.NUMBER_ENERGY_BINS,experimentalConfig.plotConfig.ENERGY_LOWER_BOUND,experimentalConfig.plotConfig.ENERGY_UPPER_BOUND);
+        TH2I *time1Vtime2 = new TH2I("time of first vs. time of second","time of first vs. time of second",experimentalConfig.plotConfig.TOF_RANGE,0,experimentalConfig.plotConfig.TOF_RANGE,experimentalConfig.plotConfig.TOF_RANGE,0,experimentalConfig.plotConfig.TOF_RANGE);
         TH2I *lgQ1VlgQ2 = new TH2I("lgQ of first vs. lgQ of second","lgQ of first vs. lgQ of second",1024,0,65536,1024,0,65536);
         TH2I *lgQ1VlgQ2_background = new TH2I("lgQ of first vs. lgQ of second_background","lgQ of first vs. lgQ of second_background",1024,0,65536,1024,0,65536);
 
-        TH1I *doublePeakH = new TH1I("likelihood of double peak in wavelet","likelihood of double peak in wavelet",TOF_BINS,0,TOF_RANGE);
+        TH1I *doublePeakH = new TH1I("likelihood of double peak in wavelet","likelihood of double peak in wavelet",experimentalConfig.plotConfig.TOF_BINS,0,experimentalConfig.plotConfig.TOF_RANGE);
 
         TH1I *microNoH = new TH1I("microNoH","microNo",360,0,360);
         microNoH->GetXaxis()->SetTitle("micropulse number of each event");
@@ -259,12 +266,12 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
         vector<TH1D*> TOFHistos;
         vector<TH1D*> energyHistos;
 
-        for(unsigned int i=0; i<POSITION_NAMES.size(); i++)
+        for(unsigned int i=0; i<experimentalConfig.targetConfig.POSITION_NAMES.size(); i++)
         {
-            string TOFName = POSITION_NAMES[i] + "TOF";
-            TOFHistos.push_back(new TH1D(TOFName.c_str(),TOFName.c_str(),TOF_BINS,TOF_LOWER_BOUND,TOF_UPPER_BOUND));
+            string TOFName = experimentalConfig.targetConfig.POSITION_NAMES[i] + "TOF";
+            TOFHistos.push_back(new TH1D(TOFName.c_str(),TOFName.c_str(),experimentalConfig.plotConfig.TOF_BINS,experimentalConfig.plotConfig.TOF_LOWER_BOUND,experimentalConfig.plotConfig.TOF_UPPER_BOUND));
 
-            string energyName =  POSITION_NAMES[i] + "Energy";
+            string energyName =  experimentalConfig.targetConfig.POSITION_NAMES[i] + "Energy";
             energyHistos.push_back(timeBinsToRKEBins(TOFHistos.back(),energyName));
         }
 
@@ -326,7 +333,7 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
                     if(numberOfGammas>=1)
                     {
                         // calculate average gamma offset for previous macro
-                        gammaOffsets.push_back(make_pair(gammaTimesSum/(double)numberOfGammas-(FLIGHT_DISTANCE/C)*pow(10,7),prevMacroNo));
+                        gammaOffsets.push_back(make_pair(gammaTimesSum/(double)numberOfGammas-(experimentalConfig.facilityConfig.FLIGHT_DISTANCE/C)*pow(10,7),prevMacroNo));
                     }
 
                     else
@@ -373,7 +380,7 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
                 }
 
                 double timeDiff = procEvent.completeTime-procEvent.macroTime;
-                microTime = fmod(timeDiff,MICRO_LENGTH);
+                microTime = fmod(timeDiff,experimentalConfig.facilityConfig.MICRO_LENGTH);
 
                 // test if gamma
                 if(microTime<GAMMA_WINDOW[1] && microTime>GAMMA_WINDOW[0])
@@ -391,7 +398,7 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
             }
 
             // add the very last macro's gammas into the gamma offsets
-            gammaOffsets.push_back(make_pair(gammaTimesSum/numberOfGammas-(FLIGHT_DISTANCE/C)*pow(10,7),prevMacroNo));
+            gammaOffsets.push_back(make_pair(gammaTimesSum/numberOfGammas-(experimentalConfig.facilityConfig.FLIGHT_DISTANCE/C)*pow(10,7),prevMacroNo));
 
             gammaOffsetHBlank->Write();
             gammaOffsetHTarget1->Write();
@@ -488,11 +495,11 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
             // to calculate event ordering in each micropulse)
             prevMicroNo = microNo;
 
-            microNo = floor(timeDiff/MICRO_LENGTH);
-            microTime = fmod(timeDiff,MICRO_LENGTH);
+            microNo = floor(timeDiff/experimentalConfig.facilityConfig.MICRO_LENGTH);
+            microTime = fmod(timeDiff,experimentalConfig.facilityConfig.MICRO_LENGTH);
 
             // convert microTime into neutron velocity based on flight path distance
-            double velocity = pow(10.,7.)*FLIGHT_DISTANCE/microTime; // in meters/sec 
+            double velocity = pow(10.,7.)*experimentalConfig.facilityConfig.FLIGHT_DISTANCE/microTime; // in meters/sec 
 
             // convert velocity to relativistic kinetic energy
             rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
@@ -526,7 +533,7 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
             // Fill raw TOF before gates:
 
             // Apply gates:
-            if (timeDiff < MACRO_LENGTH && timeDiff > 0 // omit events outside beam-on period
+            if (timeDiff < experimentalConfig.facilityConfig.MACRO_LENGTH && timeDiff > 0 // omit events outside beam-on period
                     //&& procEvent.sgQ >= procEvent.lgQ
                     //&& (procEvent.sgQ/(double)procEvent.lgQ < 0.495
                     //|| procEvent.sgQ/(double)procEvent.lgQ > 0.505)
@@ -694,11 +701,11 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
 
         histoFile->cd("/macroTime");
 
-        for(unsigned int i=0; i<POSITION_NAMES.size(); i++)
+        for(unsigned int i=0; i<experimentalConfig.targetConfig.POSITION_NAMES.size(); i++)
         {
             macrosPerTarget.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(i+2));
             //double badMacroRatio = ((TH1D*)gDirectory->Get("ratioBadMacrosH"))->GetBinContent(i+2);
-            microsPerTarget.push_back(macrosPerTarget.back()/*(1-badMacroRatio)*/*(MACRO_LENGTH/MICRO_LENGTH));
+            microsPerTarget.push_back(macrosPerTarget.back()/*(1-badMacroRatio)*/*(experimentalConfig.facilityConfig.MACRO_LENGTH/experimentalConfig.facilityConfig.MICRO_LENGTH));
         }
 
         histoFile->cd("/");
@@ -731,10 +738,10 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
         }
 
         // calculate likelihood of double peak in wavelet, for each TOF bin
-        //const int waveletBins = (TOF_BINS/TOF_RANGE)*WAVELET_PERIOD;
+        //const int waveletBins = (experimentalConfig.plotConfig.TOF_BINS/experimentalConfig.plotConfig.TOF_RANGE)*WAVELET_PERIOD;
 
-        vector<double> eventsPerMicroPerBin(TOF_BINS);
-        vector<double> doublePeakOddsPerBin(TOF_BINS);
+        vector<double> eventsPerMicroPerBin(experimentalConfig.plotConfig.TOF_BINS);
+        vector<double> doublePeakOddsPerBin(experimentalConfig.plotConfig.TOF_BINS);
 
         //TH1D* tof = (TH1D*)plots[0]->getTOFHisto();
         /*for(int i=0; i<eventsPerMicroPerBin.size(); i++)
@@ -748,13 +755,13 @@ void fillVetoedHistos(TFile* vetoFile, TFile* histoFile)
             eventsPerMicroPerBin[i] = tof->GetBinContent(i)/(double)microsPerTarget[0];
         }
 
-        for(int i=0; i<TOF_BINS; i++)
+        for(int i=0; i<experimentalConfig.plotConfig.TOF_BINS; i++)
         {
             for(int j=i; j<i+waveletBins/2; j++)
             {
-                if(j>TOF_BINS)
+                if(j>experimentalConfig.plotConfig.TOF_BINS)
                 {
-                    doublePeakOddsPerBin[i] += eventsPerMicroPerBin[j-TOF_BINS];
+                    doublePeakOddsPerBin[i] += eventsPerMicroPerBin[j-experimentalConfig.plotConfig.TOF_BINS];
                     continue;
                 }
 
@@ -853,10 +860,10 @@ void fillBasicHistos(TFile* histoFile)
         diffMacroCompleteTimesH->GetXaxis()->SetTitle("difference between complete time of event and its macrotime");
 
         vector<TH1D*> TOFHistos;
-        for(unsigned int i=0; i<POSITION_NAMES.size(); i++)
+        for(unsigned int i=0; i<experimentalConfig.targetConfig.POSITION_NAMES.size(); i++)
         {
-            string TOFName = POSITION_NAMES[i] + "TOFBasic";
-            TOFHistos.push_back(new TH1D(TOFName.c_str(),TOFName.c_str(),TOF_BINS,TOF_LOWER_BOUND,TOF_UPPER_BOUND));
+            string TOFName = experimentalConfig.targetConfig.POSITION_NAMES[i] + "TOFBasic";
+            TOFHistos.push_back(new TH1D(TOFName.c_str(),TOFName.c_str(),experimentalConfig.plotConfig.TOF_BINS,experimentalConfig.plotConfig.TOF_LOWER_BOUND,experimentalConfig.plotConfig.TOF_UPPER_BOUND));
         }
 
         // create a subdirectory for holding DPP-mode waveform data
@@ -897,7 +904,7 @@ void fillBasicHistos(TFile* histoFile)
             t->GetEntry(j);
 
             timeDiff = procEvent.completeTime-procEvent.macroTime;
-            microTime = fmod(timeDiff,MICRO_LENGTH);
+            microTime = fmod(timeDiff,experimentalConfig.facilityConfig.MICRO_LENGTH);
 
             if (procEvent.targetPos == 0)         // discard events during target-changer movement
             {
@@ -925,7 +932,7 @@ void fillBasicHistos(TFile* histoFile)
             /*if (name!="targetChanger" &&
                ((procEvent.sgQ/(double)procEvent.lgQ > 0.498
                         && procEvent.sgQ/(double)procEvent.lgQ < 0.502)
-               || procEvent.completeTime > procEvent.macroTime + MACRO_LENGTH
+               || procEvent.completeTime > procEvent.macroTime + experimentalConfig.facilityConfig.MACRO_LENGTH
                || procEvent.completeTime < procEvent.macroTime))
             {
                     continue;
@@ -1081,7 +1088,7 @@ void fillBasicHistos(TFile* histoFile)
 
     for(int k=0; (size_t)k<procEvent.waveform->size(); k++)
     {
-    waveformH->SetBinContent(k+floor((fmod(procEvent.waveform->size(),MICRO_LENGTH)+1)*procEvent.evtNo*MICRO_LENGTH/(double)2),procEvent.waveform->at(k));
+    waveformH->SetBinContent(k+floor((fmod(procEvent.waveform->size(),experimentalConfig.facilityConfig.MICRO_LENGTH)+1)*procEvent.evtNo*experimentalConfig.facilityConfig.MICRO_LENGTH/(double)2),procEvent.waveform->at(k));
     waveformH->Write();
     }
     }
