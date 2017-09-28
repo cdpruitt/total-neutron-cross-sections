@@ -37,15 +37,18 @@ int main(int argc, char** argv)
 
     cout << inFileName << " opened successfully." << endl;
 
-    // create a ROOT file for holding time correlation plots
-    TFile* file = new TFile("timeCheckOutput/detTimeCheck.root","RECREATE");
+    string outFileLocation = argv[2];
+    outFileLocation = outFileLocation + "detTimeCheck.root";
 
-    TH2D* detTimeCorrelation = new TH2D("left/right time correlation","left/right time correlation",300,30,60,300,30,60);
+    // create a ROOT file for holding time correlation plots
+    TFile* outFile = new TFile(outFileLocation.c_str(),"RECREATE");
+
+    TH2D* detTimeCorrelation = new TH2D("LR time correlation","LR time correlation",300,30,60,300,30,60);
     detTimeCorrelation->GetXaxis()->SetTitle("right detector");
     detTimeCorrelation->GetYaxis()->SetTitle("left detector");
     detTimeCorrelation->SetMarkerStyle(7);
 
-    TH1D* detTimeDifference = new TH1D("time difference","diffLR",1000,-50,50);
+    TH1D* detTimeDifference = new TH1D("LR time difference","LR time difference",1000,-5,5);
     detTimeDifference->GetXaxis()->SetTitle("left detector time - right detector time");
     detTimeDifference->SetMarkerStyle(7);
 
@@ -145,7 +148,8 @@ int main(int argc, char** argv)
     cout << "Successfully calculated a fine time on " << 100*(double)(numberOfCh6Events-numberOfBadCh6FineTime)/(numberOfCh6Events) << "% of ch6 events." << endl;
     cout << "Successfully calculated a fine time on " << 100*(double)(numberOfCh7Events-numberOfBadCh7FineTime)/(numberOfCh7Events) << "% of ch7 events." << endl;
 
-    file->Write();
+    outFile->Write();
+    outFile->Close();
 
     return 0;
 }

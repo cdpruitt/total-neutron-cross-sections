@@ -12,7 +12,7 @@ void relativeDiff_CSnPb_expLit()
     TGraphErrors* SnGraph = (TGraphErrors*)file->Get(SnGraphName.c_str());
     TGraphErrors* PbGraph = (TGraphErrors*)file->Get(PbGraphName.c_str());
 
-    TStyle * style = (TStyle*)gROOT->FindObject("graphStyle");
+    TStyle* style = (TStyle*)gROOT->FindObject("graphStyle");
 
     if(!style)      
     {

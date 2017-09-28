@@ -152,8 +152,9 @@ analyze ()
         printf "\nFine time check enabled... \n"
 
         inputFileName=$1
+        outputDirectoryName=$2
 
-        ./bin/detTimeCheck "$inputFileName"
+        ./bin/detTimeCheck "$inputFileName" "$outputDirectoryName"
         exit # we just want the time check output, so stop analysis here
     fi
 
