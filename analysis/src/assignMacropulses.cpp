@@ -1,5 +1,5 @@
 /******************************************************************************
-  assignMacropulses.cpp 
+  assignEventsToMacropulses.cpp 
  ******************************************************************************/
 // This method takes a ROOT tree containing all events as input (from ./raw),
 // . and assigns each event to a
@@ -26,60 +26,44 @@ extern ExperimentalConfig experimentalConfig;
 
 using namespace std;
 
-// Use the lgQ from the target changer to determine the target position
-int assignTargetPos(int lgQ)
+void assignEventsToMacropulses(string inputFileName, vector<string> detectorChannels, string outputFileName, string macropulseTreeName)
 {
-    for(int i=0; (size_t)i<experimentalConfig.targetConfig.TARGET_GATES.size(); i++)
+    TFile* inputFile = new TFile(inputFileName.c_str(),"READ");
+    if(!inputFile)
     {
-        if (lgQ>=experimentalConfig.targetConfig.TARGET_GATES[i].first && lgQ<=experimentalConfig.targetConfig.TARGET_GATES[i].second)
-        {
-            // lgQ fits within this gate
-            return i; // target positions start from 1
-        }
-    }
-
-    // lgQ doesn't fit within one of the lgQ gates, so set
-    // the target position to 0 (discarded in later analysis).
-    cerr << endl;
-    cerr << "Error: lgQ " << lgQ << " outside target positions." << endl;
-    return 0;
-}
-
-void assignMacropulses(string rawFileName, string sortedFileName, vector<string> channelMap)
-{
-    TFile* rawFile = new TFile(rawFileName.c_str(),"READ");
-    if (!rawFile)
-    {
-        cerr << "Failed to open " << rawFileName << ". Please check that the file exists" << endl;
+        cerr << "Failed to open " << inputFileName << ". Please check that the file exists" << endl;
         exit(1);
     }
-    cout << rawFileName << " opened successfully. Start reading events..." << endl;
+    cout << inputFileName << " opened successfully. Start reading events..." << endl;
 
-    for(int i=0; i<channelMap.size(); i++)
+    TFile* outputFile = new TFile(outputFileName.c_str(), "UPDATE");
+    if(!outputFile)
     {
-        if(channelMap[i]=="-")
-        {
-            continue;
-        }
+        cerr << "Failed to open " << outputFileName << ". Please check that the file exists" << endl;
+        exit(1);
+    }
+    cout << outputFileName << " opened successfully." << endl;
 
-        TTree* rawTree = (TTree*)rawFile->Get(channelMap[i].c_str());
-        if(!rawTree)
+    TTree* detectorTree = new TTree(name.c_str(),"");
+
+
+    for(int i=0; i<detectorChannels.size(); i++)
+    {
+        TTree* detectorTree = (TTree*)inputFile->Get(detectorNames.c_str());
+        if(!detectorTree)
         {
             cerr << "Error: couldn't find channel " << i << " tree when attempting to assign macropulses. Exiting... " << endl;
-            exit(1);
+            continue;
         }
-
-        //delete tcEvent.waveform;
-        //tcEvent.waveform = new vector<int>;
 
         SeparatedEvent separatedEvent;
 
         //separatedEvent.waveform = new vector<int>;
-        setBranchesSeparated(rawTree, separatedEvent);
+        setBranchesSeparated(detectorTree, separatedEvent);
 
         double prevTimetag = 0;
 
-        long totalEntries = rawTree->GetEntries();
+        long totalEntries = detectorTree->GetEntries();
 
         const double SCALEDOWN = 1;
         totalEntries /= SCALEDOWN; // for debugging:
@@ -161,7 +145,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
 
             for(int j=0; j<totalEntries; j++)
             {
-                rawTree->GetEntry(j);
+                detectorTree->GetEntry(j);
 
                 tcEvent.targetPos = assignTargetPos(separatedEvent.lgQ);
 
@@ -279,7 +263,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
 
             for(int j=0; j<totalEntries; j++)
             {
-                rawTree->GetEntry(j);
+                detectorTree->GetEntry(j);
 
                 procEvent.completeTime = experimentalConfig.timeConfig.SAMPLE_PERIOD*
                     (pow(2,31)*separatedEvent.extTime +
@@ -412,7 +396,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
 
 
         string treeName = channelMap[i]+"W";
-        TTree* treeToSort = (TTree*)rawFile->Get(treeName.c_str());
+        TTree* treeToSort = (TTree*)inputFile->Get(treeName.c_str());
         if(!treeToSort)
         {
             cerr << "Error: couldn't find channel " << i << " tree when attempting to assign macropulses. Exiting... " << endl;

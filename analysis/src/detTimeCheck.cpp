@@ -18,7 +18,8 @@
 using namespace std;
 
 const unsigned int TIME_CHECK_TOLERANCE = 5; // in ns
-const unsigned int TIME_CHECK_Q_THRESHOLD = 4500; // in ns
+const unsigned int TIME_CHECK_Q_HIGH_THRESHOLD = 4500; // in ns
+const unsigned int TIME_CHECK_Q_LOW_THRESHOLD = 1500; // in ns
 const unsigned int NUMBER_OF_EVENTS = 1000000;  // number of events to examine for time correlation
 
 ExperimentalConfig experimentalConfig;
@@ -85,9 +86,8 @@ int main(int argc, char** argv)
                         rawEvent.waveform,
                         rawEvent.baseline,
                         experimentalConfig.timeConfig.CFD_FRACTION,
-                        experimentalConfig.timeConfig.CFD_DELAY,
-                        false
-                        )*experimentalConfig.timeConfig.SAMPLE_PERIOD;
+                        experimentalConfig.timeConfig.CFD_DELAY)
+                    *experimentalConfig.timeConfig.SAMPLE_PERIOD;
 
                 ch6FineTimeH->Fill(ch6FineTime);
 
@@ -118,9 +118,8 @@ int main(int argc, char** argv)
                         rawEvent.waveform,
                         rawEvent.baseline,
                         experimentalConfig.timeConfig.CFD_FRACTION,
-                        experimentalConfig.timeConfig.CFD_DELAY,
-                        false
-                        )*experimentalConfig.timeConfig.SAMPLE_PERIOD;
+                        experimentalConfig.timeConfig.CFD_DELAY)
+                    *experimentalConfig.timeConfig.SAMPLE_PERIOD;
 
                 ch7FineTimeH->Fill(ch7FineTime);
 
@@ -138,7 +137,9 @@ int main(int argc, char** argv)
         if(
                 abs(ch6Timetag-ch7Timetag)<=TIME_CHECK_TOLERANCE
                 && ch6FineTime>=0 && ch7FineTime>=0
-                && ch6lgQ+ch7lgQ > TIME_CHECK_Q_THRESHOLD)
+                && ch6lgQ+ch7lgQ > TIME_CHECK_Q_LOW_THRESHOLD
+                && ch6lgQ+ch7lgQ < TIME_CHECK_Q_HIGH_THRESHOLD)
+
         {
             detTimeCorrelation->Fill(ch7FineTime, ch6FineTime+(ch6Timetag-ch7Timetag));
             detTimeDifference->Fill((ch6FineTime+ch6Timetag)-(ch7FineTime+ch7Timetag));

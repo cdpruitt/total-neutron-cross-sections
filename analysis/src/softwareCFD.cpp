@@ -1,11 +1,12 @@
 #include <iostream>
 #include <vector>
 
+#include "../include/softwareCFD.h"
 #include "../include/experimentalConfig.h"
 
 using namespace std;
 
-double calculateCFDTime(vector<int>* waveform, double baseline, double fraction, unsigned int delay, bool isPositiveSignal)
+double calculateCFDTime(vector<int>* waveform, double baseline, double fraction, unsigned int delay)
 {
     if(delay<=0 || delay>=waveform->size())
     {
@@ -23,53 +24,25 @@ double calculateCFDTime(vector<int>* waveform, double baseline, double fraction,
     double CFDSample;
     double prevCFDSample = 0;
 
-    if(isPositiveSignal)
+    for(unsigned int i=1; i<waveform->size()-(delay+1); i++)
     {
-        for(unsigned int i=1; i<waveform->size()-(delay+1); i++)
+        // produce CFD sum: opposite-sign waveform*fraction + normal-sign waveform, centered at
+        // baseline
+        double CFDSample = waveform->at(i)-(fraction*waveform->at(i+delay)+baseline*(1-fraction));
+
+        if(!listenForZC && CFDSample>(experimentalConfig.timeConfig.CFD_ZC_TRIGGER_THRESHOLD))
         {
-            // produce CFD sum: opposite-sign waveform*fraction + normal-sign waveform, centered at
-            // baseline
-            double CFDSample = waveform->at(i)-(fraction*waveform->at(i+delay)+baseline*(1-fraction));
-
-            if(!listenForZC && CFDSample<=-(experimentalConfig.timeConfig.CFD_ZC_TRIGGER_THRESHOLD))
-            {
-                // approaching ZC - start looking for a ZC
-                listenForZC = true;
-            }
-
-            if(listenForZC && CFDSample>0)
-            {
-                // found ZC: return time of crossing, i.e., (baseline-NZC)/(PZC-NZC)
-                return i+(0-prevCFDSample)/(CFDSample-prevCFDSample);
-            }
-
-            prevCFDSample = CFDSample;
+            // approaching ZC - start looking for a ZC
+            listenForZC = true;
         }
-    }
 
-    if(!isPositiveSignal)
-    {
-        for(unsigned int i=1; i<waveform->size()-(delay+1); i++)
+        if(listenForZC && CFDSample<0)
         {
-            // produce CFD sum: opposite-sign waveform*fraction + normal-sign waveform, centered at
-            // baseline
-            double CFDSample = waveform->at(i)-(fraction*waveform->at(i+delay)+baseline*(1-fraction));
-
-            if(!listenForZC && CFDSample>(experimentalConfig.timeConfig.CFD_ZC_TRIGGER_THRESHOLD))
-            {
-                // approaching ZC - start looking for a ZC
-                listenForZC = true;
-            }
-
-            if(listenForZC && CFDSample<0)
-            {
-                // found ZC: return time of crossing, i.e., (baseline-NZC)/(PZC-NZC)
-                return i+(0-prevCFDSample)/(CFDSample-prevCFDSample);
-            }
-
-            prevCFDSample = CFDSample;
-
+            // found ZC: return time of crossing, i.e., (baseline-NZC)/(PZC-NZC)
+            return (i-1)+(0-prevCFDSample)/(CFDSample-prevCFDSample);
         }
+
+        prevCFDSample = CFDSample;
     }
     
     //cerr << "Error: could not calculate fine time of waveform." << endl;
@@ -77,14 +50,14 @@ double calculateCFDTime(vector<int>* waveform, double baseline, double fraction,
     return -1;
 }
 
-double calculateTCFineTime(vector<int>* waveform, double threshold)
+double calculateMacropulseFineTime(vector<int>* waveform, double threshold)
 {
     for(unsigned int i=1; i<waveform->size(); i++)
     {
         if(waveform->at(i) < threshold)
         {
             // found LED trigger; extract time via linear interpolation
-            return i+(threshold-waveform->at(i-1))/(waveform->at(i)-waveform->at(i-1));
+            return (i-1)+(waveform->at(i-1)-threshold)/(waveform->at(i-1)-waveform->at(i));
         }
     }
 

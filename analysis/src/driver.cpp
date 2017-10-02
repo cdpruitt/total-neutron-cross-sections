@@ -1,7 +1,9 @@
 // project-specific classes
 #include "../include/raw.h"
-#include "../include/assignMacropulses.h"
-#include "../include/histos.h"
+#include "../include/identifyMacropulses.h"
+#include "../include/assignEventsToMacropulses.h"
+#include "../include/fillBasicHistos.h"
+#include "../include/fillAdvancedHistos.h"
 #include "../include/plots.h"
 #include "../include/waveform.h"
 #include "../include/veto.h"
@@ -56,32 +58,33 @@ int main(int, char* argv[])
     }
 
     // toggle use of waveform event data during analysis
-    string processWaveformEventsString = argv[6];
+    /*string processWaveformEventsString = argv[6];
     bool processWaveformEvents = false;
     if(processWaveformEventsString=="true")
     {
         processWaveformEvents = true;
     }
+    */
 
     // toggle use of DPP wavelet data during analysis
-    string processDPPWaveformEventsString = argv[7];
+    /*string processDPPWaveformEventsString = argv[7];
     bool processDPPWaveformEvents = false;
     if(processDPPWaveformEventsString=="true")
     {
         processDPPWaveformEvents = true;
-    }
+    }*/
 
     /*************************************************************************/
     /* Start analysis:
      * Separate raw event data by channel and event type and store the results
      * into ROOT trees */
     /*************************************************************************/
-    string rawTreeFileName = analysisDirectory + "raw.root";
-    ifstream f(rawTreeFileName);
+    string rawFileName = analysisDirectory + "raw.root";
+    ifstream f(rawFileName);
     if(!f.good())
     {
         // create a raw data tree for this subrun
-        readRawData(rawDataFileName,rawTreeFileName,channelMap);
+        readRawData(rawDataFileName,rawFileName,channelMap);
     }
 
     else
@@ -90,19 +93,24 @@ int main(int, char* argv[])
         f.close();
     }
 
-    return 0;
-
     /*************************************************************************/
-    /* Assign macropulse number to each event */
+    /* Assign each event to its macropulse */
     /*************************************************************************/
     string sortedFileName = analysisDirectory + "sorted.root";
     ifstream p(sortedFileName);
     if(!p.good())
     {
-        // separate all data by channel and event type
-        assignMacropulses(rawTreeFileName, sortedFileName, channelMap);
+        identifyMacropulses(rawFileName, channelMap[1], channelMap[0], sortedFileName, "macroTime");
 
-        cout << "finished assignment" << endl;
+        cout << endl << "Finished macropulse identification." << endl;
+
+        vector<string> detectorChannels = {channelMap[2], channelMap[4], channelMap[5]};
+
+        for(string name : detectorChannels)
+        {
+            assignEventsToMacropulses(rawFileName, name, sortedFileName, "macroTime");
+        }
+
     }
 
     else
@@ -152,7 +160,7 @@ int main(int, char* argv[])
     /*************************************************************************/
     /* Process DPP waveform events */
     /*************************************************************************/
-    if(processDPPWaveformEvents)
+    /*if(processDPPWaveformEvents)
     {
         string DPPWaveformFileName = analysisDirectory + "DPPwaveform.root";
         ifstream dppW(DPPWaveformFileName);
@@ -166,7 +174,7 @@ int main(int, char* argv[])
             cout << "DPP waveform events already processed." << endl;
             dppW.close();
         }
-    }
+    }*/
 
     /*************************************************************************/
     /* Populate each event into TOF histograms in preparation for cross section
@@ -179,7 +187,16 @@ int main(int, char* argv[])
         //Uncomment to use vetoed trees
         //histos(sortedFileName, vetoedFileName, histoFileName, channelMap);
         //Uncomment to use unvetoed trees
-        histos(sortedFileName, sortedFileName, histoFileName, channelMap);
+        for(string channelName : channelMap)
+        {
+            fillBasicHistos(sortedFileName, channelName, histoFileName);
+        }
+
+
+        for(string channelName : experimentalConfig.csConfig.DETECTOR_NAMES)
+        {
+            fillAdvancedHistos(sortedFileName, channelName, histoFileName);
+        }
 
         /*************************************************************************/
         /* Process events into histograms in preparation for cross section
@@ -190,18 +207,17 @@ int main(int, char* argv[])
 
         for(string name : experimentalConfig.csConfig.DETECTOR_NAMES)
         {
-            histoFile->cd("/");
             histoFile->cd(name.c_str());
 
             for(string positionName : experimentalConfig.targetConfig.POSITION_NAMES)
             {
                 string histoName = positionName + "TOFCorrected";
                 TH1D* tof = (TH1D*)gDirectory->Get(histoName.c_str());
-                convertTOFtoEnergy(tof, positionName + "CorrectedEnergy");
+                TH1D* correctedEnergy = convertTOFtoEnergy(tof, positionName + "CorrectedEnergy");
+                correctedEnergy->Write();
             }
         }
 
-        histoFile->Write();
         histoFile->Close();
     }
 

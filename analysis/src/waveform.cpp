@@ -17,8 +17,6 @@
 #include "TMath.h"
 #include "TVirtualFFT.h"
 #include "../include/physicalConstants.h"
-#include "../include/analysisConstants.h"
-#include "../include/plottingConstants.h"
 #include "../include/dataStructures.h"
 #include "../include/target.h"
 #include "../include/waveformFitting.h"
@@ -26,7 +24,6 @@
 #include "../include/plots.h"
 #include "../include/branches.h"
 #include "../include/experiment.h"
-#include "../include/digitizerConstants.h"
 
 using namespace std;
 

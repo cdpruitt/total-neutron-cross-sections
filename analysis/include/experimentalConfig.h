@@ -20,11 +20,20 @@ struct TimeConfig
     unsigned int TC_CFD_DELAY = 2;
     double TC_ZC_TRIGGER_THRESHOLD = 500*TC_CFD_FRACTION;
 
-    double TC_FINETIME_THRESHOLD = 3000;
+    double FINE_TIME_OFFSET = 20.96; // in samples
 
-    const double MACROPULSE_OFFSET = 775.35; // timing delay between the digitizer (channel 0)
+    double MACROPULSE_FINE_TIME_THRESHOLD = 11500;
+
+    double MACROPULSE_TARGET_TIME_DIFFERENCE = 68; // in ns;
+
+    const double SUMMED_DETECTOR_TIME_OFFSET = 775.35; // timing delay between the digitizer (channel 0)
     // and the facility's RF clock (due to cable delay,
     // NIM logic, etc.), in ns
+
+    const double MONITOR_DETECTOR_TIME_OFFSET = 775.35; // timing delay between the digitizer (channel 0)
+    // and the facility's RF clock (due to cable delay,
+    // NIM logic, etc.), in ns
+
     const double VETO_OFFSET = 8;         // timing delay of the veto paddle after the main
     // detector channel, in ns
 
@@ -58,7 +67,7 @@ struct TargetConfig
 
 struct CSConfig
 {
-    const std::vector<std::string> DETECTOR_NAMES = {"summedDet","highTDet"};
+    const std::vector<std::string> DETECTOR_NAMES = {"summedDet"};
 };
 
 struct PlotConfig

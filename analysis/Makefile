@@ -19,9 +19,8 @@ TARGETS = driver sumSingle sumAll text readLitData subtractCS multiplyCS relativ
 all: $(addprefix $(BIN), $(TARGETS))
 
 # Build driver (main data analysis engine)
-DRIVER_SOURCES = branches.cpp dataPoint.cpp dataSet.cpp driver.cpp experiment.cpp histos.cpp plots.cpp raw.cpp assignMacropulses.cpp target.cpp veto.cpp
+DRIVER_SOURCES = branches.cpp dataPoint.cpp dataSet.cpp driver.cpp experiment.cpp fillBasicHistos.cpp fillAdvancedHistos.cpp plots.cpp raw.cpp identifyMacropulses.cpp assignEventsToMacropulses.cpp target.cpp veto.cpp softwareCFD.cpp #waveform.cpp
 
-#DRIVER_SOURCES = branches.cpp dataPoint.cpp dataSet.cpp driver.cpp experiment.cpp histos.cpp plots.cpp raw.cpp assignMacropulses.cpp target.cpp veto.cpp waveform.cpp waveformFitting.cpp
 $(BIN)driver: $(addprefix $(SOURCE), $(DRIVER_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)driver $(addprefix $(SOURCE), $(DRIVER_SOURCES)) $(LINKOPTION)
 

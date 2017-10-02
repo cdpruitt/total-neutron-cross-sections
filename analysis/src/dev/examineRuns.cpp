@@ -95,6 +95,12 @@ void examineRuns(string filePath, string run, string fileType, string subDir, st
 
         histoToAdd = (TH1I*)gDirectory->Get(histoType.c_str());
 
+        if(!histoToAdd)
+        {
+            cerr << "Error: couldn't find histo " << histoType << " in subrun " << i << "." << endl;
+            continue;
+        }
+
         histoToAdd->SetTitleSize(0.5,"t");
         histoToAdd->Draw();
 

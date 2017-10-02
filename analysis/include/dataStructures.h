@@ -49,7 +49,7 @@ struct SeparatedEvent
     unsigned int timetag; // 1 sample granularity, 32 bits
     unsigned int extTime;
     double fineTime; // provide additional bits of granularity 
-    unsigned int evtNo;
+    unsigned int eventNo;
     unsigned int evtType;
     unsigned int chNo;
 
@@ -63,7 +63,7 @@ struct ProcessedEvent
 {
     unsigned int macroNo; // label each event by macropulse
     double macroTime; // provide the macropulse "zero" time
-    unsigned int evtNo; // uniquely label each event in a macropulse
+    unsigned int eventNo; // uniquely label each event in a macropulse
     double completeTime; // the event's 48-bit timestamp
     double fineTime; // the event's fine time
     unsigned int targetPos; // target position

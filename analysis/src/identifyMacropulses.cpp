@@ -26,7 +26,10 @@
 #include "../include/dataStructures.h" // defines the C-structs that hold each event's data
 #include "../include/branches.h" // used to map C-structs that hold raw data to ROOT trees, and vice-versa
 
-#include "../include/assignMacropulses.h" // declarations of functions used to assign times and macropulses to events
+#include "../include/identifyMacropulses.h" // declarations of functions used to assign times and macropulses to events
+
+#include "../include/softwareCFD.h"
+
 #include "../include/experimentalConfig.h"
 
 extern ExperimentalConfig experimentalConfig;
@@ -70,8 +73,8 @@ int identifyMacropulses(
     if(!macropulseTimeTree)
     {
         cerr << "Error: couldn't find " << macropulseTimeTreeName << " tree in "
-            << inputFileName << " when attempting to identify macropulses." << endl;
-            << "Please check that the tree exists. " << endl;
+             << inputFileName << " when attempting to identify macropulses." << endl;
+        cerr << "Please check that the tree exists. " << endl;
         return(1);
     }
 
@@ -79,23 +82,10 @@ int identifyMacropulses(
     if(!targetPositionTree)
     {
         cerr << "Error: couldn't find " << targetPositionTreeName << " tree in "
-            << inputFileName << " when attempting to identify macropulses." << endl;
-            << "Please check that the tree exists. " << endl;
+             << inputFileName << " when attempting to identify macropulses." << endl;
+        cerr << "Please check that the tree exists. " << endl;
         return(1);
     }
-
-    MacropulseEvent macropulseEvent;
-
-    macropulseTimeTree->SetBranchAddress("timetag",&macropulseEvent.timeTimetag);
-    macropulseTimeTree->SetBranchAddress("extTime",&macropulseEvent.timeExtTime);
-    macropulseTimeTree->SetBranchAddress("fineTime",&macropulseEvent.fineTime);
-    macropulseTimeTree->SetBranchAddress("waveform",&macropulseEvent.timeWaveform);
-
-    targetPositionTree->SetBranchAddress("timetag",&macropulseEvent.targetTimetag);
-    targetPositionTree->SetBranchAddress("extTime",&macropulseEvent.targetExtTime);
-    targetPositionTree->SetBranchAddress("lgQ",&macropulseEvent.lgQ);
-    targetPositionTree->SetBranchAddress("waveform",&macropulseEvent.targetWaveform);
-
 
     TFile* outputFile = new TFile(outputFileName.c_str(),"CREATE");
 
@@ -106,127 +96,160 @@ int identifyMacropulses(
     }
 
     TTree* outputTree = new TTree(outputTreeName.c_str(),"");
-    tree->Branch("macroTime",&macropulseEvent.macroTime,"macroTime/D");
-    tree->Branch("macroNo",&macropulseEvent.macroNo,"macroNo/i");
-    tree->Branch("extTime",&macropulseEvent.extTime,"extTime/d");
-    tree->Branch("fineTime",&macropulseEvent.fineTime,"fineTime/d");
-    tree->Branch("modeChange",&macropulseEvent.modeChange,"modeChange/i");
-    tree->Branch("targetPos",&macropulseEvent.targetPos,"targetPos/i");
-    tree->Branch("lgQ",&macropulseEvent.lgQ,"lgQ/i");
-    tree->Branch("timeWaveform",&macropulseEvent.timeWaveform);
-    tree->Branch("targetWaveform",&macropulseEvent.targetWaveform);
 
-    double prevTimetag = 0;
-
-    long totalEntries = macropulseTimeTree->GetEntries();
-
-    // FIX: extended time increment
-    // manually increment extended time, if necessary
-    /*if((prevTimetag > (double)pow(2,32) - 50000000) &&
-      rawEvent.timetag < prevTimetag)
-      {
-      extTime++; 
-      }*/
-
-    // FIX: fine time calculation
-    /*if(rawEvent.extraSelect==0)
-      {
-      switch(rawEvent.chNo)
-      {
-      case 0:
-      rawEvent.fineTime = calculateTCFineTime(
-      rawEvent.waveform,
-      rawEvent.baseline-TC_FINETIME_THRESHOLD);
-      break;
-      default:
-      rawEvent.fineTime = calculateCFDTime(rawEvent.waveform,
-      rawEvent.baseline,
-      CFD_FRACTION,
-      CFD_DELAY,
-      false);
-      break;
-      }
-      }*/
-
-    // FIX: assign target changer position to macropulse
-    /*if(rawEvent.chNo==0)
-      {
-      lgQTargetChanger = rawEvent.lgQ;
-      }*/
-
-    /*if(rawEvent.chNo==1)
-      {
-      rawEvent.lgQ = lgQTargetChanger;
-      }*/
-
-    /*if(prevEvtType!=rawEvent.evtType)
-      {
-      extTime=0;
-      prevTimetag=0;
-      }
-
-      rawEvent.extTime = extTime;
-      */
-
-    TargetChangerEvent tcEvent;
-
-    branchTargetChanger(outputTree, tcEvent);
-
-    for(int j=0; j<totalEntries; j++)
+    // create struct for holding macropulse event data, and link it to the trees
+    struct MacropulseEvent
     {
-        macropulseTimeTree->GetEntry(j);
+        unsigned int timeTimetag = 0;
+        unsigned int timeExtTime = 0;
+        vector<int>* timeWaveform = new vector<int>;
 
-        tcEvent.targetPos = assignTargetPos(separatedEvent.lgQ);
+        unsigned int targetTimetag = 0;
+        unsigned int targetExtTime = 0;
+        unsigned int lgQ = 0;
+        vector<int>* targetWaveform = new vector<int>;
 
-        tcEvent.macroTime = experimentalConfig.timeConfig.SAMPLE_PERIOD*(pow(2,31)*separatedEvent.extTime + separatedEvent.timetag + separatedEvent.fineTime);
+        double macroTime = 0;
+        double fineTime = 0;
+        unsigned int macroNo = 0;
+        unsigned int targetPos = 0;
+        unsigned int modeChange = 0;
 
-        /*if(tcEvent.targetPos > 0)
-          {
-          tcEvent.macroTime += MACROTIME_TARGET_DRIFT[tcEvent.targetPos-1];
-          }*/
+    } macropulseEvent;
 
-        if(prevTimetag > tcEvent.macroTime)
+    macropulseTimeTree->SetBranchAddress("timetag",&macropulseEvent.timeTimetag);
+    macropulseTimeTree->SetBranchAddress("extTime",&macropulseEvent.timeExtTime);
+    macropulseTimeTree->SetBranchAddress("waveform",&macropulseEvent.timeWaveform);
+
+    targetPositionTree->SetBranchAddress("timetag",&macropulseEvent.targetTimetag);
+    targetPositionTree->SetBranchAddress("extTime",&macropulseEvent.targetExtTime);
+    targetPositionTree->SetBranchAddress("lgQ",&macropulseEvent.lgQ);
+    targetPositionTree->SetBranchAddress("waveform",&macropulseEvent.targetWaveform);
+
+    outputTree->Branch("macroTime",&macropulseEvent.macroTime,"macroTime/D");
+    outputTree->Branch("macroNo",&macropulseEvent.macroNo,"macroNo/i");
+    outputTree->Branch("modeChange",&macropulseEvent.modeChange,"modeChange/i");
+    outputTree->Branch("targetPos",&macropulseEvent.targetPos,"targetPos/i");
+    outputTree->Branch("lgQ",&macropulseEvent.lgQ,"lgQ/i");
+    outputTree->Branch("timeWaveform",&macropulseEvent.timeWaveform);
+    outputTree->Branch("targetWaveform",&macropulseEvent.targetWaveform);
+
+    // loop through all events in the input trees to identify good macropulses
+    unsigned int prevExtTime = 0;
+    unsigned int prevMacroTime = 0;
+
+    long unsigned int macropulseTimeTreeEntries = macropulseTimeTree->GetEntries();
+    long unsigned int targetPositionTreeEntries = targetPositionTree->GetEntries();
+
+    long unsigned int i = 0;
+    long unsigned int entryNumberOffset = 0;
+
+    while(i<targetPositionTreeEntries)
+    {
+        targetPositionTree->GetEntry(i);
+        macropulseTimeTree->GetEntry(i+entryNumberOffset);
+
+        // determine time of target position measurement event
+        double targetPositionTime =
+            (double)(macropulseEvent.targetExtTime)*pow(2,31)
+          + (double)macropulseEvent.targetTimetag;
+        targetPositionTime *= experimentalConfig.timeConfig.SAMPLE_PERIOD;
+
+        // determine macropulse start time
+        macropulseEvent.macroTime =
+            (double)(macropulseEvent.timeExtTime)*pow(2,31)
+          + (double)macropulseEvent.timeTimetag;
+        macropulseEvent.macroTime *= experimentalConfig.timeConfig.SAMPLE_PERIOD;
+
+        // if macropulse start time and target position measurement time are
+        // aligned, assign the target position measurement to the macropulse
+        double timeDifferenceBetweenEvents =
+            macropulseEvent.macroTime -
+            targetPositionTime;
+
+        while(timeDifferenceBetweenEvents < experimentalConfig.timeConfig.MACROPULSE_TARGET_TIME_DIFFERENCE - 15
+           || timeDifferenceBetweenEvents > experimentalConfig.timeConfig.MACROPULSE_TARGET_TIME_DIFFERENCE + 15)
         {
-            // mode change
-            tcEvent.modeChange = 1;
+            cerr << "Timing mismatch between time of macropulse start and time of target position measurement. Skipping to next macropulse..." << endl;
+
+            cerr << "macropulseNo = " << macropulseEvent.macroNo << endl;
+            cerr << "timeDifference = " << timeDifferenceBetweenEvents << endl;
+
+            // move the macropulse time tree forward one entry
+            entryNumberOffset++;
+
+            if(i+entryNumberOffset > macropulseTimeTreeEntries)
+            {
+                cerr << "Reached the end of the macropulse time tree. Ending macropulse identification." << endl;
+
+                outputTree->Write();
+                outputFile->Close();
+
+                inputFile->Close();
+
+                return 0;
+            }
+
+            macropulseTimeTree->GetEntry(i+entryNumberOffset);
+
+            // determine macropulse start time
+            macropulseEvent.macroTime =
+                (double)(macropulseEvent.timeExtTime)*pow(2,31)
+                + (double)macropulseEvent.timeTimetag;
+            macropulseEvent.macroTime *= experimentalConfig.timeConfig.SAMPLE_PERIOD;
+
+            timeDifferenceBetweenEvents =
+                macropulseEvent.macroTime -
+                targetPositionTime;
+        }
+
+        // Discard events with digitizer rollover error (i.e., incrementing extTime before clearing the timetag, near the rollover period at 2^31 bits)
+
+        if(macropulseEvent.timeExtTime > prevExtTime
+                && macropulseEvent.timeTimetag > pow(2,31)-1000)
+        {
+            cerr << "Error: digitizer rollover error. Skipping event. macroNo = " << macropulseEvent.macroNo << ", extTime = " << macropulseEvent.timeExtTime << ", timetag = " << macropulseEvent.timeTimetag << endl;
+            cerr << "Skipping to next target changer event..." << endl;
+
+            i++;
+            continue;
+        }
+
+        macropulseEvent.targetPos = assignTargetPos(macropulseEvent.lgQ);
+
+        // if this is the first event in a DPP mode period, note this
+        if(prevMacroTime > macropulseEvent.macroTime)
+        {
+            macropulseEvent.modeChange = 1;
         }
 
         else
         {
-            tcEvent.modeChange = 0;
+            macropulseEvent.modeChange = 0;
         }
-
-        // Check for digitizer error (incrementing extTime before clearing timetag)
-        if ((separatedEvent.extTime>0) && separatedEvent.timetag > pow(2,32)-1000)
-        {
-            cerr << "Found a target changer event with a timestamp-reset failure (i.e., extTime incremented before timetag was reset to 0). MacroNo = " << tcEvent.macroNo << ", extTime = " << separatedEvent.extTime << ", timetag = " << separatedEvent.timetag << endl;
-            cerr << "Skipping to next target changer event..." << endl;
-            continue;
-        }
-
-        // fill w/ new macropulse data
-        tcEvent.lgQ = separatedEvent.lgQ;
-        tcEvent.fineTime = separatedEvent.fineTime;
-
-        //tcEvent.waveform = separatedEvent.waveform;
-
-        vector<int> tempWaveform = *separatedEvent.waveform;
-        tcEvent.waveform = &tempWaveform;
 
         outputTree->Fill();
 
-        // update macropulse counters
-        tcEvent.macroNo++;
+        // increment macropulse number
+        macropulseEvent.macroNo++;
 
-        prevTimetag = tcEvent.macroTime;
+        prevMacroTime = macropulseEvent.macroTime;
+        prevExtTime = macropulseEvent.timeExtTime;
 
-        if(j%1000==0)
+        if(i%1000==0)
         {
-            cout << "processed " << j << " events in target changer tree.\r";
+            cout << "processed " << i << " events in target changer tree.\r";
             fflush(stdout);
         }
+
+        i++;
     }
 
+    // clean up
     outputTree->Write();
     outputFile->Close();
+
+    inputFile->Close();
+
+    return 0;
 }

@@ -1,8 +1,6 @@
 #ifndef WAVEFORM_FITTING_H
 #define WAVEFORM_FITTING_H
 
-#include "analysisConstants.h"
-
 /*****************************************************************************/
 // Waveform-fitting parameters
 

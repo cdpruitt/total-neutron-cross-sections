@@ -111,7 +111,6 @@ bool readTwoWords(ifstream& file, unsigned int& variable)
         return true;
     }
 
-    //cerr << "Error: failed to read a two-word variable from the input file."  << endl;
     return false;
 }
 
@@ -310,13 +309,13 @@ int readRawData(string inFileName, string outFileName, vector<string> channelMap
     {
         if(!readEvent(inFile, rawEvent))
         {
-            cerr << "Error: failed to successfully read event number " << rawNumberOfEvents << ". Exiting..." << endl;
+            cerr << "Failed to read event number " << rawNumberOfEvents << ". Ending read of raw events." << endl;
 
             inFile.close();
             outFile->Write();
             outFile->Close();
 
-            exit(1);
+            return 1;
         }
 
         if(rawEvent.evtType==1)

@@ -16,6 +16,7 @@ void branchRaw(TTree*& tree, RawEvent& rawEvent)
     tree->Branch("timetag",&rawEvent.timetag,"timetag/i");
     tree->Branch("sgQ",&rawEvent.sgQ,"sgQ/i");
     tree->Branch("lgQ",&rawEvent.lgQ,"lgQ/i");
+    tree->Branch("baseline",&rawEvent.baseline,"baseline/i");
     tree->Branch("waveform",&rawEvent.waveform);
 }
 
@@ -27,7 +28,7 @@ void branchProc(TTree*& tree, ProcessedEvent& procEvent)
     tree->Branch("completeTime",&procEvent.completeTime,"completeTime/D");
     tree->Branch("fineTime",&procEvent.fineTime,"fineTime/D");
     tree->Branch("macroNo",&procEvent.macroNo,"macroNo/i");
-    tree->Branch("evtNo",&procEvent.evtNo,"evtNo/i");
+    tree->Branch("eventNo",&procEvent.eventNo,"eventNo/i");
     tree->Branch("targetPos",&procEvent.targetPos,"targetPos/i");
     tree->Branch("sgQ",&procEvent.sgQ,"sgQ/i");
     tree->Branch("lgQ",&procEvent.lgQ,"lgQ/i");
@@ -41,7 +42,7 @@ void branchProcW(TTree*& tree, ProcessedEvent& procEvent)
     tree->Branch("macroTime",&procEvent.macroTime,"macroTime/D");
     tree->Branch("completeTime",&procEvent.completeTime,"completeTime/D");
     tree->Branch("macroNo",&procEvent.macroNo,"macroNo/i");
-    tree->Branch("evtNo",&procEvent.evtNo,"evtNo/i");
+    tree->Branch("eventNo",&procEvent.eventNo,"eventNo/i");
     tree->Branch("targetPos",&procEvent.targetPos,"targetPos/i");
     tree->Branch("waveform",&procEvent.waveform);
 }
@@ -73,7 +74,7 @@ void setBranchesSeparatedW(TTree* tree, SeparatedEvent& separatedEvent)
 {
     tree->SetBranchAddress("timetag",&separatedEvent.timetag);
     tree->SetBranchAddress("extTime",&separatedEvent.extTime);
-    tree->SetBranchAddress("evtNo",&separatedEvent.evtNo);
+    tree->SetBranchAddress("eventNo",&separatedEvent.eventNo);
     tree->SetBranchAddress("waveform",&separatedEvent.waveform);
 }
 
@@ -81,7 +82,7 @@ void setBranchesProcessed(TTree* tree, ProcessedEvent& procEvent)
 {
    tree->SetBranchAddress("macroNo",&procEvent.macroNo);
    tree->SetBranchAddress("macroTime",&procEvent.macroTime);
-   tree->SetBranchAddress("evtNo",&procEvent.evtNo);
+   tree->SetBranchAddress("eventNo",&procEvent.eventNo);
    tree->SetBranchAddress("completeTime",&procEvent.completeTime);
    tree->SetBranchAddress("fineTime",&procEvent.fineTime);
    tree->SetBranchAddress("targetPos",&procEvent.targetPos);
@@ -93,7 +94,7 @@ void setBranchesProcessed(TTree* tree, ProcessedEvent& procEvent)
 void setBranchesProcessedW(TTree* tree, ProcessedEvent& procEvent)
 {
     tree->SetBranchAddress("macroNo",&procEvent.macroNo);
-    tree->SetBranchAddress("evtNo",&procEvent.evtNo);
+    tree->SetBranchAddress("eventNo",&procEvent.eventNo);
     tree->SetBranchAddress("completeTime",&procEvent.completeTime);
     tree->SetBranchAddress("targetPos",&procEvent.targetPos);
     tree->SetBranchAddress("waveform",&procEvent.waveform);
@@ -104,7 +105,7 @@ void setBranchesHistos(TTree* tree, ProcessedEvent& procEvent)
    tree->SetBranchAddress("macroNo",&procEvent.macroNo);
    tree->SetBranchAddress("macroTime",&procEvent.macroTime);
    tree->SetBranchAddress("fineTime",&procEvent.fineTime);
-   tree->SetBranchAddress("evtNo",&procEvent.evtNo);
+   tree->SetBranchAddress("eventNo",&procEvent.eventNo);
    tree->SetBranchAddress("completeTime",&procEvent.completeTime);
    tree->SetBranchAddress("targetPos",&procEvent.targetPos);
    tree->SetBranchAddress("sgQ",&procEvent.sgQ);
@@ -115,7 +116,7 @@ void setBranchesHistos(TTree* tree, ProcessedEvent& procEvent)
 void setBranchesHistosW(TTree* tree, ProcessedEvent& procEvent)
 {
     tree->SetBranchAddress("macroNo",&procEvent.macroNo);
-    tree->SetBranchAddress("evtNo",&procEvent.evtNo);
+    tree->SetBranchAddress("eventNo",&procEvent.eventNo);
     tree->SetBranchAddress("completeTime",&procEvent.completeTime);
     tree->SetBranchAddress("targetPos",&procEvent.targetPos);
     tree->SetBranchAddress("waveform",&procEvent.waveform);
@@ -125,7 +126,7 @@ void setBranchesVeto(TTree* tree, ProcessedEvent& vetoEvent)
 {
    tree->SetBranchAddress("macroNo",&vetoEvent.macroNo);
    tree->SetBranchAddress("macroTime",&vetoEvent.macroTime);
-   tree->SetBranchAddress("evtNo",&vetoEvent.evtNo);
+   tree->SetBranchAddress("eventNo",&vetoEvent.eventNo);
    tree->SetBranchAddress("completeTime",&vetoEvent.completeTime);
    tree->SetBranchAddress("targetPos",&vetoEvent.targetPos);
    tree->SetBranchAddress("sgQ",&vetoEvent.sgQ);
