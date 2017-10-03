@@ -1,8 +1,15 @@
 This file lists the position of the targets during the experiment
 The data format is:
 *******************************************************************************
-Run Nos.    Pos. 1          Pos.2       Pos. 3      Pos. 4  Pos. 5  Pos. 6
+Run Nos.    Pos. 1     Pos.2      Pos. 3      Pos. 4      Pos. 5       Pos. 6
 *******************************************************************************
 
-0-100       blank           CNat        PbNat       Ni58    NiNat   Ni64
-35-35       58Ni            CNat        PbNat       blank   NiNat   Ni64
+0-20       blank       CNat       PbNat       Ni58        NiNat        Ni64
+21-21      blank       Rh103      PbNat       Ni58        NiNat        Ni64
+22-22      blank       CNat       Rh103       Ni58        NiNat        Ni64
+23-34      blank       CNat       PbNat       Ni58        NiNat        Ni64
+35-36      Ni58        CNat       PbNat       blank       NiNat        Ni64
+37-42      blank       CNat       PbNat       Ni58        NiNat        Ni64
+43-45      blank       Rh103      PbNat       Ni58        NiNat        Ni64
+46-46      blank       empty      plexiblank  Ni58        NiNat        Ni64
+47-47      blank       CNat       Rh103       Ni58        NiNat        Ni64

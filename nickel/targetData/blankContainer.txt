@@ -1,5 +1,0 @@
-Name:       blankContainer
-Length:     2.00 cm
-Diameter:   1.00 cm
-Mass:       0 g
-Molar mass: 1 g/mol
