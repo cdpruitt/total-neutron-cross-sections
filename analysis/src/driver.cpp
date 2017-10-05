@@ -8,7 +8,7 @@
 #include "../include/waveform.h"
 #include "../include/veto.h"
 #include "../include/experiment.h"
-#include "../include/experimentalConfig.h"
+#include "../include/config.h"
 
 // ROOT library classes
 #include "TFile.h"
@@ -22,7 +22,7 @@
 
 using namespace std;
 
-ExperimentalConfig experimentalConfig;
+Config config;
 
 int main(int, char* argv[])
 {
@@ -57,6 +57,8 @@ int main(int, char* argv[])
         useVetoPaddle = true;
     }
 
+    config = Config(experimentName, runNumber);
+
     // toggle use of waveform event data during analysis
     /*string processWaveformEventsString = argv[6];
     bool processWaveformEvents = false;
@@ -80,11 +82,14 @@ int main(int, char* argv[])
      * into ROOT trees */
     /*************************************************************************/
     string rawFileName = analysisDirectory + "raw.root";
+    string DPPTreeName = "DPPTree";
+    string WaveformTreeName = "WaveformTree";
+
     ifstream f(rawFileName);
     if(!f.good())
     {
         // create a raw data tree for this subrun
-        readRawData(rawDataFileName,rawFileName,channelMap);
+        readRawData(rawDataFileName, rawFileName, DPPTreeName, WaveformTreeName);
     }
 
     else
@@ -100,15 +105,18 @@ int main(int, char* argv[])
     ifstream p(sortedFileName);
     if(!p.good())
     {
-        identifyMacropulses(rawFileName, channelMap[1], channelMap[0], sortedFileName, "macroTime");
+        identifyMacropulses(rawFileName, DPPTreeName, sortedFileName, "macroTime");
 
         cout << endl << "Finished macropulse identification." << endl;
 
-        vector<string> detectorChannels = {channelMap[2], channelMap[4], channelMap[5]};
-
-        for(string name : detectorChannels)
+        for(int i=2; i<channelMap.size(); i++)
         {
-            assignEventsToMacropulses(rawFileName, name, sortedFileName, "macroTime");
+            if(channelMap[i]=="-")
+            {
+                continue;
+            }
+
+            assignEventsToMacropulses(rawFileName, DPPTreeName, sortedFileName, "macroTime", i, channelMap[i]);
         }
 
     }
@@ -128,7 +136,7 @@ int main(int, char* argv[])
         ifstream v(vetoedFileName);
         if(!v.good())
         {
-            vetoEvents(sortedFileName, vetoedFileName, experimentalConfig.csConfig.DETECTOR_NAMES, "veto");
+            vetoEvents(sortedFileName, vetoedFileName, config.csConfig.DETECTOR_NAMES, "veto");
         }
 
         else
@@ -193,7 +201,7 @@ int main(int, char* argv[])
         }
 
 
-        for(string channelName : experimentalConfig.csConfig.DETECTOR_NAMES)
+        for(string channelName : config.csConfig.DETECTOR_NAMES)
         {
             fillAdvancedHistos(sortedFileName, channelName, histoFileName);
         }
@@ -205,15 +213,15 @@ int main(int, char* argv[])
 
         TFile* histoFile = new TFile(histoFileName.c_str(),"UPDATE");
 
-        for(string name : experimentalConfig.csConfig.DETECTOR_NAMES)
+        for(string name : config.csConfig.DETECTOR_NAMES)
         {
             histoFile->cd(name.c_str());
 
-            for(string positionName : experimentalConfig.targetConfig.POSITION_NAMES)
+            for(string targetName : config.targetConfig.TARGET_ORDER)
             {
-                string histoName = positionName + "TOFCorrected";
+                string histoName = targetName + "TOFCorrected";
                 TH1D* tof = (TH1D*)gDirectory->Get(histoName.c_str());
-                TH1D* correctedEnergy = convertTOFtoEnergy(tof, positionName + "CorrectedEnergy");
+                TH1D* correctedEnergy = convertTOFtoEnergy(tof, targetName + "CorrectedEnergy");
                 correctedEnergy->Write();
             }
         }

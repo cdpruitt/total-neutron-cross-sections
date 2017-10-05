@@ -20,18 +20,18 @@
 #include "../include/branches.h" // used to map C-structs that hold raw data to ROOT trees, and vice-versa
 
 #include "../include/assignMacropulses.h" // declarations of functions used to assign times and macropulses to events
-#include "../include/experimentalConfig.h"
+#include "../include/config.h"
 
-extern ExperimentalConfig experimentalConfig;
+extern Config config;
 
 using namespace std;
 
 // Use the lgQ from the target changer to determine the target position
 int assignTargetPos(int lgQ)
 {
-    for(int i=0; (size_t)i<experimentalConfig.targetConfig.TARGET_GATES.size(); i++)
+    for(int i=0; (size_t)i<config.targetConfig.TARGET_GATES.size(); i++)
     {
-        if (lgQ>=experimentalConfig.targetConfig.TARGET_GATES[i].first && lgQ<=experimentalConfig.targetConfig.TARGET_GATES[i].second)
+        if (lgQ>=config.targetConfig.TARGET_GATES[i].first && lgQ<=config.targetConfig.TARGET_GATES[i].second)
         {
             // lgQ fits within this gate
             return i; // target positions start from 1
@@ -165,7 +165,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
 
                 tcEvent.targetPos = assignTargetPos(separatedEvent.lgQ);
 
-                tcEvent.macroTime = experimentalConfig.timeConfig.SAMPLE_PERIOD*(pow(2,31)*separatedEvent.extTime + separatedEvent.timetag + separatedEvent.fineTime);
+                tcEvent.macroTime = config.digitizerConfig.SAMPLE_PERIOD*(pow(2,31)*separatedEvent.extTime + separatedEvent.timetag + separatedEvent.fineTime);
 
                 /*if(tcEvent.targetPos > 0)
                   {
@@ -256,18 +256,18 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
             switch(i)
             {
                 case 2:
-                    TIME_OFFSET = experimentalConfig.timeConfig.MACROPULSE_OFFSET;
+                    TIME_OFFSET = config.digitizerConfig.MACROPULSE_OFFSET;
                     break;
                 case 3:
                 case 4:
-                    TIME_OFFSET = experimentalConfig.timeConfig.MACROPULSE_OFFSET;
+                    TIME_OFFSET = config.digitizerConfig.MACROPULSE_OFFSET;
                     break;
                 case 5:
-                    TIME_OFFSET = experimentalConfig.timeConfig.MACROPULSE_OFFSET-experimentalConfig.timeConfig.VETO_OFFSET;
+                    TIME_OFFSET = config.digitizerConfig.MACROPULSE_OFFSET-config.digitizerConfig.VETO_OFFSET;
                     break;
                 case 6:
                 case 7:
-                    TIME_OFFSET = experimentalConfig.timeConfig.MACROPULSE_OFFSET;
+                    TIME_OFFSET = config.digitizerConfig.MACROPULSE_OFFSET;
                     break;
 
                 default:
@@ -281,7 +281,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
             {
                 rawTree->GetEntry(j);
 
-                procEvent.completeTime = experimentalConfig.timeConfig.SAMPLE_PERIOD*
+                procEvent.completeTime = config.digitizerConfig.SAMPLE_PERIOD*
                     (pow(2,31)*separatedEvent.extTime +
                      separatedEvent.timetag +
                      separatedEvent.fineTime) +
@@ -449,7 +449,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
             if(tcEvent.modeChange==1)
             {
                 treeToSort->GetEntry(currentWaveformEvent++);
-                procEvent.completeTime = pow(2,32)*separatedEvent.extTime + experimentalConfig.timeConfig.SAMPLE_PERIOD*separatedEvent.timetag;
+                procEvent.completeTime = pow(2,32)*separatedEvent.extTime + config.digitizerConfig.SAMPLE_PERIOD*separatedEvent.timetag;
                 procEvent.macroNo = tcEvent.macroNo;
                 procEvent.macroTime = tcEvent.macroTime;
                 procEvent.targetPos = tcEvent.targetPos;
@@ -458,7 +458,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                 prevTimetag = 0;
                 while(prevTimetag < procEvent.completeTime)
                 {
-                    if(prevTimetag+experimentalConfig.facilityConfig.MACRO_LENGTH < procEvent.completeTime)
+                    if(prevTimetag+config.facilityConfig.MACRO_LENGTH < procEvent.completeTime)
                     {
                         evtNo=0;
                     }
@@ -466,7 +466,7 @@ void assignMacropulses(string rawFileName, string sortedFileName, vector<string>
                     evtNo++;
                     prevTimetag = procEvent.completeTime;
                     treeToSort->GetEntry(currentWaveformEvent++);
-                    procEvent.completeTime = pow(2,32)*separatedEvent.extTime + experimentalConfig.timeConfig.SAMPLE_PERIOD*separatedEvent.timetag;
+                    procEvent.completeTime = pow(2,32)*separatedEvent.extTime + config.digitizerConfig.SAMPLE_PERIOD*separatedEvent.timetag;
                 }
             }
 

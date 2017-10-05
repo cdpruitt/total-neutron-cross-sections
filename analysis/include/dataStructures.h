@@ -28,8 +28,7 @@ struct RawEvent
     unsigned int lgQ;     // "long gate integrated charge" provides the charge
     // integral over an adjustable range of the event's peak 
     unsigned int nSamp; // number of samples in the event's waveform
-    std::vector<int>* waveform = new std::vector<int>; // "digital waveform of event" is a series of waveform
-                                // samples for each event
+    std::vector<int>* waveform = new std::vector<int>; // "digital waveform of event" is a series of waveform samples for each event
 
     // Variables extracted from "extras"
     unsigned int baseline;
@@ -41,6 +40,9 @@ struct RawEvent
     // (sample period)/2^10 units.
     unsigned int PZC; // positive zero-crossing (for manual CFD calculation)
     unsigned int NZC; // negative zero-crossing (for manual CFD calculation)
+
+    double completeTime; // digitizer assigned "raw time" (before corrections)
+    unsigned int cycleNumber; // number of times the digitizer has cycled between DPP and waveform mode during this subrun
 };
 
 // used to sort events into channel-specific trees, but do no processing

@@ -58,9 +58,12 @@
 
 #include "TFile.h"
 #include "TTree.h"
+#include "TH1.h"
 
 #include "../include/dataStructures.h" // defines the C-structs that hold each event's data
 #include "../include/branches.h"       // methods to map C-structs that hold raw data to ROOT trees, and vice-versa
+#include "../include/softwareCFD.h"    // for improving timing accuracy using waveform data
+#include "../include/config.h"
 
 #include "../include/raw.h"            // declarations of functions used for reading raw data
 
@@ -71,6 +74,8 @@ const unsigned int FINETIME_MASK = 0x03ff;
 
 const unsigned int BUFFER_SIZE = 2; // in bytes
 unsigned short buffer[BUFFER_SIZE/(sizeof(unsigned short))]; // for holding words read from the input file
+
+extern Config config;
 
 // read a word from the input file and store in a variable
 bool readWord(ifstream& file, unsigned int& variable)
@@ -254,7 +259,7 @@ bool readEvent(ifstream& file, RawEvent& rawEvent)
     return false;
 }
 
-int readRawData(string inFileName, string outFileName, vector<string> channelMap)
+int readRawData(string inFileName, string outFileName, string DPPTreeName, string WaveformTreeName)
 {
     cout << "Creating " << outFileName << endl;
 
@@ -273,37 +278,42 @@ int readRawData(string inFileName, string outFileName, vector<string> channelMap
     // create output file and ROOT tree for storing events
     TFile* outFile = new TFile(outFileName.c_str(),"RECREATE");
 
-    vector<TTree*> orchardSplit; // channel-specific DPP events
-    vector<TTree*> orchardSplitW;// channel-specific waveform events
+    TTree* DPPTree = new TTree(DPPTreeName.c_str(),"");
+    TTree* WaveformTree = new TTree(WaveformTreeName.c_str(),"");
 
-    RawEvent rawEvent; // for holding raw event data as it's tranferred to a ROOT Tree
+    RawEvent rawEvent; // for holding raw event data from the input file in preparation for transfer to a ROOT tree
 
-    // Create trees to be filled with sorted data
-    // Each channel has a separate tree for DPP data and for waveform mode data
-    for(unsigned int i=0; (size_t)i<channelMap.size(); i++)
-    {
-        orchardSplit.push_back(new TTree((channelMap[i]).c_str(),""));
-        orchardSplitW.push_back(new TTree((channelMap[i]+"W").c_str(),""));
+    DPPTree->Branch("completeTime",&rawEvent.completeTime,"completeTime/d");
+    DPPTree->Branch("fineTime",&rawEvent.fineTime,"fineTime/d");
+    DPPTree->Branch("cycleNumber",&rawEvent.cycleNumber,"cycleNumber/i");
+    DPPTree->Branch("chNo",&rawEvent.chNo,"chNo/i");
+    DPPTree->Branch("extTime",&rawEvent.extTime,"extTime/i");
+    DPPTree->Branch("timetag",&rawEvent.timetag,"timetag/i");
+    DPPTree->Branch("sgQ",&rawEvent.sgQ,"sgQ/i");
+    DPPTree->Branch("lgQ",&rawEvent.lgQ,"lgQ/i");
+    DPPTree->Branch("baseline",&rawEvent.baseline,"baseline/i");
+    DPPTree->Branch("waveform",&rawEvent.waveform);
 
-        if(channelMap[i]=="-")
-        {
-            // discard data from channels not specified in this run's
-            // configuration
-            continue;
-        }
-
-        branchRaw(orchardSplit[i], rawEvent);
-        orchardSplit[i]->SetDirectory(outFile);
-
-        branchRaw(orchardSplitW[i], rawEvent);
-        orchardSplitW[i]->SetDirectory(outFile);
-    }
+    WaveformTree->Branch("completeTime",&rawEvent.completeTime,"completeTime/d");
+    WaveformTree->Branch("fineTime",&rawEvent.fineTime,"fineTime/d");
+    WaveformTree->Branch("cycleNumber",&rawEvent.cycleNumber,"cycleNumber/i");
+    WaveformTree->Branch("chNo",&rawEvent.chNo,"chNo/i");
+    WaveformTree->Branch("extTime",&rawEvent.extTime,"extTime/i");
+    WaveformTree->Branch("timetag",&rawEvent.timetag,"timetag/i");
+    WaveformTree->Branch("sgQ",&rawEvent.sgQ,"sgQ/i");
+    WaveformTree->Branch("lgQ",&rawEvent.lgQ,"lgQ/i");
+    WaveformTree->Branch("baseline",&rawEvent.baseline,"baseline/i");
+    WaveformTree->Branch("waveform",&rawEvent.waveform);
 
     // count the number of events processed
     long rawNumberOfEvents = 0;
     long rawNumberOfDPPs = 0;
     long rawNumberOfWaveforms = 0;
 
+    unsigned int prevEvtType = 0;
+    rawEvent.cycleNumber = 0;
+
+ 
     // start looping through the evtfile to extract events
     while(!inFile.eof())
     {
@@ -318,15 +328,76 @@ int readRawData(string inFileName, string outFileName, vector<string> channelMap
             return 1;
         }
 
+        // Assign a time to each event
+        rawEvent.completeTime =
+            double(pow(2,31)*rawEvent.extTime) +
+            rawEvent.timetag; // in samples
+        rawEvent.completeTime *= config.digitizerConfig.SAMPLE_PERIOD; // converts from samples to ns
+
+        // Discard events with digitizer rollover error (i.e., incrementing extTime before clearing the timetag, near the rollover period at 2^31 bits)
+/*
+        if(macropulseEvent.timeExtTime > prevExtTime
+                && macropulseEvent.timeTimetag > pow(2,31)-1000)
+        {
+            cerr << "Error: digitizer rollover error. Skipping event. macroNo = " << macropulseEvent.macroNo << ", extTime = " << macropulseEvent.timeExtTime << ", timetag = " << macropulseEvent.timeTimetag << endl;
+            cerr << "Skipping to next target changer event..." << endl;
+
+            i++;
+            continue;
+        }
+        */
+
+        // sync times to the macropulse timing channel by applying an channel-dependent offset (accounts for cable delay)
+        switch(rawEvent.chNo)
+        {
+            case 0:
+                rawEvent.completeTime += config.timeOffsetsConfig.TARGET_CHANGER_TIME_OFFSET;
+                break;
+            case 1:
+                break;
+            case 2:
+                rawEvent.completeTime += config.timeOffsetsConfig.MONITOR_TIME_OFFSET;
+                break;
+            case 4:
+            case 6:
+                rawEvent.completeTime += config.timeOffsetsConfig.DETECTOR_TIME_OFFSET;
+
+                // use CFD to improve timing precision
+                rawEvent.fineTime = calculateCFDTime(
+                            rawEvent.waveform,
+                            rawEvent.baseline,
+                            config.softwareCFDConfig.CFD_FRACTION,
+                            config.softwareCFDConfig.CFD_DELAY); // CFD time in samples
+                if(rawEvent.fineTime>=0)
+                {
+                    // recovered a good fine time for this event
+                    rawEvent.completeTime += (rawEvent.fineTime-config.softwareCFDConfig.CFD_TIME_OFFSET)*config.digitizerConfig.SAMPLE_PERIOD;
+                }
+                    break;
+            case 5:
+                rawEvent.completeTime += config.timeOffsetsConfig.VETO_TIME_OFFSET;
+                break;
+            default:
+                cerr << "Error: encountered unimplemented channel number " << rawEvent.chNo << " during complete time assignment. Ending raw data read-in..." << endl;
+                return 1;
+        }
+
         if(rawEvent.evtType==1)
         {
-            orchardSplit[rawEvent.chNo]->Fill();
+            if(prevEvtType==2)
+            {
+                // first event after a waveform->DPP mode change; increment
+                // cycle counter
+                rawEvent.cycleNumber++;
+            }
+
+            DPPTree->Fill();
             rawNumberOfDPPs++;
         }
 
         else if(rawEvent.evtType==2)
         {
-            orchardSplitW[rawEvent.chNo]->Fill();
+            WaveformTree->Fill();
             rawNumberOfWaveforms++;
         }
 
@@ -338,7 +409,7 @@ int readRawData(string inFileName, string outFileName, vector<string> channelMap
             outFile->Write();
             outFile->Close();
 
-            exit(1);
+            return(1);
         }
 
         // print progress every 10000 events
@@ -349,6 +420,7 @@ int readRawData(string inFileName, string outFileName, vector<string> channelMap
         }
 
         rawNumberOfEvents++;
+        prevEvtType = rawEvent.evtType;
     }
 
     // reached end of input file - print statistics and clean up

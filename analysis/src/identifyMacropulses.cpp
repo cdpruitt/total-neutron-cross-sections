@@ -30,18 +30,18 @@
 
 #include "../include/softwareCFD.h"
 
-#include "../include/experimentalConfig.h"
+#include "../include/config.h"
 
-extern ExperimentalConfig experimentalConfig;
+extern Config config;
 
 using namespace std;
 
 // Use the lgQ from the target changer to determine the target position
 int assignTargetPos(int lgQ)
 {
-    for(int i=0; (size_t)i<experimentalConfig.targetConfig.TARGET_GATES.size(); i++)
+    for(int i=0; (size_t)i<config.targetConfig.TARGET_GATES.size(); i++)
     {
-        if (lgQ>=experimentalConfig.targetConfig.TARGET_GATES[i].first && lgQ<=experimentalConfig.targetConfig.TARGET_GATES[i].second)
+        if (lgQ>=config.targetConfig.TARGET_GATES[i].first && lgQ<=config.targetConfig.TARGET_GATES[i].second)
         {
             // lgQ fits within this gate
             return i; // target positions start from 1
@@ -57,10 +57,9 @@ int assignTargetPos(int lgQ)
 
 int identifyMacropulses(
         string inputFileName,
-        string macropulseTimeTreeName,
-        string targetPositionTreeName,
+        string inputTreeName,
         string outputFileName,
-        string outputTreeName)
+        string macropulseTreeName)
 {
     TFile* inputFile = new TFile(inputFileName.c_str(),"READ");
     if (!inputFile)
@@ -69,184 +68,212 @@ int identifyMacropulses(
         return(1);
     }
 
-    TTree* macropulseTimeTree = (TTree*)inputFile->Get(macropulseTimeTreeName.c_str());
-    if(!macropulseTimeTree)
+    TTree* inputTree = (TTree*)inputFile->Get(inputTreeName.c_str());
+    if(!inputTree)
     {
-        cerr << "Error: couldn't find " << macropulseTimeTreeName << " tree in "
-             << inputFileName << " when attempting to identify macropulses." << endl;
+        cerr << "Error: couldn't find " << inputTreeName << " tree in "
+            << inputFileName << " when attempting to identify macropulses." << endl;
         cerr << "Please check that the tree exists. " << endl;
         return(1);
     }
 
-    TTree* targetPositionTree = (TTree*)inputFile->Get(targetPositionTreeName.c_str());
-    if(!targetPositionTree)
+    // create structs for holding macropulse event data, and link it to the trees
+    unsigned int chNo;
+    unsigned int cycleNumber;
+    double completeTime;
+    inputTree->SetBranchAddress("chNo",&chNo);
+    inputTree->SetBranchAddress("cycleNumber",&cycleNumber);
+    inputTree->SetBranchAddress("completeTime",&completeTime);
+
+    struct MacrotimeEvent
     {
-        cerr << "Error: couldn't find " << targetPositionTreeName << " tree in "
-             << inputFileName << " when attempting to identify macropulses." << endl;
-        cerr << "Please check that the tree exists. " << endl;
-        return(1);
+        unsigned int cycleNumber = 0;
+        unsigned int macroNo = 0;
+        double completeTime = 0;
+    } macrotimeEvent;
+
+    struct TargetChangerEvent
+    {
+        unsigned int cycleNumber = 0;
+        double completeTime = 0;
+        unsigned int lgQ = 0;
+    } targetChangerEvent;
+
+    inputTree->SetBranchAddress("lgQ",&targetChangerEvent.lgQ);
+
+    vector<MacrotimeEvent> macrotimeList;
+    vector<TargetChangerEvent> targetChangerList;
+
+    long unsigned int inputTreeEntries = inputTree->GetEntries();
+    long unsigned int currentTreeEntry = 0;
+
+    while(currentTreeEntry<inputTreeEntries)
+    {
+        inputTree->GetEntry(currentTreeEntry);
+
+        if(chNo==0)
+        {
+            targetChangerEvent.cycleNumber = cycleNumber;
+            targetChangerEvent.completeTime = completeTime;
+            targetChangerList.push_back(TargetChangerEvent(targetChangerEvent));
+        }
+
+        else if(chNo==1)
+        {
+            macrotimeEvent.cycleNumber = cycleNumber;
+            macrotimeEvent.completeTime = completeTime;
+            macrotimeList.push_back(MacrotimeEvent(macrotimeEvent));
+            macrotimeEvent.macroNo++;
+        }
+
+        if(currentTreeEntry%10000==0)
+        {
+            cout << "Processed " << currentTreeEntry << " events from raw data file looking for macropulse events.\r";
+            fflush(stdout);
+        }
+
+        currentTreeEntry++;
     }
+
+    cout << endl << "Finished processing events from raw data file. Total macropulses recovered = "
+        << macrotimeList.size() << endl;
+
+    // all macrotime and target changer events have been identified;
+    // time to combine them into full-fledged macropulse events
+    // and write them out to a ROOT tree
 
     TFile* outputFile = new TFile(outputFileName.c_str(),"CREATE");
-
     if(!outputFile)
     {
         cerr << "Error: could not create " << outputFileName << " (does it already exist?)." << endl;
         return(1);
     }
 
-    TTree* outputTree = new TTree(outputTreeName.c_str(),"");
-
-    // create struct for holding macropulse event data, and link it to the trees
     struct MacropulseEvent
     {
-        unsigned int timeTimetag = 0;
-        unsigned int timeExtTime = 0;
-        vector<int>* timeWaveform = new vector<int>;
-
-        unsigned int targetTimetag = 0;
-        unsigned int targetExtTime = 0;
-        unsigned int lgQ = 0;
-        vector<int>* targetWaveform = new vector<int>;
-
-        double macroTime = 0;
-        double fineTime = 0;
+        unsigned int cycleNumber = 0;
         unsigned int macroNo = 0;
+        double macroTime = 0;
         unsigned int targetPos = 0;
-        unsigned int modeChange = 0;
-
+        unsigned int lgQ = 0;
     } macropulseEvent;
 
-    macropulseTimeTree->SetBranchAddress("timetag",&macropulseEvent.timeTimetag);
-    macropulseTimeTree->SetBranchAddress("extTime",&macropulseEvent.timeExtTime);
-    macropulseTimeTree->SetBranchAddress("waveform",&macropulseEvent.timeWaveform);
+    TTree* macropulseTree = new TTree(macropulseTreeName.c_str(),"");
 
-    targetPositionTree->SetBranchAddress("timetag",&macropulseEvent.targetTimetag);
-    targetPositionTree->SetBranchAddress("extTime",&macropulseEvent.targetExtTime);
-    targetPositionTree->SetBranchAddress("lgQ",&macropulseEvent.lgQ);
-    targetPositionTree->SetBranchAddress("waveform",&macropulseEvent.targetWaveform);
+    macropulseTree->Branch("macroTime",&macropulseEvent.macroTime,"macroTime/d");
+    macropulseTree->Branch("cycleNumber",&macropulseEvent.cycleNumber,"cycleNumber/i");
+    macropulseTree->Branch("macroNo",&macropulseEvent.macroNo,"macroNo/i");
+    macropulseTree->Branch("lgQ",&macropulseEvent.lgQ,"lgQ/i");
+    macropulseTree->Branch("targetPos",&macropulseEvent.targetPos,"targetPos/i");
 
-    outputTree->Branch("macroTime",&macropulseEvent.macroTime,"macroTime/D");
-    outputTree->Branch("macroNo",&macropulseEvent.macroNo,"macroNo/i");
-    outputTree->Branch("modeChange",&macropulseEvent.modeChange,"modeChange/i");
-    outputTree->Branch("targetPos",&macropulseEvent.targetPos,"targetPos/i");
-    outputTree->Branch("lgQ",&macropulseEvent.lgQ,"lgQ/i");
-    outputTree->Branch("timeWaveform",&macropulseEvent.timeWaveform);
-    outputTree->Branch("targetWaveform",&macropulseEvent.targetWaveform);
+    unsigned int currentMacrotimeEntry = 0;
+    unsigned int currentTargetChangerEntry = 0;
 
-    // loop through all events in the input trees to identify good macropulses
-    unsigned int prevExtTime = 0;
-    unsigned int prevMacroTime = 0;
+    bool endAssignment = false;
 
-    long unsigned int macropulseTimeTreeEntries = macropulseTimeTree->GetEntries();
-    long unsigned int targetPositionTreeEntries = targetPositionTree->GetEntries();
-
-    long unsigned int i = 0;
-    long unsigned int entryNumberOffset = 0;
-
-    while(i<targetPositionTreeEntries)
+    while(currentMacrotimeEntry<macrotimeList.size())
     {
-        targetPositionTree->GetEntry(i);
-        macropulseTimeTree->GetEntry(i+entryNumberOffset);
-
-        // determine time of target position measurement event
-        double targetPositionTime =
-            (double)(macropulseEvent.targetExtTime)*pow(2,31)
-          + (double)macropulseEvent.targetTimetag;
-        targetPositionTime *= experimentalConfig.timeConfig.SAMPLE_PERIOD;
-
-        // determine macropulse start time
-        macropulseEvent.macroTime =
-            (double)(macropulseEvent.timeExtTime)*pow(2,31)
-          + (double)macropulseEvent.timeTimetag;
-        macropulseEvent.macroTime *= experimentalConfig.timeConfig.SAMPLE_PERIOD;
-
-        // if macropulse start time and target position measurement time are
-        // aligned, assign the target position measurement to the macropulse
-        double timeDifferenceBetweenEvents =
-            macropulseEvent.macroTime -
-            targetPositionTime;
-
-        while(timeDifferenceBetweenEvents < experimentalConfig.timeConfig.MACROPULSE_TARGET_TIME_DIFFERENCE - 15
-           || timeDifferenceBetweenEvents > experimentalConfig.timeConfig.MACROPULSE_TARGET_TIME_DIFFERENCE + 15)
+        // if macrotimeList's cycle number is behind, move to the next macrotime
+        // event
+        while((macrotimeList[currentMacrotimeEntry].cycleNumber <
+               targetChangerList[currentTargetChangerEntry].cycleNumber)
+             )
         {
-            cerr << "Timing mismatch between time of macropulse start and time of target position measurement. Skipping to next macropulse..." << endl;
-
-            cerr << "macropulseNo = " << macropulseEvent.macroNo << endl;
-            cerr << "timeDifference = " << timeDifferenceBetweenEvents << endl;
-
-            // move the macropulse time tree forward one entry
-            entryNumberOffset++;
-
-            if(i+entryNumberOffset > macropulseTimeTreeEntries)
+            currentMacrotimeEntry++;
+            if(currentMacrotimeEntry>=macrotimeList.size())
             {
-                cerr << "Reached the end of the macropulse time tree. Ending macropulse identification." << endl;
-
-                outputTree->Write();
-                outputFile->Close();
-
-                inputFile->Close();
-
-                return 0;
+                cout << "Reached end of macrotime list; end macropulse identification." << endl;
+                endAssignment = true;
+                break;
             }
-
-            macropulseTimeTree->GetEntry(i+entryNumberOffset);
-
-            // determine macropulse start time
-            macropulseEvent.macroTime =
-                (double)(macropulseEvent.timeExtTime)*pow(2,31)
-                + (double)macropulseEvent.timeTimetag;
-            macropulseEvent.macroTime *= experimentalConfig.timeConfig.SAMPLE_PERIOD;
-
-            timeDifferenceBetweenEvents =
-                macropulseEvent.macroTime -
-                targetPositionTime;
         }
 
-        // Discard events with digitizer rollover error (i.e., incrementing extTime before clearing the timetag, near the rollover period at 2^31 bits)
-
-        if(macropulseEvent.timeExtTime > prevExtTime
-                && macropulseEvent.timeTimetag > pow(2,31)-1000)
+        // if targetChangerList's cycle number is behind, move to the next
+        // target changer event
+        while((macrotimeList[currentMacrotimeEntry].cycleNumber >
+               targetChangerList[currentTargetChangerEntry].cycleNumber)
+             )
         {
-            cerr << "Error: digitizer rollover error. Skipping event. macroNo = " << macropulseEvent.macroNo << ", extTime = " << macropulseEvent.timeExtTime << ", timetag = " << macropulseEvent.timeTimetag << endl;
-            cerr << "Skipping to next target changer event..." << endl;
-
-            i++;
-            continue;
+            currentTargetChangerEntry++;
+            if(currentTargetChangerEntry>=targetChangerList.size())
+            {
+                cout << "Reached end of target changer list; end macropulse identification." << endl;
+                endAssignment = true;
+                break;
+            }
         }
 
-        macropulseEvent.targetPos = assignTargetPos(macropulseEvent.lgQ);
-
-        // if this is the first event in a DPP mode period, note this
-        if(prevMacroTime > macropulseEvent.macroTime)
+        if(endAssignment)
         {
-            macropulseEvent.modeChange = 1;
+            break;
+        }
+
+        // macrotime and target changer events are in the same cycle
+        // if macrotimeList's time is behind, move to the next macrotime
+        // event
+        while((macrotimeList[currentMacrotimeEntry].completeTime+20 <
+                 targetChangerList[currentTargetChangerEntry].completeTime)
+             )
+        {
+            currentMacrotimeEntry++;
+            if(currentMacrotimeEntry>=macrotimeList.size())
+            {
+                cout << "Reached end of macrotime list; end macropulse identification." << endl;
+                endAssignment = true;
+                break;
+            }
+        }
+
+        // if targetChangerList's time is behind, move to the next target
+        // changer event
+        while((macrotimeList[currentMacrotimeEntry].completeTime >
+               targetChangerList[currentTargetChangerEntry].completeTime+20)
+             )
+        {
+            currentTargetChangerEntry++;
+            if(currentTargetChangerEntry>=targetChangerList.size())
+            {
+                cout << "Reached end of target changer list; end macropulse identification." << endl;
+                endAssignment = true;
+                break;
+            }
+        }
+
+        if((macrotimeList[currentMacrotimeEntry].cycleNumber == 
+                    targetChangerList[currentTargetChangerEntry].cycleNumber)
+                && (abs(macrotimeList[currentMacrotimeEntry].completeTime - 
+                        targetChangerList[currentTargetChangerEntry].completeTime)<20)
+          )
+        {
+            // found a match between the target changer and the macrotime lists
+            macropulseEvent.lgQ = targetChangerList[currentTargetChangerEntry].lgQ;
+            macropulseEvent.targetPos = assignTargetPos(macropulseEvent.lgQ);
         }
 
         else
         {
-            macropulseEvent.modeChange = 0;
+            // failed to find a match; assign a target position of 0
+            macropulseEvent.lgQ = 1;
+            macropulseEvent.targetPos = 0;
         }
 
-        outputTree->Fill();
+        macropulseEvent.cycleNumber = macrotimeList[currentMacrotimeEntry].cycleNumber;
+        macropulseEvent.macroNo = macrotimeList[currentMacrotimeEntry].macroNo;
+        macropulseEvent.macroTime = macrotimeList[currentMacrotimeEntry].completeTime;
 
-        // increment macropulse number
-        macropulseEvent.macroNo++;
+        macropulseTree->Fill();
 
-        prevMacroTime = macropulseEvent.macroTime;
-        prevExtTime = macropulseEvent.timeExtTime;
-
-        if(i%1000==0)
+        if(currentMacrotimeEntry%100==0)
         {
-            cout << "processed " << i << " events in target changer tree.\r";
+            cout << "Identified " << currentMacrotimeEntry << " macropulses...\r";
             fflush(stdout);
         }
 
-        i++;
+        currentMacrotimeEntry++;
     }
 
     // clean up
-    outputTree->Write();
+    macropulseTree->Write();
     outputFile->Close();
 
     inputFile->Close();

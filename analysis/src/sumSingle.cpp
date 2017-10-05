@@ -16,17 +16,11 @@
 #include "../include/CSPrereqs.h"
 #include "../include/crossSection.h"
 #include "../include/experiment.h"
+#include "../include/config.h"
 
 using namespace std;
 
-struct Plots
-{
-    vector<TGraphErrors*> CSGraphs;
-    vector<TGraphErrors*> CSGraphsWaveform;
-
-    vector<TGraphErrors*> relativeCSGraphs;
-    vector<TGraphErrors*> relativeCSGraphsWaveform;
-} plots;
+Config config;
 
 // Extract each point from a graph and store their positions in two vectors,
 // xValues and yValues
@@ -274,7 +268,7 @@ CrossSection calculateCS(string CSFileName, CSPrereqs& targetData, CSPrereqs& bl
     TFile* CSFile = new TFile(CSFileName.c_str(),"UPDATE");
     string name = targetData.target.getName();
     crossSection.createCSGraph(name, name);
-    name += "target0CorrectedEnergy";
+    name += "CorrectedEnergy";
     corrected.createCSGraph(name, name);
 
     CSFile->Write();
@@ -295,6 +289,8 @@ int main(int, char* argv[])
     string runNumber = argv[4];
 
     int subRun = stoi(argv[5]);
+
+    config = Config(expName, atoi(runNumber.c_str()));
 
     // Create a CSPrereqs for each target to hold data from all the runs
     vector<CSPrereqs> allData;
@@ -326,17 +322,14 @@ int main(int, char* argv[])
 
     TFile* inFile = new TFile(inFileName.str().c_str(),"READ");
 
-    // get target order for this run
-    vector<string> targetOrder = getTargetOrder(expName, stoi(runNumber));
-
     cout << "Adding " << runNumber << ", subrun " << subRun << "\r";
     fflush(stdout);
 
     // Loop through all target positions in this subrun
-    for(int j=0; (size_t)j<targetOrder.size(); j++)
+    for(int j=0; (size_t)j<config.targetConfig.TARGET_ORDER.size(); j++)
     {
         // pull data needed for CS calculation from subrun 
-        string targetDataLocation = "../" + expName + "/targetData/" + targetOrder[j] + ".txt";
+        string targetDataLocation = "../" + expName + "/targetData/" + config.targetConfig.TARGET_ORDER[j] + ".txt";
         CSPrereqs subRunData(targetDataLocation);
 
         subRunData.readData(inFile, "summedDet", j);
@@ -346,23 +339,14 @@ int main(int, char* argv[])
         {
             if(allData[k].target.getName() == subRunData.target.getName())
             {
-                // add subrun data to total
-                if(!allData[k].energyHisto)
-                {
-                    // this is the first subrun to be added
-                    allData[k].monitorCounts = subRunData.monitorCounts;
-                    allData[k].energyHisto = (TH1D*)subRunData.energyHisto->Clone();
-                    // prevent the cloned histogram from being closed
-                    // when the subrun is closed
-                    allData[k].energyHisto->SetDirectory(0);
-                }
+                allData[k].monitorCounts = subRunData.monitorCounts;
+                allData[k].energyHisto = (TH1D*)subRunData.energyHisto->Clone();
+                // prevent the cloned histogram from being closed
+                // when the subrun is closed
+                allData[k].energyHisto->SetDirectory(0);
 
-                else
-                {
-                    allData[k] = allData[k] + subRunData;
-                }
+            break;
 
-                break;
             }
 
             if((size_t)k+1==allData.size())

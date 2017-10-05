@@ -20,19 +20,12 @@
 
 using namespace std;
 
+Config config;
+
 const int MAX_SUBRUN_NUMBER = 200;
 
 const int FIRST_CS_ENERGY = 2; // in MeV
 const int LAST_CS_ENERGY = 600; // in MeV
-
-struct Plots
-{
-    vector<TGraphErrors*> CSGraphs;
-    vector<TGraphErrors*> CSGraphsWaveform;
-
-    vector<TGraphErrors*> relativeCSGraphs;
-    vector<TGraphErrors*> relativeCSGraphsWaveform;
-} plots;
 
 // Extract each point from a graph and store their positions in two vectors,
 // xValues and yValues
@@ -296,29 +289,14 @@ CrossSection calculateCS(CSPrereqs& targetData, CSPrereqs& blankData, string exp
 
 int main(int, char* argv[])
 {
-    string dataLocation = argv[1]; // name of directory where analysis is stored
-                                   // (omit trailing slash)
-    string expName = argv[2];      // experiment directory where runs to-be-sorted
-                                   // are listed
-    string histosFileType = argv[3]; // name of ROOT files that contain data
-                                   // used to calculate cross sections
+    string dataLocation = argv[1];
 
-    string monitorFileType = argv[4];
+    string expName = argv[2]; // experiment directory where runs to-be-sorted
+                              // are listed
 
+    vector<CSPrereqs> allCSPrereqs;
 
-    // Create a CSPrereqs for each target to hold data from all the runs
-    vector<CSPrereqs> allData;
-
-    vector<string> targetNames = readExperimentConfig(expName,"targetNames");
-    for(auto targetName : targetNames)
-    {
-        string targetDataLocation = "../" + expName + "/targetData/" + targetName + ".txt";
-        allData.push_back(CSPrereqs(targetDataLocation));
-    }
-
-    ofstream textOutput;
-
-    // Open runlist
+    // Open run list
     string runListName = "../" + expName + "/runsToSort.txt";
     ifstream runList(runListName);
     if(!runList.is_open())
@@ -326,13 +304,41 @@ int main(int, char* argv[])
         cerr << "Error: couldn't find runlist at " << runListName << endl;
         exit(1);
     }
-
     cout << endl;
 
-    // Runlist open - loop through all runs
+    // Ingest data from every run in the run list
     string runNumber;
     while (runList >> runNumber)
     {
+        // read in run config file
+        config = Config(expName, atoi(runNumber.c_str()));
+
+        // check to see if data with this target has already been read in
+        // (from previous runs). If not, create a new CSPrereq to hold the new
+        // target's data
+        for(string targetName : config.targetConfig.TARGET_ORDER)
+        {
+            bool CSPAlreadyExists = false;
+
+            for(CSPrereqs csp : allCSPrereqs)
+            {
+                if(csp.target.getName() == targetName)
+                {
+                    // CSPrereq for this target already exists
+                    CSPAlreadyExists = true;
+                    break;
+                }
+            }
+
+            if(CSPAlreadyExists)
+            {
+                continue;
+            }
+
+            string targetDataLocation = "../" + expName + "/targetData/" + targetName + ".txt";
+            allCSPrereqs.push_back(CSPrereqs(targetDataLocation));
+        }
+
         // Loop through all subruns of this run
         for(int subRun=0; subRun<=MAX_SUBRUN_NUMBER; subRun++)
         {
@@ -342,25 +348,17 @@ int main(int, char* argv[])
             // open subrun
             stringstream inFileName;
             inFileName << dataLocation << "/" << runNumber << "/"
-                       << subRunFormatted.str() << "/" << histosFileType << ".root";
+                       << subRunFormatted.str() << "/histos.root";
             ifstream f(inFileName.str());
             if(!f.good())
             {
                 // failed to open this sub-run - skip to the next one
+                cerr << "Couldn't open " << inFileName.str() << "; continuing.\r";
+                fflush(stdout);
                 continue;
             }
 
             f.close();
-
-            stringstream monitorFileName;
-            monitorFileName << dataLocation << "/" << runNumber << "/"
-                       << subRunFormatted.str() << "/" << monitorFileType << ".root";
-            ifstream m(monitorFileName.str());
-            if(!m.good())
-            {
-                // failed to open this sub-run - skip to the next one
-                continue;
-            }
 
             TFile* inFile = new TFile(inFileName.str().c_str(),"READ");
 
@@ -380,10 +378,10 @@ int main(int, char* argv[])
                 subRunData.readData(inFile, "summedDet", j);
 
                 // for waveforms
-                //subRunData.readData(inFile, "lowThresholdDet", j, monitorFileName.str());
+                //subRunData.readData(inFile, "lowThresholdDet", j, inFileName.str());
 
                 // find the correct CSPrereqs to add this target's data to
-                for(CSPrereqs& csp : allData)
+                for(CSPrereqs& csp : allCSPrereqs)
                 {
                     if(csp.target.getName() == subRunData.target.getName())
                     {
@@ -405,7 +403,7 @@ int main(int, char* argv[])
 
     cout << endl << "Total statistics over all runs: " << endl << endl;
 
-    for(CSPrereqs& p : allData)
+    for(CSPrereqs& p : allCSPrereqs)
     {
         long totalCounts = 0;
         for(int i=0; i<p.energyHisto->GetNbinsX(); i++)
@@ -422,7 +420,7 @@ int main(int, char* argv[])
         cout << p.target.getName() << ": total events in energy histo = "
              << totalCounts << ", total monitor events = "
              << p.monitorCounts << endl;
-        crossSections.push_back(calculateCS(p, allData[0], expName));
+        crossSections.push_back(calculateCS(p, allCSPrereqs[0], expName));
         cout << "Target " << crossSections.back().getDataSet().getReference() <<
                 " RMS error: " << crossSections.back().calculateRMSError() << endl << endl;
 
@@ -450,13 +448,13 @@ int main(int, char* argv[])
     {
         int largerTarget = -1;
         int smallerTarget = -1;
-        for(int i=0; (size_t)i<targetNames.size(); i++)
+        for(int i=0; (size_t)i<config.targetConfig.TARGET_ORDER.size(); i++)
         {
-            if(targetNames[i]==p.first)
+            if(config.targetConfig.TARGET_ORDER[i]==p.first)
             {
                 largerTarget = i;
             }
-            else if(targetNames[i]==p.second)
+            else if(config.targetConfig.TARGET_ORDER[i]==p.second)
             {
                 smallerTarget = i;
             }
@@ -466,7 +464,7 @@ int main(int, char* argv[])
         {
             // found cross section plots for both individual targets,
             // so use them to make a relative cross section plot
-            cout << "Producing relative cross section plot of " << targetNames[largerTarget] << " and " << targetNames[smallerTarget] << endl;
+            cout << "Producing relative cross section plot of " << config.targetConfig.TARGET_ORDER[largerTarget] << " and " << config.targetConfig.TARGET_ORDER[smallerTarget] << endl;
 
             //CrossSection sum = crossSections[largerTarget]+crossSections[smallerTarget];
             //cout << "sum plot " << sum.getDataSet().getReference() <<
@@ -477,11 +475,11 @@ int main(int, char* argv[])
             //        " RMS error: " << difference.calculateRMSError() << endl << endl;
 
             CrossSection relative = calculateRelative(crossSections[largerTarget],crossSections[smallerTarget]);
-            string relativeTitle = "#frac{#sigma_{" + allData[largerTarget].target.getName() +
-                                      "}-#sigma_{" + allData[smallerTarget].target.getName() + 
-                                     "}}{#sigma_{" + allData[largerTarget].target.getName() +
-                                      "}+#sigma_{" + allData[smallerTarget].target.getName() + "}}";
-            string relativeName = "relative" + allData[largerTarget].target.getName() + allData[smallerTarget].target.getName();
+            string relativeTitle = "#frac{#sigma_{" + allCSPrereqs[largerTarget].target.getName() +
+                                      "}-#sigma_{" + allCSPrereqs[smallerTarget].target.getName() + 
+                                     "}}{#sigma_{" + allCSPrereqs[largerTarget].target.getName() +
+                                      "}+#sigma_{" + allCSPrereqs[smallerTarget].target.getName() + "}}";
+            string relativeName = "relative" + allCSPrereqs[largerTarget].target.getName() + allCSPrereqs[smallerTarget].target.getName();
             relative.createCSGraph(relativeName.c_str(), relativeTitle.c_str());
             cout << "Relative plot " << relative.getDataSet().getReference() <<
                     " RMS error: " << relative.calculateRMSError() << endl;
@@ -489,7 +487,7 @@ int main(int, char* argv[])
 
         else
         {
-            cout << "Failed to find cross section plot for either " << targetNames[largerTarget] << " or " << targetNames[smallerTarget] << endl;
+            cout << "Failed to find cross section plot for either " << config.targetConfig.TARGET_ORDER[largerTarget] << " or " << config.targetConfig.TARGET_ORDER[smallerTarget] << endl;
         }
     }
 
@@ -510,13 +508,13 @@ int main(int, char* argv[])
     {
         int largerTarget = -1;
         int smallerTarget = -1;
-        for(int i=0; (size_t)i<targetNames.size(); i++)
+        for(int i=0; (size_t)i<config.targetConfig.TARGET_ORDER.size(); i++)
         {
-            if(targetNames[i]==p.first)
+            if(config.targetConfig.TARGET_ORDER[i]==p.first)
             {
                 largerTarget = i;
             }
-            else if(targetNames[i]==p.second)
+            else if(config.targetConfig.TARGET_ORDER[i]==p.second)
             {
                 smallerTarget = i;
             }
@@ -525,13 +523,13 @@ int main(int, char* argv[])
         if(largerTarget>=0)
         {
             // found experimental cross section plot for this target
-            cout << "Producing subtracted cross section plot of " << targetNames[largerTarget] << " and " << targetNames[smallerTarget] << endl;
+            cout << "Producing subtracted cross section plot of " << config.targetConfig.TARGET_ORDER[largerTarget] << " and " << config.targetConfig.TARGET_ORDER[smallerTarget] << endl;
 
             CrossSection litData = 
 
             CrossSection subtracted = calculateSubtracted(crossSections[largerTarget],litData);
-            string subtractedName = "#sigma_{" + allData[largerTarget].target.getName() + "}-" +
-                                    "#sigma_{" + allData[smallerTarget].target.getName() + "}";
+            string subtractedName = "#sigma_{" + allCSPrereqs[largerTarget].target.getName() + "}-" +
+                                    "#sigma_{" + allCSPrereqs[smallerTarget].target.getName() + "}";
                                       
             subtracted.createCSGraph(relativeName.c_str());
             cout << "subtracted plot " << relative.getDataSet().getReference() <<
@@ -540,7 +538,7 @@ int main(int, char* argv[])
 
         else
         {
-            cout << "Failed to find cross section plot for either " << targetNames[largerTarget] << " or " << targetNames[smallerTarget] << endl;
+            cout << "Failed to find cross section plot for either " << config.targetConfig.TARGET_ORDER[largerTarget] << " or " << config.targetConfig.TARGET_ORDER[smallerTarget] << endl;
         }
     }
 

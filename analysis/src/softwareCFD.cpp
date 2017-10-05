@@ -2,7 +2,7 @@
 #include <vector>
 
 #include "../include/softwareCFD.h"
-#include "../include/experimentalConfig.h"
+#include "../include/config.h"
 
 using namespace std;
 
@@ -30,7 +30,7 @@ double calculateCFDTime(vector<int>* waveform, double baseline, double fraction,
         // baseline
         double CFDSample = waveform->at(i)-(fraction*waveform->at(i+delay)+baseline*(1-fraction));
 
-        if(!listenForZC && CFDSample>(experimentalConfig.timeConfig.CFD_ZC_TRIGGER_THRESHOLD))
+        if(!listenForZC && CFDSample>(config.softwareCFDConfig.CFD_ZC_TRIGGER_THRESHOLD))
         {
             // approaching ZC - start looking for a ZC
             listenForZC = true;

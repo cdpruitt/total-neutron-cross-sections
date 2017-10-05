@@ -5,13 +5,14 @@
 #include "TH1I.h"
 
 #include "../include/target.h"
-#include "../include/CSPrereqs.h"
 #include "../include/plots.h"
-#include "../include/experimentalConfig.h"
+#include "../include/CSPrereqs.h"
+#include "../include/config.h"
+#include "../include/experiment.h"
 
 using namespace std;
 
-ExperimentalConfig experimentalConfig;
+extern Config config;
 
 void CSPrereqs::getHisto(TFile* histoFile, string directory, string name)
 {
@@ -34,8 +35,6 @@ void CSPrereqs::getMonitorCounts(TFile* histoFile, string directory, int targetP
     histoFile->cd("summedDet");
     double badMacroRatio = ((TH1I*)gDirectory->Get("ratio of bad macros"))->GetBinContent(targetPosition+2);
 
-    cout << "bad macro ratio = " << badMacroRatio << endl;
-
     histoFile->cd(directory.c_str());
     monitorCounts = ((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(targetPosition+2)*(1-badMacroRatio);
 }
@@ -53,7 +52,7 @@ void CSPrereqs::getMonitorCounts(string monitorFileName, string directory, int t
 void CSPrereqs::readData(TFile* histoFile, string directory, int targetPosition)
 {
     // Find deadtime-corrected energy histo for this target
-    string histoName = experimentalConfig.targetConfig.POSITION_NAMES[targetPosition];
+    string histoName = config.targetConfig.TARGET_ORDER[targetPosition];
     getHisto(histoFile, directory, histoName);
 
     // Find number of events in the monitor for each target to use in scaling
@@ -65,7 +64,7 @@ void CSPrereqs::readData(TFile* histoFile, string directory, int targetPosition)
 void CSPrereqs::readData(TFile* histoFile, string directory, int targetPosition, string monitorFileName)
 {
     // Find deadtime-corrected energy histo for this target
-    string histoName = experimentalConfig.targetConfig.POSITION_NAMES[targetPosition];
+    string histoName = config.targetConfig.TARGET_ORDER[targetPosition];
     getHisto(histoFile, directory, histoName);
 
     // Find number of events in the monitor for each target to use in scaling
@@ -91,7 +90,7 @@ CSPrereqs operator+(CSPrereqs& augend, CSPrereqs& addend)
 CSPrereqs::CSPrereqs(Target t)
 {
     target = t;
-    TOFHisto = new TH1D("","",experimentalConfig.plotConfig.TOF_BINS,experimentalConfig.plotConfig.TOF_LOWER_BOUND,experimentalConfig.plotConfig.TOF_RANGE),target.getName();
+    TOFHisto = new TH1D("","",config.plotConfig.TOF_BINS,config.plotConfig.TOF_LOWER_BOUND,config.plotConfig.TOF_UPPER_BOUND),target.getName();
     TOFHisto->SetDirectory(0);
     energyHisto = timeBinsToRKEBins(TOFHisto,target.getName());
     energyHisto->SetDirectory(0);
@@ -100,7 +99,7 @@ CSPrereqs::CSPrereqs(Target t)
 
 CSPrereqs::CSPrereqs(string targetDataLocation) : target(targetDataLocation)
 {
-    TOFHisto = new TH1D("","",experimentalConfig.plotConfig.TOF_BINS,experimentalConfig.plotConfig.TOF_LOWER_BOUND,experimentalConfig.plotConfig.TOF_RANGE),target.getName();
+    TOFHisto = new TH1D("","",config.plotConfig.TOF_BINS,config.plotConfig.TOF_LOWER_BOUND,config.plotConfig.TOF_RANGE),target.getName();
     TOFHisto->SetDirectory(0);
     energyHisto = timeBinsToRKEBins(TOFHisto,target.getName());
     energyHisto->SetDirectory(0);

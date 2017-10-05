@@ -8,7 +8,7 @@
 #include "../include/dataSet.h"
 #include "../include/crossSection.h"
 #include "../include/plots.h"
-#include "../include/experimentalConfig.h"
+#include "../include/config.h"
 
 #include "TFile.h"
 #include "TGraphErrors.h"
@@ -18,7 +18,7 @@
 
 using namespace std;
 
-ExperimentalConfig experimentalConfig;
+Config config;
 
 int main(int, char* argv[])
 {

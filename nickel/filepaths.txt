@@ -1,1 +1,1 @@
-0 47 /media/cdpruitt/nickel /data1
+0 47 /media/cdpruitt/nickel/output /data1/analysis

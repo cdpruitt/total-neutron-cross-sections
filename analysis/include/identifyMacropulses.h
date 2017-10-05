@@ -5,9 +5,8 @@
 
 int identifyMacropulses(
         std::string inputFileName,
-        std::string macropulseTimeTreeName,
-        std::string targetPositionTreeName,
+        std::string inputTreeName,
         std::string outputFileName,
-        std::string outputTreeName);
+        std::string macropulseTreeName);
 
 #endif /* IDENTIFY_MACROPULSES_H */

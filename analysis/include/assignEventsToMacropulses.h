@@ -5,9 +5,11 @@
 
 int assignEventsToMacropulses(
         std::string inputFileName,
-        std::string detectorTreeName,
+        std::string inputTreeName,
         std::string outputFileName,
-        std::string macropulseTreeName);
+        std::string macropulseTreeName,
+        unsigned int channelNo,
+        std::string outputTreeName);
 
 #endif /* ASSIGN_EVENTS_TO_MACROPULSES_H */
 

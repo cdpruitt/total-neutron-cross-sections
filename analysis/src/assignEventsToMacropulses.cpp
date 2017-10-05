@@ -20,10 +20,9 @@
 #include "../include/branches.h" // used to map C-structs that hold raw data to ROOT trees, and vice-versa
 
 #include "../include/assignEventsToMacropulses.h" // declarations of functions used to assign times and macropulses to events
-#include "../include/softwareCFD.h" // to calculate fine times of events
-#include "../include/experimentalConfig.h"
+#include "../include/config.h"
 
-extern ExperimentalConfig experimentalConfig;
+extern Config config;
 
 using namespace std;
 
@@ -34,6 +33,7 @@ struct DetectorEvent
     unsigned int macroNo = 0;
     unsigned int targetPos = 0;
 
+    unsigned int cycleNumber = 0;
     double completeTime = 0;
     unsigned int timetag = 0;
     unsigned int extTime = 0;
@@ -45,34 +45,7 @@ struct DetectorEvent
     vector<int>* waveform = new vector<int>;
 };
 
-void determineDetectorEventTime(DetectorEvent& detectorEvent)
-{
-    detectorEvent.completeTime =
-            (double)(detectorEvent.extTime)*pow(2,31)
-            + (double)detectorEvent.timetag;
-
-    // add detector fine time, if it can be calculated
-        detectorEvent.fineTime = calculateCFDTime(
-                detectorEvent.waveform,
-                detectorEvent.baseline,
-                experimentalConfig.timeConfig.CFD_FRACTION,
-                experimentalConfig.timeConfig.CFD_DELAY);
-
-        if(detectorEvent.fineTime>=0)
-            {
-                // recovered a good fine time for this event
-                detectorEvent.completeTime += detectorEvent.fineTime;
-                detectorEvent.completeTime -= experimentalConfig.timeConfig.FINE_TIME_OFFSET;
-            }
-
-        // change units to ns from samples
-            detectorEvent.completeTime *= experimentalConfig.timeConfig.SAMPLE_PERIOD;
-
-            // correct for the cable delay of the macropulse timing signal
-            detectorEvent.completeTime += experimentalConfig.timeConfig.SUMMED_DETECTOR_TIME_OFFSET;
-}
-
-int assignEventsToMacropulses(string inputFileName, string detectorTreeName, string outputFileName, string macropulseTreeName)
+int assignEventsToMacropulses(string inputFileName, string inputTreeName, string outputFileName, string macropulseTreeName, unsigned int channelNo, string outputTreeName)
 {
     /**************************************************************************/
     // open input detector tree
@@ -84,10 +57,10 @@ int assignEventsToMacropulses(string inputFileName, string detectorTreeName, str
     }
     cout << inputFileName << " opened successfully. Start reading events..." << endl;
 
-    TTree* inputDetectorTree = (TTree*)inputFile->Get(detectorTreeName.c_str());
-    if(!inputDetectorTree)
+    TTree* inputTree = (TTree*)inputFile->Get(inputTreeName.c_str());
+    if(!inputTree)
     {
-        cerr << "Error: couldn't find detector tree " << detectorTreeName << " in "
+        cerr << "Error: couldn't find detector tree " << inputTreeName << " in "
              << inputFileName << " when attempting to assign events to macropulses. Exiting... " << endl;
         return 1;
     }
@@ -114,169 +87,196 @@ int assignEventsToMacropulses(string inputFileName, string detectorTreeName, str
     /**************************************************************************/
  
     /**************************************************************************/
-    // create a new tree for holding sorted detector events
-    TTree* outputDetectorTree = new TTree(detectorTreeName.c_str(),"");
-    if(!outputDetectorTree)
-    {
-        cerr << "Error: couldn't create detector tree " << detectorTreeName << " when attempting to assign events to macropulses. Exiting... " << endl;
-        return 1;
-    }
-    cout << detectorTreeName << " opened successfully." << endl;
-    /**************************************************************************/
-
-    /**************************************************************************/
     // create struct for holding event data and link it to trees
     DetectorEvent detectorEvent;
     
-    macropulseTree->SetBranchAddress("macroNo",&detectorEvent.macroNo);
-    macropulseTree->SetBranchAddress("macroTime",&detectorEvent.macroTime);
-    macropulseTree->SetBranchAddress("targetPos",&detectorEvent.targetPos);
+    unsigned int chNo;
+    inputTree->SetBranchAddress("chNo",&chNo);
+    inputTree->SetBranchAddress("cycleNumber",&detectorEvent.cycleNumber);
+    inputTree->SetBranchAddress("completeTime",&detectorEvent.completeTime);
+    inputTree->SetBranchAddress("fineTime",&detectorEvent.fineTime);
+    inputTree->SetBranchAddress("sgQ",&detectorEvent.sgQ);
+    inputTree->SetBranchAddress("lgQ",&detectorEvent.lgQ);
+    inputTree->SetBranchAddress("waveform",&detectorEvent.waveform);
 
-    inputDetectorTree->SetBranchAddress("timetag",&detectorEvent.timetag);
-    inputDetectorTree->SetBranchAddress("extTime",&detectorEvent.extTime);
-    inputDetectorTree->SetBranchAddress("fineTime",&detectorEvent.fineTime);
-    inputDetectorTree->SetBranchAddress("sgQ",&detectorEvent.sgQ);
-    inputDetectorTree->SetBranchAddress("lgQ",&detectorEvent.lgQ);
-    inputDetectorTree->SetBranchAddress("baseline",&detectorEvent.baseline);
-    inputDetectorTree->SetBranchAddress("waveform",&detectorEvent.waveform);
-
-    outputDetectorTree->Branch("macroTime",&detectorEvent.macroTime,"macroTime/D");
-    outputDetectorTree->Branch("macroNo",&detectorEvent.macroNo,"macroNo/i");
-    outputDetectorTree->Branch("targetPos",&detectorEvent.targetPos,"targetPos/i");
-
-    outputDetectorTree->Branch("completeTime",&detectorEvent.completeTime,"completeTime/d");
-    outputDetectorTree->Branch("timetag",&detectorEvent.timetag,"timetag/d");
-    outputDetectorTree->Branch("extTime",&detectorEvent.extTime,"extTime/d");
-    outputDetectorTree->Branch("fineTime",&detectorEvent.fineTime,"fineTime/d");
-    outputDetectorTree->Branch("eventNo",&detectorEvent.eventNo,"eventNo/i");
-    outputDetectorTree->Branch("sgQ",&detectorEvent.sgQ,"sgQ/i");
-    outputDetectorTree->Branch("lgQ",&detectorEvent.lgQ,"lgQ/i");
-    outputDetectorTree->Branch("waveform",&detectorEvent.waveform);
     /**************************************************************************/
 
-    long evtNo = 0;
+    vector<DetectorEvent> eventList;
 
-    long detectorTreeEntries = inputDetectorTree->GetEntries();
-    long macropulseEntries = macropulseTree->GetEntries();
+    long unsigned int inputTreeEntries = inputTree->GetEntries();
+    long unsigned int currentTreeEntry = 0;
 
-    long unsigned int i = 0;
-    long unsigned int j = 0;
-
-    inputDetectorTree->GetEntry(j);
-    determineDetectorEventTime(detectorEvent);
-
-    double prevMacroTime = 0;
-
-    while(i<macropulseEntries)
+    while(currentTreeEntry<inputTreeEntries)
     {
-        macropulseTree->GetEntry(i);
-        detectorEvent.eventNo = 0;
+        inputTree->GetEntry(currentTreeEntry);
 
-        if(detectorEvent.macroTime < prevMacroTime)
+        if(chNo==channelNo)
         {
-            // mode change
-            double prevCompleteTime = 0;
-
-            if(detectorEvent.completeTime > detectorEvent.macroTime+experimentalConfig.facilityConfig.MACRO_LENGTH)
-            {
-                while(prevCompleteTime < detectorEvent.completeTime)
-                {
-                    prevCompleteTime = detectorEvent.completeTime;
-                    j++;
-
-                    if(j>=detectorTreeEntries)
-                    {
-                        cout << "Reached end of detector tree. Stopping event assignment to macropulses." << endl;
-                        outputDetectorTree->Write();
-                        outputFile->Close();
-                        inputFile->Close();
-                        return 0;
-                    }
-
-                    inputDetectorTree->GetEntry(j);
-                    determineDetectorEventTime(detectorEvent);
-                }
-            }
-        }
-
-        while(detectorEvent.completeTime < detectorEvent.macroTime)
-        {
-            j++;
-
-            if(j>=detectorTreeEntries)
-            {
-                cout << "Reached end of detector tree. Stopping event assignment to macropulses." << endl;
-                outputDetectorTree->Write();
-                outputFile->Close();
-                inputFile->Close();
-                return 0;
-            }
-
-            inputDetectorTree->GetEntry(j);
-
-            determineDetectorEventTime(detectorEvent);
-        }
-
-        while(detectorEvent.completeTime >= detectorEvent.macroTime
-           && detectorEvent.completeTime < detectorEvent.macroTime + experimentalConfig.facilityConfig.MACRO_LENGTH)
-        {
-            outputDetectorTree->Fill();
+            eventList.push_back(DetectorEvent(detectorEvent));
             detectorEvent.eventNo++;
-
-            j++;
-
-            if(j>=detectorTreeEntries)
-            {
-                cout << "Reached end of detector tree. Stopping event assignment to macropulses." << endl;
-                outputDetectorTree->Write();
-                outputFile->Close();
-                inputFile->Close();
-                return 0;
-            }
-
-            inputDetectorTree->GetEntry(j);
-
-            determineDetectorEventTime(detectorEvent);
         }
 
-        // check for complete time wrap-around
-        if(detectorEvent.completeTime < detectorEvent.macroTime)
+        if(currentTreeEntry%10000==0)
         {
-            double prevMacroTime = 0;
-
-            while(detectorEvent.macroTime > prevMacroTime)
-            {
-                prevMacroTime = detectorEvent.macroTime;
-
-                i++;
-                if(i>=macropulseEntries)
-                {
-                    cout << "Reached end of macropulse tree. Stopping event assignment to macropulses." << endl;
-                    outputDetectorTree->Write();
-                    outputFile->Close();
-                    inputFile->Close();
-                    return 0;
-                }
-
-                macropulseTree->GetEntry(i);
-            }
-
-            continue;
-        }
-
-        i++;
-
-        if(i%100==0)
-        {
-            cout << "processed macropulse " << i << " events.\r";
+            cout << "Processed " << currentTreeEntry << " events from raw data file while idenfying detector events.\r";
             fflush(stdout);
         }
 
-        prevMacroTime = detectorEvent.macroTime;
+        currentTreeEntry++;
     }
 
-    outputDetectorTree->Write();
+    cout << endl << "Finished processing events from raw data file. Total events recovered = "
+        << eventList.size() << endl;
+
+    /**************************************************************************/
+    // create a new tree for holding sorted detector events
+    TTree* outputTree = new TTree(outputTreeName.c_str(),"");
+    if(!outputTree)
+    {
+        cerr << "Error: couldn't create detector tree " << outputTreeName << " when attempting to assign events to macropulses. Exiting... " << endl;
+        return 1;
+    }
+    /**************************************************************************/
+
+    unsigned int macropulseCycleNumber;
+    unsigned int macroNo;
+    double macroTime;
+    unsigned int targetPos;
+
+    macropulseTree->SetBranchAddress("cycleNumber",&macropulseCycleNumber);
+    macropulseTree->SetBranchAddress("macroNo",&macroNo);
+    macropulseTree->SetBranchAddress("macroTime",&macroTime);
+    macropulseTree->SetBranchAddress("targetPos",&targetPos);
+
+    outputTree->Branch("macroTime",&detectorEvent.macroTime,"macroTime/d");
+    outputTree->Branch("macroNo",&detectorEvent.macroNo,"macroNo/i");
+    outputTree->Branch("cycleNumber",&detectorEvent.cycleNumber,"cycleNumber/i");
+    outputTree->Branch("targetPos",&detectorEvent.targetPos,"targetPos/i");
+
+    outputTree->Branch("completeTime",&detectorEvent.completeTime,"completeTime/d");
+    outputTree->Branch("fineTime",&detectorEvent.fineTime,"fineTime/d");
+    outputTree->Branch("eventNo",&detectorEvent.eventNo,"eventNo/i");
+    outputTree->Branch("sgQ",&detectorEvent.sgQ,"sgQ/i");
+    outputTree->Branch("lgQ",&detectorEvent.lgQ,"lgQ/i");
+    outputTree->Branch("waveform",&detectorEvent.waveform);
+
+    unsigned int currentEvent = 0;
+    unsigned int currentMacropulseEntry = 0;
+
+    macropulseTree->GetEntry(currentMacropulseEntry);
+
+    bool endAssignment = false;
+
+    cout << "Assigning " << outputTreeName << " events to macropulses..." << endl;
+    while(currentEvent<eventList.size())
+    {
+        // if the macropulse's cycle number is behind, move to the next macropulse
+        while(macropulseCycleNumber <
+                eventList[currentEvent].cycleNumber)
+        {
+            currentMacropulseEntry++;
+            if(currentMacropulseEntry>=macropulseTree->GetEntries())
+            {
+                cout << "Reached end of macrotime list; end event assignment." << endl;
+                endAssignment = true;
+                break;
+            }
+
+            macropulseTree->GetEntry(currentMacropulseEntry);
+            detectorEvent.eventNo=0;
+        }
+
+        // if event list's cycle number is behind, move to the next event
+        while(macropulseCycleNumber >
+               eventList[currentEvent].cycleNumber)
+        {
+            currentEvent++;
+            if(currentEvent>=eventList.size())
+            {
+                cout << "Reached end of event list; end event assignment." << endl;
+                endAssignment = true;
+                break;
+            }
+        }
+
+        if(endAssignment)
+        {
+            break;
+        }
+
+        // if detector event's time is behind, move to the next detector event
+        while((macroTime >
+                    eventList[currentEvent].completeTime)
+             )
+        {
+            currentEvent++;
+            if(currentEvent>=eventList.size())
+            {
+                cout << "Reached end of event list; end event assignement." << endl;
+                endAssignment = true;
+                break;
+            }
+        }
+
+        // macropulse and event are in the same cycle
+        // if macropulse's time is behind, move to the next macropulse
+        // event
+        while((macroTime + config.facilityConfig.MACRO_LENGTH <
+                 eventList[currentEvent].completeTime)
+             )
+        {
+            currentMacropulseEntry++;
+            if(currentMacropulseEntry>=macropulseTree->GetEntries())
+            {
+                cout << "Reached end of macropulse list; end event assignement." << endl;
+                endAssignment = true;
+                break;
+            }
+
+            macropulseTree->GetEntry(currentMacropulseEntry);
+            detectorEvent.eventNo=0;
+        }
+
+        if(endAssignment)
+        {
+            break;
+        }
+
+        if(!(macropulseCycleNumber == 
+                eventList[currentEvent].cycleNumber
+            )
+          )
+        {
+            // failed to find the correct macro for this event; continue to next detector event
+            continue;
+        }
+
+        detectorEvent.cycleNumber = eventList[currentEvent].cycleNumber;
+        detectorEvent.completeTime = eventList[currentEvent].completeTime;
+        detectorEvent.fineTime = eventList[currentEvent].fineTime;
+        detectorEvent.sgQ = eventList[currentEvent].sgQ;
+        detectorEvent.lgQ = eventList[currentEvent].lgQ;
+        detectorEvent.waveform = eventList[currentEvent].waveform;
+
+        detectorEvent.macroTime = macroTime;
+        detectorEvent.macroNo = macroNo;
+        detectorEvent.targetPos = targetPos;
+        
+        outputTree->Fill();
+        detectorEvent.eventNo++;
+
+        if(currentEvent%10000==0)
+        {
+            cout << "Assigned " << currentEvent << " events to macropulses...\r";
+            fflush(stdout);
+        }
+
+        currentEvent++;
+    }
+
+    outputTree->Write();
     outputFile->Close();
     inputFile->Close();
+
     return 0;
 }

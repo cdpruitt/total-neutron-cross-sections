@@ -1,4 +1,5 @@
 #include "../include/experiment.h"
+#include "../include/config.h"
 
 #include <string>
 #include <vector>
@@ -95,32 +96,10 @@ vector<string> getChannelMap(string expName, unsigned int runNumber)
     return channelMap;
 }
 
-// extract configuration data from an experiment directory
-vector<string> readExperimentConfig(string expName, string fileName)
-{
-    string filePath = "../" + expName + "/" + fileName + ".txt";
-    ifstream dataFile(filePath.c_str());
-    if(!dataFile.is_open())
-    {
-        std::cout << "Failed to find target names in " << filePath << std::endl;
-        exit(1);
-    }
-
-    string str;
-    vector<string> configContents;
-
-    while(getline(dataFile,str))
-    {
-        configContents.push_back(str);
-    }
-
-    return configContents;
-}
-
 // Determine the target order for a given run
 vector<string> getTargetOrder(string expName, int runNumber)
 {
-    string targetOrderLocation = "../" + expName + "/targetOrder.txt";
+    string targetOrderLocation = "../" + expName + "/TargetOrder.txt";
     ifstream dataFile(targetOrderLocation.c_str());
     if(!dataFile.is_open())
     {
@@ -169,4 +148,424 @@ vector<string> getTargetOrder(string expName, int runNumber)
     }
 
     return targetOrder;
+}
+
+
+
+// extract configuration data from an experiment directory
+vector<string> readExperimentConfig(string expName, string fileName)
+{
+    string filePath = "../" + expName + "/" + fileName + ".txt";
+    ifstream dataFile(filePath.c_str());
+    if(!dataFile.is_open())
+    {
+        std::cout << "Failed to find target names in " << filePath << std::endl;
+        exit(1);
+    }
+
+    string str;
+    vector<string> configContents;
+
+    while(getline(dataFile,str))
+    {
+        configContents.push_back(str);
+    }
+
+    return configContents;
+}
+
+// Read facility  parameters
+FacilityConfig readFacilityConfig(string expName, int runNumber)
+{
+    string facilityConfigLocation = "../" + expName + "/FacilityConfig.txt";
+    ifstream dataFile(facilityConfigLocation.c_str());
+    if(!dataFile.is_open())
+    {
+        std::cout << "Failed to find facility configuration in " << facilityConfigLocation << std::endl;
+        exit(1);
+    }
+
+    string str;
+    unsigned int run;
+    vector<string> facilityConfig;
+
+    while(getline(dataFile,str))
+    {
+        // ignore comments in data file
+        string delimiter = "-";
+        stringstream tokenStream(str.substr(0,str.find(delimiter)));
+
+        if(!(tokenStream>>run))
+        {
+            // This line starts with a non-integer and is thus a comment; ignore
+            continue;
+        }
+
+        // parse data lines into space-delimited tokens
+        vector<string> tokens;
+        istringstream iss(str);
+        copy(istream_iterator<string>(iss),
+                istream_iterator<string>(),
+                back_inserter(tokens));
+
+        // extract run numbers from first token
+        string lowRun = tokens[0].substr(0,tokens[0].find(delimiter));
+        tokens[0] = tokens[0].erase(0,tokens[0].find(delimiter) + delimiter.length());
+
+        delimiter = "\n";
+        string highRun = tokens[0].substr(0,tokens[0].find(delimiter));
+        
+        if(atoi(lowRun.c_str()) <= runNumber && runNumber <= atoi(highRun.c_str()))
+        {
+            for(int i=1; (size_t)i<tokens.size(); i++)
+            {
+                facilityConfig.push_back(tokens[i]);
+            }
+
+            break;
+        }
+    }
+
+    return FacilityConfig(facilityConfig);
+}
+
+// Read software CFD parameters
+SoftwareCFDConfig readSoftwareCFDConfig(string expName, int runNumber)
+{
+    string softwareCFDConfigLocation = "../" + expName + "/softwareCFDConfig.txt";
+    ifstream dataFile(softwareCFDConfigLocation.c_str());
+    if(!dataFile.is_open())
+    {
+        std::cout << "Failed to find software CFD configuration in " << softwareCFDConfigLocation << std::endl;
+        exit(1);
+    }
+
+    string str;
+    unsigned int run;
+    vector<string> softwareCFDConfig;
+
+    while(getline(dataFile,str))
+    {
+        // ignore comments in data file
+        string delimiter = "-";
+        stringstream tokenStream(str.substr(0,str.find(delimiter)));
+
+        if(!(tokenStream>>run))
+        {
+            // This line starts with a non-integer and is thus a comment; ignore
+            continue;
+        }
+
+        // parse data lines into space-delimited tokens
+        vector<string> tokens;
+        istringstream iss(str);
+        copy(istream_iterator<string>(iss),
+                istream_iterator<string>(),
+                back_inserter(tokens));
+
+        // extract run numbers from first token
+        string lowRun = tokens[0].substr(0,tokens[0].find(delimiter));
+        tokens[0] = tokens[0].erase(0,tokens[0].find(delimiter) + delimiter.length());
+
+        delimiter = "\n";
+        string highRun = tokens[0].substr(0,tokens[0].find(delimiter));
+        
+        if(atoi(lowRun.c_str()) <= runNumber && runNumber <= atoi(highRun.c_str()))
+        {
+            for(int i=1; (size_t)i<tokens.size(); i++)
+            {
+                softwareCFDConfig.push_back(tokens[i]);
+            }
+
+            break;
+        }
+    }
+
+    return SoftwareCFDConfig(softwareCFDConfig);
+}
+
+
+// Read time offset parameters
+TimeOffsetsConfig readTimeOffsetsConfig(string expName, int runNumber)
+{
+    string timeOffsetsConfigLocation = "../" + expName + "/TimeOffsetsConfig.txt";
+    ifstream dataFile(timeOffsetsConfigLocation.c_str());
+    if(!dataFile.is_open())
+    {
+        std::cout << "Failed to find timeOffsets configuration in " << timeOffsetsConfigLocation << std::endl;
+        exit(1);
+    }
+
+    string str;
+    unsigned int run;
+    vector<string> timeOffsetsConfig;
+
+    while(getline(dataFile,str))
+    {
+        // ignore comments in data file
+        string delimiter = "-";
+        stringstream tokenStream(str.substr(0,str.find(delimiter)));
+
+        if(!(tokenStream>>run))
+        {
+            // This line starts with a non-integer and is thus a comment; ignore
+            continue;
+        }
+
+        // parse data lines into space-delimited tokens
+        vector<string> tokens;
+        istringstream iss(str);
+        copy(istream_iterator<string>(iss),
+                istream_iterator<string>(),
+                back_inserter(tokens));
+
+        // extract run numbers from first token
+        string lowRun = tokens[0].substr(0,tokens[0].find(delimiter));
+        tokens[0] = tokens[0].erase(0,tokens[0].find(delimiter) + delimiter.length());
+
+        delimiter = "\n";
+        string highRun = tokens[0].substr(0,tokens[0].find(delimiter));
+        
+        if(atoi(lowRun.c_str()) <= runNumber && runNumber <= atoi(highRun.c_str()))
+        {
+            for(int i=1; (size_t)i<tokens.size(); i++)
+            {
+                timeOffsetsConfig.push_back(tokens[i]);
+            }
+
+            break;
+        }
+    }
+
+    return TimeOffsetsConfig(timeOffsetsConfig);
+}
+
+// Read time offset parameters
+/*DigitizerConfig readDigitizerConfig(string expName, int runNumber)
+{
+    string digitizerConfigLocation = "../" + expName + "/digitizerConfig.txt";
+    ifstream dataFile(digitizerConfigLocation.c_str());
+    if(!dataFile.is_open())
+    {
+        std::cout << "Failed to find digitizer configuration in " << digitizerConfigLocation << std::endl;
+        exit(1);
+    }
+
+    string str;
+    unsigned int run;
+    vector<string> digitizerConfig;
+
+    while(getline(dataFile,str))
+    {
+        // ignore comments in data file
+        string delimiter = "-";
+        stringstream tokenStream(str.substr(0,str.find(delimiter)));
+
+        if(!(tokenStream>>run))
+        {
+            // This line starts with a non-integer and is thus a comment; ignore
+            continue;
+        }
+
+        // parse data lines into space-delimited tokens
+        vector<string> tokens;
+        istringstream iss(str);
+        copy(istream_iterator<string>(iss),
+                istream_iterator<string>(),
+                back_inserter(tokens));
+
+        // extract run numbers from first token
+        string lowRun = tokens[0].substr(0,tokens[0].find(delimiter));
+        tokens[0] = tokens[0].erase(0,tokens[0].find(delimiter) + delimiter.length());
+
+        delimiter = "\n";
+        string highRun = tokens[0].substr(0,tokens[0].find(delimiter));
+        
+        if(atoi(lowRun.c_str()) <= runNumber && runNumber <= atoi(highRun.c_str()))
+        {
+            for(int i=1; (size_t)i<tokens.size(); i++)
+            {
+                digitizerConfig.push_back(tokens[i]);
+            }
+
+            break;
+        }
+    }
+
+    return DigitizerConfig(digitizerConfig);
+}*/
+
+
+// Read CS parameters 
+CSConfig readCSConfig(string expName, int runNumber)
+{
+    string csConfigLocation = "../" + expName + "/CSConfig.txt";
+    ifstream dataFile(csConfigLocation.c_str());
+    if(!dataFile.is_open())
+    {
+        std::cout << "Failed to find CS configuration in " << csConfigLocation << std::endl;
+        exit(1);
+    }
+
+    string str;
+    unsigned int run;
+    vector<string> csConfig;
+
+    while(getline(dataFile,str))
+    {
+        // ignore comments in data file
+        string delimiter = "-";
+        stringstream tokenStream(str.substr(0,str.find(delimiter)));
+
+        if(!(tokenStream>>run))
+        {
+            // This line starts with a non-integer and is thus a comment; ignore
+            continue;
+        }
+
+        // parse data lines into space-delimited tokens
+        vector<string> tokens;
+        istringstream iss(str);
+        copy(istream_iterator<string>(iss),
+                istream_iterator<string>(),
+                back_inserter(tokens));
+
+        // extract run numbers from first token
+        string lowRun = tokens[0].substr(0,tokens[0].find(delimiter));
+        tokens[0] = tokens[0].erase(0,tokens[0].find(delimiter) + delimiter.length());
+
+        delimiter = "\n";
+        string highRun = tokens[0].substr(0,tokens[0].find(delimiter));
+        
+        if(atoi(lowRun.c_str()) <= runNumber && runNumber <= atoi(highRun.c_str()))
+        {
+            for(int i=1; (size_t)i<tokens.size(); i++)
+            {
+                csConfig.push_back(tokens[i]);
+            }
+
+            break;
+        }
+    }
+
+    return CSConfig(csConfig);
+}
+
+// Read plot parameters 
+PlotConfig readPlotConfig(string expName, int runNumber)
+{
+    string plotConfigLocation = "../" + expName + "/PlotConfig.txt";
+    ifstream dataFile(plotConfigLocation.c_str());
+    if(!dataFile.is_open())
+    {
+        std::cerr << "Failed to find plot configuration in " << plotConfigLocation << std::endl;
+        exit(1);
+    }
+
+    string str;
+    unsigned int run;
+    vector<string> plotConfig;
+
+    while(getline(dataFile,str))
+    {
+        // ignore comments in data file
+        string delimiter = "-";
+        stringstream tokenStream(str.substr(0,str.find(delimiter)));
+
+        if(!(tokenStream>>run))
+        {
+            // This line starts with a non-integer and is thus a comment; ignore
+            continue;
+        }
+
+        // parse data lines into space-delimited tokens
+        vector<string> tokens;
+        istringstream iss(str);
+        copy(istream_iterator<string>(iss),
+                istream_iterator<string>(),
+                back_inserter(tokens));
+
+        // extract run numbers from first token
+        string lowRun = tokens[0].substr(0,tokens[0].find(delimiter));
+        tokens[0] = tokens[0].erase(0,tokens[0].find(delimiter) + delimiter.length());
+
+        delimiter = "\n";
+        string highRun = tokens[0].substr(0,tokens[0].find(delimiter));
+        
+        if(atoi(lowRun.c_str()) <= runNumber && runNumber <= atoi(highRun.c_str()))
+        {
+            for(int i=1; (size_t)i<tokens.size(); i++)
+            {
+                plotConfig.push_back(tokens[i]);
+            }
+
+            break;
+        }
+    }
+
+    return PlotConfig(plotConfig);
+}
+
+// Read target configuration parameters 
+TargetConfig readTargetConfig(string expName, int runNumber)
+{
+    string targetConfigLocation = "../" + expName + "/TargetConfig.txt";
+    ifstream dataFile(targetConfigLocation.c_str());
+    if(!dataFile.is_open())
+    {
+        std::cout << "Failed to find target configuration in " << targetConfigLocation << std::endl;
+        exit(1);
+    }
+
+    string str;
+    unsigned int run;
+    vector<pair<int,int>> targetConfig;
+
+    while(getline(dataFile,str))
+    {
+        // ignore comments in data file
+        string delimiter = "-";
+        stringstream tokenStream(str.substr(0,str.find(delimiter)));
+
+        if(!(tokenStream>>run))
+        {
+            // This line starts with a non-integer and is thus a comment; ignore
+            continue;
+        }
+
+        // parse data lines into space-delimited tokens
+        vector<string> tokens;
+        istringstream iss(str);
+        copy(istream_iterator<string>(iss),
+                istream_iterator<string>(),
+                back_inserter(tokens));
+
+        // extract run numbers from first token
+        string lowRun = tokens[0].substr(0,tokens[0].find(delimiter));
+        tokens[0] = tokens[0].erase(0,tokens[0].find(delimiter) + delimiter.length());
+
+        delimiter = "\n";
+        string highRun = tokens[0].substr(0,tokens[0].find(delimiter));
+        
+        if(atoi(lowRun.c_str()) <= runNumber && runNumber <= atoi(highRun.c_str()))
+        {
+            for(int i=1; (size_t)i<tokens.size(); i++)
+            {
+                delimiter = "-";
+                string lowGate = tokens[i].substr(0,tokens[i].find(delimiter));
+                tokens[i] = tokens[i].erase(0,tokens[i].find(delimiter) + delimiter.length());
+
+                delimiter = "\n";
+                string highGate = tokens[i].substr(0,tokens[i].find(delimiter));
+
+                targetConfig.push_back(pair<int,int>(atoi(lowGate.c_str()),atoi(highGate.c_str())));
+            }
+
+            break;
+        }
+    }
+
+    vector<string> targetPositions = getTargetOrder(expName, runNumber);
+
+    return TargetConfig(targetPositions, targetConfig);
 }

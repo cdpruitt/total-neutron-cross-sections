@@ -5,20 +5,6 @@
 #include "TTree.h"
 #include "../include/dataStructures.h"
 
-// Used to connect a channel-specific tree to DPP event variables so we can
-// start populating it with DPP events
-void branchRaw(TTree*& tree, RawEvent& rawEvent)
-{
-    tree->Branch("fineTime",&rawEvent.fineTime,"fineTime/d");
-    tree->Branch("evtType",&rawEvent.evtType,"evtType/i");
-    tree->Branch("chNo",&rawEvent.chNo,"chNo/i");
-    tree->Branch("extTime",&rawEvent.extTime,"extTime/i");
-    tree->Branch("timetag",&rawEvent.timetag,"timetag/i");
-    tree->Branch("sgQ",&rawEvent.sgQ,"sgQ/i");
-    tree->Branch("lgQ",&rawEvent.lgQ,"lgQ/i");
-    tree->Branch("baseline",&rawEvent.baseline,"baseline/i");
-    tree->Branch("waveform",&rawEvent.waveform);
-}
 
 // Used to connect a channel-specific tree to DPP event variables so we can
 // start populating it with DPP events

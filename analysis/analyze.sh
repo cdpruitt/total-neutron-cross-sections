@@ -80,6 +80,16 @@ fi
 
 # SECTION 2: process flags
 
+fullFilePath=false;
+runSubrunPath=false;
+runChunk=false;
+runList=false;
+timeCheckMode=false;
+produceText=false;
+overwriteHistos=false;
+useVetoPaddle=false;
+overwriteWaveform=false;
+
 while getopts "fscrnithw" opt; do
     case ${opt} in
         f)
@@ -93,9 +103,6 @@ while getopts "fscrnithw" opt; do
             ;;
         r)
             runList=true
-            ;;
-        n)
-            normalMode=true
             ;;
         i)
             timeCheckMode=true
@@ -181,7 +188,7 @@ analyze ()
     fi
 
     # Send error messages to a text file
-    2>&1 | tee > "$outputDirectoryName"error.txt
+    #2>&1 | tee > "$outputDirectoryName"error.txt
 
     useVetoPaddle=$5
     processWaveformEvents=$6
@@ -203,7 +210,7 @@ then
     inputFileName=$2
     outputDirectoryName=$3
     runNumber=$5
-    analyze "$inputFileName" "$outputDirectoryName" "$runNumber"
+    analyze "$inputFileName" "$outputDirectoryName" "$runNumber" "$useVetoPaddle" "false" "false"
     printf "\n here"
     exit
 fi
@@ -233,19 +240,18 @@ then
     fi
 
     # Create directory to hold the output of our analysis
-    if [ ! -d "$outpath/analysis/$runNumber" ]
+    if [ ! -d "$outpath/$runNumber" ]
     then
-        mkdir "$outpath/analysis/$runNumber"
+        mkdir "$outpath/$runNumber"
     fi
 
-    inputFileName="$datapath/output/$runNumber/data-$subrunNo.evt"
-    outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
+    inputFileName="$datapath/$runNumber/data-$subrunNo.evt"
+    outputDirectoryName="$outpath/$runNumber/$subrunNo/"
 
     printf "\nSorting single sub-run $inputFileName\n"
 
     # Start analysis
-    analyze "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber" "$useVetoPaddle"
-    "false" "false"
+    analyze "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber" "$useVetoPaddle" "false" "false"
 
     # Make cross sections from this single subrun
     #./sumSingle "$outpath"/analysis "$experiment" "histos" "$runNumber" "$subrunNo"
@@ -288,14 +294,13 @@ then
             mkdir "$outpath/analysis/$runNumber"
         fi
 
-        inputFileName="$datapath/output/$runNumber/data-$subrunNo.evt"
-        outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
+        inputFileName="$datapath/$runNumber/data-$subrunNo.evt"
+        outputDirectoryName="$outpath/$runNumber/$subrunNo/"
 
         printf "\nSorting sub-run $inputFileName\n"
 
         # Start analysis
-        analyze "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber" "$useVetoPaddle"
-        "false" "false"
+        analyze "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber" "$useVetoPaddle" "false" "false"
         subrunNo=$(printf "%04d" $((10#$subrunNo+1)))
     done
     exit
@@ -329,9 +334,9 @@ then
         fi
 
         # Create directory to hold the output of our analysis
-        if [ ! -d "$outpath/analysis/$runNumber" ]
+        if [ ! -d "$outpath/$runNumber" ]
         then
-            mkdir "$outpath/analysis/$runNumber"
+            mkdir "$outpath/$runNumber"
         fi
 
         printf "\n************************************"
@@ -339,10 +344,10 @@ then
         printf "\n************************************\n"
 
         # Sort all sub-runs in the specified run directory
-        for f in "$datapath"/output/"$runNumber"/data-*;
+        for f in "$datapath"/"$runNumber"/data-*;
         do
             subrunNo=$(echo $f | egrep -o '[0-9]+' | tail -1)
-            inputFileName="$datapath/output/$runNumber/data-$subrunNo.evt"
+            inputFileName="$datapath/$runNumber/data-$subrunNo.evt"
 
             # Skip subruns on the blacklist
             skip=false
@@ -360,7 +365,7 @@ then
                 continue
             fi
 
-            outputDirectoryName="$outpath/analysis/$runNumber/$subrunNo/"
+            outputDirectoryName="$outpath/$runNumber/$subrunNo/"
             printf "\n\n***Starting sort of sub-run $subrunNo***\n"
             analyze "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber" "$useVetoPaddle" "false" "false"
 

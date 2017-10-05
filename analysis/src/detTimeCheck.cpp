@@ -12,7 +12,7 @@
 #include "../include/dataStructures.h"
 #include "../include/raw.h"
 #include "../include/experiment.h"
-#include "../include/experimentalConfig.h"
+#include "../include/config.h"
 #include "../include/softwareCFD.h"
 
 using namespace std;
@@ -22,7 +22,7 @@ const unsigned int TIME_CHECK_Q_HIGH_THRESHOLD = 4500; // in ns
 const unsigned int TIME_CHECK_Q_LOW_THRESHOLD = 1500; // in ns
 const unsigned int NUMBER_OF_EVENTS = 1000000;  // number of events to examine for time correlation
 
-ExperimentalConfig experimentalConfig;
+Config config;
 
 int main(int argc, char** argv)
 {
@@ -81,13 +81,13 @@ int main(int argc, char** argv)
         {
             if(rawEvent.chNo==6)
             {
-                ch6Timetag = rawEvent.timetag*experimentalConfig.timeConfig.SAMPLE_PERIOD;
+                ch6Timetag = rawEvent.timetag*config.digitizerConfig.SAMPLE_PERIOD;
                 ch6FineTime = calculateCFDTime(
                         rawEvent.waveform,
                         rawEvent.baseline,
-                        experimentalConfig.timeConfig.CFD_FRACTION,
-                        experimentalConfig.timeConfig.CFD_DELAY)
-                    *experimentalConfig.timeConfig.SAMPLE_PERIOD;
+                        config.softwareCFDConfig.CFD_FRACTION,
+                        config.softwareCFDConfig.CFD_DELAY)
+                    *config.digitizerConfig.SAMPLE_PERIOD;
 
                 ch6FineTimeH->Fill(ch6FineTime);
 
@@ -113,13 +113,13 @@ int main(int argc, char** argv)
 
             else if(rawEvent.chNo==7)
             {
-                ch7Timetag = rawEvent.timetag*experimentalConfig.timeConfig.SAMPLE_PERIOD;
+                ch7Timetag = rawEvent.timetag*config.digitizerConfig.SAMPLE_PERIOD;
                 ch7FineTime = calculateCFDTime(
                         rawEvent.waveform,
                         rawEvent.baseline,
-                        experimentalConfig.timeConfig.CFD_FRACTION,
-                        experimentalConfig.timeConfig.CFD_DELAY)
-                    *experimentalConfig.timeConfig.SAMPLE_PERIOD;
+                        config.softwareCFDConfig.CFD_FRACTION,
+                        config.softwareCFDConfig.CFD_DELAY)
+                    *config.digitizerConfig.SAMPLE_PERIOD;
 
                 ch7FineTimeH->Fill(ch7FineTime);
 

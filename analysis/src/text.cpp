@@ -8,8 +8,10 @@
 #include "../include/raw.h"
 #include "../include/physicalConstants.h"
 #include "../include/dataStructures.h"
+#include "../include/config.h"
 
 extern RawEvent rawEvent;
+Config config;
 
 // keep track of event statistics
 long numberOfEvents = 0;

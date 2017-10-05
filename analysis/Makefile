@@ -15,22 +15,22 @@ LINKOPTION = $(shell root-config --libs)
 ############################### DEFINE TARGETS #################################
 
 # List all targets
-TARGETS = driver sumSingle sumAll text readLitData subtractCS multiplyCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck
+TARGETS = driver sumSingle sumAll readLitData subtractCS multiplyCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck
 all: $(addprefix $(BIN), $(TARGETS))
 
 # Build driver (main data analysis engine)
-DRIVER_SOURCES = branches.cpp dataPoint.cpp dataSet.cpp driver.cpp experiment.cpp fillBasicHistos.cpp fillAdvancedHistos.cpp plots.cpp raw.cpp identifyMacropulses.cpp assignEventsToMacropulses.cpp target.cpp veto.cpp softwareCFD.cpp #waveform.cpp
+DRIVER_SOURCES = branches.cpp dataPoint.cpp dataSet.cpp driver.cpp config.cpp experiment.cpp fillBasicHistos.cpp fillAdvancedHistos.cpp plots.cpp raw.cpp identifyMacropulses.cpp assignEventsToMacropulses.cpp target.cpp veto.cpp softwareCFD.cpp #waveform.cpp
 
 $(BIN)driver: $(addprefix $(SOURCE), $(DRIVER_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)driver $(addprefix $(SOURCE), $(DRIVER_SOURCES)) $(LINKOPTION)
 
 # Build sumSingle (for generating cross sections using data from a single run) 
-SUMSINGLE_SOURCES = sumSingle.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp
+SUMSINGLE_SOURCES = sumSingle.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp config.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp
 $(BIN)sumSingle: $(addprefix $(SOURCE), $(SUMSINGLE_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)sumSingle $(addprefix $(SOURCE), $(SUMSINGLE_SOURCES)) $(LINKOPTION)
 
 # Build sumAll (for generating cross sections using data from all available runs)
-SUMALL_SOURCES = sumAll.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp
+SUMALL_SOURCES = sumAll.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp config.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp
 $(BIN)sumAll: $(addprefix $(SOURCE), $(SUMALL_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)sumAll $(addprefix $(SOURCE), $(SUMALL_SOURCES)) $(LINKOPTION)
 
@@ -45,7 +45,7 @@ $(BIN)text: $(addprefix $(SOURCE), $(TEXT_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)text $(addprefix $(SOURCE), $(TEXT_SOURCES)) $(LINKOPTION)
 
 # Build detTimeCheck (for comparing the timestamps of the same event, but recorded by different digitizer channels)
-DETTIMECHECK_SOURCES = detTimeCheck.cpp raw.cpp branches.cpp experiment.cpp softwareCFD.cpp
+DETTIMECHECK_SOURCES = detTimeCheck.cpp raw.cpp branches.cpp config.cpp experiment.cpp softwareCFD.cpp
 $(BIN)detTimeCheck: $(addprefix $(SOURCE), $(DETTIMECHECK_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)detTimeCheck $(addprefix $(SOURCE), $(DETTIMECHECK_SOURCES)) $(LINKOPTION)
 
