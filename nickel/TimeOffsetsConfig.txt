@@ -2,12 +2,12 @@ This file lists run-dependent time offsets for each channel, relative to the
 macropulse start time. The offsets account for cable/electronics delay for each
 channel.
 
-********************************************************************************
-Run range   Target changer    Monitor time   Main detector      Veto detector     
-            time offset (ns)  offset (ns)    time offset (ns)   time offset (ns)  
-********************************************************************************
-0-0         68                776.50         776.50             784.50
-1-8         68                776.50         776.50             784.50
-9-43        68                773.50         773.10             780.50
-44-44       68                776.50         776.50             784.50
-45-47       68                776.50         776.50             784.50
+**********************************************************************************************************
+Run range   Target changer    Monitor time   Main detector      Veto detector      Gamma window
+            time offset (ns)  offset (ns)    time offset (ns)   time offset (ns)   size (ns)
+**********************************************************************************************************
+0-0         68                776.50         776.50             784.50             5
+1-8         68                776.50         776.50             784.50             5
+9-43        68                773.50         773.10             780.50             5
+44-44       68                776.50         776.50             784.50             5
+45-47       68                776.50         776.50             784.50             5

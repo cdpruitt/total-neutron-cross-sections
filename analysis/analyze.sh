@@ -382,10 +382,5 @@ then
 
     done < ../"$experiment"/runsToSort.txt
 
-    # Sum data from all subruns to make cross sections
-    # for histos
-    ./sumAll "$outpath"/analysis "$experiment" "histos" "histos"
-    # for waveforms
-    #./sumAll "$outpath"/analysis "$experiment" "DPPwaveform" "histos"
     exit
 fi

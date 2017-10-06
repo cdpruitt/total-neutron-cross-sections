@@ -86,19 +86,6 @@ void setBranchesProcessedW(TTree* tree, ProcessedEvent& procEvent)
     tree->SetBranchAddress("waveform",&procEvent.waveform);
 }
 
-void setBranchesHistos(TTree* tree, ProcessedEvent& procEvent)
-{
-   tree->SetBranchAddress("macroNo",&procEvent.macroNo);
-   tree->SetBranchAddress("macroTime",&procEvent.macroTime);
-   tree->SetBranchAddress("fineTime",&procEvent.fineTime);
-   tree->SetBranchAddress("eventNo",&procEvent.eventNo);
-   tree->SetBranchAddress("completeTime",&procEvent.completeTime);
-   tree->SetBranchAddress("targetPos",&procEvent.targetPos);
-   tree->SetBranchAddress("sgQ",&procEvent.sgQ);
-   tree->SetBranchAddress("lgQ",&procEvent.lgQ);
-   tree->SetBranchAddress("waveform",&procEvent.waveform);
-}
-
 void setBranchesHistosW(TTree* tree, ProcessedEvent& procEvent)
 {
     tree->SetBranchAddress("macroNo",&procEvent.macroNo);

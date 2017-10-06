@@ -25,5 +25,6 @@ class Plots
 };
 
 TH1D* timeBinsToRKEBins(TH1D *inputHisto, std::string name);
+TH1D* convertTOFtoEnergy(TH1D* tof, std::string name);
 
 #endif

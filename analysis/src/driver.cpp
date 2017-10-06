@@ -2,8 +2,8 @@
 #include "../include/raw.h"
 #include "../include/identifyMacropulses.h"
 #include "../include/assignEventsToMacropulses.h"
-#include "../include/fillBasicHistos.h"
-#include "../include/fillAdvancedHistos.h"
+#include "../include/fillDiagnosticHistos.h"
+#include "../include/fillCSHistos.h"
 #include "../include/plots.h"
 #include "../include/waveform.h"
 #include "../include/veto.h"
@@ -191,8 +191,7 @@ int main(int, char* argv[])
     }*/
 
     /*************************************************************************/
-    /* Populate each event into TOF histograms in preparation for cross section
-     * calculation */
+    /* Populate events into histograms */
     /*************************************************************************/
     string histoFileName = analysisDirectory + "histos.root";
 
@@ -201,9 +200,6 @@ int main(int, char* argv[])
     ifstream h(histoFileName);
     if(!h.good())
     {
-        //Uncomment to use vetoed trees
-        //histos(sortedFileName, vetoedFileName, histoFileName, channelMap);
-        //Uncomment to use unvetoed trees
         for(string channelName : channelMap)
         {
             if(channelName=="-")
@@ -211,42 +207,44 @@ int main(int, char* argv[])
                 continue;
             }
 
-            fillBasicHistos(sortedFileName, channelName, histoFileName);
+            fillDiagnosticHistos(sortedFileName, channelName, histoFileName);
         }
-
 
         for(string channelName : config.csConfig.DETECTOR_NAMES)
         {
-            fillAdvancedHistos(sortedFileName, channelName, histoFileName);
+            fillCSHistos(sortedFileName, channelName, histoFileName);
         }
 
-        /*************************************************************************/
-        /* Process events into histograms in preparation for cross section
-         * calculation */
-        /*************************************************************************/
-
-        TFile* histoFile = new TFile(histoFileName.c_str(),"UPDATE");
-
-        for(string name : config.csConfig.DETECTOR_NAMES)
-        {
-            histoFile->cd(name.c_str());
-
-            for(string targetName : config.targetConfig.TARGET_ORDER)
-            {
-                string histoName = targetName + "TOFCorrected";
-                TH1D* tof = (TH1D*)gDirectory->Get(histoName.c_str());
-                TH1D* correctedEnergy = convertTOFtoEnergy(tof, targetName + "CorrectedEnergy");
-                correctedEnergy->Write();
-            }
-        }
-
-        histoFile->Close();
+                TFile* histoFile = new TFile(histoFileName.c_str(),"UPDATE");
     }
 
     else
     {
         cout << "Histogram file already exists; skipping histogram creation." << endl;
         h.close();
+    }
+
+    /*************************************************************************/
+    /* Convert TOF histograms into energy in preparation for cross section
+     * calculation */
+    /*************************************************************************/
+    string energyFileName = analysisDirectory + "energy.root";
+
+    cout << endl << "Mapping TOF histograms to energy domain..." << endl;
+
+    ifstream e(energyFileName);
+    if(!e.good())
+    {
+        for(string name : config.csConfig.DETECTOR_NAMES)
+        {
+            mapTOFHistosToEnergy(histoFileName, name);
+        }
+    }
+
+    else
+    {
+        cout << "Energy file already exists; skipping histogram-to-energy mapping." << endl;
+        e.close();
     }
 
     return 0;

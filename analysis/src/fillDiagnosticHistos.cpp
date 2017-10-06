@@ -9,24 +9,23 @@
 #include "TDirectoryFile.h"
 #include "TROOT.h"
 #include "TMath.h"
-#include "TRandom3.h"
 
 #include "../include/physicalConstants.h"
 #include "../include/dataStructures.h"
 #include "../include/branches.h"
 #include "../include/plots.h"
-#include "../include/fillBasicHistos.h"
+#include "../include/fillDiagnosticHistos.h"
 #include "../include/waveform.h"
 #include "../include/config.h"
 
 using namespace std;
 
-extern ProcessedEvent procEvent;
+extern DetectorEvent event;
 extern Config config;
 
-int fillBasicHistos(string inputFileName, string treeName, string outputFileName)
+int fillDiagnosticHistos(string inputFileName, string treeName, string outputFileName)
 {
-    cout << "Filling basic histograms for tree \"" << treeName << "\"..." << endl;
+    cout << "Filling diagnostic histograms for tree \"" << treeName << "\"..." << endl;
 
     TFile* inputFile = new TFile(inputFileName.c_str(),"READ");
     if(!inputFile->IsOpen())
@@ -38,7 +37,7 @@ int fillBasicHistos(string inputFileName, string treeName, string outputFileName
     TTree* tree = (TTree*)inputFile->Get(treeName.c_str());
     if(!tree)
     {
-        cerr << "Error: tried to populate basic histos, but failed to find " << treeName << " in " << inputFileName << endl;
+        cerr << "Error: failed to find " << treeName << " in " << inputFileName << endl;
         return 1;
     }
 
@@ -84,9 +83,6 @@ int fillBasicHistos(string inputFileName, string treeName, string outputFileName
     TH1I* lgQH = new TH1I("lgQH","lgQ",7000,0,70000);
     lgQH->GetXaxis()->SetTitle("long gate integrated charge for each event");
 
-    TH1I* macroNoDiffH = new TH1I("macroNoDiffH","macroNoDiff",100,0,100);
-    macroNoDiffH->GetXaxis()->SetTitle("difference between macropulse numbers of consecutive events");
-
     TH1I* completeTimeH = new TH1I("completeTimeH","completeTime",pow(2,20),0,pow(2,32));
     completeTimeH->GetXaxis()->SetTitle("complete time of event");
 
@@ -103,7 +99,7 @@ int fillBasicHistos(string inputFileName, string treeName, string outputFileName
 
     for(unsigned int i=0; i<config.targetConfig.TARGET_ORDER.size(); i++)
     {
-        string TOFName = config.targetConfig.TARGET_ORDER[i] + "TOFBasic";
+        string TOFName = config.targetConfig.TARGET_ORDER[i] + "TOF";
         TOFHistos.push_back(new TH1D(TOFName.c_str(),TOFName.c_str(),config.plotConfig.TOF_BINS,config.plotConfig.TOF_LOWER_BOUND,config.plotConfig.TOF_UPPER_BOUND));
     }
 
@@ -112,8 +108,18 @@ int fillBasicHistos(string inputFileName, string treeName, string outputFileName
     TDirectory* waveformsDir = (TDirectory*)gDirectory->Get("waveformsDir");
     waveformsDir->cd();
 
-    ProcessedEvent procEvent;
-    setBranchesHistos(tree, procEvent);
+    DetectorEvent event;
+
+    tree->SetBranchAddress("cycleNumber",&event.cycleNumber);
+    tree->SetBranchAddress("macroNo",&event.macroNo);
+    tree->SetBranchAddress("macroTime",&event.macroTime);
+    tree->SetBranchAddress("fineTime",&event.fineTime);
+    tree->SetBranchAddress("eventNo",&event.eventNo);
+    tree->SetBranchAddress("completeTime",&event.completeTime);
+    tree->SetBranchAddress("targetPos",&event.targetPos);
+    tree->SetBranchAddress("sgQ",&event.sgQ);
+    tree->SetBranchAddress("lgQ",&event.lgQ);
+    tree->SetBranchAddress("waveform",&event.waveform);
 
     long totalEntries = tree->GetEntries();
 
@@ -128,79 +134,77 @@ int fillBasicHistos(string inputFileName, string treeName, string outputFileName
     {
         tree->GetEntry(j);
 
-        timeDiff = procEvent.completeTime-procEvent.macroTime;
+        timeDiff = event.completeTime-event.macroTime;
         microTime = fmod(timeDiff,config.facilityConfig.MICRO_LENGTH);
 
         if(j%50000==0)
         {
-            cout << "Processed " << j << " events through basic histos...\r";
+            cout << "Processed " << j << " events through diagnostic histos...\r";
             fflush(stdout);
 
             stringstream temp;
-            temp << "macroNo " << procEvent.macroNo << ", eventNo " << procEvent.eventNo;
-            TH1I* waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),procEvent.waveform->size(),0,procEvent.waveform->size());
+            temp << "macroNo " << event.macroNo << ", eventNo " << event.eventNo;
+            TH1I* waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),event.waveform->size(),0,event.waveform->size());
 
             // loop through waveform data and fill histo
-            for(int k=0; (size_t)k<procEvent.waveform->size(); k++)
+            for(int k=0; (size_t)k<event.waveform->size(); k++)
             {
-                waveformH->SetBinContent(k,procEvent.waveform->at(k));
+                waveformH->SetBinContent(k,event.waveform->at(k));
             }
 
             waveformH->Write();
         }
 
-        switch(procEvent.targetPos)
+        switch(event.targetPos)
         {
             case 1:
                 TOFHistos[0]->Fill(microTime);
-                macroNoHBlank->Fill(procEvent.macroNo);
+                macroNoHBlank->Fill(event.macroNo);
                 break;
             case 2:
                 TOFHistos[1]->Fill(microTime);
-                macroNoHTarget1->Fill(procEvent.macroNo);
+                macroNoHTarget1->Fill(event.macroNo);
                 break;
             case 3:
                 TOFHistos[2]->Fill(microTime);
-                macroNoHTarget2->Fill(procEvent.macroNo);
+                macroNoHTarget2->Fill(event.macroNo);
                 break;
             case 4:
                 TOFHistos[3]->Fill(microTime);
-                macroNoHTarget3->Fill(procEvent.macroNo);
+                macroNoHTarget3->Fill(event.macroNo);
                 break;
             case 5:
                 TOFHistos[4]->Fill(microTime);
-                macroNoHTarget4->Fill(procEvent.macroNo);
+                macroNoHTarget4->Fill(event.macroNo);
                 break;
             case 6:
                 TOFHistos[5]->Fill(microTime);
-                macroNoHTarget5->Fill(procEvent.macroNo);
+                macroNoHTarget5->Fill(event.macroNo);
                 break;
             default:
                 break;
         }
 
-        macroNoH->Fill(procEvent.macroNo);
-        targetPosH->Fill(procEvent.targetPos);
-        macroTimeH->Fill(procEvent.macroTime);
+        macroNoH->Fill(event.macroNo);
+        targetPosH->Fill(event.targetPos);
+        macroTimeH->Fill(event.macroTime);
 
-        macroNoDiffH->Fill(procEvent.macroNo-prevMacroNo);
+        completeTimeH->Fill(event.completeTime);
 
-        completeTimeH->Fill(procEvent.completeTime);
+        fineTimeH->Fill(event.fineTime);
+        diffCompleteTimeH->Fill(event.completeTime-prevCompleteTime);
 
-        fineTimeH->Fill(procEvent.fineTime);
-        diffCompleteTimeH->Fill(procEvent.completeTime-prevCompleteTime);
+        diffMacroCompleteTimesH->Fill(event.completeTime-event.macroTime);
 
-        diffMacroCompleteTimesH->Fill(procEvent.completeTime-procEvent.macroTime);
+        eventNoH->Fill(event.eventNo);
+        sgQH->Fill(event.sgQ);
+        lgQH->Fill(event.lgQ);
 
-        eventNoH->Fill(procEvent.eventNo);
-        sgQH->Fill(procEvent.sgQ);
-        lgQH->Fill(procEvent.lgQ);
-
-        prevMacroNo = procEvent.macroNo;
-        prevCompleteTime = procEvent.completeTime;
+        prevMacroNo = event.macroNo;
+        prevCompleteTime = event.completeTime;
     }
 
-    cout << endl << "Finished populating \"" << treeName << "\" events into basic histos." << endl;
+    cout << endl << "Finished populating \"" << treeName << "\" events into diagnostic histos." << endl;
     cout << "Total events processed = " << totalEntries << endl;
 
     outputFile->Write();

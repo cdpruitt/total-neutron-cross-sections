@@ -47,6 +47,8 @@ struct TimeOffsetsConfig
         double DETECTOR_TIME_OFFSET; // timing delay between macropulse start and main detector channel (in ns)
 
         double VETO_TIME_OFFSET; // timing delay between macropulse start and veto detector channel (in ns)
+
+        double GAMMA_WINDOW_SIZE; // width of window used to identify gammas for gamma time correction to macropulse times
 };
 
 struct DigitizerConfig

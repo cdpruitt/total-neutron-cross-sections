@@ -37,9 +37,9 @@ SoftwareCFDConfig::SoftwareCFDConfig(std::vector<std::string> softwareCFDConfig)
 
 TimeOffsetsConfig::TimeOffsetsConfig(std::vector<std::string> timeOffsetsConfig)
 {
-    if(timeOffsetsConfig.size()!=4)
+    if(timeOffsetsConfig.size()!=5)
     {
-        std::cerr << "Error: tried to create time offsets configuration for current run, but " << timeOffsetsConfig.size() << " time offsets were read in instead of the correct value of 4." << std::endl;
+        std::cerr << "Error: tried to create time offsets configuration for current run, but " << timeOffsetsConfig.size() << " time offsets were read in instead of the correct value of 5." << std::endl;
         exit(1);
     }
 
@@ -47,6 +47,7 @@ TimeOffsetsConfig::TimeOffsetsConfig(std::vector<std::string> timeOffsetsConfig)
     MONITOR_TIME_OFFSET = stod(timeOffsetsConfig[1]);
     DETECTOR_TIME_OFFSET = stod(timeOffsetsConfig[2]);
     VETO_TIME_OFFSET = stod(timeOffsetsConfig[3]);
+    GAMMA_WINDOW_SIZE = stod(timeOffsetsConfig[4]);
 }
 
 TargetConfig::TargetConfig(std::vector<std::string> targetPositions, std::vector<std::pair<int,int>> targetChangerGates)

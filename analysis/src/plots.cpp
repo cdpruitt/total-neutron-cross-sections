@@ -1,3 +1,5 @@
+#include "TRandom3.h"
+
 #include "../include/plots.h"
 #include "../include/physicalConstants.h"
 #include "../include/config.h"
@@ -5,6 +7,40 @@
 #include <iostream>
 
 using namespace std;
+
+TH1D* convertTOFtoEnergy(TH1D* tof, string name)
+{
+    TH1D* energy = timeBinsToRKEBins(tof, name); 
+
+    if(!tof)
+    {
+        cerr << "Error: cannot convert empty TOF histogram to energy units in convertTOFtoEnergy()" << endl;
+        return energy;
+    }
+
+    unsigned int tofBins = tof->GetNbinsX()-2;
+
+    TRandom3 *randomizeBin = new TRandom3();
+
+    for(unsigned int j=1; j<tofBins+1; j++)
+    {
+        // convert time into neutron velocity based on flight path distance
+        double velocity = pow(10.,7.)*(config.facilityConfig.FLIGHT_DISTANCE)
+            /(tof->GetBinCenter(j)
+                    /*+randomizeBin->Uniform(
+                        -(config.plotConfig.TOF_RANGE)/(double)(2*tofBins),
+                         (config.plotConfig.TOF_RANGE)/(double)(2*tofBins))*/
+             ); // in meters/sec 
+
+        // convert velocity to relativistic kinetic energy
+        double rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
+
+        energy->Fill(rKE,tof->GetBinContent(j));
+        energy->SetBinError(j,pow(energy->GetBinContent(j),0.5));
+    }
+
+    return energy;
+}
 
 vector<double> scaleBins(vector<double> inputBins, int scaledown)
 {

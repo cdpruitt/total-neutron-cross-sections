@@ -4,7 +4,7 @@
 #include "TH1D.h"
 #include "plots.h"
 
-int fillBasicHistos(std::string inputFileName, std::string treeName, std::string outputFileName);
+int fillDiagnosticHistos(std::string inputFileName, std::string treeName, std::string outputFileName);
 TH1D* convertTOFtoEnergy(TH1D* tof, std::string name);
 
 #endif /* FILL_BASIC_HISTOS_H */

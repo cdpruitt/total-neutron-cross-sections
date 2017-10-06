@@ -26,25 +26,6 @@ extern Config config;
 
 using namespace std;
 
-// create struct for holding detector event data and link to trees
-struct DetectorEvent
-{
-    double macroTime = 0;
-    unsigned int macroNo = 0;
-    unsigned int targetPos = 0;
-
-    unsigned int cycleNumber = 0;
-    double completeTime = 0;
-    unsigned int timetag = 0;
-    unsigned int extTime = 0;
-    double fineTime = 0;
-    unsigned int eventNo = 0;
-    unsigned int sgQ = 0;
-    unsigned int lgQ = 0;
-    unsigned int baseline = 0;
-    vector<int>* waveform = new vector<int>;
-};
-
 int assignEventsToMacropulses(string inputFileName, string inputTreeName, string outputFileName, string macropulseTreeName, unsigned int channelNo, string outputTreeName)
 {
     /**************************************************************************/
@@ -118,7 +99,7 @@ int assignEventsToMacropulses(string inputFileName, string inputTreeName, string
 
         if(currentTreeEntry%10000==0)
         {
-            cout << "Read " << currentTreeEntry << " \"" << inputTreeName << "\" events  .\r";
+            cout << "Read " << currentTreeEntry << " \"" << inputTreeName << "\" events...\r";
             fflush(stdout);
         }
 

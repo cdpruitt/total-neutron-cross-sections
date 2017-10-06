@@ -60,6 +60,25 @@ struct SeparatedEvent
     std::vector<int>* waveform = new std::vector<int>; // contains all waveform samples for each event to allow for corrections in analysis
 };
 
+// create struct for holding detector event data and link to trees
+struct DetectorEvent
+{
+    double macroTime = 0;
+    unsigned int macroNo = 0;
+    unsigned int targetPos = 0;
+
+    unsigned int cycleNumber = 0;
+    double completeTime = 0;
+    unsigned int timetag = 0;
+    unsigned int extTime = 0;
+    double fineTime = 0;
+    unsigned int eventNo = 0;
+    unsigned int sgQ = 0;
+    unsigned int lgQ = 0;
+    unsigned int baseline = 0;
+    std::vector<int>* waveform = new std::vector<int>;
+};
+
 // used to store processed events after they have been mated with a macropulse
 struct ProcessedEvent
 {
