@@ -207,12 +207,7 @@ int fillAdvancedHistos(string inputFileName, string treeName, string outputFileN
     TH2I *sgQlgQ = new TH2I("sgQlgQ","short gate Q vs. long gate Q",2048,0,65536,2048,0,65536);
     TH1I *QRatio = new TH1I("QRatio","short gate Q/long gate Q",1000,0,1);
 
-    TH1I* timeDiffHistoBlank = new TH1I("time since last event, blank","time since last event",config.plotConfig.TOF_RANGE,0,config.plotConfig.TOF_RANGE);
-    TH1I* timeDiffHistoTarget1 = new TH1I("time since last event, target 1","time since last event",config.plotConfig.TOF_RANGE,0,config.plotConfig.TOF_RANGE);
-    TH1I* timeDiffHistoTarget2 = new TH1I("time since last event, target 2","time since last event",config.plotConfig.TOF_RANGE,0,config.plotConfig.TOF_RANGE);
-    TH1I* timeDiffHistoTarget3 = new TH1I("time since last event, target 3","time since last event",config.plotConfig.TOF_RANGE,0,config.plotConfig.TOF_RANGE);
-    TH1I* timeDiffHistoTarget4 = new TH1I("time since last event, target 4","time since last event",config.plotConfig.TOF_RANGE,0,config.plotConfig.TOF_RANGE);
-    TH1I* timeDiffHistoTarget5 = new TH1I("time since last event, target 5","time since last event",config.plotConfig.TOF_RANGE,0,config.plotConfig.TOF_RANGE);
+    TH1I* timeDiffHisto = new TH1I("time since last event","time since last event",config.plotConfig.TOF_RANGE,0,config.plotConfig.TOF_RANGE);
 
     TH1I* goodMacroNoH = new TH1I("good macros","good macros",200000,0,200000);
     TH1I* goodMacroNoHBlank = new TH1I("good macros, blank","good macros, blank",200000,0,200000);
@@ -248,22 +243,17 @@ int fillAdvancedHistos(string inputFileName, string treeName, string outputFileN
     TH1D* ratioBadMacrosH = new TH1D("ratio of bad macros","ratio of bad macros",7,0,7);
 
     vector<TH1D*> TOFHistos;
-    vector<TH1D*> energyHistos;
 
     for(unsigned int i=0; i<config.targetConfig.TARGET_ORDER.size(); i++)
     {
         string TOFName = config.targetConfig.TARGET_ORDER[i] + "TOF";
         TOFHistos.push_back(new TH1D(TOFName.c_str(),TOFName.c_str(),config.plotConfig.TOF_BINS,config.plotConfig.TOF_LOWER_BOUND,config.plotConfig.TOF_UPPER_BOUND));
-
-        string energyName =  config.targetConfig.TARGET_ORDER[i] + "Energy";
-        energyHistos.push_back(timeBinsToRKEBins(TOFHistos.back(),energyName));
     }
 
-    // reattach to the channel-specific tree for reading out data
+    // re-attach to the channel-specific tree for reading out data
     ProcessedEvent procEvent;
     setBranchesHistos(tree, procEvent);
 
-    // create TIME VARIABLES used for filling histograms
     double microTime;
     int microNo, prevMicroNo;
     long runningMicroNo = 0;
@@ -272,7 +262,6 @@ int fillAdvancedHistos(string inputFileName, string treeName, string outputFileN
     // micropulse has a gamma at the start and keep track of the influence of
     // early micropulse events on later ones)
     int orderInMicro = 0;
-    bool isGamma = false;
     bool gammaInMicro = false;
 
     /*************************************************************************/
@@ -362,8 +351,6 @@ int fillAdvancedHistos(string inputFileName, string treeName, string outputFileN
     int currentMacroNo = -1;
     unsigned int numberOfEventsInCurrentMacro = 0;
     unsigned int targetPosOfCurrentMacro = 0;
-    vector<long> goodMacrosByTarget(7,0);
-    vector<long> badMacrosByTarget(7,0);
 
     for(long i=0; i<totalEntries; i++)
     {
@@ -373,51 +360,6 @@ int fillAdvancedHistos(string inputFileName, string treeName, string outputFileN
         {
             continue;
         }
-
-        /*if(currentMacroNo!=procEvent.macroNo)
-          {
-        // new macropulse; test if "good macropulse"
-        currentMacroNo = procEvent.macroNo;
-        long j = i;
-
-        while(currentMacroNo==procEvent.macroNo)
-        {
-        numberOfEventsInCurrentMacro = procEvent.eventNo;
-        targetPosOfCurrentMacro = procEvent.targetPos;
-
-        j++;
-        if(j>=totalEntries)
-        {
-        // reached end of tree
-        break;
-        }
-
-        tree->GetEntry(j);
-        }
-
-        if(j>=totalEntries)
-        {
-        break;
-        }
-
-        //cout << "macroNo = " << currentMacroNo << ", number of events = " << numberOfEventsInCurrentMacro << endl;
-
-        if(numberOfEventsInCurrentMacro > MACRO_EVENTS_LOW_THRESHOLD
-        && numberOfEventsInCurrentMacro < MACRO_EVENTS_HIGH_THRESHOLD)
-        {
-        // this macropulse is OK; start again at the first event and populate histos
-        goodMacrosByTarget[targetPosOfCurrentMacro]++;
-        tree->GetEntry(i);
-        }
-
-        else
-        {
-        // this macropulse is not OK; start at the first event of the next macro
-        badMacrosByTarget[targetPosOfCurrentMacro]++;
-        i = j-1;
-        continue;
-        }
-        }*/
 
         procEvent.completeTime -= gammaOffsets[procEvent.macroNo];
 
@@ -489,48 +431,13 @@ int fillAdvancedHistos(string inputFileName, string treeName, string outputFileN
             // Fill troubleshooting plots with event variables (rKE, microtime, etc.)
 
             TOFHistos[procEvent.targetPos-1]->Fill(microTime);
-            energyHistos[procEvent.targetPos-1]->Fill(rKE);
-
-            goodMacroNoH->Fill(procEvent.macroNo);
-
-            switch(procEvent.targetPos)
-            {
-                case 1:
-                    timeDiffHistoBlank->Fill(eventTimeDiff);
-                    goodMacroNoHBlank->Fill(procEvent.macroNo);
-                    break;
-                case 2:
-                    timeDiffHistoTarget1->Fill(eventTimeDiff);
-                    goodMacroNoHTarget1->Fill(procEvent.macroNo);
-                    break;
-                case 3:
-                    timeDiffHistoTarget2->Fill(eventTimeDiff);
-                    goodMacroNoHTarget2->Fill(procEvent.macroNo);
-                    break;
-                case 4:
-                    timeDiffHistoTarget3->Fill(eventTimeDiff);
-                    goodMacroNoHTarget3->Fill(procEvent.macroNo);
-                    break;
-                case 5:
-                    timeDiffHistoTarget4->Fill(eventTimeDiff);
-                    goodMacroNoHTarget4->Fill(procEvent.macroNo);
-                    break;
-                case 6:
-                    timeDiffHistoTarget5->Fill(eventTimeDiff);
-                    goodMacroNoHTarget5->Fill(procEvent.macroNo);
-                    break;
-            }
 
             triangle->Fill(microTime,procEvent.lgQ);
             sgQlgQ->Fill(procEvent.sgQ,procEvent.lgQ);
             QRatio->Fill(procEvent.sgQ/(double)procEvent.lgQ);
             triangleRKE->Fill(rKE,procEvent.lgQ);
             orderInMicroH->Fill(orderInMicro);
-
-            /*if(abs(eventTimeDiff)>300 && abs(eventTimeDiff)<400)
-              {
-              lgQ1VlgQ2_background->Fill(prevlgQ,procEvent.lgQ);
-              }*/
+            timeDiffHisto->Fill(eventTimeDiff);
 
             timeDiffVEnergy1->Fill(eventTimeDiff,prevRKE);
             timeDiffVEnergy2->Fill(eventTimeDiff,rKE);
@@ -540,37 +447,10 @@ int fillAdvancedHistos(string inputFileName, string treeName, string outputFileN
 
             microNoH->Fill(microNo);
 
-            /*****************************************************************/
-            // Fill target-specific plots
-
-            /*if(!gammaInMicro)
-              {
-              plots.energyHistosNoGamma[procEvent.targetPos-1]->Fill(rKE);
-              }
-
-              if(orderInMicro==1)
-              {
-              plots.TOFHistosFirstInMicro[procEvent.targetPos-1]->Fill(microTime);
-              }
-              */
-
-            /*if(microTime>100 && microTime<110 && procEvent.waveform->size() > 0 && i%1000==0)
-              {
-              stringstream temp;
-              temp << "macroNo " << procEvent.macroNo << ", eventNo " << procEvent.eventNo;
-              TH1I* waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),procEvent.waveform->size(),0,procEvent.waveform->size());
-
-            // loop through waveform data and fill histo
-            for(int k=0; (size_t)k<procEvent.waveform->size(); k++)
-            {
-            waveformH->SetBinContent(k,procEvent.waveform->at(k));
-            }
-
-            waveformH->Write();
-            }*/
         }
 
-        //prevWaveform = *procEvent.waveform;
+        /*****************************************************************/
+
         prevlgQ = procEvent.lgQ;
         prevsgQ = procEvent.sgQ;
         prevMicroTime = microTime;
@@ -583,17 +463,8 @@ int fillAdvancedHistos(string inputFileName, string treeName, string outputFileN
         }
     }
 
-    for(size_t i=1; i<goodMacrosByTarget.size(); i++)
-    {
-        if((badMacrosByTarget[i]==0) && goodMacrosByTarget[i]==(0))
-        {
-            continue;
-        }
-
-        ratioBadMacrosH->SetBinContent(i+1,
-                (double)(badMacrosByTarget[i])/
-                (double)(badMacrosByTarget[i]+goodMacrosByTarget[i]));
-    }
+    cout << endl << "Finished populating \"" << treeName << "\" events into advanced histos." << endl;
+    cout << "Total events processed = " << totalEntries << endl;
 
     triangle->Write();
     sgQlgQ->Write();
@@ -602,21 +473,8 @@ int fillAdvancedHistos(string inputFileName, string treeName, string outputFileN
     microNoH->Write();
     orderInMicroH->Write();
 
-    timeDiffHistoBlank->Write();
-    timeDiffHistoTarget1->Write();
-    timeDiffHistoTarget2->Write();
-    timeDiffHistoTarget3->Write();
-    timeDiffHistoTarget4->Write();
-    timeDiffHistoTarget5->Write();
-
-    goodMacroNoH->Write();
-    goodMacroNoHBlank->Write();
-    goodMacroNoHTarget1->Write();
-    goodMacroNoHTarget2->Write();
-    goodMacroNoHTarget3->Write();
-    goodMacroNoHTarget4->Write();
-    goodMacroNoHTarget5->Write();
-
+    timeDiffHisto->Write();
+    
     timeDiffVEnergy1->Write();
     timeDiffVEnergy2->Write();
     energy1VEnergy2->Write();
@@ -624,99 +482,10 @@ int fillAdvancedHistos(string inputFileName, string treeName, string outputFileN
     lgQ1VlgQ2->Write();
     lgQ1VlgQ2_background->Write();
 
-    ratioBadMacrosH->Write();
-
     for(auto histo : TOFHistos)
     {
         histo->Write();
     }
-
-    for(auto histo : energyHistos)
-    {
-        histo->Write();
-    }
-
-    std::vector<long> macrosPerTarget;
-    std::vector<long> microsPerTarget;
-
-    outputFile->cd("/macroTime");
-
-    for(unsigned int i=0; i<config.targetConfig.TARGET_ORDER.size(); i++)
-    {
-        macrosPerTarget.push_back(((TH1I*)gDirectory->Get("targetPosH"))->GetBinContent(i+2));
-        //double badMacroRatio = ((TH1D*)gDirectory->Get("ratioBadMacrosH"))->GetBinContent(i+2);
-        microsPerTarget.push_back(macrosPerTarget.back()/*(1-badMacroRatio)*/
-                *(config.facilityConfig.MACRO_LENGTH/config.facilityConfig.MICRO_LENGTH));
-    }
-
-    outputFile->cd();
-    outputFile->cd("/summedDet");
-
-    // perform iterative deadtime correction, until average deadtime changes
-    // <0.1%
-    for(unsigned int i=0; (unsigned int)i<microsPerTarget.size(); i++)
-    {
-        vector<double> deadtimeBins = generateDeadtimeCorrection(TOFHistos[i], microsPerTarget[i]);
-
-        double averageDeadtimeDiff = applyDeadtimeCorrection(TOFHistos[i], deadtimeBins) - 0;
-
-        /*while(averageDeadtimeDiff>0.001)
-          {
-          rawTOF = correctedTOF;
-
-          vector<double> prevDeadtimeBins = deadtimeBins;
-          deadtimeBins = generateDeadtimeCorrection(rawTOF, microsPerTarget[i]);
-
-          for(unsigned int j=0; j<deadtimeBins.size(); j++)
-          {
-          deadtimeBins[j] = deadtimeBins[j]-prevDeadtimeBins[j];
-          }
-
-          correctedTOF = ((TH1D*)plots[i]->getTOFHisto());
-          deadtimeH = ((TH1D*)plots[i]->getDeadtimeHisto());
-          averageDeadtimeDiff = applyDeadtimeCorrection(rawTOF, correctedTOF, deadtimeH, deadtimeBins) - averageDeadtimeDiff;
-          }*/
-    }
-
-    // calculate likelihood of double peak in wavelet, for each TOF bin
-    //const int waveletBins = (config.plotConfig.TOF_BINS/config.plotConfig.TOF_RANGE)*WAVELET_PERIOD;
-
-    vector<double> eventsPerMicroPerBin(config.plotConfig.TOF_BINS);
-    vector<double> doublePeakOddsPerBin(config.plotConfig.TOF_BINS);
-
-    //TH1D* tof = (TH1D*)plots[0]->getTOFHisto();
-    /*for(int i=0; i<eventsPerMicroPerBin.size(); i++)
-      {
-      if(microsPerTarget[0]==0)
-      {
-      cerr << "Error: can't calculate double peak likelihood with 0 total micros" << endl;
-      continue;
-      }
-
-      eventsPerMicroPerBin[i] = tof->GetBinContent(i)/(double)microsPerTarget[0];
-      }
-
-      for(int i=0; i<config.plotConfig.TOF_BINS; i++)
-      {
-      for(int j=i; j<i+waveletBins/2; j++)
-      {
-      if(j>config.plotConfig.TOF_BINS)
-      {
-      doublePeakOddsPerBin[i] += eventsPerMicroPerBin[j-config.plotConfig.TOF_BINS];
-      continue;
-      }
-
-      doublePeakOddsPerBin[i] += eventsPerMicroPerBin[j];
-      }
-      }
-
-      for(int i=0; i<doublePeakOddsPerBin.size(); i++)
-      {
-      doublePeakH->SetBinContent(i,pow(10,3)*doublePeakOddsPerBin[i]);
-      }
-
-      doublePeakH->Write();
-      */
 
     outputFile->Close();
 

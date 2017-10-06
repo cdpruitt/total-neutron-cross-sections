@@ -366,8 +366,9 @@ then
             fi
 
             outputDirectoryName="$outpath/$runNumber/$subrunNo/"
-            printf "\n\n***Starting sort of sub-run $subrunNo***\n"
+            printf "\n\n***Starting analysis of sub-run $subrunNo***\n"
             analyze "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber" "$useVetoPaddle" "false" "false"
+            printf "\n\n***Finished analysis of sub-run $subrunNo***\n"
 
             # Skip subruns < 1GB in size
             runSize=$(du -k "$inputFileName" | cut -f 1)

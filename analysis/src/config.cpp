@@ -19,8 +19,6 @@ FacilityConfig::FacilityConfig(std::vector<std::string> facilityConfig)
     MACRO_LENGTH = stod(facilityConfig[1]);
     MICRO_LENGTH = stod(facilityConfig[2]);
     FLIGHT_DISTANCE = stod(facilityConfig[3]);
-
-    std::cout << "Successfully read facility config data." << std::endl;
 }
 
 SoftwareCFDConfig::SoftwareCFDConfig(std::vector<std::string> softwareCFDConfig)
@@ -35,8 +33,6 @@ SoftwareCFDConfig::SoftwareCFDConfig(std::vector<std::string> softwareCFDConfig)
     CFD_DELAY = stod(softwareCFDConfig[1]);
     CFD_ZC_TRIGGER_THRESHOLD = stod(softwareCFDConfig[2]);
     CFD_TIME_OFFSET = stod(softwareCFDConfig[3]);
-
-    std::cout << "Successfully read software CFD config data." << std::endl;
 }
 
 TimeOffsetsConfig::TimeOffsetsConfig(std::vector<std::string> timeOffsetsConfig)
@@ -51,8 +47,6 @@ TimeOffsetsConfig::TimeOffsetsConfig(std::vector<std::string> timeOffsetsConfig)
     MONITOR_TIME_OFFSET = stod(timeOffsetsConfig[1]);
     DETECTOR_TIME_OFFSET = stod(timeOffsetsConfig[2]);
     VETO_TIME_OFFSET = stod(timeOffsetsConfig[3]);
-
-    std::cout << "Successfully read time offset config data." << std::endl;
 }
 
 TargetConfig::TargetConfig(std::vector<std::string> targetPositions, std::vector<std::pair<int,int>> targetChangerGates)
@@ -72,8 +66,6 @@ TargetConfig::TargetConfig(std::vector<std::string> targetPositions, std::vector
     }
 
     TARGET_GATES = targetChangerGates;
-
-    std::cout << "Successfully read target changer config data." << std::endl;
 }
 
 CSConfig::CSConfig(std::vector<std::string> v)
@@ -90,8 +82,6 @@ CSConfig::CSConfig(std::vector<std::string> v)
     {
         DETECTOR_NAMES.push_back(s);
     }
-
-    std::cout << "Successfully read cross section config data." << std::endl;
 }
 
 PlotConfig::PlotConfig(std::vector<std::string> v)
@@ -111,8 +101,6 @@ PlotConfig::PlotConfig(std::vector<std::string> v)
     ENERGY_LOWER_BOUND = stod(v[3]);
     ENERGY_UPPER_BOUND = stod(v[4]);
     NUMBER_ENERGY_BINS = stoi(v[5]);
-
-    std::cout << "Successfully read plot config data." << std::endl;
 }
 
 Config::Config(std::string expName, int runNumber)

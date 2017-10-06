@@ -6,4 +6,5 @@ Run range   CFD fraction      CFD delay      CFD ZC trigger     CFD time offset
             (Range: 0-1)      (in samples)   threshold          (in samples)
 ********************************************************************************
 0-11        0.75              3              30                 20.96
-12-47       0.75              3              43                 20.96
+12-13       0.75              3              43                 20.96
+14-47       0.75              3              35                 20.96

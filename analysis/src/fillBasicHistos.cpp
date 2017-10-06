@@ -22,7 +22,6 @@
 using namespace std;
 
 extern ProcessedEvent procEvent;
-
 extern Config config;
 
 int fillBasicHistos(string inputFileName, string treeName, string outputFileName)
@@ -118,8 +117,6 @@ int fillBasicHistos(string inputFileName, string treeName, string outputFileName
 
     long totalEntries = tree->GetEntries();
 
-    cout << "Populating " << treeName << " histograms..." << endl;
-
     int prevMacroNo = 0;
     double prevCompleteTime = 0;
 
@@ -201,8 +198,10 @@ int fillBasicHistos(string inputFileName, string treeName, string outputFileName
 
         prevMacroNo = procEvent.macroNo;
         prevCompleteTime = procEvent.completeTime;
-
     }
+
+    cout << endl << "Finished populating \"" << treeName << "\" events into basic histos." << endl;
+    cout << "Total events processed = " << totalEntries << endl;
 
     outputFile->Write();
 

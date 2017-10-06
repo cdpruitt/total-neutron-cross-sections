@@ -118,14 +118,14 @@ int assignEventsToMacropulses(string inputFileName, string inputTreeName, string
 
         if(currentTreeEntry%10000==0)
         {
-            cout << "Processed " << currentTreeEntry << " events from raw data file while idenfying detector events.\r";
+            cout << "Read " << currentTreeEntry << " \"" << inputTreeName << "\" events  .\r";
             fflush(stdout);
         }
 
         currentTreeEntry++;
     }
 
-    cout << endl << "Finished processing events from raw data file. Total events recovered = "
+    cout << endl << "Finished reading \"" << inputTreeName << "\" events from raw data file. Total events recovered = "
         << eventList.size() << endl;
 
     /**************************************************************************/
@@ -160,19 +160,22 @@ int assignEventsToMacropulses(string inputFileName, string inputTreeName, string
     outputTree->Branch("lgQ",&detectorEvent.lgQ,"lgQ/i");
     outputTree->Branch("waveform",&detectorEvent.waveform);
 
+    cout << "Assigning " << outputTreeName << " events to macropulses..." << endl;
+
     unsigned int currentEvent = 0;
     unsigned int currentMacropulseEntry = 0;
-
     macropulseTree->GetEntry(currentMacropulseEntry);
 
     bool endAssignment = false;
 
-    cout << "Assigning " << outputTreeName << " events to macropulses..." << endl;
-    while(currentEvent<eventList.size())
+    unsigned int currentCycleNumber = 0;
+    unsigned int maxCycleNumber = eventList.back().cycleNumber;
+
+    while(currentCycleNumber<=maxCycleNumber)
     {
         // if the macropulse's cycle number is behind, move to the next macropulse
         while(macropulseCycleNumber <
-                eventList[currentEvent].cycleNumber)
+                currentCycleNumber)
         {
             currentMacropulseEntry++;
             if(currentMacropulseEntry>=macropulseTree->GetEntries())
@@ -187,8 +190,8 @@ int assignEventsToMacropulses(string inputFileName, string inputTreeName, string
         }
 
         // if event list's cycle number is behind, move to the next event
-        while(macropulseCycleNumber >
-               eventList[currentEvent].cycleNumber)
+        while(eventList[currentEvent].cycleNumber <
+                currentCycleNumber)
         {
             currentEvent++;
             if(currentEvent>=eventList.size())
@@ -204,26 +207,13 @@ int assignEventsToMacropulses(string inputFileName, string inputTreeName, string
             break;
         }
 
-        // if detector event's time is behind, move to the next detector event
-        while((macroTime >
-                    eventList[currentEvent].completeTime)
-             )
-        {
-            currentEvent++;
-            if(currentEvent>=eventList.size())
-            {
-                cout << "Reached end of event list; end event assignement." << endl;
-                endAssignment = true;
-                break;
-            }
-        }
+        // Both the macropulse and the current event are in the current cycle
 
-        // macropulse and event are in the same cycle
-        // if macropulse's time is behind, move to the next macropulse
-        // event
-        while((macroTime + config.facilityConfig.MACRO_LENGTH <
-                 eventList[currentEvent].completeTime)
-             )
+        // if macropulse's time is more than a full macropulse behind, move to
+        // the next macropulse
+        while(macroTime + config.facilityConfig.MACRO_LENGTH <
+                 eventList[currentEvent].completeTime
+           && macropulseCycleNumber==currentCycleNumber)
         {
             currentMacropulseEntry++;
             if(currentMacropulseEntry>=macropulseTree->GetEntries())
@@ -242,36 +232,81 @@ int assignEventsToMacropulses(string inputFileName, string inputTreeName, string
             break;
         }
 
-        if(!(macropulseCycleNumber == 
-                eventList[currentEvent].cycleNumber
-            )
-          )
+        if(macropulseCycleNumber!=currentCycleNumber)
         {
-            // failed to find the correct macro for this event; continue to next detector event
+            // macropulse has reached the next cycle
+            currentCycleNumber++;
             continue;
         }
 
-        detectorEvent.cycleNumber = eventList[currentEvent].cycleNumber;
-        detectorEvent.completeTime = eventList[currentEvent].completeTime;
-        detectorEvent.fineTime = eventList[currentEvent].fineTime;
-        detectorEvent.sgQ = eventList[currentEvent].sgQ;
-        detectorEvent.lgQ = eventList[currentEvent].lgQ;
-        detectorEvent.waveform = eventList[currentEvent].waveform;
-
-        detectorEvent.macroTime = macroTime;
-        detectorEvent.macroNo = macroNo;
-        detectorEvent.targetPos = targetPos;
-        
-        outputTree->Fill();
-        detectorEvent.eventNo++;
-
-        if(currentEvent%10000==0)
+        while((macroTime > eventList[currentEvent].completeTime)
+           && (currentCycleNumber==eventList[currentEvent].cycleNumber))
         {
-            cout << "Assigned " << currentEvent << " events to macropulses...\r";
-            fflush(stdout);
+            currentEvent++;
+            if(currentEvent>eventList.size())
+            {
+                cout << "Reached end of event list; end event assignement." << endl;
+                endAssignment = true;
+                break;
+            }
         }
 
-        currentEvent++;
+        if(endAssignment)
+        {
+            break;
+        }
+
+        if(eventList[currentEvent].cycleNumber!=currentCycleNumber)
+        {
+            // event list has reached the next cycle
+            currentCycleNumber++;
+            continue;
+        }
+
+        while((macroTime < eventList[currentEvent].completeTime)
+           && (macroTime + config.facilityConfig.MACRO_LENGTH > eventList[currentEvent].completeTime)
+           && (eventList[currentEvent].cycleNumber==currentCycleNumber))
+        {
+            detectorEvent.cycleNumber = eventList[currentEvent].cycleNumber;
+            detectorEvent.completeTime = eventList[currentEvent].completeTime;
+            detectorEvent.fineTime = eventList[currentEvent].fineTime;
+            detectorEvent.sgQ = eventList[currentEvent].sgQ;
+            detectorEvent.lgQ = eventList[currentEvent].lgQ;
+            detectorEvent.waveform = eventList[currentEvent].waveform;
+
+            detectorEvent.macroTime = macroTime;
+            detectorEvent.macroNo = macroNo;
+            detectorEvent.targetPos = targetPos;
+
+            outputTree->Fill();
+            detectorEvent.eventNo++;
+
+            currentEvent++;
+            if(currentEvent>eventList.size())
+            {
+                cout << "Reached end of event list; end event assignement." << endl;
+                endAssignment = true;
+                break;
+            }
+
+            if(currentEvent%10000==0)
+            {
+                cout << "Assigned " << currentEvent << " events to macropulses...\r";
+                fflush(stdout);
+            }
+        }
+
+        if(endAssignment)
+        {
+            break;
+        }
+
+        if(eventList[currentEvent].cycleNumber!=currentCycleNumber)
+        {
+            // event list has reached the next cycle
+            currentCycleNumber++;
+            continue;
+        }
     }
 
     outputTree->Write();

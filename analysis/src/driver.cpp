@@ -85,6 +85,8 @@ int main(int, char* argv[])
     string DPPTreeName = "DPPTree";
     string WaveformTreeName = "WaveformTree";
 
+    cout << endl << "Start processing event data into raw data tree..." << endl;
+
     ifstream f(rawFileName);
     if(!f.good())
     {
@@ -94,7 +96,7 @@ int main(int, char* argv[])
 
     else
     {
-        cout << "Raw data tree already exists." << endl;
+        cout << "Raw data tree already exists; skipping raw data processing." << endl;
         f.close();
     }
 
@@ -102,6 +104,9 @@ int main(int, char* argv[])
     /* Assign each event to its macropulse */
     /*************************************************************************/
     string sortedFileName = analysisDirectory + "sorted.root";
+
+    cout << endl << "Start macropulse identification and event assignment to macropulses..." << endl;
+
     ifstream p(sortedFileName);
     if(!p.good())
     {
@@ -123,7 +128,7 @@ int main(int, char* argv[])
 
     else
     {
-        cout << "Sorted data tree already exists." << endl;
+        cout << "Sorted tree already exists; skipping macropulse identification and event assignment to macropulses." << endl;
         p.close();
     }
 
@@ -133,6 +138,7 @@ int main(int, char* argv[])
     string vetoedFileName = analysisDirectory + "vetoed.root";
     if(useVetoPaddle)
     {
+        cout << endl << "\"Veto Events\" flag enabled; start processing detector events through veto..." << endl;
         ifstream v(vetoedFileName);
         if(!v.good())
         {
@@ -141,7 +147,7 @@ int main(int, char* argv[])
 
         else
         {
-            cout << "Vetoed data tree already exists." << endl;
+            cout << "Vetoed event tree already exists; skipping veto events processing." << endl;
             v.close();
         }
     }
@@ -189,6 +195,9 @@ int main(int, char* argv[])
      * calculation */
     /*************************************************************************/
     string histoFileName = analysisDirectory + "histos.root";
+
+    cout << endl << "Start processing detector events into histograms..." << endl;
+
     ifstream h(histoFileName);
     if(!h.good())
     {
@@ -197,6 +206,11 @@ int main(int, char* argv[])
         //Uncomment to use unvetoed trees
         for(string channelName : channelMap)
         {
+            if(channelName=="-")
+            {
+                continue;
+            }
+
             fillBasicHistos(sortedFileName, channelName, histoFileName);
         }
 
@@ -231,7 +245,7 @@ int main(int, char* argv[])
 
     else
     {
-        cout << "Histos already exist." << endl;
+        cout << "Histogram file already exists; skipping histogram creation." << endl;
         h.close();
     }
 
