@@ -15,9 +15,10 @@ class CSPrereqs
         CSPrereqs(Target t);
         CSPrereqs(std::string targetDataLocation);
 
-        void readData(TFile* histoFile, std::string directory, int targetPosition);
-        void readData(TFile* histoFile, std::string directory, int targetPosition, std::string monitorFileName);
-void getHisto(TFile* histoFile, std::string directory, std::string name);
+        void readEnergyData(TFile* histoFile, std::string directory, int targetPosition);
+        void readMonitorData(TFile* histoFile, std::string directory, int targetPosition);
+
+        void getHisto(TFile* histoFile, std::string directory, std::string name);
         void getMonitorCounts(TFile* histoFile, std::string directory, int targetPosition);
         void getMonitorCounts(std::string monitorFileName, std::string directory, int targetPosition);
         void getTargetData(std::string expName, std::string targetName);

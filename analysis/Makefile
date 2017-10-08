@@ -7,7 +7,7 @@ SOURCE = src/
 
 # Define compilation flags
 COMPILER = clang++ 
-CFLAGS = -lstdc++ -O3 -I$(shell root-config --incdir) -std=c++11
+CFLAGS = -lstdc++ -O3 -I$(shell root-config --incdir) -std=c++11 -ggdb
 
 # For integration with ROOT data analysis framework
 LINKOPTION = $(shell root-config --libs)
@@ -19,7 +19,7 @@ TARGETS = driver sumSingle sumAll readLitData subtractCS multiplyCS relativeCS a
 all: $(addprefix $(BIN), $(TARGETS))
 
 # Build driver (main data analysis engine)
-DRIVER_SOURCES = branches.cpp dataPoint.cpp dataSet.cpp driver.cpp config.cpp experiment.cpp fillDiagnosticHistos.cpp fillCSHistos.cpp plots.cpp raw.cpp identifyMacropulses.cpp assignEventsToMacropulses.cpp calculateGammaCorrection.cpp target.cpp veto.cpp softwareCFD.cpp #waveform.cpp
+DRIVER_SOURCES = branches.cpp dataPoint.cpp dataSet.cpp driver.cpp config.cpp experiment.cpp fillDiagnosticHistos.cpp fillCSHistos.cpp plots.cpp raw.cpp identifyMacropulses.cpp assignEventsToMacropulses.cpp calculateGammaCorrection.cpp correctForDeadtime.cpp produceEnergyHistos.cpp target.cpp veto.cpp softwareCFD.cpp #waveform.cpp
 
 $(BIN)driver: $(addprefix $(SOURCE), $(DRIVER_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)driver $(addprefix $(SOURCE), $(DRIVER_SOURCES)) $(LINKOPTION)

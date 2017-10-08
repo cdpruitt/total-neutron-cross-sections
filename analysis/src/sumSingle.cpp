@@ -268,7 +268,7 @@ CrossSection calculateCS(string CSFileName, CSPrereqs& targetData, CSPrereqs& bl
     TFile* CSFile = new TFile(CSFileName.c_str(),"UPDATE");
     string name = targetData.target.getName();
     crossSection.createCSGraph(name, name);
-    name += "CorrectedEnergy";
+    name += "Energy";
     corrected.createCSGraph(name, name);
 
     CSFile->Write();
@@ -332,7 +332,8 @@ int main(int, char* argv[])
         string targetDataLocation = "../" + expName + "/targetData/" + config.targetConfig.TARGET_ORDER[j] + ".txt";
         CSPrereqs subRunData(targetDataLocation);
 
-        subRunData.readData(inFile, "summedDet", j);
+        subRunData.readEnergyData(inFile, "summedDet", j);
+        subRunData.readMonitorData(inFile, "monitor", j);
 
         // find the correct CSPrereqs to add this target's data to
         for(int k=0; (size_t)k<allData.size(); k++)

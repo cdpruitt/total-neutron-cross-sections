@@ -4,6 +4,7 @@
 #include "../include/assignEventsToMacropulses.h"
 #include "../include/fillDiagnosticHistos.h"
 #include "../include/fillCSHistos.h"
+#include "../include/produceEnergyHistos.h"
 #include "../include/plots.h"
 #include "../include/waveform.h"
 #include "../include/veto.h"
@@ -152,6 +153,8 @@ int main(int, char* argv[])
         }
     }
 
+    return 0;
+
     /*************************************************************************/
     /* Process waveform events */
     /*************************************************************************/
@@ -200,6 +203,11 @@ int main(int, char* argv[])
     ifstream h(histoFileName);
     if(!h.good())
     {
+        for(string channelName : config.csConfig.DETECTOR_NAMES)
+        {
+            fillCSHistos(sortedFileName, channelName, histoFileName);
+        }
+
         for(string channelName : channelMap)
         {
             if(channelName=="-")
@@ -209,13 +217,6 @@ int main(int, char* argv[])
 
             fillDiagnosticHistos(sortedFileName, channelName, histoFileName);
         }
-
-        for(string channelName : config.csConfig.DETECTOR_NAMES)
-        {
-            fillCSHistos(sortedFileName, channelName, histoFileName);
-        }
-
-                TFile* histoFile = new TFile(histoFileName.c_str(),"UPDATE");
     }
 
     else
@@ -237,7 +238,7 @@ int main(int, char* argv[])
     {
         for(string name : config.csConfig.DETECTOR_NAMES)
         {
-            mapTOFHistosToEnergy(histoFileName, name);
+            produceEnergyHistos(histoFileName, name, energyFileName);
         }
     }
 

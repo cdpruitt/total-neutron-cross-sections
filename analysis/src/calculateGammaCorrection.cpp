@@ -10,10 +10,9 @@ using namespace std;
 
 extern Config config;
 
-int calculateGammaCorrection(string inputFileName, string treeName, vector<GammaCorrection>& gammaCorrectionList)
+int calculateGammaCorrection(string inputFileName, string treeName,
+        vector<GammaCorrection>& gammaCorrectionList)
 {
-    cout << "Calculating gamma correction for \"" << treeName << "\"..." << endl;
-
     TFile* inputFile = new TFile(inputFileName.c_str(),"READ");
     if(!inputFile->IsOpen())
     {
@@ -29,15 +28,17 @@ int calculateGammaCorrection(string inputFileName, string treeName, vector<Gamma
     }
 
     // re-attach to the channel-specific tree for reading out data
-    DetectorEvent event;
+    unsigned int macroNo;
+    double macroTime;
+    double completeTime;
 
-    tree->SetBranchAddress("macroNo",&event.macroNo);
-    tree->SetBranchAddress("macroTime",&event.macroTime);
-    tree->SetBranchAddress("completeTime",&event.completeTime);
+    tree->SetBranchAddress("macroTime",&macroTime);
+    tree->SetBranchAddress("completeTime",&completeTime);
+    tree->SetBranchAddress("macroNo",&macroNo);
 
     unsigned int long totalEntries = tree->GetEntries();
     tree->GetEntry(totalEntries-1);
-    gammaCorrectionList.resize(event.macroNo);
+    gammaCorrectionList.resize(macroNo);
 
     // Define the range of times considered to be gamma rays
     const double GAMMA_TIME = pow(10,7)*config.facilityConfig.FLIGHT_DISTANCE/C;
@@ -51,41 +52,47 @@ int calculateGammaCorrection(string inputFileName, string treeName, vector<Gamma
     {
         tree->GetEntry(i);
 
-        timeDiff = event.completeTime-event.macroTime;
+        timeDiff = completeTime-macroTime;
         microTime = fmod(timeDiff,config.facilityConfig.MICRO_LENGTH);
 
         // test if gamma
         if(abs(microTime-GAMMA_TIME)<(config.timeOffsetsConfig.GAMMA_WINDOW_SIZE/2))
         {
-            gammaCorrectionList[event.macroNo].numberOfGammas++;
-            gammaCorrectionList[event.macroNo].averageGammaOffset += microTime;
+            gammaCorrectionList[macroNo].numberOfGammas++;
+            gammaCorrectionList[macroNo].averageGammaOffset += microTime;
         }
 
         if(i%10000==0)
         {
             cout << "Processed " << i << " events through gamma correction calculation...\r";
+            fflush(stdout);
         }
     }
 
     unsigned int numberOfOffsets = 0;
     double overallAverageOffset = 0;
 
-    for(GammaCorrection gc : gammaCorrectionList)
+    for(int i=0; i<gammaCorrectionList.size(); i++)
     {
         // calculate average gamma offset for each macropulse
-        if(gc.numberOfGammas==0)
+        if(gammaCorrectionList[i].numberOfGammas==0)
         {
-            gc.averageGammaOffset = 0;
+            gammaCorrectionList[i].averageGammaOffset = 0;
             continue;
         }
 
-        gc.averageGammaOffset = (gc.averageGammaOffset/(double)gc.numberOfGammas)-GAMMA_TIME;
+        gammaCorrectionList[i].averageGammaOffset =
+            (gammaCorrectionList[i].averageGammaOffset
+             /(double)(gammaCorrectionList[i].numberOfGammas))-GAMMA_TIME;
 
         numberOfOffsets++;
-        overallAverageOffset += gc.averageGammaOffset;
+        overallAverageOffset += gammaCorrectionList[i].averageGammaOffset;
     }
 
-    overallAverageOffset /= numberOfOffsets;
+    if(numberOfOffsets>0)
+    {
+        overallAverageOffset /= numberOfOffsets;
+    }
 
     cout << "Finished gamma correction calculation."
          << "Gamma correction calculated for " << (100*numberOfOffsets)/(double)gammaCorrectionList.size()

@@ -130,12 +130,12 @@ int assignEventsToMacropulses(string inputFileName, string inputTreeName, string
     macropulseTree->SetBranchAddress("targetPos",&targetPos);
 
     outputTree->Branch("macroTime",&detectorEvent.macroTime,"macroTime/d");
+    outputTree->Branch("completeTime",&detectorEvent.completeTime,"completeTime/d");
+    outputTree->Branch("fineTime",&detectorEvent.fineTime,"fineTime/d");
+
     outputTree->Branch("macroNo",&detectorEvent.macroNo,"macroNo/i");
     outputTree->Branch("cycleNumber",&detectorEvent.cycleNumber,"cycleNumber/i");
     outputTree->Branch("targetPos",&detectorEvent.targetPos,"targetPos/i");
-
-    outputTree->Branch("completeTime",&detectorEvent.completeTime,"completeTime/d");
-    outputTree->Branch("fineTime",&detectorEvent.fineTime,"fineTime/d");
     outputTree->Branch("eventNo",&detectorEvent.eventNo,"eventNo/i");
     outputTree->Branch("sgQ",&detectorEvent.sgQ,"sgQ/i");
     outputTree->Branch("lgQ",&detectorEvent.lgQ,"lgQ/i");

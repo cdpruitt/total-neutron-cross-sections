@@ -346,21 +346,35 @@ int main(int, char* argv[])
             subRunFormatted << setfill('0') << setw(4) << subRun;
 
             // open subrun
-            stringstream inFileName;
-            inFileName << dataLocation << "/" << runNumber << "/"
+            stringstream monitorFileName;
+            monitorFileName << dataLocation << "/" << runNumber << "/"
                        << subRunFormatted.str() << "/histos.root";
-            ifstream f(inFileName.str());
+            ifstream f(monitorFileName.str());
             if(!f.good())
             {
                 // failed to open this sub-run - skip to the next one
-                cerr << "Couldn't open " << inFileName.str() << "; continuing.\r";
+                cerr << "Couldn't open " << monitorFileName.str() << "; continuing.\r";
                 fflush(stdout);
                 continue;
             }
 
-            f.close();
+            TFile* monitorFile = new TFile(monitorFileName.str().c_str(),"READ");
 
-            TFile* inFile = new TFile(inFileName.str().c_str(),"READ");
+            stringstream energyFileName;
+            energyFileName << dataLocation << "/" << runNumber << "/"
+                       << subRunFormatted.str() << "/energy.root";
+            ifstream g(energyFileName.str());
+            if(!g.good())
+            {
+                // failed to open this sub-run - skip to the next one
+                cerr << "Couldn't open " << energyFileName.str() << "; continuing.\r";
+                fflush(stdout);
+                continue;
+            }
+
+            g.close();
+
+            TFile* energyFile = new TFile(energyFileName.str().c_str(),"READ");
 
             // get target order for this run
             vector<string> targetOrder = getTargetOrder(expName, stoi(runNumber));
@@ -375,10 +389,8 @@ int main(int, char* argv[])
                 CSPrereqs subRunData(targetDataLocation);
 
                 // for histos
-                subRunData.readData(inFile, "summedDet", j);
-
-                // for waveforms
-                //subRunData.readData(inFile, "lowThresholdDet", j, inFileName.str());
+                subRunData.readEnergyData(energyFile, "summedDet", j);
+                subRunData.readMonitorData(monitorFile, "monitor", j);
 
                 // find the correct CSPrereqs to add this target's data to
                 for(CSPrereqs& csp : allCSPrereqs)
@@ -392,7 +404,8 @@ int main(int, char* argv[])
             }
 
             // Close the sub-run input files
-            inFile->Close();
+            energyFile->Close();
+            monitorFile->Close();
         }
     }
 

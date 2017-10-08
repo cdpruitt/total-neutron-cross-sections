@@ -17,7 +17,7 @@ extern Config config;
 void CSPrereqs::getHisto(TFile* histoFile, string directory, string name)
 {
     // for histos
-    string energyHistoName = name + "CorrectedEnergy";
+    string energyHistoName = name + "Energy";
 
     // for waveforms
     //string energyHistoName = name + "Energy";
@@ -25,7 +25,7 @@ void CSPrereqs::getHisto(TFile* histoFile, string directory, string name)
     histoFile->cd(directory.c_str());
     energyHisto = ((TH1D*)gDirectory->Get(energyHistoName.c_str()));
 
-    string TOFHistoName = name + "TOFCorrected";
+    string TOFHistoName = name + "TOF";
     TOFHisto = ((TH1D*)gDirectory->Get(TOFHistoName.c_str()));
 }
 
@@ -46,27 +46,18 @@ void CSPrereqs::getMonitorCounts(string monitorFileName, string directory, int t
 }
 
 // readData for histos
-void CSPrereqs::readData(TFile* histoFile, string directory, int targetPosition)
+void CSPrereqs::readEnergyData(TFile* histoFile, string directory, int targetPosition)
 {
     // Find deadtime-corrected energy histo for this target
     string histoName = config.targetConfig.TARGET_ORDER[targetPosition];
     getHisto(histoFile, directory, histoName);
-
-    // Find number of events in the monitor for each target to use in scaling
-    // cross-sections
-    getMonitorCounts(histoFile, "monitor", targetPosition);
 }
 
-// readData for waveform mode
-void CSPrereqs::readData(TFile* histoFile, string directory, int targetPosition, string monitorFileName)
+void CSPrereqs::readMonitorData(TFile* histoFile, string directory, int targetPosition)
 {
-    // Find deadtime-corrected energy histo for this target
+    // Find monitor histo for this target
     string histoName = config.targetConfig.TARGET_ORDER[targetPosition];
-    getHisto(histoFile, directory, histoName);
-
-    // Find number of events in the monitor for each target to use in scaling
-    // cross-sections
-    getMonitorCounts(monitorFileName, "monitor", targetPosition);
+    getMonitorCounts(histoFile, directory, targetPosition);
 }
 
 CSPrereqs operator+(CSPrereqs& augend, CSPrereqs& addend)

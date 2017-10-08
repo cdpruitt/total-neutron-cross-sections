@@ -20,92 +20,55 @@
 
 using namespace std;
 
-extern DetectorEvent event;
 extern Config config;
 
 int fillDiagnosticHistos(string inputFileName, string treeName, string outputFileName)
 {
-    cout << "Filling diagnostic histograms for tree \"" << treeName << "\"..." << endl;
+    cout << "Filling diagnostic histograms for tree \"" << treeName
+        << "\"..." << endl;
 
     TFile* inputFile = new TFile(inputFileName.c_str(),"READ");
     if(!inputFile->IsOpen())
     {
-        cerr << "Error: failed to open " << inputFileName << "  to fill histos." << endl;
+        cerr << "Error: failed to open " << inputFileName
+            << "  to fill histos." << endl;
         return 1;
     }
 
     TTree* tree = (TTree*)inputFile->Get(treeName.c_str());
     if(!tree)
     {
-        cerr << "Error: failed to find " << treeName << " in " << inputFileName << endl;
+        cerr << "Error: failed to find " << treeName << " in "
+            << inputFileName << endl;
         return 1;
     }
 
     TFile* outputFile = new TFile(outputFileName.c_str(),"UPDATE");
 
-    outputFile->mkdir(treeName.c_str(),treeName.c_str());
-    outputFile->GetDirectory(treeName.c_str())->cd();
-
-    // instantiate DPP-mode histograms
-    TH1I* macroNoH = new TH1I("macroNoH","macroNo",200000,0,200000);
-    macroNoH->GetXaxis()->SetTitle("macropulse number of each event");
-
-    TH1I* macroNoHBlank = new TH1I("macroNoHBlank","macroNoBlank",200000,0,200000);
-    macroNoHBlank->GetXaxis()->SetTitle("macropulse number of each event, blank target");
-
-    TH1I* macroNoHTarget1 = new TH1I("macroNoHTarget1","macroNoTarget1",200000,0,200000);
-    macroNoHTarget1->GetXaxis()->SetTitle("macropulse number of each event, target 1");
-
-    TH1I* macroNoHTarget2 = new TH1I("macroNoHTarget2","macroNoTarget2",200000,0,200000);
-    macroNoHTarget2->GetXaxis()->SetTitle("macropulse number of each event, target 2");
-
-    TH1I* macroNoHTarget3 = new TH1I("macroNoHTarget3","macroNoTarget3",200000,0,200000);
-    macroNoHTarget3->GetXaxis()->SetTitle("macropulse number of each event, target 3");
-
-    TH1I* macroNoHTarget4 = new TH1I("macroNoHTarget4","macroNoTarget4",200000,0,200000);
-    macroNoHTarget4->GetXaxis()->SetTitle("macropulse number of each event, target 4");
-
-    TH1I* macroNoHTarget5 = new TH1I("macroNoHTarget5","macroNoTarget5",200000,0,200000);
-    macroNoHTarget5->GetXaxis()->SetTitle("macropulse number of each event, target 5");
-
-    TH1I* eventNoH = new TH1I("eventNoH","eventNo",300,0,300);
-    eventNoH->GetXaxis()->SetTitle("event number of each event");
-
-    TH1I* macroTimeH = new TH1I("macroTimeH","macroTime",6000,0,6000000000);
-    macroTimeH->GetXaxis()->SetTitle("macropulse time zero for each event");
-
-    TH1I* targetPosH = new TH1I("targetPosH","targetPos",7,0,7);
-    targetPosH->GetXaxis()->SetTitle("target position of each event");
-
-    TH1I* sgQH = new TH1I("sgQH","sgQ",3500,0,35000);
-    sgQH->GetXaxis()->SetTitle("short gate integrated charge for each event");
-
-    TH1I* lgQH = new TH1I("lgQH","lgQ",7000,0,70000);
-    lgQH->GetXaxis()->SetTitle("long gate integrated charge for each event");
-
-    TH1I* completeTimeH = new TH1I("completeTimeH","completeTime",pow(2,20),0,pow(2,32));
-    completeTimeH->GetXaxis()->SetTitle("complete time of event");
-
-    TH1I* fineTimeH = new TH1I("fineTimeH","fineTimeH",6200,-2,60);
-    fineTimeH->GetXaxis()->SetTitle("fine time of event");
-
-    TH1I* diffCompleteTimeH = new TH1I("diffCompleteTimeH","diffCompleteTime",pow(2,16),0,pow(2,26));
-    diffCompleteTimeH->GetXaxis()->SetTitle("difference between complete time of consecutive events");
-
-    TH1I* diffMacroCompleteTimesH = new TH1I("diffMacroCompleteTimesH","diffMacroCompleteTime",pow(2,20),0,pow(2,20));
-    diffMacroCompleteTimesH->GetXaxis()->SetTitle("difference between complete time of event and its macrotime");
-
-    vector<TH1D*> TOFHistos;
-
-    for(unsigned int i=0; i<config.targetConfig.TARGET_ORDER.size(); i++)
+    TDirectory* directory = (TDirectory*)outputFile->GetDirectory(treeName.c_str());
+    if(!directory)
     {
-        string TOFName = config.targetConfig.TARGET_ORDER[i] + "TOF";
-        TOFHistos.push_back(new TH1D(TOFName.c_str(),TOFName.c_str(),config.plotConfig.TOF_BINS,config.plotConfig.TOF_LOWER_BOUND,config.plotConfig.TOF_UPPER_BOUND));
+        directory = outputFile->mkdir(treeName.c_str(),treeName.c_str());
     }
+
+    directory->cd();
+
+    // create histos for visualizing basic event data
+    TH1D* cycleNumberH = new TH1D("cycleNumberH","cycleNumberH",500,0,500);
+    TH1D* macroNoH = new TH1D("macroNoH","macroNo",200000,0,200000);
+    TH1D* eventNoH = new TH1D("eventNoH","eventNo",300,0,300);
+    TH1D* targetPosH = new TH1D("targetPosH","targetPos",7,0,7);
+    TH1D* fineTimeH = new TH1D("fineTimeH","fineTimeH",6200,-2,60);
+    TH1D* sgQH = new TH1D("sgQH","sgQ",3500,0,35000);
+    TH1D* lgQH = new TH1D("lgQH","lgQ",7000,0,70000);
+
+    TH2D *sgQlgQH = new TH2D("sgQlgQH","short gate Q vs. long gate Q",2048,0,65536,2048,0,65536);
+    TH1D *QRatio = new TH1D("QRatio","short gate Q/long gate Q",1000,0,1);
 
     // create a subdirectory for holding DPP-mode waveform data
     gDirectory->mkdir("waveformsDir","raw DPP waveforms");
     TDirectory* waveformsDir = (TDirectory*)gDirectory->Get("waveformsDir");
+
     waveformsDir->cd();
 
     DetectorEvent event;
@@ -130,21 +93,29 @@ int fillDiagnosticHistos(string inputFileName, string treeName, string outputFil
     double microTime;
 
     // loop through the channel-specific tree and populate histos
-    for(long j=0; j<totalEntries; j++)
+    for(int i=0; i<totalEntries; i++)
     {
-        tree->GetEntry(j);
+        tree->GetEntry(i);
 
-        timeDiff = event.completeTime-event.macroTime;
-        microTime = fmod(timeDiff,config.facilityConfig.MICRO_LENGTH);
+        cycleNumberH->Fill(event.cycleNumber);
+        macroNoH->Fill(event.macroNo);
+        targetPosH->Fill(event.targetPos);
+        eventNoH->Fill(event.eventNo);
+        fineTimeH->Fill(event.fineTime);
+        sgQH->Fill(event.sgQ);
+        lgQH->Fill(event.lgQ);
 
-        if(j%50000==0)
+        sgQlgQH->Fill(event.sgQ,event.lgQ);
+        QRatio->Fill(event.sgQ/(double)event.lgQ);
+
+        if(i%50000==0)
         {
-            cout << "Processed " << j << " events through diagnostic histos...\r";
+            cout << "Processed " << i << " events through diagnostic histos...\r";
             fflush(stdout);
 
             stringstream temp;
             temp << "macroNo " << event.macroNo << ", eventNo " << event.eventNo;
-            TH1I* waveformH = new TH1I(temp.str().c_str(),temp.str().c_str(),event.waveform->size(),0,event.waveform->size());
+            TH1D* waveformH = new TH1D(temp.str().c_str(),temp.str().c_str(),event.waveform->size(),0,event.waveform->size());
 
             // loop through waveform data and fill histo
             for(int k=0; (size_t)k<event.waveform->size(); k++)
@@ -154,63 +125,25 @@ int fillDiagnosticHistos(string inputFileName, string treeName, string outputFil
 
             waveformH->Write();
         }
-
-        switch(event.targetPos)
-        {
-            case 1:
-                TOFHistos[0]->Fill(microTime);
-                macroNoHBlank->Fill(event.macroNo);
-                break;
-            case 2:
-                TOFHistos[1]->Fill(microTime);
-                macroNoHTarget1->Fill(event.macroNo);
-                break;
-            case 3:
-                TOFHistos[2]->Fill(microTime);
-                macroNoHTarget2->Fill(event.macroNo);
-                break;
-            case 4:
-                TOFHistos[3]->Fill(microTime);
-                macroNoHTarget3->Fill(event.macroNo);
-                break;
-            case 5:
-                TOFHistos[4]->Fill(microTime);
-                macroNoHTarget4->Fill(event.macroNo);
-                break;
-            case 6:
-                TOFHistos[5]->Fill(microTime);
-                macroNoHTarget5->Fill(event.macroNo);
-                break;
-            default:
-                break;
-        }
-
-        macroNoH->Fill(event.macroNo);
-        targetPosH->Fill(event.targetPos);
-        macroTimeH->Fill(event.macroTime);
-
-        completeTimeH->Fill(event.completeTime);
-
-        fineTimeH->Fill(event.fineTime);
-        diffCompleteTimeH->Fill(event.completeTime-prevCompleteTime);
-
-        diffMacroCompleteTimesH->Fill(event.completeTime-event.macroTime);
-
-        eventNoH->Fill(event.eventNo);
-        sgQH->Fill(event.sgQ);
-        lgQH->Fill(event.lgQ);
-
-        prevMacroNo = event.macroNo;
-        prevCompleteTime = event.completeTime;
     }
 
     cout << endl << "Finished populating \"" << treeName << "\" events into diagnostic histos." << endl;
     cout << "Total events processed = " << totalEntries << endl;
 
-    outputFile->Write();
+    directory->cd();
 
-    inputFile->Close();
+    cycleNumberH->Write();
+    macroNoH->Write();
+    eventNoH->Write();
+    targetPosH->Write();
+    fineTimeH->Write();
+    sgQH->Write();
+    lgQH->Write();
+    sgQlgQH->Write();
+    QRatio->Write();
+
     outputFile->Close();
+    inputFile->Close();
 
     return 0;
 }
