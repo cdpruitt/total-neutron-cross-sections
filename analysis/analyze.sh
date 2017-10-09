@@ -160,8 +160,10 @@ analyze ()
 
         inputFileName=$1
         outputDirectoryName=$2
+        experiment=$3
+        runNumber=$4
 
-        ./bin/detTimeCheck "$inputFileName" "$outputDirectoryName"
+        ./bin/detTimeCheck "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber"
         exit # we just want the time check output, so stop analysis here
     fi
 

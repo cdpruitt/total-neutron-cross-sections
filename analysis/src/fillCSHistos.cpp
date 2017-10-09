@@ -45,6 +45,9 @@ int fillCSHistos(string inputFileName, string treeName, string outputFileName)
     // create other diagnostic histograms used to examine run data
     TH2D* triangle = new TH2D("triangle","TOF vs. lgQ",config.plotConfig.TOF_RANGE,
             config.plotConfig.TOF_LOWER_BOUND,config.plotConfig.TOF_UPPER_BOUND,4096,0,65536);
+    TH2D* triangleEnergy = new TH2D("triangleEnergy","Energy vs. lgQ",config.plotConfig.NUMBER_ENERGY_BINS,
+            config.plotConfig.ENERGY_LOWER_BOUND,config.plotConfig.ENERGY_UPPER_BOUND,4096,0,65536);
+
     TH1D* timeDiffHisto = new TH1D("time since last event","time since last event",
             config.plotConfig.TOF_RANGE,0,config.plotConfig.TOF_RANGE);
     TH2D* timeDiffVEnergy1 = new TH2D("time difference vs. energy of first",
@@ -133,6 +136,7 @@ int fillCSHistos(string inputFileName, string treeName, string outputFileName)
 
         // fill histograms with event data
         triangle->Fill(microTime,event.lgQ);
+        triangleEnergy->Fill(rKE,event.lgQ);
         timeDiffHisto->Fill(eventTimeDiff);
         timeDiffVEnergy1->Fill(eventTimeDiff,prevRKE);
         time1Vtime2->Fill(prevMicroTime,microTime);
@@ -170,6 +174,7 @@ int fillCSHistos(string inputFileName, string treeName, string outputFileName)
     }
 
     triangle->Write();
+    triangleEnergy->Write();
     timeDiffHisto->Write();
     timeDiffVEnergy1->Write();
     time1Vtime2->Write();

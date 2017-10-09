@@ -36,19 +36,19 @@
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
     gPad->SetLeftMargin(0.15);
     gPad->SetRightMargin(0.10);
-    gPad->SetTopMargin(0.01);
-    gPad->SetBottomMargin(0.15);
+    gPad->SetTopMargin(0.10);
+    gPad->SetBottomMargin(0.20);
     //gPad->SetTicky(2);
 
-    double x[4] = {300, 500, 1500, 4500};
-    double y[4] = {0.2208, 0.1852, 0.1595, 0.1483};
-    TGraph* LRTimeDifferenceFitGraph = new TGraph(4,x,y);
+    double x[5] = {2.5, 5, 10, 20, 40};
+    double y[5] = {0.67846, 0.47541, 0.40246, 0.36975, 0.35233};
+    TGraph* LRTimeDifferenceFitGraph = new TGraph(5,x,y);
 
     // Set histo point and line characteristics
     LRTimeDifferenceFitGraph->SetMarkerColor(kBlack);
 
     // X-axis parameters
-    LRTimeDifferenceFitGraph->GetXaxis()->SetTitle("Q_{sum} threshold");
+    LRTimeDifferenceFitGraph->GetXaxis()->SetTitle("Energy of Event (MeV)");
     LRTimeDifferenceFitGraph->GetXaxis()->SetTitleSize(0.04);
     LRTimeDifferenceFitGraph->GetXaxis()->SetTitleFont(2);
     LRTimeDifferenceFitGraph->GetXaxis()->SetTitleOffset(1.5);
@@ -61,23 +61,23 @@
     LRTimeDifferenceFitGraph->GetXaxis()->SetNdivisions(5);
 
     // Y-axis parameters
-    LRTimeDifferenceFitGraph->GetYaxis()->SetTitle("FWHM of fit to time difference (ns)");
+    LRTimeDifferenceFitGraph->GetYaxis()->SetTitle("Time Difference FWHM (ns)");
     LRTimeDifferenceFitGraph->GetYaxis()->SetTitleSize(0.04);
     LRTimeDifferenceFitGraph->GetYaxis()->SetTitleFont(2);
-    LRTimeDifferenceFitGraph->GetYaxis()->SetTitleOffset(1.5);
+    LRTimeDifferenceFitGraph->GetYaxis()->SetTitleOffset(1.7);
     LRTimeDifferenceFitGraph->GetYaxis()->CenterTitle();
 
     LRTimeDifferenceFitGraph->GetYaxis()->SetLabelOffset(0.01);
-    LRTimeDifferenceFitGraph->GetYaxis()->SetLabelSize(0.05);
+    LRTimeDifferenceFitGraph->GetYaxis()->SetLabelSize(0.04);
     LRTimeDifferenceFitGraph->GetYaxis()->SetLabelFont(2);
 
     LRTimeDifferenceFitGraph->GetXaxis()->SetRangeUser(0,5000);
-    LRTimeDifferenceFitGraph->GetYaxis()->SetRangeUser(0.135,0.25);
+    LRTimeDifferenceFitGraph->GetYaxis()->SetRangeUser(0.33,0.70);
 
     LRTimeDifferenceFitGraph->Draw("AP");
 
-    TF1* fitToFWHM = new TF1("fitToFWHM","[0]+[1]/x",230,5000);
-    LRTimeDifferenceFitGraph->Fit("fitToFWHM","","",230,5000);
+    TF1* fitToFWHM = new TF1("fitToFWHM","[0]+[1]/x+[2]/(x*x)",2.2,44);
+    LRTimeDifferenceFitGraph->Fit("fitToFWHM","","",2.2,44);
     fitToFWHM->SetLineWidth(3);
 
     TLatex latex;
@@ -86,12 +86,12 @@
     latex.SetTextAlign(13); // align at top
 
     latex.SetTextColor(kGray+2);
-    latex.DrawLatex(0.2,0.28,"lim = 0.143 ns");
+    latex.DrawLatex(0.20,0.28,"lim = 0.34 ns");
 
     latex.SetTextSize(0.022);
-    latex.DrawLatex(0.2,0.25,"x#rightarrow#infty");
+    latex.DrawLatex(0.20,0.25,"x#rightarrow#infty");
 
-    TArrow *arrow = new TArrow(1020, 0.1485, 1100, 0.1445, 0.015, "|>");
+    TArrow *arrow = new TArrow(8.5, 0.3550, 10.5, 0.3460, 0.015, "|>");
     arrow->SetAngle(30);
     arrow->SetLineWidth(1);
     arrow->SetLineColor(kGray+2);
@@ -107,7 +107,7 @@
     //line300->SetLineColor(kBlack);
     //line300->Draw();
 
-    TLine *asymptote = new TLine(0, 0.1429, 4900, 0.1429);
+    TLine *asymptote = new TLine(0, 0.3406, 44, 0.3406);
     asymptote->SetLineStyle(7);
     asymptote->SetLineWidth(4);
     asymptote->SetLineColor(kGray+2);

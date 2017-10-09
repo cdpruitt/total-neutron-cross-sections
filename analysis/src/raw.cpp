@@ -360,6 +360,7 @@ int readRawData(string inFileName, string outFileName, string DPPTreeName, strin
                 break;
             case 4:
             case 6:
+            case 7:
                 rawEvent.completeTime += config.timeOffsetsConfig.DETECTOR_TIME_OFFSET;
 
                 // use CFD to improve timing precision

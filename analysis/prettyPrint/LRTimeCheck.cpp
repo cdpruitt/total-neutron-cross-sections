@@ -1,6 +1,6 @@
 {
 
-    string fileName = "/data1/analysis/44/0000/detTimeCheck.root";
+    string fileName = "/data1/analysis/44/0000/detTimeCheck_noGates.root";
 
     TFile* file = new TFile(fileName.c_str(),"READ");
 
@@ -25,7 +25,7 @@
         style = new TStyle("histoStyle","histoStyle");
     }
 
-    TCanvas* c = new TCanvas("c1","",1000,1000);
+    TCanvas* c = new TCanvas("c1","",900,900);
 
     style->SetOptStat(0);
     style->SetOptTitle(0);    
@@ -53,9 +53,9 @@
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
     gPad->SetLeftMargin(0.15);
-    gPad->SetRightMargin(0.10);
-    gPad->SetTopMargin(0.01);
-    gPad->SetBottomMargin(0.15);
+    gPad->SetRightMargin(0.15);
+    gPad->SetTopMargin(0.05);
+    gPad->SetBottomMargin(0.20);
     //gPad->SetTicky(2);
 
     // Set histo point and line characteristics
@@ -89,12 +89,10 @@
     //LRCorrelationHisto->GetYaxis()->SetNdivisions(10);
     //LRCorrelationHisto->GetYaxis()->SetTickLength(0.02);
 
-    LRCorrelationHisto->GetXaxis()->SetRangeUser(35,55);
-    LRCorrelationHisto->GetYaxis()->SetRangeUser(35,55);
+    LRCorrelationHisto->GetXaxis()->SetRangeUser(30,60);
+    LRCorrelationHisto->GetYaxis()->SetRangeUser(30,60);
 
     LRCorrelationHisto->Draw("colz");
-
-    LRCorrelationHist->SetStats(FALSE);
 
     gPad->SetLogz();
 

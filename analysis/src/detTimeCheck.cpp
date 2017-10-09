@@ -18,9 +18,9 @@
 using namespace std;
 
 const unsigned int TIME_CHECK_TOLERANCE = 5; // in ns
-const unsigned int TIME_CHECK_Q_HIGH_THRESHOLD = 4500; // in ns
-const unsigned int TIME_CHECK_Q_LOW_THRESHOLD = 1500; // in ns
-const unsigned int NUMBER_OF_EVENTS = 1000000;  // number of events to examine for time correlation
+const unsigned int TIME_CHECK_Q_HIGH_THRESHOLD = 10000; // in ns
+const unsigned int TIME_CHECK_Q_LOW_THRESHOLD = 5000; // in ns
+const unsigned int NUMBER_OF_EVENTS = 400000;  // number of events to examine for time correlation
 
 Config config;
 
@@ -42,6 +42,12 @@ int main(int argc, char** argv)
     string outFileLocation = argv[2];
     outFileLocation = outFileLocation + "detTimeCheck.root";
 
+    string experimentName = argv[3];
+
+    int runNumber = atoi(argv[4]);
+
+    config = Config(experimentName, runNumber);
+
     // create a ROOT file for holding time correlation plots
     TFile* outFile = new TFile(outFileLocation.c_str(),"RECREATE");
 
@@ -57,7 +63,7 @@ int main(int argc, char** argv)
     TH1D* ch6FineTimeH = new TH1D("ch6 fine time", "ch6 fine time", 600, 0, 60);
     TH1D* ch7FineTimeH = new TH1D("ch7 fine time", "ch7 fine time", 600, 0, 60);
 
-    unsigned long numberOfEventsProcessed = 0;
+    unsigned long numberOfEventsAdded = 0;
 
     double ch6Timetag = 0;
     double ch6FineTime = 0;
@@ -75,7 +81,7 @@ int main(int argc, char** argv)
 
     RawEvent rawEvent;
 
-    while(!inFile.eof() && numberOfEventsProcessed < NUMBER_OF_EVENTS)
+    while(!inFile.eof() && numberOfEventsAdded < NUMBER_OF_EVENTS)
     {
         if(readEvent(inFile, rawEvent))
         {
@@ -96,7 +102,7 @@ int main(int argc, char** argv)
                 if(ch6FineTime<0)
                 {
                     stringstream name;
-                    name << "Event" << numberOfEventsProcessed;
+                    name << "Event" << numberOfEventsAdded;
                     //TH1D* badFineTimeHisto = new TH1D(name.str().c_str(),name.str().c_str(),rawEvent.waveform->size(),0,rawEvent.waveform->size());
                     /*for(unsigned int i=0; i<rawEvent.waveform->size(); i++)
                     {
@@ -143,19 +149,19 @@ int main(int argc, char** argv)
         {
             detTimeCorrelation->Fill(ch7FineTime, ch6FineTime+(ch6Timetag-ch7Timetag));
             detTimeDifference->Fill((ch6FineTime+ch6Timetag)-(ch7FineTime+ch7Timetag));
+
+            numberOfEventsAdded++;
         }
 
-        if(numberOfEventsProcessed%10000==0)
+        if(numberOfEventsAdded%10000==0)
         {
-            cout << "Processed " << numberOfEventsProcessed << " events through time check\r";
+            cout << "Added " << numberOfEventsAdded << " events to time check histos...\r";
             fflush(stdout);
         }
-
-        numberOfEventsProcessed++;
     }
 
     cout << endl;
-    cout << "Finished processing " << numberOfEventsProcessed << " events through time check." << endl;
+    cout << "Finished processing " << numberOfEventsAdded << " events through time check." << endl;
 
     cout << "Successfully calculated a fine time on " << 100*(double)(numberOfCh6Events-numberOfBadCh6FineTime)/(numberOfCh6Events) << "% of ch6 events." << endl;
     cout << "Successfully calculated a fine time on " << 100*(double)(numberOfCh7Events-numberOfBadCh7FineTime)/(numberOfCh7Events) << "% of ch7 events." << endl;
