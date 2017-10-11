@@ -1,5 +1,7 @@
 #include "TFile.h"
 #include "TTree.h"
+#include "TH1.h"
+#include "TH2.h"
 
 #include "../include/config.h"
 #include "../include/GammaCorrection.h"
@@ -10,8 +12,7 @@ using namespace std;
 
 extern Config config;
 
-int calculateGammaCorrection(string inputFileName, string treeName,
-        vector<GammaCorrection>& gammaCorrectionList)
+int calculateGammaCorrection(string inputFileName, string treeName, vector<GammaCorrection>& gammaCorrectionList)
 {
     TFile* inputFile = new TFile(inputFileName.c_str(),"READ");
     if(!inputFile->IsOpen())
@@ -31,20 +32,22 @@ int calculateGammaCorrection(string inputFileName, string treeName,
     unsigned int macroNo;
     double macroTime;
     double completeTime;
+    unsigned int lgQ;
 
     tree->SetBranchAddress("macroTime",&macroTime);
     tree->SetBranchAddress("completeTime",&completeTime);
     tree->SetBranchAddress("macroNo",&macroNo);
+    tree->SetBranchAddress("lgQ",&lgQ);
+
+    const double GAMMA_TIME = pow(10,7)*config.facilityConfig.FLIGHT_DISTANCE/C;
+    cout << "For flight distance of " << config.facilityConfig.FLIGHT_DISTANCE
+        << " cm, gamma time is " << GAMMA_TIME << "." << endl;
 
     unsigned int long totalEntries = tree->GetEntries();
     tree->GetEntry(totalEntries-1);
-    gammaCorrectionList.resize(macroNo);
+    gammaCorrectionList.resize(macroNo+1, GammaCorrection());
 
     // Define the range of times considered to be gamma rays
-    const double GAMMA_TIME = pow(10,7)*config.facilityConfig.FLIGHT_DISTANCE/C;
-    cout << "For flight distance of " << config.facilityConfig.FLIGHT_DISTANCE
-         << ", gamma time is " << GAMMA_TIME << "." << endl;
-
     double timeDiff;
     double microTime;
 
@@ -56,10 +59,11 @@ int calculateGammaCorrection(string inputFileName, string treeName,
         microTime = fmod(timeDiff,config.facilityConfig.MICRO_LENGTH);
 
         // test if gamma
-        if(abs(microTime-GAMMA_TIME)<(config.timeOffsetsConfig.GAMMA_WINDOW_SIZE/2))
+        if(fabs(microTime-GAMMA_TIME)
+                <(config.timeOffsetsConfig.GAMMA_WINDOW_SIZE/2))
         {
+            gammaCorrectionList[macroNo].averageGammaTime += microTime;
             gammaCorrectionList[macroNo].numberOfGammas++;
-            gammaCorrectionList[macroNo].averageGammaOffset += microTime;
         }
 
         if(i%10000==0)
@@ -69,36 +73,47 @@ int calculateGammaCorrection(string inputFileName, string treeName,
         }
     }
 
-    unsigned int numberOfOffsets = 0;
-    double overallAverageOffset = 0;
+    unsigned int numberOfAverages = 0;
+    double overallAverageGammaTime = 0;
 
     for(int i=0; i<gammaCorrectionList.size(); i++)
     {
         // calculate average gamma offset for each macropulse
         if(gammaCorrectionList[i].numberOfGammas==0)
         {
-            gammaCorrectionList[i].averageGammaOffset = 0;
             continue;
         }
 
-        gammaCorrectionList[i].averageGammaOffset =
-            (gammaCorrectionList[i].averageGammaOffset
-             /(double)(gammaCorrectionList[i].numberOfGammas))-GAMMA_TIME;
+        gammaCorrectionList[i].averageGammaTime /=
+             gammaCorrectionList[i].numberOfGammas;
 
-        numberOfOffsets++;
-        overallAverageOffset += gammaCorrectionList[i].averageGammaOffset;
+        numberOfAverages++;
+        overallAverageGammaTime += gammaCorrectionList[i].averageGammaTime;
     }
 
-    if(numberOfOffsets>0)
+    if(numberOfAverages>0)
     {
-        overallAverageOffset /= numberOfOffsets;
+        overallAverageGammaTime /= (double)numberOfAverages;
     }
 
-    cout << "Finished gamma correction calculation."
-         << "Gamma correction calculated for " << (100*numberOfOffsets)/(double)gammaCorrectionList.size()
+    // for all macropulses where no gammas were found to calculate a
+    // correction, set the correction to the value of the average correction
+    // of all other macropulses
+    for(int i=0; i<gammaCorrectionList.size(); i++)
+    {
+        if(gammaCorrectionList[i].numberOfGammas==0)
+        {
+            gammaCorrectionList[i].averageGammaTime = overallAverageGammaTime;
+        }
+    }
+
+    cout << "Finished gamma average calculation."
+         << "Gamma average calculated for " << (100*numberOfAverages)/(double)gammaCorrectionList.size()
          << "% of macros." << endl;
     
-    cout << "Overall average correction was " << overallAverageOffset << " ns." << endl;
+    cout << "Overall average gamma time was " << overallAverageGammaTime << " ns." << endl;
+    cout << "Overall average gamma time - facility gamma time = "
+        << overallAverageGammaTime - GAMMA_TIME << " ns." << endl;
 
     inputFile->Close();
 

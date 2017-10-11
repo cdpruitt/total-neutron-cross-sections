@@ -1,6 +1,0 @@
-make: Nothing to be done for `all'.
-
-Sorting single sub-run /media/cdpruitt/nickel/output/8/data-0000.evt
-terminate called after throwing an instance of 'std::invalid_argument'
-  what():  stod
-./analyze.sh: line 139: 29826 Aborted                 (core dumped) ./bin/driver "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber" "$useVetoPaddle" "$processWaveformEvents" "$processDPPWaveformEvents"
