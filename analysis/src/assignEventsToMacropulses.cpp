@@ -72,13 +72,15 @@ int assignEventsToMacropulses(string inputFileName, string inputTreeName, string
     DetectorEvent detectorEvent;
     
     unsigned int chNo;
+    vector<int>* waveformPointer = 0;
+
     inputTree->SetBranchAddress("chNo",&chNo);
     inputTree->SetBranchAddress("cycleNumber",&detectorEvent.cycleNumber);
     inputTree->SetBranchAddress("completeTime",&detectorEvent.completeTime);
     inputTree->SetBranchAddress("fineTime",&detectorEvent.fineTime);
     inputTree->SetBranchAddress("sgQ",&detectorEvent.sgQ);
     inputTree->SetBranchAddress("lgQ",&detectorEvent.lgQ);
-    inputTree->SetBranchAddress("waveform",&detectorEvent.waveform);
+    inputTree->SetBranchAddress("waveform",&waveformPointer);
 
     /**************************************************************************/
 
@@ -93,7 +95,9 @@ int assignEventsToMacropulses(string inputFileName, string inputTreeName, string
 
         if(chNo==channelNo)
         {
-            eventList.push_back(DetectorEvent(detectorEvent));
+            DetectorEvent de = DetectorEvent(detectorEvent);
+            de.waveform = *waveformPointer;
+            eventList.push_back(de);
             detectorEvent.eventNo++;
         }
 

@@ -202,13 +202,13 @@ bool readWaveformData(ifstream& file, RawEvent& rawEvent)
     if(readTwoWords(file, rawEvent.nSamp))
     {
         // empty the vector to prepare for filling with new waveform
-        rawEvent.waveform->clear();
+        rawEvent.waveform.clear();
 
         for(unsigned int i=0; i<rawEvent.nSamp; i++)
         {
             unsigned int dummy;
             readWord(file, dummy);
-            rawEvent.waveform->push_back(dummy);
+            rawEvent.waveform.push_back(dummy);
         }
 
         return true;

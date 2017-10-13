@@ -25,7 +25,7 @@ void CSPrereqs::getHisto(TFile* histoFile, string directory, string name)
     histoFile->cd(directory.c_str());
     energyHisto = ((TH1D*)gDirectory->Get(energyHistoName.c_str()));
 
-    string TOFHistoName = name + "TOF";
+    string TOFHistoName = name + "Corrected";
     TOFHisto = ((TH1D*)gDirectory->Get(TOFHistoName.c_str()));
 }
 

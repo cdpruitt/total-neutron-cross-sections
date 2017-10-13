@@ -51,6 +51,9 @@ int calculateGammaCorrection(string inputFileName, string treeName, vector<Gamma
     double timeDiff;
     double microTime;
 
+    double weight;
+    double energy;
+
     for(long i=0; i<totalEntries; i++)
     {
         tree->GetEntry(i);
@@ -62,8 +65,19 @@ int calculateGammaCorrection(string inputFileName, string treeName, vector<Gamma
         if(fabs(microTime-GAMMA_TIME)
                 <(config.timeOffsetsConfig.GAMMA_WINDOW_SIZE/2))
         {
-            gammaCorrectionList[macroNo].averageGammaTime += microTime;
-            gammaCorrectionList[macroNo].numberOfGammas++;
+            // weight each gamma by the inverse of the FWHM of the gamma peak of
+            // just its energy
+            if(lgQ<=0)
+            {
+                lgQ = 1;
+            }
+
+            energy = lgQ/(double)200;
+            //weight = 1/(0.340626 + 1.03717/(energy) + 3.25392/(energy*energy));
+            weight = 1;
+
+            gammaCorrectionList[macroNo].gammaList
+                .push_back(GammaEvent(microTime, energy, weight));
         }
 
         if(i%10000==0)
@@ -76,19 +90,28 @@ int calculateGammaCorrection(string inputFileName, string treeName, vector<Gamma
     unsigned int numberOfAverages = 0;
     double overallAverageGammaTime = 0;
 
-    for(int i=0; i<gammaCorrectionList.size(); i++)
+    for(auto& gc : gammaCorrectionList)
     {
         // calculate average gamma offset for each macropulse
-        if(gammaCorrectionList[i].numberOfGammas==0)
+        if(gc.gammaList.size()==0)
         {
             continue;
         }
 
-        gammaCorrectionList[i].averageGammaTime /=
-             gammaCorrectionList[i].numberOfGammas;
+        double totalWeight = 0;
+
+        for(auto& gammaEvent : gc.gammaList)
+        {
+            gc.averageGammaTime += gammaEvent.weight*gammaEvent.time;
+            totalWeight += gammaEvent.weight;
+
+            gc.numberOfGammas++;
+        }
+
+        gc.averageGammaTime /= totalWeight;
 
         numberOfAverages++;
-        overallAverageGammaTime += gammaCorrectionList[i].averageGammaTime;
+        overallAverageGammaTime += gc.averageGammaTime;
     }
 
     if(numberOfAverages>0)

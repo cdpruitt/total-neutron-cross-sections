@@ -8,6 +8,6 @@
 int generateDeadtimeCorrection(TH1D* tof,
         unsigned int numberOfMacros, std::vector<double>& deadtimeCorrectionList);
 
-double applyDeadtimeCorrection(TH1D* rawTOF, TH1D* correctedTOF, const std::vector<double>& deadtimesPerBin);
+void applyDeadtimeCorrection(TH1D* rawTOF, TH1D* correctedTOF, const std::vector<double>& deadtimesPerBin);
 
 #endif /* CORRECT_FOR_DEADTIME_H */

@@ -13,14 +13,13 @@ using namespace std;
 const int DEADTIME_PERIOD = 150; // in ns
 const int DEADTIME_TRANSITION_PERIOD = 15; // in ns
 
-double applyDeadtimeCorrection(TH1D* rawTOF, TH1D* correctedTOF, const vector<double>& deadtimesPerBin)
+void applyDeadtimeCorrection(TH1D* rawTOF, TH1D* correctedTOF, const vector<double>& deadtimesPerBin)
 {
     if(deadtimesPerBin.size()==0)
     {
         cerr << "Error: cannot apply deadtime correction using empty deadtime correction list" << endl;
+        return;
     }
-
-    double sumOfDeadtimes = 0; // for computing average deadtime per bin
 
     for(int i=0; (size_t)i<deadtimesPerBin.size(); i++)
     {
@@ -28,15 +27,36 @@ double applyDeadtimeCorrection(TH1D* rawTOF, TH1D* correctedTOF, const vector<do
         {
             cerr << "Error: attempted to correct for deadtime, but encountered deadtime >100% (deadtime was "
                 << deadtimesPerBin[i] << "). Exiting." << endl;
-            exit(1);
+            return;
         }
 
         correctedTOF->SetBinContent(i+1,rawTOF->GetBinContent(i+1)/(1-deadtimesPerBin[i]));
-        sumOfDeadtimes += deadtimesPerBin[i];
     }
-    
-    return sumOfDeadtimes/deadtimesPerBin.size();
+
+    return;
 }
+
+/*void applyDeadtimeCorrection(TH2D* rawTOF, TH2D* correctedTOF, const vector<double>& deadtimesPerBin)
+{
+    unsigned int numberXBins = correctedTOF->GetNbinsX();
+    unsigned int numberYBins = correctedTOF->GetNbinsY();
+
+    if(numberXBins!=deadtimesPerBin.size() || numberYBins!=deadtimesPerBin.size())
+    {
+        cerr << "Error: cannot apply deadtime correction to histogram with different number of bins." << endl;
+        return;
+    }
+
+    for(int i=0; i<numberXBins; i++)
+    {
+        for(int j=0; j<numberYBins; j++)
+        {
+            correctedTOF->SetBinContent(i+1,j+1,rawTOF->GetBinContent(i+1)/(1-deadtimesPerBin[i]));
+        }
+    }
+
+    return;
+}*/
 
 int generateDeadtimeCorrection(TH1D* tof, unsigned int numberOfMacros,
         vector<double>& deadtimeCorrectionList)

@@ -15,24 +15,24 @@ LINKOPTION = $(shell root-config --libs)
 ############################### DEFINE TARGETS #################################
 
 # List all targets
-TARGETS = driver sumSingle sumAll readLitData subtractCS multiplyCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck
+TARGETS = driver sumAll sumChunk readLitData subtractCS multiplyCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck
 all: $(addprefix $(BIN), $(TARGETS))
 
 # Build driver (main data analysis engine)
-DRIVER_SOURCES = branches.cpp dataPoint.cpp dataSet.cpp driver.cpp config.cpp experiment.cpp fillDiagnosticHistos.cpp fillCSHistos.cpp plots.cpp raw.cpp identifyMacropulses.cpp assignEventsToMacropulses.cpp calculateGammaCorrection.cpp correctForDeadtime.cpp produceEnergyHistos.cpp target.cpp veto.cpp softwareCFD.cpp #waveform.cpp
+DRIVER_SOURCES = branches.cpp dataPoint.cpp dataSet.cpp driver.cpp config.cpp experiment.cpp fillCSHistos.cpp plots.cpp raw.cpp identifyMacropulses.cpp assignEventsToMacropulses.cpp calculateGammaCorrection.cpp correctForDeadtime.cpp produceEnergyHistos.cpp target.cpp veto.cpp softwareCFD.cpp #waveform.cpp
 
 $(BIN)driver: $(addprefix $(SOURCE), $(DRIVER_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)driver $(addprefix $(SOURCE), $(DRIVER_SOURCES)) $(LINKOPTION)
-
-# Build sumSingle (for generating cross sections using data from a single run) 
-SUMSINGLE_SOURCES = sumSingle.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp config.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp
-$(BIN)sumSingle: $(addprefix $(SOURCE), $(SUMSINGLE_SOURCES))
-	$(COMPILER) $(CFLAGS) -o $(BIN)sumSingle $(addprefix $(SOURCE), $(SUMSINGLE_SOURCES)) $(LINKOPTION)
 
 # Build sumAll (for generating cross sections using data from all available runs)
 SUMALL_SOURCES = sumAll.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp config.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp
 $(BIN)sumAll: $(addprefix $(SOURCE), $(SUMALL_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)sumAll $(addprefix $(SOURCE), $(SUMALL_SOURCES)) $(LINKOPTION)
+
+# Build sumChunk (for generating cross sections using data from a select set of subruns)
+SUMCHUNK_SOURCES = sumChunk.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp config.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp
+$(BIN)sumChunk: $(addprefix $(SOURCE), $(SUMCHUNK_SOURCES))
+	$(COMPILER) $(CFLAGS) -o $(BIN)sumChunk $(addprefix $(SOURCE), $(SUMCHUNK_SOURCES)) $(LINKOPTION)
 
 # Build readLitData (for reading pre-formatted literature data into ROOT Graphs)
 READLITDATA_SOURCES = readLitData.cpp dataSet.cpp dataPoint.cpp 

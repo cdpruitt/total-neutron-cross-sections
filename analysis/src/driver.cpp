@@ -201,19 +201,14 @@ int main(int, char* argv[])
     ifstream h(histoFileName);
     if(!h.good())
     {
-        for(string channelName : config.csConfig.DETECTOR_NAMES)
-        {
-            fillCSHistos(sortedFileName, channelName, histoFileName);
-        }
-
         for(string channelName : channelMap)
         {
-            if(channelName=="-")
+            if(channelName == "-")
             {
                 continue;
             }
 
-            fillDiagnosticHistos(sortedFileName, channelName, histoFileName);
+            fillCSHistos(sortedFileName, channelName, histoFileName);
         }
     }
 

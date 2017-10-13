@@ -28,7 +28,7 @@ struct RawEvent
     unsigned int lgQ;     // "long gate integrated charge" provides the charge
     // integral over an adjustable range of the event's peak 
     unsigned int nSamp; // number of samples in the event's waveform
-    std::vector<int>* waveform = new std::vector<int>; // "digital waveform of event" is a series of waveform samples for each event
+    std::vector<int> waveform; // "digital waveform of event" is a series of waveform samples for each event
 
     // Variables extracted from "extras"
     unsigned int baseline;
@@ -76,7 +76,7 @@ struct DetectorEvent
     unsigned int sgQ = 0;
     unsigned int lgQ = 0;
     unsigned int baseline = 0;
-    std::vector<int>* waveform = new std::vector<int>;
+    std::vector<int> waveform;
 };
 
 // used to store processed events after they have been mated with a macropulse
@@ -89,7 +89,7 @@ struct ProcessedEvent
     double fineTime; // the event's fine time
     unsigned int targetPos; // target position
     unsigned int sgQ, lgQ; // the event's short and long integrated charge gates
-    std::vector<int>* waveform = new std::vector<int>; // waveform data for this event
+    std::vector<int> waveform; // waveform data for this event
 };
 
 // used to keep track of the macropulse structure of the sub-run.
@@ -101,7 +101,7 @@ struct TargetChangerEvent
     double fineTime; // the event's calculated fine time
     unsigned int targetPos; // target position
     unsigned int lgQ; // the event's long integrated charge gate
-    std::vector<int>* waveform = new std::vector<int>; // waveform data for this event
+    std::vector<int> waveform; // waveform data for this event
 };
 
 #endif

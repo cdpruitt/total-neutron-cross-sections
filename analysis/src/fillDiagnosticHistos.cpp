@@ -53,24 +53,6 @@ int fillDiagnosticHistos(string inputFileName, string treeName, string outputFil
 
     directory->cd();
 
-    // create histos for visualizing basic event data
-    TH1D* cycleNumberH = new TH1D("cycleNumberH","cycleNumberH",500,0,500);
-    TH1D* macroNoH = new TH1D("macroNoH","macroNo",200000,0,200000);
-    TH1D* eventNoH = new TH1D("eventNoH","eventNo",300,0,300);
-    TH1D* targetPosH = new TH1D("targetPosH","targetPos",7,0,7);
-    TH1D* fineTimeH = new TH1D("fineTimeH","fineTimeH",6200,-2,60);
-    TH1D* sgQH = new TH1D("sgQH","sgQ",3500,0,35000);
-    TH1D* lgQH = new TH1D("lgQH","lgQ",7000,0,70000);
-
-    TH2D *sgQlgQH = new TH2D("sgQlgQH","short gate Q vs. long gate Q",2048,0,65536,2048,0,65536);
-    TH1D *QRatio = new TH1D("QRatio","short gate Q/long gate Q",1000,0,1);
-
-    // create a subdirectory for holding DPP-mode waveform data
-    gDirectory->mkdir("waveformsDir","raw DPP waveforms");
-    TDirectory* waveformsDir = (TDirectory*)gDirectory->Get("waveformsDir");
-
-    waveformsDir->cd();
-
     DetectorEvent event;
 
     tree->SetBranchAddress("cycleNumber",&event.cycleNumber);

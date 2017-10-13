@@ -40,7 +40,7 @@
     gPad->SetBottomMargin(0.20);
     //gPad->SetTicky(2);
 
-    double x[5] = {2.5, 5, 10, 20, 40};
+    double x[5] = {5, 10, 20, 40, 80};
     double y[5] = {0.67846, 0.47541, 0.40246, 0.36975, 0.35233};
     TGraph* LRTimeDifferenceFitGraph = new TGraph(5,x,y);
 
@@ -71,13 +71,13 @@
     LRTimeDifferenceFitGraph->GetYaxis()->SetLabelSize(0.04);
     LRTimeDifferenceFitGraph->GetYaxis()->SetLabelFont(2);
 
-    LRTimeDifferenceFitGraph->GetXaxis()->SetRangeUser(0,5000);
+    LRTimeDifferenceFitGraph->GetXaxis()->SetRangeUser(0,85);
     LRTimeDifferenceFitGraph->GetYaxis()->SetRangeUser(0.33,0.70);
 
     LRTimeDifferenceFitGraph->Draw("AP");
 
-    TF1* fitToFWHM = new TF1("fitToFWHM","[0]+[1]/x+[2]/(x*x)",2.2,44);
-    LRTimeDifferenceFitGraph->Fit("fitToFWHM","","",2.2,44);
+    TF1* fitToFWHM = new TF1("fitToFWHM","[0]+[1]/x+[2]/(x*x)",4.4,84);
+    LRTimeDifferenceFitGraph->Fit("fitToFWHM","","",4.4,84);
     fitToFWHM->SetLineWidth(3);
 
     TLatex latex;
@@ -91,7 +91,7 @@
     latex.SetTextSize(0.022);
     latex.DrawLatex(0.20,0.25,"x#rightarrow#infty");
 
-    TArrow *arrow = new TArrow(8.5, 0.3550, 10.5, 0.3460, 0.015, "|>");
+    TArrow *arrow = new TArrow(17, 0.3550, 19, 0.3460, 0.015, "|>");
     arrow->SetAngle(30);
     arrow->SetLineWidth(1);
     arrow->SetLineColor(kGray+2);
@@ -107,7 +107,7 @@
     //line300->SetLineColor(kBlack);
     //line300->Draw();
 
-    TLine *asymptote = new TLine(0, 0.3406, 44, 0.3406);
+    TLine *asymptote = new TLine(0, 0.3406, 85, 0.3406);
     asymptote->SetLineStyle(7);
     asymptote->SetLineWidth(4);
     asymptote->SetLineColor(kGray+2);

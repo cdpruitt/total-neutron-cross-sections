@@ -6,11 +6,11 @@
 
 using namespace std;
 
-double calculateCFDTime(vector<int>* waveform, double baseline, double fraction, unsigned int delay)
+double calculateCFDTime(const vector<int>& waveform, const double& baseline, const double& fraction, const unsigned int& delay)
 {
-    if(delay<=0 || delay>=waveform->size())
+    if(delay<=0 || delay>=waveform.size())
     {
-        cerr << "Error: cannot calculate CFD time with delay outside range of [0,waveform size] (" << delay << " was provided; waveform size() = " << waveform->size() << ")." << endl;
+        cerr << "Error: cannot calculate CFD time with delay outside range of [0,waveform size] (" << delay << " was provided; waveform size() = " << waveform.size() << ")." << endl;
         return 0;
     }
 
@@ -24,11 +24,11 @@ double calculateCFDTime(vector<int>* waveform, double baseline, double fraction,
     double CFDSample;
     double prevCFDSample = 0;
 
-    for(unsigned int i=1; i<waveform->size()-(delay+1); i++)
+    for(unsigned int i=1; i<waveform.size()-(delay+1); i++)
     {
         // produce CFD sum: opposite-sign waveform*fraction + normal-sign waveform, centered at
         // baseline
-        double CFDSample = waveform->at(i)-(fraction*waveform->at(i+delay)+baseline*(1-fraction));
+        double CFDSample = waveform[i]-(fraction*waveform[i+delay]+baseline*(1-fraction));
 
         if(!listenForZC && CFDSample>(config.softwareCFDConfig.CFD_ZC_TRIGGER_THRESHOLD))
         {

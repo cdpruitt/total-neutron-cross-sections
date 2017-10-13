@@ -4,10 +4,21 @@
 #include <vector>
 #include <string>
 
+struct GammaEvent
+{
+    GammaEvent() {}
+    GammaEvent(double t, double e, double w) : time(t), energy(e), weight(w) {}
+    double time = 0;
+    double energy = 0;
+    double weight = 0;
+};
+
 struct GammaCorrection
 {
-    unsigned int numberOfGammas = 0;
+    std::vector<GammaEvent> gammaList;
+
     double averageGammaTime = 0;
+    unsigned int numberOfGammas = 0;
 };
 
 int calculateGammaCorrection(std::string inputFileName, std::string treeName,
