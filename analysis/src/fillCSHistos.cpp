@@ -7,7 +7,7 @@
 #include "TH1.h"
 #include "TH2.h"
 #include "TDirectoryFile.h"
-#include "TROOT.h"
+#include "TRandom3.h"
 
 #include "../include/physicalConstants.h"
 #include "../include/dataStructures.h"
@@ -113,6 +113,13 @@ int fillCSHistos(string inputFileName, string treeName, string outputFileName)
             "gammaAverageByGammaNumber",40,0,40,60,GAMMA_TIME-3,GAMMA_TIME+3);
 
     TH1D* timeAutocorrelation;
+
+    TH1D* gammaAverageDiff = new TH1D("gamma average diff", "gamma average diff",
+            100, -GAMMA_WINDOW_WIDTH, GAMMA_WINDOW_WIDTH);
+
+    TH2D* gammaAverageDiffByGammaNumber = new TH2D("gamma average diff, 2D",
+            "gamma average diff, 2D", 100, -GAMMA_WINDOW_WIDTH,
+            GAMMA_WINDOW_WIDTH, 30, 0 ,30);
 
     vector<TH1D*> TOFHistos;
 
@@ -253,6 +260,43 @@ int fillCSHistos(string inputFileName, string treeName, string outputFileName)
             timeAutocorrelation->Fill(delay,correlation);
         }
 
+        TRandom3* rng = new TRandom3();
+
+        // calculate variance of gamma average
+        for(GammaCorrection gc : gammaCorrectionList)
+        {
+            double gammaAverage1 = 0;
+            double gammaAverage2 = 0;
+
+            vector<GammaEvent> selectedGammas;
+
+            unsigned int randomGammaNumber = 0;
+
+            while(selectedGammas.size()<gc.gammaList.size())
+            {
+                randomGammaNumber = floor(rng->Uniform(0, gc.gammaList.size()));
+                selectedGammas.push_back(gc.gammaList[randomGammaNumber]);
+                gc.gammaList.erase(gc.gammaList.begin()+randomGammaNumber);
+            }
+
+            for(auto& ge : selectedGammas)
+            {
+                gammaAverage1 += ge.time;
+            }
+
+            gammaAverage1 /= selectedGammas.size();
+
+            for(auto& ge : gc.gammaList)
+            {
+                gammaAverage2 += ge.time;
+            }
+
+            gammaAverage2 /= gc.gammaList.size();
+
+            gammaAverageDiff->Fill(gammaAverage2-gammaAverage1);
+            gammaAverageDiffByGammaNumber->Fill(gammaAverage2-gammaAverage1, gc.gammaList.size());
+        }
+
         cout << endl;
     }
 
@@ -386,6 +430,9 @@ int fillCSHistos(string inputFileName, string treeName, string outputFileName)
         gammaAverageByGammaNumberH->Write();
 
         timeAutocorrelation->Write();
+
+        gammaAverageDiff->Write();
+        gammaAverageDiffByGammaNumber->Write();
     }
 
     cycleNumberH->Write();

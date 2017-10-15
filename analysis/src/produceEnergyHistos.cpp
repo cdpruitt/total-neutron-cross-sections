@@ -46,45 +46,31 @@ int produceEnergyHistos(string inputFileName, string channelName, string outputF
     {
         string targetName = config.targetConfig.TARGET_ORDER[i];
 
-        string TOFhistoName = targetName + "TOF";
-        TH1D* TOF = (TH1D*)detectorDirectory->Get(TOFhistoName.c_str());
+        string TOFHistoName = targetName + "TOF";
+        TH1D* TOF = (TH1D*)detectorDirectory->Get(TOFHistoName.c_str());
 
         string targetPosHName = "targetPosH";
         TH1I* targetPosH = (TH1I*)macroTimeDirectory->Get(targetPosHName.c_str());
 
         unsigned int numberOfMacros = targetPosH->GetBinContent(i+2);
 
-        outputDirectory->cd();
-
-        cout << "Generating deadtime correction for target " << targetName << endl;
-
-        vector<double> deadtimeCorrectionList;
-        generateDeadtimeCorrection(TOF, numberOfMacros, deadtimeCorrectionList);
-
-        string deadtimeName = targetName + "Deadtime";
-        TH1D* deadtimeHisto = new TH1D(deadtimeName.c_str(), deadtimeName.c_str(),config.plotConfig.TOF_BINS,config.plotConfig.TOF_LOWER_BOUND,config.plotConfig.TOF_UPPER_BOUND);
-
-        for(int j=0; j<deadtimeCorrectionList.size(); j++)
-        {
-           deadtimeHisto->SetBinContent(j+1,deadtimeCorrectionList[j]);
-        }
-
-        cout << "finished filling deadtime histo" << endl;
-
-        deadtimeHisto->Write();
-
-        string correctedName = targetName + "Corrected";
+        string correctedName = targetName + "Iteration0";
         TH1D* correctedTOF = (TH1D*)TOF->Clone(correctedName.c_str());
-        applyDeadtimeCorrection(TOF, correctedTOF, deadtimeCorrectionList);
+
+        correctedTOF->Write();
+
+        correctForDeadtime(TOF, correctedTOF, numberOfMacros, outputDirectory);
+
+        correctedName = targetName + "Corrected";
+        correctedTOF = (TH1D*)correctedTOF->Clone(correctedName.c_str());
 
         correctedTOF->Write();
 
         TH1D* correctedEnergy = convertTOFtoEnergy(correctedTOF, targetName + "Energy");
         correctedEnergy->Write();
     }
-
+    
     inputFile->Close();
-
     outputFile->Close();
 
     return 0;

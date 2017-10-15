@@ -4,10 +4,8 @@
 #include <vector>
 
 #include "TH1.h"
+#include "TDirectory.h"
 
-int generateDeadtimeCorrection(TH1D* tof,
-        unsigned int numberOfMacros, std::vector<double>& deadtimeCorrectionList);
-
-void applyDeadtimeCorrection(TH1D* rawTOF, TH1D* correctedTOF, const std::vector<double>& deadtimesPerBin);
+int correctForDeadtime(TH1D*& rawTOF, TH1D*& correctedTOF, const unsigned int& numberOfMacros, TDirectory*& outputDirectory);
 
 #endif /* CORRECT_FOR_DEADTIME_H */

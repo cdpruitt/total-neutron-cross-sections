@@ -73,8 +73,8 @@ int calculateGammaCorrection(string inputFileName, string treeName, vector<Gamma
             }
 
             energy = lgQ/(double)200;
-            //weight = 1/(0.340626 + 1.03717/(energy) + 3.25392/(energy*energy));
-            weight = 1;
+            weight = 1/(0.340626 + 1.03717/(energy) + 3.25392/(energy*energy));
+            //weight = 1;
 
             gammaCorrectionList[macroNo].gammaList
                 .push_back(GammaEvent(microTime, energy, weight));
@@ -98,6 +98,7 @@ int calculateGammaCorrection(string inputFileName, string treeName, vector<Gamma
             continue;
         }
 
+        gc.averageGammaTime = 0;
         double totalWeight = 0;
 
         for(auto& gammaEvent : gc.gammaList)

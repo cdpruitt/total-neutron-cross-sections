@@ -207,7 +207,6 @@ CrossSection calculateCS(CSPrereqs& targetData, CSPrereqs& blankData, string exp
     double tMon = targetData.monitorCounts;
     double bMon = blankData.monitorCounts;
     double monitorRatio = tMon/bMon;
-    //monitorRatio *= 1.004;
 
     // calculate number of atoms in this target
     long double numberOfAtoms =
