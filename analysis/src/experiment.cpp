@@ -455,6 +455,7 @@ CSConfig readCSConfig(string expName, int runNumber)
 PlotConfig readPlotConfig(string expName, int runNumber)
 {
     string plotConfigLocation = "../" + expName + "/PlotConfig.txt";
+
     ifstream dataFile(plotConfigLocation.c_str());
     if(!dataFile.is_open())
     {
@@ -491,7 +492,7 @@ PlotConfig readPlotConfig(string expName, int runNumber)
 
         delimiter = "\n";
         string highRun = tokens[0].substr(0,tokens[0].find(delimiter));
-        
+
         if(atoi(lowRun.c_str()) <= runNumber && runNumber <= atoi(highRun.c_str()))
         {
             for(int i=1; (size_t)i<tokens.size(); i++)

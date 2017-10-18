@@ -380,7 +380,7 @@ int main(int, char* argv[])
 
             // for histos
             subRunData.readEnergyData(energyFile, "summedDet", j);
-            subRunData.readMonitorData(monitorFile, "monitor", j);
+            subRunData.readMonitorData(monitorFile, "monitor", "summedDet", j);
 
             // find the correct CSPrereqs to add this target's data to
             for(CSPrereqs& csp : allCSPrereqs)
@@ -407,6 +407,8 @@ int main(int, char* argv[])
 
     for(CSPrereqs& p : allCSPrereqs)
     {
+        cout << "all CS Prereqs name = " << p.target.getName() << endl;
+
         long totalCounts = 0;
         for(int i=0; i<p.energyHisto->GetNbinsX(); i++)
         {
@@ -422,7 +424,7 @@ int main(int, char* argv[])
         cout << p.target.getName() << ": total events in energy histo = "
             << totalCounts << ", total monitor events = "
             << p.monitorCounts << endl;
-        crossSections.push_back(calculateCS(p, allCSPrereqs[0], expName));
+        crossSections.push_back(calculateCS(p, allCSPrereqs[1], expName));
         cout << "Target " << crossSections.back().getDataSet().getReference() <<
             " RMS error: " << crossSections.back().calculateRMSError() << endl << endl;
 

@@ -71,7 +71,7 @@ TargetConfig::TargetConfig(std::vector<std::string> targetPositions, std::vector
 
 CSConfig::CSConfig(std::vector<std::string> v)
 {
-    if(v.size() != 1)
+    if(v.size() >= 8)
     {
         std::cerr << "Error: tried to create plot configuration for current run, but wrong number of parameters were read in." << std::endl;
         exit(1);
@@ -106,6 +106,7 @@ PlotConfig::PlotConfig(std::vector<std::string> v)
 
 Config::Config(std::string expName, int runNumber)
 {
+    cout << "Start reading experiment config data." << endl;
     facilityConfig = readFacilityConfig(expName, runNumber);
     softwareCFDConfig = readSoftwareCFDConfig(expName, runNumber);
     targetConfig = readTargetConfig(expName, runNumber);

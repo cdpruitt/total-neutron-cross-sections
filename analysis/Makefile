@@ -15,7 +15,7 @@ LINKOPTION = $(shell root-config --libs)
 ############################### DEFINE TARGETS #################################
 
 # List all targets
-TARGETS = driver sumAll sumChunk readLitData subtractCS multiplyCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck
+TARGETS = driver sumAll sumChunk readLitData subtractCS multiplyCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck testDeadtimeCorrection rateHisto TOFSimulation
 all: $(addprefix $(BIN), $(TARGETS))
 
 # Build driver (main data analysis engine)
@@ -84,6 +84,22 @@ $(BIN)scaledownCS: $(addprefix $(SOURCE), $(SCALEDOWNCS_SOURCES))
 PRODUCERUNNINGRMS_SOURCES = produceRunningRMS.cpp dataSet.cpp dataPoint.cpp crossSection.cpp target.cpp plots.cpp
 $(BIN)produceRunningRMS: $(addprefix $(SOURCE), $(PRODUCERUNNINGRMS_SOURCES)) 
 	$(COMPILER) $(CFLAGS) -o $(BIN)produceRunningRMS $(addprefix $(SOURCE), $(PRODUCERUNNINGRMS_SOURCES)) $(LINKOPTION)
+
+# Build testDeadtimeCorrection
+TESTDEADTIMECORRECTION_SOURCES = testDeadtimeCorrection.cpp correctForDeadtime.cpp
+$(BIN)testDeadtimeCorrection: $(addprefix $(SOURCE), $(TESTDEADTIMECORRECTION_SOURCES)) 
+	$(COMPILER) $(CFLAGS) -o $(BIN)testDeadtimeCorrection $(addprefix $(SOURCE), $(TESTDEADTIMECORRECTION_SOURCES)) $(LINKOPTION)
+
+# Build rateHisto
+RATEHISTO_SOURCES = rateHisto.cpp
+$(BIN)rateHisto: $(addprefix $(SOURCE), $(RATEHISTO_SOURCES)) 
+	$(COMPILER) $(CFLAGS) -o $(BIN)rateHisto $(addprefix $(SOURCE), $(RATEHISTO_SOURCES)) $(LINKOPTION)
+
+# Build TOFSimulation
+TOFSIMULATION_SOURCES = TOFSimulation.cpp
+$(BIN)TOFSimulation: $(addprefix $(SOURCE), $(TOFSIMULATION_SOURCES)) 
+	$(COMPILER) $(CFLAGS) -o $(BIN)TOFSimulation $(addprefix $(SOURCE), $(TOFSIMULATION_SOURCES)) $(LINKOPTION)
+
 
 ############################### DEFINE OBJECTS #################################
 

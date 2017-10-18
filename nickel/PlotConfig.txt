@@ -6,7 +6,7 @@ Run        TOF plots         TOF plots         TOF plots       Energy plots     
 range      lower bound (ns)  upper bound (ns)  number of bins  lower bound (MeV)  upper bound (MeV)  number of bins
 **********************************************************************************************************************
 0-0        -                 -                 -               -                  -                  -
-1-19       0                 1800              10              1.5                800                300
+1-19       0                 1800              10              1.5                800                200
 20-22      0                 3600              10              0.5                800                300
 23-23      0                 3600              10              8                  800                200
 24-27      0                 1800              10              8                  800                200

@@ -315,11 +315,11 @@ int main(int, char* argv[])
         // check to see if data with this target has already been read in
         // (from previous runs). If not, create a new CSPrereq to hold the new
         // target's data
-        for(string targetName : config.targetConfig.TARGET_ORDER)
+        for(string& targetName : config.targetConfig.TARGET_ORDER)
         {
             bool CSPAlreadyExists = false;
 
-            for(CSPrereqs csp : allCSPrereqs)
+            for(CSPrereqs& csp : allCSPrereqs)
             {
                 if(csp.target.getName() == targetName)
                 {
@@ -333,6 +333,8 @@ int main(int, char* argv[])
             {
                 continue;
             }
+
+            cout << "making new target " << targetName << endl;
 
             string targetDataLocation = "../" + expName + "/targetData/" + targetName + ".txt";
             allCSPrereqs.push_back(CSPrereqs(targetDataLocation));
@@ -387,9 +389,8 @@ int main(int, char* argv[])
                 string targetDataLocation = "../" + expName + "/targetData/" + targetOrder[j] + ".txt";
                 CSPrereqs subRunData(targetDataLocation);
 
-                // for histos
                 subRunData.readEnergyData(energyFile, "summedDet", j);
-                subRunData.readMonitorData(monitorFile, "monitor", j);
+                subRunData.readMonitorData(monitorFile, "monitor", "summedDet", j);
 
                 // find the correct CSPrereqs to add this target's data to
                 for(CSPrereqs& csp : allCSPrereqs)
@@ -432,14 +433,18 @@ int main(int, char* argv[])
         cout << p.target.getName() << ": total events in energy histo = "
              << totalCounts << ", total monitor events = "
              << p.monitorCounts << endl;
-        crossSections.push_back(calculateCS(p, allCSPrereqs[0], expName));
+        crossSections.push_back(calculateCS(p, allCSPrereqs[1], expName));
         cout << "Target " << crossSections.back().getDataSet().getReference() <<
                 " RMS error: " << crossSections.back().calculateRMSError() << endl << endl;
 
-        //p.energyHisto->SetDirectory(outFile);
         string name = p.target.getName() + "TOF";
         p.TOFHisto->SetNameTitle(name.c_str(),name.c_str());
         p.TOFHisto->SetDirectory(outFile);
+
+        name = p.target.getName() + "Energy";
+        p.energyHisto->SetNameTitle(name.c_str(),name.c_str());
+        p.energyHisto->SetDirectory(outFile);
+
     }
 
     outFile->Write();

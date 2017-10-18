@@ -5,16 +5,11 @@
 #include "TH1.h"
 #include "TDirectory.h"
 
-#include "../include/config.h"
 #include "../include/correctForDeadtime.h"
 
 using namespace std;
 
-// experimentally-determined digitizer deadtime
-const int DEADTIME_PERIOD = 150; // in ns
-const int DEADTIME_TRANSITION_PERIOD = 15; // in ns
-
-const double CONVERGENCE_CUTOFF = 0.999;
+const double CONVERGENCE_CUTOFF = 0.99999;
 
 bool testDeadtimeConvergence(TH1D* inputTOF, TH1D* correctedTOF)
 {
@@ -34,10 +29,9 @@ bool testDeadtimeConvergence(TH1D* inputTOF, TH1D* correctedTOF)
     return true;
 }
 
-int generateDeadtimeCorrection(TH1D* tof, unsigned int numberOfMacros,
-        vector<double>& deadtimeCorrectionList)
+int generateDeadtimeCorrection(TH1D* tof, double deadtimeBins, double deadtimeTransitionBins, unsigned int numberOfPeriods, vector<double>& deadtimeCorrection)
 {
-    cout << "Generating deadtime correction for target " << tof->GetName()<< endl;
+    cout << "Generating deadtime correction for target " << tof->GetName() << "\r";
 
     if(!tof)
     {
@@ -45,37 +39,30 @@ int generateDeadtimeCorrection(TH1D* tof, unsigned int numberOfMacros,
         return 1;
     }
 
-    if(numberOfMacros==0)
+    if(numberOfPeriods==0)
     {
         cerr << "Error: number of macros was 0 while trying to "
             << "generate deadtime correction." << endl;
         return 1;
     }
 
-    unsigned long int numberOfMicros = numberOfMacros
-        *(config.facilityConfig.MACRO_LENGTH
-                /(double)config.facilityConfig.MICRO_LENGTH);
-
-    vector<double> eventsPerMicroPerBin(config.plotConfig.TOF_BINS);
-
     string name = tof->GetName();
+    unsigned int numberOfBins = tof->GetNbinsX();
 
-    const int deadtimeBins = ((double)config.plotConfig.TOF_BINS/config.plotConfig.TOF_RANGE)*DEADTIME_PERIOD;
-
-    const int deadtimeTransitionBins = ((double)config.plotConfig.TOF_BINS/config.plotConfig.TOF_RANGE)*DEADTIME_TRANSITION_PERIOD;
+    vector<double> eventsPerMicroPerBin(numberOfBins);
 
     for(int j=0; j<eventsPerMicroPerBin.size(); j++)
     {
-        eventsPerMicroPerBin[j] = tof->GetBinContent(j+1)/((double)numberOfMicros);
+        eventsPerMicroPerBin[j] = tof->GetBinContent(j+1)/numberOfPeriods;
     }
 
     // find the fraction of the time that the detector is dead for each bin in the micropulse
     // set deadtime fraction base case
 
     // use deadtime base case to calculate deadtime for remaining bins
-    deadtimeCorrectionList.resize(eventsPerMicroPerBin.size());
+    deadtimeCorrection.resize(eventsPerMicroPerBin.size());
 
-    for(int j=0; j<config.plotConfig.TOF_BINS; j++)
+    for(int j=0; j<numberOfBins; j++)
     {
         for(int k=j-(deadtimeBins+deadtimeTransitionBins); k<j; k++)
         {
@@ -83,12 +70,12 @@ int generateDeadtimeCorrection(TH1D* tof, unsigned int numberOfMacros,
             {
                 if(k<0)
                 {
-                    deadtimeCorrectionList[j] += eventsPerMicroPerBin[k+config.plotConfig.TOF_BINS]*(double)(1-deadtimeCorrectionList[j])*((deadtimeBins+deadtimeTransitionBins-(j-k))/(double)deadtimeTransitionBins);
+                    deadtimeCorrection[j] += eventsPerMicroPerBin[k+numberOfBins]*(double)(1-deadtimeCorrection[j])*((deadtimeBins+deadtimeTransitionBins-(j-k))/(double)deadtimeTransitionBins);
                 }
 
                 else
                 {
-                    deadtimeCorrectionList[j] += eventsPerMicroPerBin[k]*(double)(1-deadtimeCorrectionList[j])*((deadtimeBins+deadtimeTransitionBins-(j-k))/(double)deadtimeTransitionBins);
+                    deadtimeCorrection[j] += eventsPerMicroPerBin[k]*(double)(1-deadtimeCorrection[j])*((deadtimeBins+deadtimeTransitionBins-(j-k))/(double)deadtimeTransitionBins);
                 }
             }
 
@@ -96,17 +83,17 @@ int generateDeadtimeCorrection(TH1D* tof, unsigned int numberOfMacros,
             {
                 if(k<0)
                 {
-                    deadtimeCorrectionList[j] += eventsPerMicroPerBin[k+config.plotConfig.TOF_BINS]*(double)(1-deadtimeCorrectionList[j]);
+                    deadtimeCorrection[j] += eventsPerMicroPerBin[k+numberOfBins]*(double)(1-deadtimeCorrection[j]);
                 }
 
                 else
                 {
-                    deadtimeCorrectionList[j] += eventsPerMicroPerBin[k]*(double)(1-deadtimeCorrectionList[j]);
+                    deadtimeCorrection[j] += eventsPerMicroPerBin[k]*(double)(1-deadtimeCorrection[j]);
                 }
             }
         }
 
-        deadtimeCorrectionList[j] += (eventsPerMicroPerBin[j]/2)*(1-deadtimeCorrectionList[j]); // last bin contributes 1/2 its value
+        deadtimeCorrection[j] += (eventsPerMicroPerBin[j]/2)*(1-deadtimeCorrection[j]); // last bin contributes 1/2 its value
     }
 
     return 0;
@@ -135,10 +122,8 @@ void applyDeadtimeCorrection(TH1D* correctedTOF, const vector<double>& deadtimes
     return;
 }
 
-int correctForDeadtime(TH1D*& rawTOF, TH1D*& correctedTOF, const unsigned int& numberOfMacros, TDirectory*& outputDirectory)
+int correctForDeadtime(TH1D*& rawTOF, TH1D*& correctedTOF, const double deadtimeBins, const double deadtimeTransitionBins, const unsigned int& numberOfMacros)
 {
-    outputDirectory->cd();
-
     string targetName = rawTOF->GetName();
 
     unsigned int iteration = 0;
@@ -152,16 +137,18 @@ int correctForDeadtime(TH1D*& rawTOF, TH1D*& correctedTOF, const unsigned int& n
         TH1D* inputTOF = (TH1D*)correctedTOF->Clone();
         inputTOF->Add(rawTOF,-1);
 
-        vector<double> deadtimeCorrectionList;
+        vector<double> deadtimeCorrection;
 
-        generateDeadtimeCorrection(inputTOF, numberOfMacros, deadtimeCorrectionList);
+        generateDeadtimeCorrection(inputTOF, deadtimeBins, deadtimeTransitionBins, numberOfMacros, deadtimeCorrection);
 
         string deadtimeName = targetName + "Deadtime" + to_string(iteration);
-        TH1D* deadtimeHisto = new TH1D(deadtimeName.c_str(), deadtimeName.c_str(),config.plotConfig.TOF_BINS,config.plotConfig.TOF_LOWER_BOUND,config.plotConfig.TOF_UPPER_BOUND);
 
-        for(int j=0; j<deadtimeCorrectionList.size(); j++)
+        unsigned int numberOfBins = inputTOF->GetNbinsX();
+        TH1D* deadtimeHisto = new TH1D(deadtimeName.c_str(), deadtimeName.c_str(),numberOfBins,0,numberOfBins);
+
+        for(int j=0; j<deadtimeCorrection.size(); j++)
         {
-            deadtimeHisto->SetBinContent(j+1,deadtimeCorrectionList[j]);
+            deadtimeHisto->SetBinContent(j+1,deadtimeCorrection[j]);
         }
 
         deadtimeHisto->Write();
@@ -171,10 +158,139 @@ int correctForDeadtime(TH1D*& rawTOF, TH1D*& correctedTOF, const unsigned int& n
         string correctedName = targetName + "Iteration" + to_string(iteration);
         correctedTOF = (TH1D*)correctedTOF->Clone(correctedName.c_str());
 
-        applyDeadtimeCorrection(correctedTOF, deadtimeCorrectionList);
+        applyDeadtimeCorrection(correctedTOF, deadtimeCorrection);
 
         correctedTOF->Write();
     }
+
+    cout << endl;
+    cout << "Finished deadtime correction for " << targetName << "TOF." << endl;
+
+    return 0;
+}
+
+int correctForDeadtime2(TH1D*& TOFtoCorrect, TH1D*& correctedTOF, const double deadtimeBins, const double deadtimeTransitionBins, const unsigned int& numberOfPeriods)
+{
+    string targetName = TOFtoCorrect->GetName();
+    unsigned int numberOfBins = TOFtoCorrect->GetNbinsX();
+
+    vector<double> measuredRatePerBin(numberOfBins);
+
+    for(int i=0; i<measuredRatePerBin.size(); i++)
+    {
+        measuredRatePerBin[i] = TOFtoCorrect->GetBinContent(i+1)/(double)numberOfPeriods;
+    }
+
+    vector<long double> trueRatePerBin(numberOfBins);
+    vector<long double> deadtimeCorrection(numberOfBins);
+
+    for(int i=0; i<numberOfBins; i++)
+    {
+        for(int j=i-(deadtimeBins+deadtimeTransitionBins); j<i; j++)
+        {
+            int k=i-(deadtimeBins+deadtimeTransitionBins);
+
+            if((j-k)<deadtimeTransitionBins)
+            {
+                // deadtime transition region
+                if(j<0)
+                {
+                    deadtimeCorrection[i] += trueRatePerBin[j+numberOfBins]*(double)(1-deadtimeCorrection[i])*((j-k)/(double)deadtimeTransitionBins);
+                }
+
+                else
+                {
+                    deadtimeCorrection[i] += trueRatePerBin[j]*(double)(1-deadtimeCorrection[i])*((j-k)/(double)deadtimeTransitionBins);
+                }
+            }
+
+            else
+            {
+                if(j<0)
+                {
+                    deadtimeCorrection[i] += trueRatePerBin[j+numberOfBins]*(double)(1-deadtimeCorrection[i]);
+                }
+
+                else
+                {
+                    deadtimeCorrection[i] += trueRatePerBin[j]*(double)(1-deadtimeCorrection[i]);
+                }
+            }
+
+            // calculate true event rate in this bin (current bin contributes half
+            // its value to the deadtime of itself)
+            trueRatePerBin[i] = 1 - sqrt(1+(2*measuredRatePerBin[i])/(deadtimeCorrection[i]-1));
+
+            cout << "i=" << i << ", rate = " << trueRatePerBin[i] << endl;
+        }
+    }
+
+    // write out calculated deadtime and true event rate
+    string deadtimeName = targetName + "Deadtime";
+
+    TH1D* deadtimeHisto = new TH1D(deadtimeName.c_str(), deadtimeName.c_str(),numberOfBins,0,numberOfBins);
+
+    for(int j=0; j<deadtimeCorrection.size(); j++)
+    {
+        deadtimeHisto->SetBinContent(j+1,deadtimeCorrection[j]);
+    }
+
+    deadtimeHisto->Write();
+
+    for(int i=0; i<numberOfBins; i++)
+    {
+        correctedTOF->SetBinContent(i+1, trueRatePerBin[i]*numberOfPeriods);
+    }
+
+    cout << endl;
+    cout << "Finished deadtime correction for " << targetName << "TOF." << endl;
+
+    return 0;
+}
+
+int correctForDeadtimeBob(TH1D*& TOFtoCorrect, TH1D*& correctedTOF, const double deadtimeBins, const double deadtimeTransitionBins, const unsigned int& numberOfPeriods)
+{
+    string targetName = TOFtoCorrect->GetName();
+    unsigned int numberOfBins = TOFtoCorrect->GetNbinsX();
+
+    vector<double> measuredRatePerBin(numberOfBins);
+
+    for(int i=0; i<measuredRatePerBin.size(); i++)
+    {
+        measuredRatePerBin[i] = TOFtoCorrect->GetBinContent(i+1)/(double)numberOfPeriods;
+    }
+
+    vector<long double> trueRatePerBin(numberOfBins);
+
+    for(int i=0; i<numberOfBins; i++)
+    {
+        double cumulativeDeadtime = 0;
+        for(int j=0; j<deadtimeBins; j++)
+        {
+            if((i-j)<0)
+            {
+                cumulativeDeadtime += measuredRatePerBin[(i-j)+numberOfBins];
+            }
+
+            else
+            {
+                cumulativeDeadtime += measuredRatePerBin[i-j];
+            }
+
+        }
+
+        trueRatePerBin[i] = -log(1-(measuredRatePerBin[i])/(1-cumulativeDeadtime));
+
+        cout << "i=" << i << ", rate = " << trueRatePerBin[i] << endl;
+    }
+
+    for(int i=0; i<numberOfBins; i++)
+    {
+        correctedTOF->SetBinContent(i+1, trueRatePerBin[i]*numberOfPeriods);
+    }
+
+    cout << endl;
+    cout << "Finished deadtime correction for " << targetName << "TOF." << endl;
 
     return 0;
 }

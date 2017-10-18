@@ -13,6 +13,9 @@ using namespace std;
 
 extern Config config;
 
+const int DEADTIME_PERIOD = 150; // in ns
+const int DEADTIME_TRANSITION_PERIOD = 15; // in ns
+
 int produceEnergyHistos(string inputFileName, string channelName, string outputFileName)
 {
     // open input file
@@ -30,16 +33,10 @@ int produceEnergyHistos(string inputFileName, string channelName, string outputF
         return 1;
     }
 
-    TDirectory* macroTimeDirectory = (TDirectory*)inputFile->GetDirectory("macroTime");
-    if(!macroTimeDirectory)
-    {
-        cerr << "Error: failed to find " << "macroTime" << " directory in " << inputFileName << "." << endl;
-        return 1;
-    }
-
     // create output file
     TFile* outputFile = new TFile(outputFileName.c_str(),"RECREATE");
     TDirectory* outputDirectory = outputFile->mkdir(channelName.c_str(),channelName.c_str());
+    outputDirectory->cd();
 
     // find TOF histograms in input file
     for(int i=0; i<config.targetConfig.TARGET_ORDER.size(); i++)
@@ -49,17 +46,32 @@ int produceEnergyHistos(string inputFileName, string channelName, string outputF
         string TOFHistoName = targetName + "TOF";
         TH1D* TOF = (TH1D*)detectorDirectory->Get(TOFHistoName.c_str());
 
-        string targetPosHName = "targetPosH";
-        TH1I* targetPosH = (TH1I*)macroTimeDirectory->Get(targetPosHName.c_str());
+        string goodMacrosHistoName = targetName + "GoodMacros";
+        TH1I* goodMacrosH = (TH1I*)detectorDirectory->Get(goodMacrosHistoName.c_str());
+        unsigned int numberOfBins = goodMacrosH->GetNbinsX();
+        unsigned int numberOfMacros = 0;
 
-        unsigned int numberOfMacros = targetPosH->GetBinContent(i+2);
+        for(int j=1; j<=numberOfBins; j++)
+        {
+            if(goodMacrosH->GetBinContent(j)>0)
+            {
+                numberOfMacros++;
+            }
+        }
 
-        string correctedName = targetName + "Iteration0";
+        double numberOfMicros = numberOfMacros*250;
+
+        const int deadtimeBins = ((double)config.plotConfig.TOF_BINS/config.plotConfig.TOF_RANGE)*DEADTIME_PERIOD;
+
+        const int deadtimeTransitionBins = ((double)config.plotConfig.TOF_BINS/config.plotConfig.TOF_RANGE)*DEADTIME_TRANSITION_PERIOD;
+
+        string correctedName = targetName + "Uncorrected";
         TH1D* correctedTOF = (TH1D*)TOF->Clone(correctedName.c_str());
 
         correctedTOF->Write();
 
-        correctForDeadtime(TOF, correctedTOF, numberOfMacros, outputDirectory);
+        outputDirectory->cd();
+        correctForDeadtime2(TOF, correctedTOF, deadtimeBins, deadtimeTransitionBins, numberOfMicros);
 
         correctedName = targetName + "Corrected";
         correctedTOF = (TH1D*)correctedTOF->Clone(correctedName.c_str());
@@ -75,4 +87,3 @@ int produceEnergyHistos(string inputFileName, string channelName, string outputF
 
     return 0;
 }
-
