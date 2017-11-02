@@ -39,9 +39,9 @@ using namespace std;
 // Use the lgQ from the target changer to determine the target position
 int assignTargetPos(int lgQ)
 {
-    for(int i=0; (size_t)i<config.targetConfig.TARGET_GATES.size(); i++)
+    for(int i=0; (size_t)i<config.target.TARGET_GATES.size(); i++)
     {
-        if (lgQ>=config.targetConfig.TARGET_GATES[i].first && lgQ<=config.targetConfig.TARGET_GATES[i].second)
+        if (lgQ>=config.target.TARGET_GATES[i].first && lgQ<=config.target.TARGET_GATES[i].second)
         {
             // lgQ fits within this gate
             return i; // target positions start from 1

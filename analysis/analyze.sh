@@ -90,7 +90,7 @@ overwriteHistos=false;
 useVetoPaddle=false;
 overwriteWaveform=false;
 
-while getopts "fscrnithw" opt; do
+while getopts "fscrithvw" opt; do
     case ${opt} in
         f)
             fullFilePath=true
@@ -190,13 +190,15 @@ analyze ()
     fi
 
     # Send error messages to a text file
-    #2>&1 | tee > "$outputDirectoryName"error.txt
 
     useVetoPaddle=$5
     processWaveformEvents=$6
     processDPPWaveformEvents=$7
 
-    ./bin/driver "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber" "$useVetoPaddle" "$processWaveformEvents" "$processDPPWaveformEvents"
+    ./bin/driver "$inputFileName" "$outputDirectoryName" "$experiment"\
+        "$runNumber" "$useVetoPaddle" "$processWaveformEvents"\
+        "$processDPPWaveformEvents" 3>&1 1>&2 2>&3 \
+        | tee "$outputDirectoryName"error.log
 }
 
 ################################################################################
@@ -291,9 +293,9 @@ then
         fi
 
         # Create directory to hold the output of our analysis
-        if [ ! -d "$outpath/analysis/$runNumber" ]
+        if [ ! -d "$outpath/$runNumber" ]
         then
-            mkdir "$outpath/analysis/$runNumber"
+            mkdir "$outpath/$runNumber"
         fi
 
         inputFileName="$datapath/$runNumber/data-$subrunNo.evt"
@@ -369,6 +371,7 @@ then
 
             outputDirectoryName="$outpath/$runNumber/$subrunNo/"
             printf "\n\n***Starting analysis of sub-run $subrunNo***\n"
+
             analyze "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber" "$useVetoPaddle" "false" "false"
             printf "\n\n***Finished analysis of sub-run $subrunNo***\n"
 

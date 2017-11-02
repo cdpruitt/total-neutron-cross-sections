@@ -19,9 +19,10 @@ struct GammaCorrection
 
     double averageGammaTime = 0;
     unsigned int numberOfGammas = 0;
+    double correction = 0;
 };
 
 int calculateGammaCorrection(std::string inputFileName, std::string treeName,
-        std::vector<GammaCorrection>& gammaCorrectionList);
+        std::vector<GammaCorrection>& gammaCorrectionList, std::string outputFileName);
 
 #endif /* GAMMA_CORRECTION_H */

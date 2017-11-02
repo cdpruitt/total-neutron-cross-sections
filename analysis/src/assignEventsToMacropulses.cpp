@@ -156,6 +156,8 @@ int assignEventsToMacropulses(string inputFileName, string inputTreeName, string
     unsigned int currentCycleNumber = 0;
     unsigned int maxCycleNumber = eventList.back().cycleNumber;
 
+    const double MACRO_LENGTH = config.facility.MICROS_PER_MACRO*config.facility.MICRO_LENGTH;
+
     while(currentCycleNumber<=maxCycleNumber)
     {
         // if the macropulse's cycle number is behind, move to the next macropulse
@@ -196,7 +198,7 @@ int assignEventsToMacropulses(string inputFileName, string inputTreeName, string
 
         // if macropulse's time is more than a full macropulse behind, move to
         // the next macropulse
-        while(macroTime + config.facilityConfig.MACRO_LENGTH <
+        while(macroTime + MACRO_LENGTH <
                  eventList[currentEvent].completeTime
            && macropulseCycleNumber==currentCycleNumber)
         {
@@ -249,7 +251,7 @@ int assignEventsToMacropulses(string inputFileName, string inputTreeName, string
         }
 
         while((macroTime < eventList[currentEvent].completeTime)
-           && (macroTime + config.facilityConfig.MACRO_LENGTH > eventList[currentEvent].completeTime)
+           && (macroTime + MACRO_LENGTH > eventList[currentEvent].completeTime)
            && (eventList[currentEvent].cycleNumber==currentCycleNumber))
         {
             detectorEvent.cycleNumber = eventList[currentEvent].cycleNumber;

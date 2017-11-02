@@ -25,11 +25,11 @@ TH1D* convertTOFtoEnergy(TH1D* tof, string name)
     for(unsigned int j=1; j<tofBins+1; j++)
     {
         // convert time into neutron velocity based on flight path distance
-        double velocity = pow(10.,7.)*(config.facilityConfig.FLIGHT_DISTANCE)
+        double velocity = pow(10.,7.)*(config.facility.FLIGHT_DISTANCE)
             /(tof->GetBinCenter(j)
                     /*+randomizeBin->Uniform(
-                        -(config.plotConfig.TOF_RANGE)/(double)(2*tofBins),
-                         (config.plotConfig.TOF_RANGE)/(double)(2*tofBins))*/
+                        -(config.plot.TOF_RANGE)/(double)(2*tofBins),
+                         (config.plot.TOF_RANGE)/(double)(2*tofBins))*/
              ); // in meters/sec 
 
         // convert velocity to relativistic kinetic energy
@@ -62,7 +62,7 @@ vector<double> scaleBins(vector<double> inputBins, int scaledown)
 
 double tofToRKE(double TOF)
 {
-    double velocity = pow(10.,7.)*config.facilityConfig.FLIGHT_DISTANCE/TOF; // in meters/sec 
+    double velocity = pow(10.,7.)*config.facility.FLIGHT_DISTANCE/TOF; // in meters/sec 
 
     if (velocity>C)
     {
@@ -88,7 +88,7 @@ double RKEToTOF(double RKE)
         return -1;
     }
 
-    double TOF = pow(10.,7.)*config.facilityConfig.FLIGHT_DISTANCE/velocity; // in meters/sec 
+    double TOF = pow(10.,7.)*config.facility.FLIGHT_DISTANCE/velocity; // in meters/sec 
 
     return TOF; // in ns
 }
@@ -109,7 +109,7 @@ TH1D* timeBinsToRKEBins(TH1D* inputHisto, string name)
 
     for(int i=1; i<nOldBins+1; i++)
     {
-        if(tofToRKE(minimumTime)>0 && tofToRKE(minimumTime)<config.plotConfig.ENERGY_UPPER_BOUND)
+        if(tofToRKE(minimumTime)>0 && tofToRKE(minimumTime)<config.plot.ENERGY_UPPER_BOUND)
         {
             break;
         }
@@ -132,7 +132,7 @@ TH1D* timeBinsToRKEBins(TH1D* inputHisto, string name)
 
     for(int i=nOldBins; i>0; i--)
     {
-        if(tofToRKE(maximumTime)>config.plotConfig.ENERGY_LOWER_BOUND)
+        if(tofToRKE(maximumTime)>config.plot.ENERGY_LOWER_BOUND)
         {
             break;
         }
@@ -174,7 +174,7 @@ TH1D* timeBinsToRKEBins(TH1D* inputHisto, string name)
     unscaledEnergyBins.push_back(tofToRKE(oldAxis->GetBinLowEdge(minimumBin)));
     
     // Downscale bins to desired granularity
-    vector<double> scaledEnergyBins = scaleBins(unscaledEnergyBins, nUnscaledEnergyBins/config.plotConfig.NUMBER_ENERGY_BINS);
+    vector<double> scaledEnergyBins = scaleBins(unscaledEnergyBins, nUnscaledEnergyBins/config.plot.NUMBER_ENERGY_BINS);
 
     TH1D* outputHisto = new TH1D(name.c_str(),
             name.c_str(),
@@ -204,7 +204,7 @@ TH1D* RKEBinsToTimeBins(TH1D *inputHisto, string name)
 
     for(int i=0; i<nOldBins; i++)
     {
-        if(RKEToTOF(minimumEnergy)>0 && RKEToTOF(minimumEnergy)<config.plotConfig.TOF_UPPER_BOUND)
+        if(RKEToTOF(minimumEnergy)>0 && RKEToTOF(minimumEnergy)<config.plot.TOF_UPPER_BOUND)
         {
             break;
         }
@@ -227,7 +227,7 @@ TH1D* RKEBinsToTimeBins(TH1D *inputHisto, string name)
 
     for(int i=nOldBins; i>0; i--)
     {
-        if(RKEToTOF(maximumEnergy)>config.plotConfig.TOF_LOWER_BOUND)
+        if(RKEToTOF(maximumEnergy)>config.plot.TOF_LOWER_BOUND)
         {
             break;
         }
@@ -291,9 +291,9 @@ Plots::Plots(string name)
     string energyName = name + "Energy";
     string deadtimeName = name + "Deadtime";
 
-    TOFHisto = new TH1D(tofName.c_str(),tofName.c_str(),config.plotConfig.TOF_BINS,config.plotConfig.TOF_LOWER_BOUND,config.plotConfig.TOF_UPPER_BOUND);
-    rawTOFHisto = new TH1D(rawTOFName.c_str(),rawTOFName.c_str(),config.plotConfig.TOF_BINS,config.plotConfig.TOF_LOWER_BOUND,config.plotConfig.TOF_UPPER_BOUND);
-    deadtimeHisto = new TH1D(deadtimeName.c_str(),deadtimeName.c_str(),config.plotConfig.TOF_BINS,config.plotConfig.TOF_LOWER_BOUND,config.plotConfig.TOF_UPPER_BOUND);
+    TOFHisto = new TH1D(tofName.c_str(),tofName.c_str(),config.plot.TOF_BINS,config.plot.TOF_LOWER_BOUND,config.plot.TOF_UPPER_BOUND);
+    rawTOFHisto = new TH1D(rawTOFName.c_str(),rawTOFName.c_str(),config.plot.TOF_BINS,config.plot.TOF_LOWER_BOUND,config.plot.TOF_UPPER_BOUND);
+    deadtimeHisto = new TH1D(deadtimeName.c_str(),deadtimeName.c_str(),config.plot.TOF_BINS,config.plot.TOF_LOWER_BOUND,config.plot.TOF_UPPER_BOUND);
 
     energyHisto = timeBinsToRKEBins(TOFHisto,energyName);
 

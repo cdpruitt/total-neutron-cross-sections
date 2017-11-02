@@ -293,6 +293,8 @@ int main(int, char* argv[])
     string expName = argv[2]; // experiment directory where runs to-be-sorted
                               // are listed
 
+    string detectorName = argv[3]; // detector name to be used for calculating cross sections
+
     vector<CSPrereqs> allCSPrereqs;
 
     // Open run list
@@ -315,7 +317,7 @@ int main(int, char* argv[])
         // check to see if data with this target has already been read in
         // (from previous runs). If not, create a new CSPrereq to hold the new
         // target's data
-        for(string& targetName : config.targetConfig.TARGET_ORDER)
+        for(string& targetName : config.target.TARGET_ORDER)
         {
             bool CSPAlreadyExists = false;
 
@@ -389,8 +391,8 @@ int main(int, char* argv[])
                 string targetDataLocation = "../" + expName + "/targetData/" + targetOrder[j] + ".txt";
                 CSPrereqs subRunData(targetDataLocation);
 
-                subRunData.readEnergyData(energyFile, "summedDet", j);
-                subRunData.readMonitorData(monitorFile, "monitor", "summedDet", j);
+                subRunData.readEnergyData(energyFile, detectorName, j);
+                subRunData.readMonitorData(monitorFile, "monitor", detectorName, j);
 
                 // find the correct CSPrereqs to add this target's data to
                 for(CSPrereqs& csp : allCSPrereqs)
@@ -465,13 +467,13 @@ int main(int, char* argv[])
     {
         int largerTarget = -1;
         int smallerTarget = -1;
-        for(int i=0; (size_t)i<config.targetConfig.TARGET_ORDER.size(); i++)
+        for(int i=0; (size_t)i<config.target.TARGET_ORDER.size(); i++)
         {
-            if(config.targetConfig.TARGET_ORDER[i]==p.first)
+            if(config.target.TARGET_ORDER[i]==p.first)
             {
                 largerTarget = i;
             }
-            else if(config.targetConfig.TARGET_ORDER[i]==p.second)
+            else if(config.target.TARGET_ORDER[i]==p.second)
             {
                 smallerTarget = i;
             }
@@ -481,7 +483,7 @@ int main(int, char* argv[])
         {
             // found cross section plots for both individual targets,
             // so use them to make a relative cross section plot
-            cout << "Producing relative cross section plot of " << config.targetConfig.TARGET_ORDER[largerTarget] << " and " << config.targetConfig.TARGET_ORDER[smallerTarget] << endl;
+            cout << "Producing relative cross section plot of " << config.target.TARGET_ORDER[largerTarget] << " and " << config.target.TARGET_ORDER[smallerTarget] << endl;
 
             //CrossSection sum = crossSections[largerTarget]+crossSections[smallerTarget];
             //cout << "sum plot " << sum.getDataSet().getReference() <<
@@ -504,7 +506,7 @@ int main(int, char* argv[])
 
         else
         {
-            cout << "Failed to find cross section plot for either " << config.targetConfig.TARGET_ORDER[largerTarget] << " or " << config.targetConfig.TARGET_ORDER[smallerTarget] << endl;
+            cout << "Failed to find cross section plot for either " << config.target.TARGET_ORDER[largerTarget] << " or " << config.target.TARGET_ORDER[smallerTarget] << endl;
         }
     }
 
@@ -525,13 +527,13 @@ int main(int, char* argv[])
     {
         int largerTarget = -1;
         int smallerTarget = -1;
-        for(int i=0; (size_t)i<config.targetConfig.TARGET_ORDER.size(); i++)
+        for(int i=0; (size_t)i<config.target.TARGET_ORDER.size(); i++)
         {
-            if(config.targetConfig.TARGET_ORDER[i]==p.first)
+            if(config.target.TARGET_ORDER[i]==p.first)
             {
                 largerTarget = i;
             }
-            else if(config.targetConfig.TARGET_ORDER[i]==p.second)
+            else if(config.target.TARGET_ORDER[i]==p.second)
             {
                 smallerTarget = i;
             }
@@ -540,7 +542,7 @@ int main(int, char* argv[])
         if(largerTarget>=0)
         {
             // found experimental cross section plot for this target
-            cout << "Producing subtracted cross section plot of " << config.targetConfig.TARGET_ORDER[largerTarget] << " and " << config.targetConfig.TARGET_ORDER[smallerTarget] << endl;
+            cout << "Producing subtracted cross section plot of " << config.target.TARGET_ORDER[largerTarget] << " and " << config.target.TARGET_ORDER[smallerTarget] << endl;
 
             CrossSection litData = 
 
@@ -555,7 +557,7 @@ int main(int, char* argv[])
 
         else
         {
-            cout << "Failed to find cross section plot for either " << config.targetConfig.TARGET_ORDER[largerTarget] << " or " << config.targetConfig.TARGET_ORDER[smallerTarget] << endl;
+            cout << "Failed to find cross section plot for either " << config.target.TARGET_ORDER[largerTarget] << " or " << config.target.TARGET_ORDER[smallerTarget] << endl;
         }
     }
 

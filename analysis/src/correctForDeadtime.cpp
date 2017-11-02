@@ -219,10 +219,16 @@ int correctForDeadtime2(TH1D*& TOFtoCorrect, TH1D*& correctedTOF, const double d
 
             // calculate true event rate in this bin (current bin contributes half
             // its value to the deadtime of itself)
-            trueRatePerBin[i] = 1 - sqrt(1+(2*measuredRatePerBin[i])/(deadtimeCorrection[i]-1));
+            if(deadtimeCorrection[i]>=1)
+            {
+                cerr << "Error: deadtime correction was calculated to be >1. Ending deadtime correction calculation for bin " << i << "." << endl;
+                break;
+            }
 
-            cout << "i=" << i << ", rate = " << trueRatePerBin[i] << endl;
+            trueRatePerBin[i] = 1 - sqrt(1+(2*measuredRatePerBin[i])/(deadtimeCorrection[i]-1));
         }
+
+        cout << "bin i = " << i << ", true rate = " << trueRatePerBin[i] << endl;
     }
 
     // write out calculated deadtime and true event rate
@@ -265,23 +271,40 @@ int correctForDeadtimeBob(TH1D*& TOFtoCorrect, TH1D*& correctedTOF, const double
     for(int i=0; i<numberOfBins; i++)
     {
         double cumulativeDeadtime = 0;
-        for(int j=0; j<deadtimeBins; j++)
+        for(int j=0; j<deadtimeBins+deadtimeTransitionBins; j++)
         {
-            if((i-j)<0)
+            if(j>deadtimeBins)
             {
-                cumulativeDeadtime += measuredRatePerBin[(i-j)+numberOfBins];
+                if((i-j)<0)
+                {
+                    cumulativeDeadtime += measuredRatePerBin[(i-j)+numberOfBins]
+                        *((deadtimeTransitionBins-(j-deadtimeBins))
+                                /(double)deadtimeTransitionBins);
+                }
+
+                else
+                {
+                    cumulativeDeadtime += measuredRatePerBin[i-j]
+                        *((deadtimeTransitionBins-(j-deadtimeBins))
+                                /(double)deadtimeTransitionBins);
+                }
             }
 
             else
             {
-                cumulativeDeadtime += measuredRatePerBin[i-j];
-            }
+                if((i-j)<0)
+                {
+                    cumulativeDeadtime += measuredRatePerBin[(i-j)+numberOfBins];
+                }
 
+                else
+                {
+                    cumulativeDeadtime += measuredRatePerBin[i-j];
+                }
+            }
         }
 
         trueRatePerBin[i] = -log(1-(measuredRatePerBin[i])/(1-cumulativeDeadtime));
-
-        cout << "i=" << i << ", rate = " << trueRatePerBin[i] << endl;
     }
 
     for(int i=0; i<numberOfBins; i++)
@@ -289,8 +312,7 @@ int correctForDeadtimeBob(TH1D*& TOFtoCorrect, TH1D*& correctedTOF, const double
         correctedTOF->SetBinContent(i+1, trueRatePerBin[i]*numberOfPeriods);
     }
 
-    cout << endl;
-    cout << "Finished deadtime correction for " << targetName << "TOF." << endl;
+    cout << "Finished deadtime correction for " << targetName << "." << endl;
 
     return 0;
 }
@@ -345,7 +367,7 @@ averageDeadtimeDiff = applyDeadtimeCorrection(rawTOF, correctedTOF, deadtimeH, d
 }
 
 // calculate likelihood of double peak in wavelet, for each TOF bin
-//const int waveletBins = (config.plotConfig.TOF_BINS/config.plotConfig.TOF_RANGE)*WAVELET_PERIOD;
+//const int waveletBins = (config.plot.TOF_BINS/config.plot.TOF_RANGE)*WAVELET_PERIOD;
 
 */
 

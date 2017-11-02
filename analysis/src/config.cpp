@@ -16,7 +16,7 @@ FacilityConfig::FacilityConfig(std::vector<std::string> facilityConfig)
     }
 
     MACRO_FREQUENCY = stod(facilityConfig[0]);
-    MACRO_LENGTH = stod(facilityConfig[1]);
+    MICROS_PER_MACRO = stoi(facilityConfig[1]);
     MICRO_LENGTH = stod(facilityConfig[2]);
     FLIGHT_DISTANCE = stod(facilityConfig[3]);
 }
@@ -37,7 +37,7 @@ SoftwareCFDConfig::SoftwareCFDConfig(std::vector<std::string> softwareCFDConfig)
 
 TimeOffsetsConfig::TimeOffsetsConfig(std::vector<std::string> timeOffsetsConfig)
 {
-    if(timeOffsetsConfig.size()!=5)
+    if(timeOffsetsConfig.size()!=6)
     {
         std::cerr << "Error: tried to create time offsets configuration for current run, but " << timeOffsetsConfig.size() << " time offsets were read in instead of the correct value of 5." << std::endl;
         exit(1);
@@ -47,7 +47,8 @@ TimeOffsetsConfig::TimeOffsetsConfig(std::vector<std::string> timeOffsetsConfig)
     MONITOR_TIME_OFFSET = stod(timeOffsetsConfig[1]);
     DETECTOR_TIME_OFFSET = stod(timeOffsetsConfig[2]);
     VETO_TIME_OFFSET = stod(timeOffsetsConfig[3]);
-    GAMMA_WINDOW_SIZE = stod(timeOffsetsConfig[4]);
+    HIGH_T_DET_TIME_OFFSET = stod(timeOffsetsConfig[4]);
+    GAMMA_WINDOW_SIZE = stod(timeOffsetsConfig[5]);
 }
 
 TargetConfig::TargetConfig(std::vector<std::string> targetPositions, std::vector<std::pair<int,int>> targetChangerGates)
@@ -107,13 +108,14 @@ PlotConfig::PlotConfig(std::vector<std::string> v)
 Config::Config(std::string expName, int runNumber)
 {
     cout << "Start reading experiment config data." << endl;
-    facilityConfig = readFacilityConfig(expName, runNumber);
-    softwareCFDConfig = readSoftwareCFDConfig(expName, runNumber);
-    targetConfig = readTargetConfig(expName, runNumber);
-    csConfig = readCSConfig(expName, runNumber);
-    plotConfig = readPlotConfig(expName, runNumber);
-    digitizerConfig = DigitizerConfig();
-    timeOffsetsConfig = readTimeOffsetsConfig(expName, runNumber);
+
+    facility = readFacilityConfig(expName, runNumber);
+    softwareCFD = readSoftwareCFDConfig(expName, runNumber);
+    target = readTargetConfig(expName, runNumber);
+    cs = readCSConfig(expName, runNumber);
+    plot = readPlotConfig(expName, runNumber);
+    digitizer = DigitizerConfig();
+    timeOffsets = readTimeOffsetsConfig(expName, runNumber);
 
     std::cout << "Finished reading experiment config data." << std::endl;
 }

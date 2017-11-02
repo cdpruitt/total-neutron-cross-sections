@@ -4,7 +4,9 @@
 #include "TH1D.h"
 #include "plots.h"
 
-int fillCSHistos(std::string inputFileName, std::string treeName, std::string outputFileName);
+#include "../include/GammaCorrection.h"
+
+int fillCSHistos(std::string inputFileName, std::string treeName, std::vector<GammaCorrection> gammaCorrectionList, std::string outputFileName);
 
 TH1D* convertTOFtoEnergy(TH1D* tof, std::string name);
 

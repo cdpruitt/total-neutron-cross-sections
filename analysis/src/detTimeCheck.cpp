@@ -87,13 +87,13 @@ int main(int argc, char** argv)
         {
             if(rawEvent.chNo==6)
             {
-                ch6Timetag = rawEvent.timetag*config.digitizerConfig.SAMPLE_PERIOD;
+                ch6Timetag = rawEvent.timetag*config.digitizer.SAMPLE_PERIOD;
                 ch6FineTime = calculateCFDTime(
                         rawEvent.waveform,
                         rawEvent.baseline,
-                        config.softwareCFDConfig.CFD_FRACTION,
-                        config.softwareCFDConfig.CFD_DELAY)
-                    *config.digitizerConfig.SAMPLE_PERIOD;
+                        config.softwareCFD.CFD_FRACTION,
+                        config.softwareCFD.CFD_DELAY)
+                    *config.digitizer.SAMPLE_PERIOD;
 
                 ch6FineTimeH->Fill(ch6FineTime);
 
@@ -119,13 +119,13 @@ int main(int argc, char** argv)
 
             else if(rawEvent.chNo==7)
             {
-                ch7Timetag = rawEvent.timetag*config.digitizerConfig.SAMPLE_PERIOD;
+                ch7Timetag = rawEvent.timetag*config.digitizer.SAMPLE_PERIOD;
                 ch7FineTime = calculateCFDTime(
                         rawEvent.waveform,
                         rawEvent.baseline,
-                        config.softwareCFDConfig.CFD_FRACTION,
-                        config.softwareCFDConfig.CFD_DELAY)
-                    *config.digitizerConfig.SAMPLE_PERIOD;
+                        config.softwareCFD.CFD_FRACTION,
+                        config.softwareCFD.CFD_DELAY)
+                    *config.digitizer.SAMPLE_PERIOD;
 
                 ch7FineTimeH->Fill(ch7FineTime);
 

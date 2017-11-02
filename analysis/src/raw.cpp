@@ -332,7 +332,7 @@ int readRawData(string inFileName, string outFileName, string DPPTreeName, strin
         rawEvent.completeTime =
             double(pow(2,31)*rawEvent.extTime) +
             rawEvent.timetag; // in samples
-        rawEvent.completeTime *= config.digitizerConfig.SAMPLE_PERIOD; // converts from samples to ns
+        rawEvent.completeTime *= config.digitizer.SAMPLE_PERIOD; // converts from samples to ns
 
         // Discard events with digitizer rollover error (i.e., incrementing extTime before clearing the timetag, near the rollover period at 2^31 bits)
 /*
@@ -351,33 +351,47 @@ int readRawData(string inFileName, string outFileName, string DPPTreeName, strin
         switch(rawEvent.chNo)
         {
             case 0:
-                rawEvent.completeTime += config.timeOffsetsConfig.TARGET_CHANGER_TIME_OFFSET;
+                rawEvent.completeTime += config.timeOffsets.TARGET_CHANGER_TIME_OFFSET;
                 break;
             case 1:
                 break;
             case 2:
-                rawEvent.completeTime += config.timeOffsetsConfig.MONITOR_TIME_OFFSET;
+                rawEvent.completeTime += config.timeOffsets.MONITOR_TIME_OFFSET;
                 break;
             case 4:
-            case 6:
-            case 7:
-                rawEvent.completeTime += config.timeOffsetsConfig.DETECTOR_TIME_OFFSET;
+                rawEvent.completeTime += config.timeOffsets.DETECTOR_TIME_OFFSET;
 
                 // use CFD to improve timing precision
                 rawEvent.fineTime = calculateCFDTime(
                             rawEvent.waveform,
                             rawEvent.baseline,
-                            config.softwareCFDConfig.CFD_FRACTION,
-                            config.softwareCFDConfig.CFD_DELAY); // CFD time in samples
+                            config.softwareCFD.CFD_FRACTION,
+                            config.softwareCFD.CFD_DELAY); // CFD time in samples
                 if(rawEvent.fineTime>=0)
                 {
                     // recovered a good fine time for this event
-                    rawEvent.completeTime += (rawEvent.fineTime-config.softwareCFDConfig.CFD_TIME_OFFSET)*config.digitizerConfig.SAMPLE_PERIOD;
+                    rawEvent.completeTime += (rawEvent.fineTime-config.softwareCFD.CFD_TIME_OFFSET)*config.digitizer.SAMPLE_PERIOD;
                 }
                     break;
             case 5:
-                rawEvent.completeTime += config.timeOffsetsConfig.VETO_TIME_OFFSET;
+                rawEvent.completeTime += config.timeOffsets.VETO_TIME_OFFSET;
                 break;
+            case 6:
+                rawEvent.completeTime += config.timeOffsets.HIGH_T_DET_TIME_OFFSET;
+
+                // use CFD to improve timing precision
+                rawEvent.fineTime = calculateCFDTime(
+                            rawEvent.waveform,
+                            rawEvent.baseline,
+                            config.softwareCFD.CFD_FRACTION,
+                            config.softwareCFD.CFD_DELAY); // CFD time in samples
+                if(rawEvent.fineTime>=0)
+                {
+                    // recovered a good fine time for this event
+                    rawEvent.completeTime += (rawEvent.fineTime-config.softwareCFD.CFD_TIME_OFFSET)*config.digitizer.SAMPLE_PERIOD;
+                }
+                    break;
+            case 7:
             default:
                 cerr << "Error: encountered unimplemented channel number " << rawEvent.chNo << " during complete time assignment. Ending raw data read-in..." << endl;
                 return 1;

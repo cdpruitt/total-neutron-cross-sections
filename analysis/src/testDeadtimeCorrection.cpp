@@ -5,17 +5,14 @@
 #include "TH1.h"
 #include "TDirectoryFile.h"
 
-#include "../include/correctForDeadtime.h"
-#include "../include/plots.h"
-
 using namespace std;
 
 int main()
 {
-    TFile* outputFile = new TFile("testDeadtimeCorrection.root","RECREATE");
+    TFile* outputFile = new TFile("simulation.root","RECREATE");
 
     // create model histogram
-    TH1D* model = new TH1D("model", "model", 1000, 0, 1000);
+    /*TH1D* model = new TH1D("model", "model", 1000, 0, 1000);
     unsigned int numberOfBins = model->GetNbinsX();
 
     for(int i=450; i<=numberOfBins-450; i++)
@@ -24,51 +21,22 @@ int main()
     }
 
     model->Write();
+    */
 
-    TH1D* measured = new TH1D("measured", "measured", 1000, 0, 1000);
+    TH1D* model = (TH1D*)outputFile->Get("allLiveEvents");
+    if(!model)
+    {
+        cerr << "Error: failed to find allLiveEvents histogram in simulation.root." << endl;
+        return 1;
+    }
+
+    unsigned int numberOfBins = model->GetNbinsX();
+
+    TH1D* measured = new TH1D("measured", "measured", numberOfBins, 0, numberOfBins);
 
     double numberOfPeriods = 500;
     double deadtimeBins = 0;
     double deadtimeTransitionBins = 0;
-
-    vector<double> fractionDead(numberOfBins);
-
-    for(int i=0; i<numberOfBins; i++)
-    {
-        for(int j=i-(deadtimeBins+deadtimeTransitionBins); j<i; j++)
-        {
-            int k=i-(deadtimeBins+deadtimeTransitionBins);
-
-            if((j-k)<deadtimeTransitionBins)
-            {
-                // deadtime transition region
-                if(j<0)
-                {
-                    fractionDead[i] += (1-fractionDead[i])*(model->GetBinContent(j+numberOfBins+1)/numberOfPeriods)*((j-k)/(double)deadtimeTransitionBins);
-                }
-
-                else
-                {
-                    fractionDead[i] += (1-fractionDead[i])*(model->GetBinContent(j+1)/numberOfPeriods)*((j-k)/(double)deadtimeTransitionBins);
-                }
-            }
-
-            else
-            {
-                if(j<0)
-                {
-                    fractionDead[i] += (1-fractionDead[i])*(model->GetBinContent(j+numberOfBins+1)/numberOfPeriods);
-                }
-
-                else
-                {
-                    fractionDead[i] += (1-fractionDead[i])*(model->GetBinContent(j+1)/numberOfPeriods);
-                }
-            }
-        }
-
-        fractionDead[i] += ((model->GetBinContent(i+1)/numberOfPeriods)/2)*(1-fractionDead[i]);
-    }
 
     for(int i=0; i<=numberOfBins; i++)
     {

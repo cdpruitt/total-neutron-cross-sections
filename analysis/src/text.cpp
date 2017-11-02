@@ -190,7 +190,7 @@ void printEvent(RawEvent& rawEvent, TextOutput& text)
             *out << left << setfill(' ') << setw(62) << "| Waveform samples" << "|" << endl;
             *out << "|" << right << setfill(' ') << setw(62) << "|" << endl;
 
-            for(std::vector<int>::size_type i = 0; i != rawEvent.waveform->size(); i++)
+            for(std::vector<int>::size_type i = 0; i != rawEvent.waveform.size(); i++)
             {
                 if(i%100 == 0 && i>0)
                 {
@@ -203,7 +203,7 @@ void printEvent(RawEvent& rawEvent, TextOutput& text)
                     temp << "|";
                 }
 
-                temp << right << setfill(' ') << setw(6) << rawEvent.waveform->at(i);
+                temp << right << setfill(' ') << setw(6) << rawEvent.waveform[i];
 
                 if(i%10==9 || i==rawEvent.nSamp-1)
                 {
@@ -332,7 +332,7 @@ void printEvent(RawEvent& rawEvent, TextOutput& text)
                 *out << "|";
             } 
 
-            *out << right << setfill(' ') << setw(6) << rawEvent.waveform->at(i);
+            *out << right << setfill(' ') << setw(6) << rawEvent.waveform[i];
 
             if(i%10 == 9)
             {

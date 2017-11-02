@@ -34,25 +34,29 @@ while getopts "scr" opt; do
     esac
 done
 
+
 read -r experiment<experiment.txt # find out which experimental dataset to analyze
 
 if [ "$runList" = true ]
 then
     printf "\nAnalyzing all runs in runList.txt...\n"
 
+    detectorName=$2 # which detector should be used for cross section calculation
     analysisDirectoryName="/data1/analysis"
-    ./bin/sumAll "$analysisDirectoryName" "$experiment"
+
+    ./bin/sumAll "$analysisDirectoryName" "$experiment" "$detectorName"
 fi
 
 if [ "$runChunk" = true ]
 then
-    # Analyze a chunk of subruns in a run, specified by the run, the first subrun to
-    # analyze, and the last subrun to analyze
-    printf "\nAnalyzing chunk of subruns in $2...\n"
-
     runNumber=$2
     lowSubrun=$3
     highSubrun=$4
+    detectorName=$5  # which detector should be used for cross section calculation
+
+    # Analyze a chunk of subruns in a run, specified by the run, the first subrun to
+    # analyze, and the last subrun to analyze
+    printf "\nAnalyzing chunk of subruns in $2...\n"
 
     # read input filepath and output filepath
     while read l
@@ -65,6 +69,6 @@ then
         fi
     done < ../"$experiment"/filepaths.txt
 
-    ./bin/sumChunk "$analysisDirectoryName" "$experiment" "$runNumber" "$lowSubrun" "$highSubrun"
+    ./bin/sumChunk "$analysisDirectoryName" "$experiment" "$runNumber" "$lowSubrun" "$highSubrun" "$detectorName"
 
 fi

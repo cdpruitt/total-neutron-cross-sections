@@ -1,15 +1,15 @@
-void relativeDiff_CSnPb_expLit()
+void relativeDiff_CNiPb_expLit()
 {
-    string fileName = "/data2/analysis/scaledown.root";
+    string fileName = "/data1/analysis/scaledown.root";
 
     TFile* file = new TFile(fileName.c_str(),"READ");
     
     string CGraphName = "relDiff_natC_expLit_percent";
-    string SnGraphName = "relDiff_natSn_expLit_percent";
+    string NiGraphName = "relDiff_natNi_expLit_percent";
     string PbGraphName = "relDiff_natPb_expLit_percent";
         
     TGraphErrors* CGraph = (TGraphErrors*)file->Get(CGraphName.c_str());
-    TGraphErrors* SnGraph = (TGraphErrors*)file->Get(SnGraphName.c_str());
+    TGraphErrors* NiGraph = (TGraphErrors*)file->Get(NiGraphName.c_str());
     TGraphErrors* PbGraph = (TGraphErrors*)file->Get(PbGraphName.c_str());
 
     TStyle* style = (TStyle*)gROOT->FindObject("graphStyle");
@@ -50,10 +50,10 @@ void relativeDiff_CSnPb_expLit()
     CGraph->SetLineStyle(0);
     CGraph->SetMarkerColor(kRed-9);
 
-    SnGraph->SetLineColor(kRed);
-    SnGraph->SetLineWidth(4);
-    SnGraph->SetLineStyle(0);
-    SnGraph->SetMarkerColor(kRed);
+    NiGraph->SetLineColor(kRed);
+    NiGraph->SetLineWidth(4);
+    NiGraph->SetLineStyle(0);
+    NiGraph->SetMarkerColor(kRed);
 
     PbGraph->SetLineColor(kRed+3);
     PbGraph->SetLineWidth(4);
@@ -97,7 +97,7 @@ void relativeDiff_CSnPb_expLit()
     CGraph->GetYaxis()->SetTickLength(0.02);
 
     CGraph->Draw("");
-    SnGraph->Draw("same");
+    NiGraph->Draw("same");
     PbGraph->Draw("same");
     
     gPad->SetLogx(1);
@@ -109,7 +109,7 @@ void relativeDiff_CSnPb_expLit()
     //latex.SetTextSize(0.05);
     //latex.SetTextAlign(13); // align at top
     //latex.DrawLatex(0.65,0.65,"Pb");
-    //latex.DrawLatex(0.47,0.52,"Sn");
+    //latex.DrawLatex(0.47,0.52,"Ni");
     //latex.DrawLatex(0.32,0.4,"C");
 
     // Define legend format and contents
@@ -117,7 +117,7 @@ void relativeDiff_CSnPb_expLit()
     //legend->SetHeader("");
     legend->SetTextSize(0.04);
     legend->AddEntry(CGraph,"{}^{nat}C","l");
-    legend->AddEntry(SnGraph,"{}^{nat}Sn","l");
+    legend->AddEntry(NiGraph,"{}^{nat}Ni","l");
     legend->AddEntry(PbGraph,"{}^{nat}Pb","l");
 
     legend->Draw();

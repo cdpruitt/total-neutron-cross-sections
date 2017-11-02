@@ -7,7 +7,7 @@ SOURCE = src/
 
 # Define compilation flags
 COMPILER = clang++ 
-CFLAGS = -lstdc++ -O3 -I$(shell root-config --incdir) -std=c++11 -ggdb
+CFLAGS = -lstdc++ -O3 -I$(shell root-config --incdir) -std=c++11
 
 # For integration with ROOT data analysis framework
 LINKOPTION = $(shell root-config --libs)
@@ -15,11 +15,11 @@ LINKOPTION = $(shell root-config --libs)
 ############################### DEFINE TARGETS #################################
 
 # List all targets
-TARGETS = driver sumAll sumChunk readLitData subtractCS multiplyCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck testDeadtimeCorrection rateHisto TOFSimulation
+TARGETS = driver text sumAll sumChunk readLitData subtractCS multiplyCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck rateHisto TOFSimulation
 all: $(addprefix $(BIN), $(TARGETS))
 
 # Build driver (main data analysis engine)
-DRIVER_SOURCES = branches.cpp dataPoint.cpp dataSet.cpp driver.cpp config.cpp experiment.cpp fillCSHistos.cpp plots.cpp raw.cpp identifyMacropulses.cpp assignEventsToMacropulses.cpp calculateGammaCorrection.cpp correctForDeadtime.cpp produceEnergyHistos.cpp target.cpp veto.cpp softwareCFD.cpp #waveform.cpp
+DRIVER_SOURCES = dataPoint.cpp dataSet.cpp driver.cpp config.cpp experiment.cpp fillBasicHistos.cpp fillCSHistos.cpp plots.cpp raw.cpp identifyMacropulses.cpp assignEventsToMacropulses.cpp calculateGammaCorrection.cpp correctForDeadtime.cpp produceEnergyHistos.cpp target.cpp veto.cpp softwareCFD.cpp #waveform.cpp
 
 $(BIN)driver: $(addprefix $(SOURCE), $(DRIVER_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)driver $(addprefix $(SOURCE), $(DRIVER_SOURCES)) $(LINKOPTION)
@@ -40,12 +40,12 @@ $(BIN)readLitData: $(addprefix $(SOURCE), $(READLITDATA_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)readLitData $(addprefix $(SOURCE), $(READLITDATA_SOURCES)) $(LINKOPTION)
 
 # Build text (for producing human-readable dump of raw event file data)
-TEXT_SOURCES = text.cpp raw.cpp branches.cpp
+TEXT_SOURCES = text.cpp raw.cpp softwareCFD.cpp
 $(BIN)text: $(addprefix $(SOURCE), $(TEXT_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)text $(addprefix $(SOURCE), $(TEXT_SOURCES)) $(LINKOPTION)
 
 # Build detTimeCheck (for comparing the timestamps of the same event, but recorded by different digitizer channels)
-DETTIMECHECK_SOURCES = detTimeCheck.cpp raw.cpp branches.cpp config.cpp experiment.cpp softwareCFD.cpp
+DETTIMECHECK_SOURCES = detTimeCheck.cpp raw.cpp config.cpp experiment.cpp softwareCFD.cpp
 $(BIN)detTimeCheck: $(addprefix $(SOURCE), $(DETTIMECHECK_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)detTimeCheck $(addprefix $(SOURCE), $(DETTIMECHECK_SOURCES)) $(LINKOPTION)
 
@@ -85,18 +85,13 @@ PRODUCERUNNINGRMS_SOURCES = produceRunningRMS.cpp dataSet.cpp dataPoint.cpp cros
 $(BIN)produceRunningRMS: $(addprefix $(SOURCE), $(PRODUCERUNNINGRMS_SOURCES)) 
 	$(COMPILER) $(CFLAGS) -o $(BIN)produceRunningRMS $(addprefix $(SOURCE), $(PRODUCERUNNINGRMS_SOURCES)) $(LINKOPTION)
 
-# Build testDeadtimeCorrection
-TESTDEADTIMECORRECTION_SOURCES = testDeadtimeCorrection.cpp correctForDeadtime.cpp
-$(BIN)testDeadtimeCorrection: $(addprefix $(SOURCE), $(TESTDEADTIMECORRECTION_SOURCES)) 
-	$(COMPILER) $(CFLAGS) -o $(BIN)testDeadtimeCorrection $(addprefix $(SOURCE), $(TESTDEADTIMECORRECTION_SOURCES)) $(LINKOPTION)
-
 # Build rateHisto
 RATEHISTO_SOURCES = rateHisto.cpp
 $(BIN)rateHisto: $(addprefix $(SOURCE), $(RATEHISTO_SOURCES)) 
 	$(COMPILER) $(CFLAGS) -o $(BIN)rateHisto $(addprefix $(SOURCE), $(RATEHISTO_SOURCES)) $(LINKOPTION)
 
 # Build TOFSimulation
-TOFSIMULATION_SOURCES = TOFSimulation.cpp
+TOFSIMULATION_SOURCES = TOFSimulation.cpp correctForDeadtime.cpp
 $(BIN)TOFSimulation: $(addprefix $(SOURCE), $(TOFSIMULATION_SOURCES)) 
 	$(COMPILER) $(CFLAGS) -o $(BIN)TOFSimulation $(addprefix $(SOURCE), $(TOFSIMULATION_SOURCES)) $(LINKOPTION)
 

@@ -12,7 +12,7 @@ struct FacilityConfig
         FacilityConfig(std::vector<std::string> facilityConfig);
 
         double MACRO_FREQUENCY;   // frequency of macropulses, in Hz
-        double MACRO_LENGTH;      // macropulse duration, in ns
+        unsigned int MICROS_PER_MACRO;  // number of micropulses in each macropulse
         double MICRO_LENGTH;      // micropulse duration, in ns
         double FLIGHT_DISTANCE;   // detector distance from neutron source, in cm
 };
@@ -47,6 +47,8 @@ struct TimeOffsetsConfig
         double DETECTOR_TIME_OFFSET; // timing delay between macropulse start and main detector channel (in ns)
 
         double VETO_TIME_OFFSET; // timing delay between macropulse start and veto detector channel (in ns)
+
+        double HIGH_T_DET_TIME_OFFSET; // timing delay between macropulse start and high threshold detector channel (in ns)
 
         double GAMMA_WINDOW_SIZE; // width of window used to identify gammas for gamma time correction to macropulse times
 };
@@ -99,13 +101,13 @@ struct Config
         Config() {}
         Config(std::string expName, int runNumber);
 
-        FacilityConfig facilityConfig;
-        SoftwareCFDConfig softwareCFDConfig;
-        TargetConfig targetConfig;
-        CSConfig csConfig;
-        PlotConfig plotConfig;
-        DigitizerConfig digitizerConfig;
-        TimeOffsetsConfig timeOffsetsConfig;
+        FacilityConfig facility;
+        SoftwareCFDConfig softwareCFD;
+        TargetConfig target;
+        CSConfig cs;
+        PlotConfig plot;
+        DigitizerConfig digitizer;
+        TimeOffsetsConfig timeOffsets;
 };
 
 extern Config config;

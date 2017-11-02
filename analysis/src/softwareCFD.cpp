@@ -30,7 +30,7 @@ double calculateCFDTime(const vector<int>& waveform, const double& baseline, con
         // baseline
         double CFDSample = waveform[i]-(fraction*waveform[i+delay]+baseline*(1-fraction));
 
-        if(!listenForZC && CFDSample>(config.softwareCFDConfig.CFD_ZC_TRIGGER_THRESHOLD))
+        if(!listenForZC && CFDSample>(config.softwareCFD.CFD_ZC_TRIGGER_THRESHOLD))
         {
             // approaching ZC - start looking for a ZC
             listenForZC = true;

@@ -413,6 +413,9 @@ void produceRunningRMS(DataSet firstDS, DataSet secondDS, string name)
         }
     }
 
+    cout << "Total RMS at " << rms.getPoint(rms.getNumberOfPoints()-1).getXValue()
+        << " MeV = " << rms.getPoint(rms.getNumberOfPoints()-1).getYValue() << endl;
+
     CrossSection rmsPlot = CrossSection();
     rmsPlot.addDataSet(rms);
 

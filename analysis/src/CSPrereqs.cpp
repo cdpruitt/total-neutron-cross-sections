@@ -73,7 +73,7 @@ void CSPrereqs::getGoodMacroRatio(TFile* histoFile, string directory, string goo
 void CSPrereqs::readEnergyData(TFile* histoFile, string directory, int targetPosition)
 {
     // Find deadtime-corrected energy histo for this target
-    string histoName = config.targetConfig.TARGET_ORDER[targetPosition];
+    string histoName = config.target.TARGET_ORDER[targetPosition];
     getHisto(histoFile, directory, histoName);
 }
 
@@ -83,8 +83,8 @@ void CSPrereqs::readMonitorData(TFile* histoFile, string monitorDirectory, strin
     getMonitorCounts(histoFile, monitorDirectory, targetPosition);
 
     // Scale monitor counts by number of good macropulses for this target
-    string goodMacroHistoName = config.targetConfig.TARGET_ORDER[targetPosition] + "GoodMacros";
-    string macroHistoName = config.targetConfig.TARGET_ORDER[targetPosition] + "MacroNumber";
+    string goodMacroHistoName = config.target.TARGET_ORDER[targetPosition] + "GoodMacros";
+    string macroHistoName = config.target.TARGET_ORDER[targetPosition] + "MacroNumber";
 
     getGoodMacroRatio(histoFile, macropulseDirectory, goodMacroHistoName, macroHistoName);
 
@@ -110,7 +110,7 @@ CSPrereqs operator+(CSPrereqs& augend, CSPrereqs& addend)
 CSPrereqs::CSPrereqs(Target t)
 {
     target = t;
-    TOFHisto = new TH1D("","",config.plotConfig.TOF_BINS,config.plotConfig.TOF_LOWER_BOUND,config.plotConfig.TOF_UPPER_BOUND),target.getName();
+    TOFHisto = new TH1D("","",config.plot.TOF_BINS,config.plot.TOF_LOWER_BOUND,config.plot.TOF_UPPER_BOUND),target.getName();
     TOFHisto->SetDirectory(0);
     energyHisto = timeBinsToRKEBins(TOFHisto,target.getName());
     energyHisto->SetDirectory(0);
@@ -121,7 +121,7 @@ CSPrereqs::CSPrereqs(Target t)
 
 CSPrereqs::CSPrereqs(string targetDataLocation) : target(targetDataLocation)
 {
-    TOFHisto = new TH1D("","",config.plotConfig.TOF_BINS,config.plotConfig.TOF_LOWER_BOUND,config.plotConfig.TOF_RANGE),target.getName();
+    TOFHisto = new TH1D("","",config.plot.TOF_BINS,config.plot.TOF_LOWER_BOUND,config.plot.TOF_RANGE),target.getName();
     TOFHisto->SetDirectory(0);
     energyHisto = timeBinsToRKEBins(TOFHisto,target.getName());
     energyHisto->SetDirectory(0);

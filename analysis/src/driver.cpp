@@ -2,7 +2,7 @@
 #include "../include/raw.h"
 #include "../include/identifyMacropulses.h"
 #include "../include/assignEventsToMacropulses.h"
-#include "../include/fillDiagnosticHistos.h"
+#include "../include/fillBasicHistos.h"
 #include "../include/fillCSHistos.h"
 #include "../include/produceEnergyHistos.h"
 #include "../include/plots.h"
@@ -10,6 +10,7 @@
 #include "../include/veto.h"
 #include "../include/experiment.h"
 #include "../include/config.h"
+#include "../include/GammaCorrection.h"
 
 // ROOT library classes
 #include "TFile.h"
@@ -39,7 +40,6 @@ int main(int, char* argv[])
 
     // location of experimental configuration files
     string experimentName = argv[3];
-
 
     /*************************************************************************/
     /* Configure how this run should be analyzed */
@@ -143,7 +143,10 @@ int main(int, char* argv[])
         ifstream v(vetoedFileName);
         if(!v.good())
         {
-            vetoEvents(sortedFileName, vetoedFileName, config.csConfig.DETECTOR_NAMES, "veto");
+            for(string detectorName : config.cs.DETECTOR_NAMES)
+            {
+                vetoEvents(sortedFileName, vetoedFileName, detectorName, "veto");
+            }
         }
 
         else
@@ -201,6 +204,16 @@ int main(int, char* argv[])
     ifstream h(histoFileName);
     if(!h.good())
     {
+        /*****************************************************/
+        /* Calculate macropulse time correction using gammas */
+        /*****************************************************/
+        string gammaCorrectionFileName = analysisDirectory + "gammaCorrection.root";
+
+        cout << endl << "Start generating gamma correction for each macropulse..." << endl;
+
+        vector<GammaCorrection> gammaCorrectionList;
+        calculateGammaCorrection(vetoedFileName, "summedDet", gammaCorrectionList, histoFileName);
+
         for(string channelName : channelMap)
         {
             if(channelName == "-")
@@ -208,7 +221,12 @@ int main(int, char* argv[])
                 continue;
             }
 
-            fillCSHistos(sortedFileName, channelName, histoFileName);
+            fillBasicHistos(sortedFileName, channelName, gammaCorrectionList, histoFileName);
+        }
+
+        for(string detectorName : config.cs.DETECTOR_NAMES)
+        {
+            fillCSHistos(vetoedFileName, detectorName, gammaCorrectionList, histoFileName);
         }
     }
 
@@ -229,9 +247,9 @@ int main(int, char* argv[])
     ifstream e(energyFileName);
     if(!e.good())
     {
-        for(string name : config.csConfig.DETECTOR_NAMES)
+        for(string detectorName : config.cs.DETECTOR_NAMES)
         {
-            produceEnergyHistos(histoFileName, name, energyFileName);
+            produceEnergyHistos(histoFileName, detectorName, energyFileName);
         }
     }
 

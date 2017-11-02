@@ -3,12 +3,16 @@
 
 #include "TFile.h"
 #include "TH1.h"
-#include "TRandom3.h"
+#include "TRandom2.h"
+
+#include "../include/correctForDeadtime.h"
+#include "../include/plots.h"
 
 using namespace std;
 
-const double DEADTIME_PERIOD = 10;
-const double DEADTIME_TRANSITION_PERIOD = 50;
+const double DEADTIME_BINS = 100;
+const double DEADTIME_TRANSITION_BINS = 0;
+const unsigned int PERIOD_RESET_NUMBER = 250;
 
 void incrementBin(unsigned int& j, unsigned int& deadtimeCounter)
 {
@@ -24,9 +28,8 @@ int main(int argc, char** argv)
 {
     string inputFileName = argv[1];
     string rateDistributionHistoName = argv[2];
-    string outputFileName = argv[3];
-
-    unsigned int numberOfPeriods = 1000000;
+    unsigned int numberOfPeriods = atoi(argv[3]);
+    string outputFileName = argv[4];
 
     TFile* inputFile = new TFile(inputFileName.c_str(),"READ");
     if(!inputFile->IsOpen())
@@ -50,10 +53,10 @@ int main(int argc, char** argv)
 
     for(unsigned int i=0; i<numberOfBins; i++)
     {
-        eventRate[i] = rateDistributionHisto->GetBinContent(i);
+        eventRate[i] = rateDistributionHisto->GetBinContent(i+1);
     }
 
-    TRandom3* rng = new TRandom3();
+    TRandom2* rng = new TRandom2();
 
     vector<unsigned int> currentPeriodEvents;
     vector<unsigned int> currentPeriodLiveEvents;
@@ -63,6 +66,8 @@ int main(int argc, char** argv)
 
     unsigned int deadtimeCounter = 0;
 
+    unsigned int eventsToAdd = 0;
+
     for(unsigned int i=0; i<numberOfPeriods; i++)
     {
         currentPeriodEvents.clear();
@@ -71,18 +76,24 @@ int main(int argc, char** argv)
         // populate current period with events
         for(unsigned int j=0; j<numberOfBins; incrementBin(j, deadtimeCounter))
         {
-            if(eventRate[j]>rng->Uniform(0,1))
+            eventsToAdd = rng->Poisson(eventRate[j]);
+
+            if(eventsToAdd>0)
             {
-                // add an event to this bin for this period
-                currentPeriodEvents.push_back(j);
+                // add events to this bin for this period
+                while(eventsToAdd>0)
+                {
+                    currentPeriodEvents.push_back(j);
+                    eventsToAdd--;
+                }
 
                 if(deadtimeCounter==0)
                 {
                     // the detector is "live"
                     currentPeriodLiveEvents.push_back(j);
-                }
 
-                deadtimeCounter=DEADTIME_PERIOD;
+                    deadtimeCounter=DEADTIME_BINS;
+                }
             }
         }
 
@@ -95,7 +106,27 @@ int main(int argc, char** argv)
         {
             allLiveEvents->Fill(b);
         }
+
+        if(i%1000==0)
+        {
+            cout << "Ran simulation through " << i << " number of periods.\r";
+            fflush(stdout);
+        }
+
+        if(i%PERIOD_RESET_NUMBER==0)
+        {
+            // reached end of "macropulse"; reset the deadtime counter for the
+            // next "macropulse" start
+            deadtimeCounter = 0;
+        }
     }
+
+    TH1D* measured = (TH1D*)allLiveEvents->Clone("measured");
+    TH1D* corrected = (TH1D*)allLiveEvents->Clone("corrected");
+
+    correctForDeadtimeBob(measured, corrected, DEADTIME_BINS, DEADTIME_TRANSITION_BINS, numberOfPeriods);
+
+    corrected->Write();
 
     allEvents->Write();
     allLiveEvents->Write();
