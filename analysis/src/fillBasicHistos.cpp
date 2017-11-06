@@ -20,7 +20,7 @@ using namespace std;
 
 extern Config config;
 
-int fillBasicHistos(string inputFileName, string treeName, vector<GammaCorrection> gammaCorrectionList, string outputFileName)
+int fillBasicHistos(string inputFileName, ofstream& log, string treeName, vector<GammaCorrection> gammaCorrectionList, string outputFileName)
 {
     cout << "Filling histograms for tree \"" << treeName << "\"..." << endl;
 
@@ -34,7 +34,7 @@ int fillBasicHistos(string inputFileName, string treeName, vector<GammaCorrectio
     TTree* tree = (TTree*)inputFile->Get(treeName.c_str());
     if(!tree)
     {
-        cerr << "Error: tried to populate advanced histos, but failed to find " << treeName << " in " << inputFileName << endl;
+        cerr << "Error: tried to populate basic histos, but failed to find " << treeName << " in " << inputFileName << endl;
         return 1;
     }
 
@@ -100,7 +100,9 @@ int fillBasicHistos(string inputFileName, string treeName, vector<GammaCorrectio
 
         cycleNumberH->Fill(event.cycleNumber);
         macroNoH->Fill(event.macroNo);
+
         macroNumberHistos[event.targetPos]->Fill(event.macroNo);
+
         targetPosH->Fill(event.targetPos);
         eventNoH->Fill(event.eventNo);
         fineTimeH->Fill(event.fineTime);

@@ -259,18 +259,28 @@ bool readEvent(ifstream& file, RawEvent& rawEvent)
     return false;
 }
 
-int readRawData(string inFileName, string outFileName, string DPPTreeName, string WaveformTreeName)
+int readRawData(string inFileName, string outFileName, ofstream& logFile)
 {
-    cout << "Creating " << outFileName << endl;
+    // check to see if output file already exists; if so, exit
+    ifstream f(outFileName);
 
-    // attempt to open input file
+    if(f.good())
+    {
+         cout << outFileName << " already exists; skipping raw data processing." << endl;
+         logFile << outFileName << " already exists; skipping raw data processing." << endl;
+         return 0;
+    }
+
+    f.close();
+
+    // attempt to open input file; if it can't be opened, exit with an error
     ifstream inFile;
     inFile.open(inFileName,ios::binary);
 
-    if (!inFile)
+    if(!inFile.good())
     {
         cerr << "Failed to open " << inFileName << ". Please check that the file exists" << endl;
-        exit(1);
+        return 1;
     }
 
     cout << inFileName << " opened successfully. Start reading events..." << endl;
@@ -278,8 +288,8 @@ int readRawData(string inFileName, string outFileName, string DPPTreeName, strin
     // create output file and ROOT tree for storing events
     TFile* outFile = new TFile(outFileName.c_str(),"RECREATE");
 
-    TTree* DPPTree = new TTree(DPPTreeName.c_str(),"");
-    TTree* WaveformTree = new TTree(WaveformTreeName.c_str(),"");
+    TTree* DPPTree = new TTree(config.analysis.DPP_TREE_NAME.c_str(),"");
+    TTree* WaveformTree = new TTree(config.analysis.WAVEFORM_TREE_NAME.c_str(),"");
 
     RawEvent rawEvent; // for holding raw event data from the input file in preparation for transfer to a ROOT tree
 
@@ -310,22 +320,17 @@ int readRawData(string inFileName, string outFileName, string DPPTreeName, strin
     long rawNumberOfDPPs = 0;
     long rawNumberOfWaveforms = 0;
 
+    long badCFDs = 0;
+
     unsigned int prevEvtType = 0;
     rawEvent.cycleNumber = 0;
-
  
     // start looping through the evtfile to extract events
     while(!inFile.eof())
     {
         if(!readEvent(inFile, rawEvent))
         {
-            cerr << "Failed to read event number " << rawNumberOfEvents << ". Ending read of raw events." << endl;
-
-            inFile.close();
-            outFile->Write();
-            outFile->Close();
-
-            return 1;
+            break;
         }
 
         // Assign a time to each event
@@ -347,58 +352,64 @@ int readRawData(string inFileName, string outFileName, string DPPTreeName, strin
         }
         */
 
-        // sync times to the macropulse timing channel by applying an channel-dependent offset (accounts for cable delay)
-        switch(rawEvent.chNo)
-        {
-            case 0:
-                rawEvent.completeTime += config.timeOffsets.TARGET_CHANGER_TIME_OFFSET;
-                break;
-            case 1:
-                break;
-            case 2:
-                rawEvent.completeTime += config.timeOffsets.MONITOR_TIME_OFFSET;
-                break;
-            case 4:
-                rawEvent.completeTime += config.timeOffsets.DETECTOR_TIME_OFFSET;
-
-                // use CFD to improve timing precision
-                rawEvent.fineTime = calculateCFDTime(
-                            rawEvent.waveform,
-                            rawEvent.baseline,
-                            config.softwareCFD.CFD_FRACTION,
-                            config.softwareCFD.CFD_DELAY); // CFD time in samples
-                if(rawEvent.fineTime>=0)
-                {
-                    // recovered a good fine time for this event
-                    rawEvent.completeTime += (rawEvent.fineTime-config.softwareCFD.CFD_TIME_OFFSET)*config.digitizer.SAMPLE_PERIOD;
-                }
-                    break;
-            case 5:
-                rawEvent.completeTime += config.timeOffsets.VETO_TIME_OFFSET;
-                break;
-            case 6:
-                rawEvent.completeTime += config.timeOffsets.HIGH_T_DET_TIME_OFFSET;
-
-                // use CFD to improve timing precision
-                rawEvent.fineTime = calculateCFDTime(
-                            rawEvent.waveform,
-                            rawEvent.baseline,
-                            config.softwareCFD.CFD_FRACTION,
-                            config.softwareCFD.CFD_DELAY); // CFD time in samples
-                if(rawEvent.fineTime>=0)
-                {
-                    // recovered a good fine time for this event
-                    rawEvent.completeTime += (rawEvent.fineTime-config.softwareCFD.CFD_TIME_OFFSET)*config.digitizer.SAMPLE_PERIOD;
-                }
-                    break;
-            case 7:
-            default:
-                cerr << "Error: encountered unimplemented channel number " << rawEvent.chNo << " during complete time assignment. Ending raw data read-in..." << endl;
-                return 1;
-        }
-
         if(rawEvent.evtType==1)
         {
+            // sync times to the macropulse timing channel by applying an channel-dependent offset (accounts for cable delay)
+            switch(rawEvent.chNo)
+            {
+                case 0:
+                    rawEvent.completeTime += config.timeOffsets.TARGET_CHANGER_TIME_OFFSET;
+                    break;
+                case 1:
+                    break;
+                case 2:
+                    rawEvent.completeTime += config.timeOffsets.MONITOR_TIME_OFFSET;
+                    break;
+                case 4:
+                    rawEvent.completeTime += config.timeOffsets.DETECTOR_TIME_OFFSET;
+
+                    // use CFD to improve timing precision
+                    rawEvent.fineTime = calculateCFDTime(
+                            rawEvent.waveform,
+                            rawEvent.baseline,
+                            config.softwareCFD.CFD_FRACTION,
+                            config.softwareCFD.CFD_DELAY); // CFD time in samples
+                    if(rawEvent.fineTime>=0)
+                    {
+                        // recovered a good fine time for this event
+                        rawEvent.completeTime += (rawEvent.fineTime-config.softwareCFD.CFD_TIME_OFFSET)*config.digitizer.SAMPLE_PERIOD;
+                    }
+
+                    else
+                    {
+                        badCFDs++;
+                    }
+
+                    break;
+                case 5:
+                    rawEvent.completeTime += config.timeOffsets.VETO_TIME_OFFSET;
+                    break;
+                case 6:
+                    rawEvent.completeTime += config.timeOffsets.HIGH_T_DET_TIME_OFFSET;
+
+                    // use CFD to improve timing precision
+                    rawEvent.fineTime = calculateCFDTime(
+                            rawEvent.waveform,
+                            rawEvent.baseline,
+                            config.softwareCFD.CFD_FRACTION,
+                            config.softwareCFD.CFD_DELAY); // CFD time in samples
+                    if(rawEvent.fineTime>=0)
+                    {
+                        // recovered a good fine time for this event
+                        rawEvent.completeTime += (rawEvent.fineTime-config.softwareCFD.CFD_TIME_OFFSET)*config.digitizer.SAMPLE_PERIOD;
+                    }
+                    break;
+                case 7:
+                default:
+                    cerr << "Error: encountered unimplemented channel number " << rawEvent.chNo << " during complete time assignment. Ending raw data read-in..." << endl;
+                    return 1;
+            }
+
             if(prevEvtType==2)
             {
                 // first event after a waveform->DPP mode change; increment
@@ -439,11 +450,15 @@ int readRawData(string inFileName, string outFileName, string DPPTreeName, strin
     }
 
     // reached end of input file - print statistics and clean up
-    cout << endl;
     cout << "Finished processing event file." << endl;
-    cout << "Total events: " << rawNumberOfEvents << endl;
-    cout << "Total number of DPP-mode events processed = " << rawNumberOfDPPs << endl;
-    cout << "Total number of waveform-mode events processed = " << rawNumberOfWaveforms << endl;
+    cout << "Total raw events processed: " << rawNumberOfEvents << endl;
+
+    logFile << "Total raw events processed: " << rawNumberOfEvents << endl;
+    logFile << "Total number of DPP-mode events processed = " << rawNumberOfDPPs << endl;
+    logFile << "Total number of waveform-mode events processed = " << rawNumberOfWaveforms << endl;
+
+    double fractionEvents = (double)(rawNumberOfDPPs-badCFDs)/rawNumberOfDPPs;
+    logFile << "Fraction of events for which software CFD recovered fine time: " << fractionEvents << endl;
 
     inFile.close();
     outFile->Write();

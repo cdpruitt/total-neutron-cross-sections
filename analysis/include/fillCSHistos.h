@@ -6,7 +6,7 @@
 
 #include "../include/GammaCorrection.h"
 
-int fillCSHistos(std::string inputFileName, std::string treeName, std::vector<GammaCorrection> gammaCorrectionList, std::string outputFileName);
+int fillCSHistos(std::string inputFileName, std::ofstream& log, std::string treeName, std::vector<GammaCorrection> gammaCorrectionList, std::string outputFileName);
 
 TH1D* convertTOFtoEnergy(TH1D* tof, std::string name);
 

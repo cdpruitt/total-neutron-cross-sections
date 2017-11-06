@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 
 #include "TTree.h"
 #include "TFile.h"
@@ -11,8 +12,20 @@ using namespace std;
 
 const double VETO_WINDOW = 8; // in ns
 
-int vetoEvents(string detectorFileName, string outputFileName, string detTreeName, string vetoTreeName)
+int vetoEvents(string detectorFileName, string outputFileName, ofstream& logFile, string detTreeName, string vetoTreeName)
 {
+    // check to see if output file already exists; if so, exit
+    ifstream f(outputFileName);
+
+    if(f.good())
+    {
+        cout << outputFileName << " already exists; skipping vetoing of events." << endl;
+        logFile << outputFileName << " already exists; skipping vetoing of events." << endl;
+        return 0;
+    }
+
+    f.close();
+
     TFile* detectorFile = new TFile(detectorFileName.c_str(),"READ");
 
     TTree* vetoTree = (TTree*)detectorFile->Get(vetoTreeName.c_str());
@@ -47,7 +60,7 @@ int vetoEvents(string detectorFileName, string outputFileName, string detTreeNam
     cleanTree->Branch("fineTime",&event.fineTime, "fineTime/d");
     cleanTree->Branch("eventNo",&event.eventNo, "eventNo/i");
     cleanTree->Branch("completeTime",&event.completeTime, "completeTime/d");
-    cleanTree->Branch("targetPos",&event.targetPos, "targetPos/i");
+    cleanTree->Branch("targetPos",&event.targetPos, "targetPos/I");
     cleanTree->Branch("sgQ",&event.sgQ, "sgQ/i");
     cleanTree->Branch("lgQ",&event.lgQ, "lgQ/i");
     cleanTree->Branch("waveform",&waveformPointer);
@@ -61,7 +74,7 @@ int vetoEvents(string detectorFileName, string outputFileName, string detTreeNam
     dirtyTree->Branch("fineTime",&event.fineTime, "fineTime/d");
     dirtyTree->Branch("eventNo",&event.eventNo, "eventNo/i");
     dirtyTree->Branch("completeTime",&event.completeTime, "completeTime/d");
-    dirtyTree->Branch("targetPos",&event.targetPos, "targetPos/i");
+    dirtyTree->Branch("targetPos",&event.targetPos, "targetPos/I");
     dirtyTree->Branch("sgQ",&event.sgQ, "sgQ/i");
     dirtyTree->Branch("lgQ",&event.lgQ, "lgQ/i");
     dirtyTree->Branch("waveform",&waveformPointer);
@@ -106,6 +119,10 @@ int vetoEvents(string detectorFileName, string outputFileName, string detTreeNam
 
                 cleanTree->Write();
                 dirtyTree->Write();
+
+                double numberCleanEvents = cleanTree->GetEntries();
+                logFile << "Fraction of events surviving veto: " << numberCleanEvents/detTreeEntries << endl;
+
                 detectorFile->Close();
                 outputFile->Close();
 
@@ -142,6 +159,10 @@ int vetoEvents(string detectorFileName, string outputFileName, string detTreeNam
 
                 cleanTree->Write();
                 dirtyTree->Write();
+
+                double numberCleanEvents = cleanTree->GetEntries();
+                logFile << "Fraction of events surviving veto: " << numberCleanEvents/detTreeEntries << endl;
+
                 detectorFile->Close();
                 outputFile->Close();
 
@@ -153,7 +174,6 @@ int vetoEvents(string detectorFileName, string outputFileName, string detTreeNam
         if(abs(event.completeTime-veto.completeTime)<VETO_WINDOW)
         {
             // coincidence found - throw out event
-
             dirtyTree->Fill();
             continue;
         }
@@ -170,6 +190,9 @@ int vetoEvents(string detectorFileName, string outputFileName, string detTreeNam
 
     cleanTree->Write();
     dirtyTree->Write();
+
+    double numberCleanEvents = cleanTree->GetEntries();
+    logFile << "Fraction of events surviving veto: " << numberCleanEvents/detTreeEntries << endl;
 
     detectorFile->Close();
     outputFile->Close();

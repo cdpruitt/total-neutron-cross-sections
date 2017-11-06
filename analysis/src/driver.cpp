@@ -48,7 +48,6 @@ int main(int, char* argv[])
     // read the mapping from detectors to digitizer channels
     // (see <experiment-name>/channelMap.txt).
     int runNumber = atoi(argv[4]);
-    vector<string> channelMap = getChannelMap(experimentName, runNumber);
 
     // toggle use of the charged-particle veto paddle to reject DPP events
     string useVetoPaddleString = argv[5];
@@ -60,203 +59,150 @@ int main(int, char* argv[])
 
     config = Config(experimentName, runNumber);
 
-    // toggle use of waveform event data during analysis
-    /*string processWaveformEventsString = argv[6];
-    bool processWaveformEvents = false;
-    if(processWaveformEventsString=="true")
-    {
-        processWaveformEvents = true;
-    }
-    */
-
-    // toggle use of DPP wavelet data during analysis
-    /*string processDPPWaveformEventsString = argv[7];
-    bool processDPPWaveformEvents = false;
-    if(processDPPWaveformEventsString=="true")
-    {
-        processDPPWaveformEvents = true;
-    }*/
+    string logFileName = analysisDirectory + "log.txt";
+    ofstream log(logFileName);
 
     /*************************************************************************/
     /* Start analysis:
      * Separate raw event data by channel and event type and store the results
      * into ROOT trees */
     /*************************************************************************/
-    string rawFileName = analysisDirectory + "raw.root";
-    string DPPTreeName = "DPPTree";
-    string WaveformTreeName = "WaveformTree";
-
     cout << endl << "Start processing event data into raw data tree..." << endl;
 
-    ifstream f(rawFileName);
-    if(!f.good())
+    string rawTreeFileName = analysisDirectory + config.analysis.RAW_TREE_FILE_NAME;
+    if(readRawData(rawDataFileName, rawTreeFileName, log))
     {
-        // create a raw data tree for this subrun
-        readRawData(rawDataFileName, rawFileName, DPPTreeName, WaveformTreeName);
-    }
-
-    else
-    {
-        cout << "Raw data tree already exists; skipping raw data processing." << endl;
-        f.close();
+        return 1;
     }
 
     /*************************************************************************/
     /* Assign each event to its macropulse */
     /*************************************************************************/
-    string sortedFileName = analysisDirectory + "sorted.root";
+    cout << endl << "Start macropulse identification..." << endl;
 
-    cout << endl << "Start macropulse identification and event assignment to macropulses..." << endl;
+    string sortedFileName = analysisDirectory + config.analysis.MACROPULSE_ASSIGNED_FILE_NAME;
 
-    ifstream p(sortedFileName);
-    if(!p.good())
+    switch(identifyMacropulses(rawTreeFileName, sortedFileName, log))
     {
-        identifyMacropulses(rawFileName, DPPTreeName, sortedFileName, "macroTime");
-
-        cout << endl << "Finished macropulse identification." << endl;
-
-        for(int i=2; i<channelMap.size(); i++)
-        {
-            if(channelMap[i]=="-")
+        case 0:
+            // recreate sorted.root file
+            for(auto& channel : config.digitizer.CHANNEL_MAP)
             {
-                continue;
+                if(
+                        channel.second == "-" ||
+                        channel.second == "macroTime" ||
+                        channel.second == "targetChanger"
+                  )
+                {
+                    continue;
+                }
+
+                cout << endl << "Start assigning \"" << channel.second << "\" events to macropulses..." << endl;
+
+                assignEventsToMacropulses(
+                        rawTreeFileName,
+                        sortedFileName,
+                        log,
+                        channel);
             }
+            break;
 
-            assignEventsToMacropulses(rawFileName, DPPTreeName, sortedFileName, "macroTime", i, channelMap[i]);
-        }
+        case 1:
+            // error state - end analysis
+            return 1;
+            break;
 
-    }
-
-    else
-    {
-        cout << "Sorted tree already exists; skipping macropulse identification and event assignment to macropulses." << endl;
-        p.close();
+        case 2:
+            // sorted.root already exists; skip to next analysis step
+            break;
     }
 
     /*************************************************************************/
     /* Veto detector events using the charged-particle paddle */
     /*************************************************************************/
-    string vetoedFileName = analysisDirectory + "vetoed.root";
+    string vetoedFileName = analysisDirectory + config.analysis.PASSED_VETO_FILE_NAME;
     if(useVetoPaddle)
     {
         cout << endl << "\"Veto Events\" flag enabled; start processing detector events through veto..." << endl;
-        ifstream v(vetoedFileName);
-        if(!v.good())
-        {
-            for(string detectorName : config.cs.DETECTOR_NAMES)
-            {
-                vetoEvents(sortedFileName, vetoedFileName, detectorName, "veto");
-            }
-        }
-
-        else
-        {
-            cout << "Vetoed event tree already exists; skipping veto events processing." << endl;
-            v.close();
-        }
-    }
-
-    /*************************************************************************/
-    /* Process waveform events */
-    /*************************************************************************/
-    /*if(processWaveformEvents)
-    {
-        string waveformFileName = analysisDirectory + "waveform.root";
-        ifstream w(waveformFileName);
-        if(!w.good())
-        {
-            waveform(sortedFileName, waveformFileName, channelMap, "waveform");
-        }
-
-        else
-        {
-            cout << "Waveform events already processed." << endl;
-            w.close();
-        }
-    }*/
-
-    /*************************************************************************/
-    /* Process DPP waveform events */
-    /*************************************************************************/
-    /*if(processDPPWaveformEvents)
-    {
-        string DPPWaveformFileName = analysisDirectory + "DPPwaveform.root";
-        ifstream dppW(DPPWaveformFileName);
-        if(!dppW.good())
-        {
-            waveform(sortedFileName, DPPWaveformFileName, channelMap, "DPP");
-        }
-
-        else
-        {
-            cout << "DPP waveform events already processed." << endl;
-            dppW.close();
-        }
-    }*/
-
-    /*************************************************************************/
-    /* Populate events into histograms */
-    /*************************************************************************/
-    string histoFileName = analysisDirectory + "histos.root";
-
-    cout << endl << "Start processing detector events into histograms..." << endl;
-
-    ifstream h(histoFileName);
-    if(!h.good())
-    {
-        /*****************************************************/
-        /* Calculate macropulse time correction using gammas */
-        /*****************************************************/
-        string gammaCorrectionFileName = analysisDirectory + "gammaCorrection.root";
-
-        cout << endl << "Start generating gamma correction for each macropulse..." << endl;
-
-        vector<GammaCorrection> gammaCorrectionList;
-        calculateGammaCorrection(vetoedFileName, "summedDet", gammaCorrectionList, histoFileName);
-
-        for(string channelName : channelMap)
-        {
-            if(channelName == "-")
-            {
-                continue;
-            }
-
-            fillBasicHistos(sortedFileName, channelName, gammaCorrectionList, histoFileName);
-        }
-
         for(string detectorName : config.cs.DETECTOR_NAMES)
         {
-            fillCSHistos(vetoedFileName, detectorName, gammaCorrectionList, histoFileName);
+            if(vetoEvents(sortedFileName, vetoedFileName, log, detectorName, "veto"))
+            {
+                return 1;
+            }
         }
     }
 
-    else
+    /*****************************************************/
+    /* Calculate macropulse time correction using gammas */
+    /*****************************************************/
+    string histoFileName = analysisDirectory + config.analysis.HISTOGRAM_FILE_NAME;
+
+    cout << endl << "Start generating gamma correction for each macropulse..." << endl;
+
+    vector<GammaCorrection> gammaCorrectionList;
+    switch(
+            calculateGammaCorrection(
+                vetoedFileName,
+                log,
+                config.analysis.GAMMA_CORRECTION_TREE_NAME,
+                gammaCorrectionList,
+                histoFileName)
+          )
     {
-        cout << "Histogram file already exists; skipping histogram creation." << endl;
-        h.close();
+        case 0:
+            /******************************************************************/
+            /* Populate events into histograms */
+            /******************************************************************/
+            for(auto& channel : config.digitizer.CHANNEL_MAP)
+            {
+                if(
+                        channel.second == "-" ||
+                        channel.second == "targetChanger"
+                  )
+                {
+                    continue;
+                }
+
+                if(fillBasicHistos(sortedFileName, log, channel.second, gammaCorrectionList, histoFileName)==1)
+                {
+                    return 1;
+                }
+            }
+
+            for(string detectorName : config.cs.DETECTOR_NAMES)
+            {
+                if(fillCSHistos(vetoedFileName, log, detectorName, gammaCorrectionList, histoFileName)==1)
+                {
+                    return 1;
+                }
+            }
+            break;
+
+        case 1:
+            // error state: end analysis
+            return 1;
+            break;
+
+        case 2:
+            // histos.root already exists; skip histo production
+            break;
     }
 
     /*************************************************************************/
     /* Convert TOF histograms into energy in preparation for cross section
      * calculation */
     /*************************************************************************/
-    string energyFileName = analysisDirectory + "energy.root";
+    string energyFileName = analysisDirectory + config.analysis.ENERGY_PLOTS_FILE_NAME;
 
     cout << endl << "Mapping TOF histograms to energy domain..." << endl;
 
-    ifstream e(energyFileName);
-    if(!e.good())
+    for(string detectorName : config.cs.DETECTOR_NAMES)
     {
-        for(string detectorName : config.cs.DETECTOR_NAMES)
+        if(produceEnergyHistos(histoFileName, log, detectorName, energyFileName))
         {
-            produceEnergyHistos(histoFileName, detectorName, energyFileName);
+            return 1;
         }
-    }
-
-    else
-    {
-        cout << "Energy file already exists; skipping histogram-to-energy mapping." << endl;
-        e.close();
     }
 
     return 0;

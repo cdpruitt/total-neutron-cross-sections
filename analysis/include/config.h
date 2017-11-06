@@ -5,6 +5,23 @@
 #include <vector>
 #include <iostream>
 
+struct AnalysisConfig
+{
+    public:
+        AnalysisConfig() {}
+
+        std::string RAW_TREE_FILE_NAME;
+        std::string MACROPULSE_ASSIGNED_FILE_NAME;
+        std::string PASSED_VETO_FILE_NAME;
+        std::string HISTOGRAM_FILE_NAME;
+        std::string ENERGY_PLOTS_FILE_NAME;
+
+        std::string DPP_TREE_NAME;
+        std::string WAVEFORM_TREE_NAME;
+        std::string MACROPULSE_TREE_NAME;
+        std::string GAMMA_CORRECTION_TREE_NAME;
+};
+
 struct FacilityConfig
 {
     public:
@@ -55,8 +72,12 @@ struct TimeOffsetsConfig
 
 struct DigitizerConfig
 {
-    DigitizerConfig() {}
-    double SAMPLE_PERIOD = 2; // digitizer sample rate, in ns
+    public:
+        DigitizerConfig() {}
+        DigitizerConfig(std::vector<std::pair<unsigned int, std::string>> channelMap, std::vector<std::string> digitizerConfig);
+
+        std::vector<std::pair<unsigned int, std::string>> CHANNEL_MAP;
+        double SAMPLE_PERIOD;
 };
 
 struct TargetConfig
@@ -101,6 +122,7 @@ struct Config
         Config() {}
         Config(std::string expName, int runNumber);
 
+        AnalysisConfig analysis;
         FacilityConfig facility;
         SoftwareCFDConfig softwareCFD;
         TargetConfig target;

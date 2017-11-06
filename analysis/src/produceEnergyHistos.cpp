@@ -16,7 +16,7 @@ extern Config config;
 const int DEADTIME_PERIOD = 150; // in ns
 const int DEADTIME_TRANSITION_PERIOD = 15; // in ns
 
-int produceEnergyHistos(string inputFileName, string channelName, string outputFileName)
+int produceEnergyHistos(string inputFileName, ofstream& log, string channelName, string outputFileName)
 {
     // open input file
     TFile* inputFile = new TFile(inputFileName.c_str(),"READ");
@@ -67,7 +67,6 @@ int produceEnergyHistos(string inputFileName, string channelName, string outputF
         double numberOfMicros = numberOfMacros*(config.facility.MICROS_PER_MACRO);
 
         const int deadtimeBins = ((double)config.plot.TOF_BINS/config.plot.TOF_RANGE)*DEADTIME_PERIOD;
-
         const int deadtimeTransitionBins = ((double)config.plot.TOF_BINS/config.plot.TOF_RANGE)*DEADTIME_TRANSITION_PERIOD;
 
         string correctedName = targetName + "Uncorrected";

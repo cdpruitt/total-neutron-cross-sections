@@ -1,7 +1,0 @@
-moving
-blank
-CNat
-PbNat
-Ni58
-NiNat
-Ni64

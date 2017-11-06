@@ -65,7 +65,7 @@ struct DetectorEvent
 {
     double macroTime = 0;
     unsigned int macroNo = 0;
-    unsigned int targetPos = 0;
+    int targetPos = 0;
 
     unsigned int cycleNumber = 0;
     double completeTime = 0;
@@ -79,6 +79,26 @@ struct DetectorEvent
     std::vector<int> waveform;
 };
 
+struct MacropulseEvent
+{
+    MacropulseEvent() {}
+    MacropulseEvent(
+            unsigned int mn,
+            unsigned int ne,
+            unsigned int tp) :
+        macroNo(mn), numberOfEventsInMacro(ne), targetPos(tp) {}
+
+    unsigned int cycleNumber = 0;
+    unsigned int macroNo = 0;
+    double macroTime = 0;
+    int targetPos = 0;
+    unsigned int lgQ = 0;
+    std::vector<int> waveform;
+
+    unsigned int numberOfEventsInMacro = 0;
+    bool isGoodMacro = 0;
+};
+
 // used to store processed events after they have been mated with a macropulse
 struct ProcessedEvent
 {
@@ -87,7 +107,7 @@ struct ProcessedEvent
     unsigned int eventNo; // uniquely label each event in a macropulse
     double completeTime; // the event's 48-bit timestamp
     double fineTime; // the event's fine time
-    unsigned int targetPos; // target position
+    int targetPos; // target position
     unsigned int sgQ, lgQ; // the event's short and long integrated charge gates
     std::vector<int> waveform; // waveform data for this event
 };
@@ -99,7 +119,7 @@ struct TargetChangerEvent
     unsigned int modeChange; // indicate the first event after a mode change
     double macroTime; // the event's time-zero reference (the macropulse start)
     double fineTime; // the event's calculated fine time
-    unsigned int targetPos; // target position
+    int targetPos; // target position
     unsigned int lgQ; // the event's long integrated charge gate
     std::vector<int> waveform; // waveform data for this event
 };

@@ -6,7 +6,7 @@
 
 #include "../include/dataStructures.h"
 
-int readRawData(std::string inFileName, std::string outFileName, std::string DPPTreeName, std::string WaveformTreeName);
+int readRawData(std::string inFileName, std::string outFileName, std::ofstream& log);
 bool readEvent(std::ifstream& evtfile, RawEvent& rawEvent);
 bool readEventHeader(std::ifstream& evtfile, RawEvent& rawEvent);
 bool readDPPEventBody(std::ifstream& evtfile, RawEvent& rawEvent);

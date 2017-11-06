@@ -24,9 +24,6 @@ Config config;
 
 const int MAX_SUBRUN_NUMBER = 200;
 
-const int FIRST_CS_ENERGY = 2; // in MeV
-const int LAST_CS_ENERGY = 600; // in MeV
-
 // Extract each point from a graph and store their positions in two vectors,
 // xValues and yValues
 void extractGraphData(
@@ -233,13 +230,6 @@ CrossSection calculateCS(CSPrereqs& targetData, CSPrereqs& blankData, string exp
 
         energyValue = tCounts->GetBinCenter(i);
         energyError = tCounts->GetBinWidth(i)/2;
-
-        // ignore bins outside the energies of interest
-        if(FIRST_CS_ENERGY>energyValue ||
-                LAST_CS_ENERGY<energyValue)
-        {
-            continue;
-        }
 
         long bDet = bCounts->GetBinContent(i);
         long tDet = tCounts->GetBinContent(i);

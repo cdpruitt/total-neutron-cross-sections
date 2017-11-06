@@ -2,14 +2,13 @@
 #define ASSIGN_EVENTS_TO_MACROPULSES_H
 
 #include <string>
+#include <utility>
 
 int assignEventsToMacropulses(
         std::string inputFileName,
-        std::string inputTreeName,
         std::string outputFileName,
-        std::string macropulseTreeName,
-        unsigned int channelNo,
-        std::string outputTreeName);
+        std::ofstream& log,
+        std::pair<unsigned int, std::string> channel);
 
 #endif /* ASSIGN_EVENTS_TO_MACROPULSES_H */
 

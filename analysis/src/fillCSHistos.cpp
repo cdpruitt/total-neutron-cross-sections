@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <fstream>
 #include <sstream>
 
 #include "TFile.h"
@@ -7,6 +8,7 @@
 #include "TH1.h"
 #include "TH2.h"
 #include "TDirectoryFile.h"
+#include "TF1.h"
 
 #include "../include/physicalConstants.h"
 #include "../include/dataStructures.h"
@@ -24,10 +26,78 @@ extern Config config;
 const double Q_LOW_THRESHOLD = 0;
 const double Q_HIGH_THRESHOLD = 65550;
 
-int fillCSHistos(string inputFileName, string treeName, vector<GammaCorrection> gammaCorrectionList, string outputFileName)
+int identifyGoodMacros(TTree* eventTree, DetectorEvent& event, vector<MacropulseEvent>& macropulseList, ofstream& logFile)
+{
+    cout << "Starting identification of good macropulses..." << endl;
+
+    // tally the number of events in each macropulse
+    eventTree->GetEntry(0);
+    macropulseList.push_back(MacropulseEvent(event.macroNo,0,event.targetPos));
+
+    unsigned int totalEntries = eventTree->GetEntries();
+    for(long i=1; i<totalEntries; i++)
+    {
+        eventTree->GetEntry(i);
+
+        if(macropulseList.back().macroNo<event.macroNo)
+        {
+            macropulseList.push_back(MacropulseEvent(event.macroNo, 0, event.targetPos));
+        }
+
+        macropulseList.back().numberOfEventsInMacro++;
+
+        if(i%10000==0)
+        {
+            cout << "Found " << macropulseList.size() << " macropulses during good macropulse identification...\r";
+            fflush(stdout);
+        }
+    }
+
+    cout << endl;
+
+    // calculate the average number of events in each macropulse, by target
+    vector<double> averageEventsPerMacropulseByTarget(config.target.TARGET_ORDER.size(),0);
+    vector<unsigned int> numberOfMacropulsesByTarget(config.target.TARGET_ORDER.size(),0);
+
+    for(auto& macropulse : macropulseList)
+    {
+        averageEventsPerMacropulseByTarget[macropulse.targetPos]
+            += macropulse.numberOfEventsInMacro;
+        numberOfMacropulsesByTarget[macropulse.targetPos]++;
+    }
+
+    for(int i=0; i<averageEventsPerMacropulseByTarget.size(); i++)
+    {
+        averageEventsPerMacropulseByTarget[i] /= numberOfMacropulsesByTarget[i];
+        logFile << "Target \"" << config.target.TARGET_ORDER[i]
+            << "\" had, on average, " << averageEventsPerMacropulseByTarget[i]
+            << " events per macropulse." << endl;
+    }
+
+    cout << "Finished calculating average events per macropulse."
+        << endl;
+
+    // using the average just calculate, identify macros with too few/too many events
+    // per macro (indicating readout problem)
+    for(auto& macropulse : macropulseList)
+    {
+        if(abs(averageEventsPerMacropulseByTarget[macropulse.targetPos]-macropulse.numberOfEventsInMacro)
+                <3*sqrt(averageEventsPerMacropulseByTarget[macropulse.targetPos]))
+        {
+            // good macro
+            macropulse.isGoodMacro = true;
+        }
+    }
+
+    return 0;
+}
+
+int fillCSHistos(string inputFileName, ofstream& logFile, string treeName, vector<GammaCorrection> gammaCorrectionList, string outputFileName)
 {
     cout << "Filling advanced histograms for tree \"" << treeName << "\"..." << endl;
+    logFile << endl << "*** Filling CS histos ***" << endl;
 
+    // open input tree
     TFile* inputFile = new TFile(inputFileName.c_str(),"READ");
     if(!inputFile->IsOpen())
     {
@@ -57,6 +127,9 @@ int fillCSHistos(string inputFileName, string treeName, vector<GammaCorrection> 
     tree->SetBranchAddress("lgQ",&event.lgQ);
     tree->SetBranchAddress("waveform",&waveformPointer);
 
+    vector<MacropulseEvent> macropulseList;
+    identifyGoodMacros(tree, event, macropulseList, logFile);
+
     // create outputFile
     TFile* outputFile = new TFile(outputFileName.c_str(),"UPDATE");
     TDirectory* directory = outputFile->GetDirectory(treeName.c_str());
@@ -68,92 +141,6 @@ int fillCSHistos(string inputFileName, string treeName, vector<GammaCorrection> 
 
     directory->cd();
 
-    unsigned int totalEntries = tree->GetEntries();
-
-    cout << "Starting identification of bad macropulses" << endl;
-
-    struct MacropulseEvent
-    {
-        MacropulseEvent() {}
-        MacropulseEvent(
-                unsigned int mn,
-                unsigned int ne,
-                unsigned int tp) :
-            macroNo(mn), numberOfEventsInMacro(ne), targetPos(tp) {}
-
-        unsigned int macroNo = 0;
-        unsigned int numberOfEventsInMacro = 0;
-        unsigned int targetPos = 0;
-        bool isBadMacro = 0;
-    };
-
-    vector<TH1D*> macroNumberHistos;
-
-    for(auto& s : config.target.TARGET_ORDER)
-    {
-        string name = s + "MacroNo";
-        macroNumberHistos.push_back(new TH1D(
-                    name.c_str(),
-                    name.c_str(),
-                    200000, 0, 200000));
-    }
-
-    vector<MacropulseEvent> macropulseList;
-
-    tree->GetEntry(0);
-    macropulseList.push_back(MacropulseEvent(event.macroNo,0,event.targetPos));
-
-    for(long i=0; i<totalEntries; i++)
-    {
-        tree->GetEntry(i);
-
-        if(macropulseList.back().macroNo<event.macroNo)
-        {
-            macropulseList.push_back(MacropulseEvent(event.macroNo, 0, event.targetPos));
-        }
-
-        macropulseList.back().numberOfEventsInMacro++;
-
-        if(i%10000==0)
-        {
-            cout << "Processed " << i << " events during bad macropulse assignment...\r";
-            fflush(stdout);
-        }
-    }
-
-    cout << endl;
-
-    cout << "Finished macropulse list filling. Calculating average events per macropulse" << endl;
-
-    vector<double> averageEventsPerMacropulseByTarget(macroNumberHistos.size(),0);
-    vector<unsigned int> numberOfMacropulsesByTarget(macroNumberHistos.size(),0);
-
-    for(auto& macropulse : macropulseList)
-    {
-        averageEventsPerMacropulseByTarget[macropulse.targetPos]
-            += macropulse.numberOfEventsInMacro;
-        numberOfMacropulsesByTarget[macropulse.targetPos]++;
-    }
-
-    for(int i=0; i<averageEventsPerMacropulseByTarget.size(); i++)
-    {
-        averageEventsPerMacropulseByTarget[i] /= numberOfMacropulsesByTarget[i];
-    }
-
-    cout << "Finished calculating average events per macropulse. Identifying bad macros." << endl;
-
-    // identify macros with too few events per macro (indicating readout
-    // problem)
-    for(auto& macropulse : macropulseList)
-    {
-        if(abs(averageEventsPerMacropulseByTarget[macropulse.targetPos]-macropulse.numberOfEventsInMacro)
-                >3*sqrt(averageEventsPerMacropulseByTarget[macropulse.targetPos]))
-        {
-            // bad macro
-            macropulse.isBadMacro = true;
-        }
-    }
-
     vector<TH1D*> goodMacroHistos;
     for(string targetName : config.target.TARGET_ORDER)
     {
@@ -162,16 +149,29 @@ int fillCSHistos(string inputFileName, string treeName, vector<GammaCorrection> 
                     macroNumberName.c_str(), 200000, 0, 200000));
     }
 
+    unsigned long goodMacroNumber = 0;
     for(auto& macropulse : macropulseList)
     {
-        if(!macropulse.isBadMacro)
+        if(macropulse.isGoodMacro)
         {
             goodMacroHistos[macropulse.targetPos]
                 ->SetBinContent(macropulse.macroNo+1, macropulse.numberOfEventsInMacro);
+            goodMacroNumber++;
         }
     }
 
-    cout << endl;
+    logFile << "Fraction of all macropulses that were \"good\":"
+        << 100*(double)goodMacroNumber/macropulseList.size() << "%." << endl;
+
+    vector<TH1D*> macroNumberHistos;
+    for(auto& s : config.target.TARGET_ORDER)
+    {
+        string name = s + "MacroNo";
+        macroNumberHistos.push_back(new TH1D(
+                    name.c_str(),
+                    name.c_str(),
+                    200000, 0, 200000));
+    }
 
     // create other diagnostic histograms used to examine run data
     TH1D* timeDiffHisto = new TH1D("time since last event","time since last event",
@@ -190,7 +190,8 @@ int fillCSHistos(string inputFileName, string treeName, vector<GammaCorrection> 
             10*config.plot.NUMBER_ENERGY_BINS, floor(config.plot.ENERGY_LOWER_BOUND), ceil(config.plot.ENERGY_UPPER_BOUND),
             10*config.plot.NUMBER_ENERGY_BINS, floor(config.plot.ENERGY_LOWER_BOUND), ceil(config.plot.ENERGY_UPPER_BOUND));
 
-    TH1D *microNoH = new TH1D("microNoH","microNo",360,0,360);
+    TH1D *microNoH = new TH1D("microNoH","microNo",ceil(1.1*config.facility.MICROS_PER_MACRO)
+            ,0,ceil(1.1*config.facility.MICROS_PER_MACRO));
 
     vector<TH1D*> TOFHistos;
     vector<TH2D*> triangleHistos;
@@ -228,26 +229,27 @@ int fillCSHistos(string inputFileName, string treeName, vector<GammaCorrection> 
 
     double prevAverageTime = 0;
 
+    unsigned long badMacroEvent = 0;
+    unsigned long badChargeGateEvent = 0;
+
+    unsigned int totalEntries = tree->GetEntries();
+
     // fill advanced histos
     for(long i=0; i<totalEntries; i++)
     {
         tree->GetEntry(i);
 
-        // throw away events during target changer movement
-        /*if(event.targetPos==0)
-        {
-            continue;
-        }*/
-
         // throw away events during "bad" macropulses
-        if(macropulseList[event.macroNo].isBadMacro)
+        if(!macropulseList[event.macroNo].isGoodMacro)
         {
+            badMacroEvent++;
             continue;
         }
 
-        // gates:
+        // charge gates:
         if(event.lgQ<Q_LOW_THRESHOLD || event.lgQ>Q_HIGH_THRESHOLD)
         {
+            badChargeGateEvent++;
             continue;
         }
 
@@ -295,6 +297,26 @@ int fillCSHistos(string inputFileName, string treeName, vector<GammaCorrection> 
     cout << endl << "Finished populating \"" << treeName << "\" events into CS histos." << endl;
     cout << "Total events processed = " << totalEntries << endl;
 
+    logFile << endl << "Fraction events filtered out by good macro gate: "
+        << 100*(double)badMacroEvent/totalEntries << "%." << endl;
+
+    logFile << "Fraction events filtered out by charge gate (" << Q_LOW_THRESHOLD
+        << " < lgQ < " << Q_HIGH_THRESHOLD << "): "
+        << 100*(double)badChargeGateEvent/totalEntries << "%." << endl;
+
+    // calculate width of gamma peak after gamma correction has been applied
+    const double GAMMA_TIME = pow(10,7)*config.facility.FLIGHT_DISTANCE/C;
+    const double GAMMA_WINDOW_WIDTH = config.timeOffsets.GAMMA_WINDOW_SIZE/2;
+
+    TF1* gammaPeakFit = new TF1("gammaPeakFit","gaus",
+            GAMMA_TIME-GAMMA_WINDOW_WIDTH, GAMMA_TIME+GAMMA_WINDOW_WIDTH);
+    TOFHistos[1]->Fit("gammaPeakFit","0", "Q",
+            GAMMA_TIME-GAMMA_WINDOW_WIDTH, GAMMA_TIME+GAMMA_WINDOW_WIDTH);
+    logFile << endl << "Blank target gamma peak FWHM = "
+        << 2.355*gammaPeakFit->GetParameter(2)
+        << " ns (fit range: " << GAMMA_TIME-GAMMA_WINDOW_WIDTH
+        << " - " << GAMMA_TIME+GAMMA_WINDOW_WIDTH << " ns)." << endl;
+
     for(auto& histo : TOFHistos)
     {
         histo->Write();
@@ -323,6 +345,8 @@ int fillCSHistos(string inputFileName, string treeName, vector<GammaCorrection> 
 
     outputFile->Close();
     inputFile->Close();
+
+    logFile << endl << "*** Finished filling CS histos ***" << endl;
 
     return 0;
 }

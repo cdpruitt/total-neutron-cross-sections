@@ -36,7 +36,8 @@ vector<pair<string,string>> getRelativePlotNames(string expName, string fileName
     return relativePlotNames;
 }
 
-vector<string> getChannelMap(string expName, unsigned int runNumber)
+// read the channel mapping of the current run
+vector<pair<unsigned int, string>> getChannelMap(string expName, unsigned int runNumber)
 {
     string channelMapLocation = "../" + expName + "/channelMap.txt";
     ifstream dataFile(channelMapLocation.c_str());
@@ -48,7 +49,7 @@ vector<string> getChannelMap(string expName, unsigned int runNumber)
 
     string str;
     unsigned int run;
-    vector<string> channelMap;
+    vector<pair<unsigned int, string>> channelMap;
 
     while(getline(dataFile,str))
     {
@@ -80,7 +81,7 @@ vector<string> getChannelMap(string expName, unsigned int runNumber)
         {
             for(int i=1; (size_t)i<tokens.size(); i++)
             {
-                channelMap.push_back(tokens[i]);
+                channelMap.push_back(make_pair(i-1,tokens[i]));
             }
 
             break;
@@ -150,8 +151,6 @@ vector<string> getTargetOrder(string expName, int runNumber)
     return targetOrder;
 }
 
-
-
 // extract configuration data from an experiment directory
 vector<string> readExperimentConfig(string expName, string fileName)
 {
@@ -159,7 +158,7 @@ vector<string> readExperimentConfig(string expName, string fileName)
     ifstream dataFile(filePath.c_str());
     if(!dataFile.is_open())
     {
-        std::cout << "Failed to find target names in " << filePath << std::endl;
+        std::cout << "Failed to find experimental config data in " << filePath << std::endl;
         exit(1);
     }
 
@@ -172,6 +171,85 @@ vector<string> readExperimentConfig(string expName, string fileName)
     }
 
     return configContents;
+}
+
+// Read analysis parameters
+AnalysisConfig readAnalysisConfig(string expName)
+{
+    string analysisConfigLocation = "../" + expName + "/AnalysisConfig.txt";
+    ifstream dataFile(analysisConfigLocation.c_str());
+    if(!dataFile.is_open())
+    {
+        std::cout << "Failed to find analysis configuration in " << analysisConfigLocation << std::endl;
+        exit(1);
+    }
+
+    string str;
+    unsigned int run;
+
+    AnalysisConfig analysisConfig;
+
+    while(getline(dataFile,str))
+    {
+        // parse into tokens
+        vector<string> tokens;
+        istringstream iss(str);
+        copy(istream_iterator<string>(iss),
+                istream_iterator<string>(),
+                back_inserter(tokens));
+
+        if(!tokens.size())
+        {
+            continue;
+        }
+
+        if(tokens[0]=="Raw")
+        {
+            analysisConfig.RAW_TREE_FILE_NAME = tokens.back();
+        }
+
+        else if(tokens[0]=="Macropulse-assigned")
+        {
+            analysisConfig.MACROPULSE_ASSIGNED_FILE_NAME = tokens.back();
+        }
+
+        else if(tokens[0]=="Survived-veto")
+        {
+            analysisConfig.PASSED_VETO_FILE_NAME = tokens.back();
+        }
+        
+        else if(tokens[0]=="Histogram")
+        {
+            analysisConfig.HISTOGRAM_FILE_NAME = tokens.back();
+        }
+        
+        else if(tokens[0]=="Energy")
+        {
+            analysisConfig.ENERGY_PLOTS_FILE_NAME = tokens.back();
+        }
+        
+        else if(tokens[0]=="DPP")
+        {
+            analysisConfig.DPP_TREE_NAME = tokens.back();
+        }
+        
+        else if(tokens[0]=="Waveform")
+        {
+            analysisConfig.WAVEFORM_TREE_NAME = tokens.back();
+        }
+        
+        else if(tokens[0]=="Macropulse")
+        {
+            analysisConfig.MACROPULSE_TREE_NAME = tokens.back();
+        }
+        
+        else if(tokens[0]=="Gamma")
+        {
+            analysisConfig.GAMMA_CORRECTION_TREE_NAME = tokens.back();
+        }
+    }
+
+    return analysisConfig;
 }
 
 // Read facility  parameters
@@ -341,9 +419,9 @@ TimeOffsetsConfig readTimeOffsetsConfig(string expName, int runNumber)
 }
 
 // Read time offset parameters
-/*DigitizerConfig readDigitizerConfig(string expName, int runNumber)
+DigitizerConfig readDigitizerConfig(string expName, int runNumber)
 {
-    string digitizerConfigLocation = "../" + expName + "/digitizerConfig.txt";
+    string digitizerConfigLocation = "../" + expName + "/DigitizerConfig.txt";
     ifstream dataFile(digitizerConfigLocation.c_str());
     if(!dataFile.is_open())
     {
@@ -392,8 +470,10 @@ TimeOffsetsConfig readTimeOffsetsConfig(string expName, int runNumber)
         }
     }
 
-    return DigitizerConfig(digitizerConfig);
-}*/
+    vector<pair<unsigned int, string>> channelMap = getChannelMap(expName, runNumber);
+
+    return DigitizerConfig(channelMap, digitizerConfig);
+}
 
 
 // Read CS parameters 

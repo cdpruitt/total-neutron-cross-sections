@@ -24,9 +24,6 @@ Config config;
 
 const int MAX_SUBRUN_NUMBER = 200;
 
-const int FIRST_CS_ENERGY = 2; // in MeV
-const int LAST_CS_ENERGY = 600; // in MeV
-
 // Extract each point from a graph and store their positions in two vectors,
 // xValues and yValues
 void extractGraphData(
@@ -225,7 +222,7 @@ CrossSection calculateCS(CSPrereqs& targetData, CSPrereqs& blankData, string exp
 
     // loop through each bin in the energy histo, calculating a cross section
     // for each bin
-    for(int i=1; i<=numberOfBins-1; i++) // skip the overflow and underflow bins
+    for(int i=1; i<numberOfBins; i++) // skip the overflow and underflow bins
     {
         // read data from detector histograms for target and blank
         TH1D* bCounts = blankData.energyHisto;
@@ -233,13 +230,6 @@ CrossSection calculateCS(CSPrereqs& targetData, CSPrereqs& blankData, string exp
 
         energyValue = tCounts->GetBinCenter(i);
         energyError = tCounts->GetBinWidth(i)/2;
-
-        // ignore bins outside the energies of interest
-        if(FIRST_CS_ENERGY>energyValue ||
-                LAST_CS_ENERGY<energyValue)
-        {
-            continue;
-        }
 
         long bDet = bCounts->GetBinContent(i);
         long tDet = tCounts->GetBinContent(i);

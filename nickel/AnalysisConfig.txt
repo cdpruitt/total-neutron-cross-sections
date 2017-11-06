@@ -1,0 +1,20 @@
+This file lists the filenames and tree names used for analysis output
+
+********************************************************************************
+                                Filenames
+********************************************************************************
+
+Raw tree filename                 = raw.root
+Macropulse-assigned tree filename = sorted.root
+Survived-veto tree filename       = vetoed.root
+Histogram filename                = histos.root
+Energy plots filename             = energy.root
+
+********************************************************************************
+                                Tree names
+********************************************************************************
+
+DPP tree name                        = DPPTree
+Waveform tree name                   = WaveformTree
+Macropulse tree name                 = macroTime
+Gamma correction tree name           = summedDet

@@ -22,11 +22,11 @@
 #include "../include/assignEventsToMacropulses.h" // declarations of functions used to assign times and macropulses to events
 #include "../include/config.h"
 
-extern Config config;
-
 using namespace std;
 
-int assignEventsToMacropulses(string inputFileName, string inputTreeName, string outputFileName, string macropulseTreeName, unsigned int channelNo, string outputTreeName)
+extern Config config;
+
+int assignEventsToMacropulses(string inputFileName, string outputFileName, ofstream& logFile, pair<unsigned int, string> channel)
 {
     /**************************************************************************/
     // open input detector tree
@@ -36,12 +36,11 @@ int assignEventsToMacropulses(string inputFileName, string inputTreeName, string
         cerr << "Failed to open " << inputFileName << ". Please check that the file exists" << endl;
         exit(1);
     }
-    cout << inputFileName << " opened successfully. Start reading events..." << endl;
 
-    TTree* inputTree = (TTree*)inputFile->Get(inputTreeName.c_str());
+    TTree* inputTree = (TTree*)inputFile->Get(config.analysis.DPP_TREE_NAME.c_str());
     if(!inputTree)
     {
-        cerr << "Error: couldn't find detector tree " << inputTreeName << " in "
+        cerr << "Error: couldn't find detector tree " << config.analysis.DPP_TREE_NAME << " in "
              << inputFileName << " when attempting to assign events to macropulses. Exiting... " << endl;
         return 1;
     }
@@ -56,15 +55,14 @@ int assignEventsToMacropulses(string inputFileName, string inputTreeName, string
         exit(1);
     }
 
-    TTree* macropulseTree = (TTree*)outputFile->Get(macropulseTreeName.c_str());
+    TTree* macropulseTree = (TTree*)outputFile->Get(config.analysis.MACROPULSE_TREE_NAME.c_str());
     if(!macropulseTree)
     {
-        cerr << "Error: couldn't find " << macropulseTreeName << " tree in "
+        cerr << "Error: couldn't find " << config.analysis.MACROPULSE_TREE_NAME << " tree in "
              << inputFileName << " when attempting to assign macropulses." << endl;
         cerr << "Please check that the tree exists. " << endl;
         return(1);
     }
-    cout << macropulseTreeName << " opened successfully." << endl;
     /**************************************************************************/
  
     /**************************************************************************/
@@ -93,7 +91,7 @@ int assignEventsToMacropulses(string inputFileName, string inputTreeName, string
     {
         inputTree->GetEntry(currentTreeEntry);
 
-        if(chNo==channelNo)
+        if(chNo==channel.first)
         {
             DetectorEvent de = DetectorEvent(detectorEvent);
             de.waveform = *waveformPointer;
@@ -103,22 +101,22 @@ int assignEventsToMacropulses(string inputFileName, string inputTreeName, string
 
         if(currentTreeEntry%10000==0)
         {
-            cout << "Read " << currentTreeEntry << " \"" << inputTreeName << "\" events...\r";
+            cout << "Read " << currentTreeEntry << " \"" << config.analysis.DPP_TREE_NAME << "\" events...\r";
             fflush(stdout);
         }
 
         currentTreeEntry++;
     }
 
-    cout << endl << "Finished reading \"" << inputTreeName << "\" events from raw data file. Total events recovered = "
+    cout << "Finished reading \"" << channel.second << "\" events from raw data file. Total events recovered = "
         << eventList.size() << endl;
 
     /**************************************************************************/
     // create a new tree for holding sorted detector events
-    TTree* outputTree = new TTree(outputTreeName.c_str(),"");
+    TTree* outputTree = new TTree(channel.second.c_str(),"");
     if(!outputTree)
     {
-        cerr << "Error: couldn't create detector tree " << outputTreeName << " when attempting to assign events to macropulses. Exiting... " << endl;
+        cerr << "Error: couldn't create detector tree " << channel.second << " when attempting to assign events to macropulses. Exiting... " << endl;
         return 1;
     }
     /**************************************************************************/
@@ -126,7 +124,7 @@ int assignEventsToMacropulses(string inputFileName, string inputTreeName, string
     unsigned int macropulseCycleNumber;
     unsigned int macroNo;
     double macroTime;
-    unsigned int targetPos;
+    int targetPos;
 
     macropulseTree->SetBranchAddress("cycleNumber",&macropulseCycleNumber);
     macropulseTree->SetBranchAddress("macroNo",&macroNo);
@@ -139,13 +137,11 @@ int assignEventsToMacropulses(string inputFileName, string inputTreeName, string
 
     outputTree->Branch("macroNo",&detectorEvent.macroNo,"macroNo/i");
     outputTree->Branch("cycleNumber",&detectorEvent.cycleNumber,"cycleNumber/i");
-    outputTree->Branch("targetPos",&detectorEvent.targetPos,"targetPos/i");
+    outputTree->Branch("targetPos",&detectorEvent.targetPos,"targetPos/I");
     outputTree->Branch("eventNo",&detectorEvent.eventNo,"eventNo/i");
     outputTree->Branch("sgQ",&detectorEvent.sgQ,"sgQ/i");
     outputTree->Branch("lgQ",&detectorEvent.lgQ,"lgQ/i");
     outputTree->Branch("waveform",&detectorEvent.waveform);
-
-    cout << "Assigning " << outputTreeName << " events to macropulses..." << endl;
 
     unsigned int currentEvent = 0;
     unsigned int currentMacropulseEntry = 0;
@@ -205,7 +201,7 @@ int assignEventsToMacropulses(string inputFileName, string inputTreeName, string
             currentMacropulseEntry++;
             if(currentMacropulseEntry>=macropulseTree->GetEntries())
             {
-                cout << "Reached end of macropulse list; end event assignement." << endl;
+                cout << "Reached end of macropulse list; end event assignment." << endl;
                 endAssignment = true;
                 break;
             }
@@ -232,7 +228,7 @@ int assignEventsToMacropulses(string inputFileName, string inputTreeName, string
             currentEvent++;
             if(currentEvent>eventList.size())
             {
-                cout << "Reached end of event list; end event assignement." << endl;
+                cout << "Reached end of event list; end event assignment." << endl;
                 endAssignment = true;
                 break;
             }
@@ -271,7 +267,7 @@ int assignEventsToMacropulses(string inputFileName, string inputTreeName, string
             currentEvent++;
             if(currentEvent>eventList.size())
             {
-                cout << "Reached end of event list; end event assignement." << endl;
+                cout << "Reached end of event list; end event assignment." << endl;
                 endAssignment = true;
                 break;
             }
@@ -295,6 +291,11 @@ int assignEventsToMacropulses(string inputFileName, string inputTreeName, string
             continue;
         }
     }
+
+    logFile << endl;
+    logFile << "For \"" << channel.second << "\" channel:" << endl;
+    logFile << "fraction of events successfully assigned to macropulses =  "
+        << (double)(outputTree->GetEntries())/eventList.size() << endl;
 
     outputTree->Write();
     outputFile->Close();

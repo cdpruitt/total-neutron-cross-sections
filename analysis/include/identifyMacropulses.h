@@ -5,8 +5,7 @@
 
 int identifyMacropulses(
         std::string inputFileName,
-        std::string inputTreeName,
         std::string outputFileName,
-        std::string macropulseTreeName);
+        std::ofstream& logFile);
 
 #endif /* IDENTIFY_MACROPULSES_H */

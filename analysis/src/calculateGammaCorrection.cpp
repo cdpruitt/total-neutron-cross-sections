@@ -4,6 +4,8 @@
 #include "TH2.h"
 #include "TRandom3.h"
 
+#include <fstream>
+
 #include "../include/config.h"
 #include "../include/GammaCorrection.h"
 #include "../include/dataStructures.h"
@@ -13,8 +15,22 @@ using namespace std;
 
 extern Config config;
 
-int calculateGammaCorrection(string inputFileName, string treeName, vector<GammaCorrection>& gammaCorrectionList, string outputFileName)
+int calculateGammaCorrection(string inputFileName, ofstream& logFile, string treeName, vector<GammaCorrection>& gammaCorrectionList, string outputFileName)
 {
+    logFile << endl << "*** Gamma Correction ***" << endl;
+
+    // check to see if output file already exists; if so, exit
+    ifstream f(outputFileName);
+
+    if(f.good())
+    {
+        cout << outputFileName << " already exists; skipping gamma correction and histogram production." << endl;
+        return 0;
+    }
+
+    f.close();
+
+
     TFile* inputFile = new TFile(inputFileName.c_str(),"READ");
     if(!inputFile->IsOpen())
     {
@@ -51,10 +67,7 @@ int calculateGammaCorrection(string inputFileName, string treeName, vector<Gamma
 
     directory->cd();
 
-
     const double GAMMA_TIME = pow(10,7)*config.facility.FLIGHT_DISTANCE/C;
-    cout << "For flight distance of " << config.facility.FLIGHT_DISTANCE
-        << " cm, gamma time is " << GAMMA_TIME << "." << endl;
     const double GAMMA_WINDOW_WIDTH = config.timeOffsets.GAMMA_WINDOW_SIZE/2;
 
     // create advanced histos
@@ -192,15 +205,14 @@ int calculateGammaCorrection(string inputFileName, string treeName, vector<Gamma
         gc.correction = gc.averageGammaTime-GAMMA_TIME;
     }
 
-    cerr << "Finished gamma average calculation."
-        << "Gamma average calculated for " << (100*numberOfAverages)/(double)gammaCorrectionList.size()
-        << "% of macros." << endl;
+    logFile << "Used flight distance of " << config.facility.FLIGHT_DISTANCE
+        << " cm. Expected gamma time is " << GAMMA_TIME << " ns." << endl;
+    logFile << "Calculated average gamma time was " << overallAverageGammaTime << " ns." << endl;
+    logFile << "Difference = " << overallAverageGammaTime - GAMMA_TIME << " ns." << endl;
+    logFile << (100*numberOfAverages)/(double)gammaCorrectionList.size()
+        << "% of macros were used to calculate an average." << endl;
 
-    cerr << "Overall average gamma time was " << overallAverageGammaTime << " ns." << endl;
-    cerr << "Overall average gamma time - facility gamma time = "
-        << overallAverageGammaTime - GAMMA_TIME << " ns." << endl;
-
-    for(auto& gc : gammaCorrectionList)
+        for(auto& gc : gammaCorrectionList)
     {
         gammaAverageH->Fill(gc.averageGammaTime);
         numberOfGammasH->Fill(gc.gammaList.size());
@@ -299,6 +311,8 @@ int calculateGammaCorrection(string inputFileName, string treeName, vector<Gamma
 
     outputFile->Close();
     inputFile->Close();
+
+    logFile << "*** Finished Gamma Correction ***" << endl;
 
     return 0;
 }

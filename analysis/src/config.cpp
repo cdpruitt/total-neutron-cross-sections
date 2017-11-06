@@ -51,6 +51,25 @@ TimeOffsetsConfig::TimeOffsetsConfig(std::vector<std::string> timeOffsetsConfig)
     GAMMA_WINDOW_SIZE = stod(timeOffsetsConfig[5]);
 }
 
+DigitizerConfig::DigitizerConfig(vector<pair<unsigned int, string>> channelMap, vector<string> digitizerConfig)
+{
+    if(channelMap.size()==0)
+    {
+        cerr << "Error: tried to create digitizer configuration for current run, but no channel data could be read in." << endl;
+        exit(1);
+    }
+
+    CHANNEL_MAP = channelMap;
+
+    if(digitizerConfig.size()==0)
+    {
+        cerr << "Error: tried to create digitizer configuration for current run, but no config data were read in." << endl;
+        exit(1);
+    }
+
+    SAMPLE_PERIOD = stoi(digitizerConfig[0]);
+}
+
 TargetConfig::TargetConfig(std::vector<std::string> targetPositions, std::vector<std::pair<int,int>> targetChangerGates)
 {
     if(targetPositions.size()==0)
@@ -78,12 +97,7 @@ CSConfig::CSConfig(std::vector<std::string> v)
         exit(1);
     }
 
-    DETECTOR_NAMES = std::vector<std::string>();
-
-    for(std::string s : v)
-    {
-        DETECTOR_NAMES.push_back(s);
-    }
+    DETECTOR_NAMES = v;
 }
 
 PlotConfig::PlotConfig(std::vector<std::string> v)
@@ -114,9 +128,9 @@ Config::Config(std::string expName, int runNumber)
     target = readTargetConfig(expName, runNumber);
     cs = readCSConfig(expName, runNumber);
     plot = readPlotConfig(expName, runNumber);
-    digitizer = DigitizerConfig();
+    digitizer = readDigitizerConfig(expName, runNumber);
     timeOffsets = readTimeOffsetsConfig(expName, runNumber);
+    analysis = readAnalysisConfig(expName);
 
     std::cout << "Finished reading experiment config data." << std::endl;
 }
-

@@ -68,13 +68,16 @@
 
 # SECTION 1: recompile analysis code
 
+
+printf "*** recompile analysis code ***\n"
 make -j
 if [ "$?" != 0 ]
 then
     # Make failed: abort analysis
-    echo "Compilation failed - correct errors in source code."
+    printf "Compilation failed - correct errors in source code.\n"
     exit $?
 fi
+printf "*** re-compilation complete ***\n"
 
 ################################################################################
 
@@ -198,24 +201,39 @@ analyze ()
     ./bin/driver "$inputFileName" "$outputDirectoryName" "$experiment"\
         "$runNumber" "$useVetoPaddle" "$processWaveformEvents"\
         "$processDPPWaveformEvents" 3>&1 1>&2 2>&3 \
-        | tee "$outputDirectoryName"error.log
+        | tee "$outputDirectoryName"error.txt
 }
 
 ################################################################################
 
 # SECTION 4: determine which runs should be analyzed
 
+printf "\n***** Start analysis *****\n"
+
+experimentFileName="experiment.txt"
+if [ ! -f $experimentFileName ]
+then
+    printf "Error: failed to find $experimentFileName. Aborting analysis.\n"
+    exit
+fi
 read -r experiment<experiment.txt # find out which experimental dataset to analyze
+
+if [ ! $experiment ]
+then
+    printf "Error: failed to read experimental directory name from\
+    $experimentFileName. Is the file empty? Aborting analysis.\n"
+    exit
+fi
 
 # Analyze a single event file, specified by the full filepath
 if [ "$fullFilePath" = true ]
 then
-    printf "\nAnalyzing single event file $2...\n"
+    printf "Full filepath mode (-f): analyzing single event file $2...\n"
     inputFileName=$2
     outputDirectoryName=$3
     runNumber=$5
     analyze "$inputFileName" "$outputDirectoryName" "$runNumber" "$useVetoPaddle" "false" "false"
-    printf "\n here"
+    printf "Finished analysis.\n"
     exit
 fi
 
@@ -224,6 +242,8 @@ if [ "$runSubrunPath" = true ]
 then
     runNumber=$2
     subrunNo=$3
+
+    printf "Single subrun mode (-s): analyzing single subrun $2...\n"
 
     # read input filepath and output filepath
     while read l
@@ -239,7 +259,7 @@ then
 
     if [[ $datapath == "" ]]
     then
-        echo "Failed to find filepath to input data. Exiting..."
+        printf "Failed to find filepath to input data. Aborting analysis.\n"
         exit
     fi
 
@@ -252,13 +272,10 @@ then
     inputFileName="$datapath/$runNumber/data-$subrunNo.evt"
     outputDirectoryName="$outpath/$runNumber/$subrunNo/"
 
-    printf "\nSorting single sub-run $inputFileName\n"
-
     # Start analysis
     analyze "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber" "$useVetoPaddle" "false" "false"
 
-    # Make cross sections from this single subrun
-    #./sumSingle "$outpath"/analysis "$experiment" "histos" "$runNumber" "$subrunNo"
+    printf "Finished analysis.\n"
     exit
 fi
 
@@ -266,7 +283,7 @@ fi
 # analyze, and the last subrun to analyze
 if [ "$runChunk" = true ]
 then
-    printf "\nAnalyzing chunk of subruns in $2...\n"
+    printf "Analyzing chunk of subruns in $2...\n"
     runNumber=$2
     lowSubrun=$3
     highSubrun=$4
@@ -288,7 +305,7 @@ then
 
         if [[ $datapath == "" ]]
         then
-            echo "Failed to find filepath to input data. Exiting..."
+            printf "Failed to find filepath to input data. Exiting...\n"
             exit
         fi
 
@@ -301,7 +318,7 @@ then
         inputFileName="$datapath/$runNumber/data-$subrunNo.evt"
         outputDirectoryName="$outpath/$runNumber/$subrunNo/"
 
-        printf "\nSorting sub-run $inputFileName\n"
+        printf "Sorting sub-run $inputFileName\n"
 
         # Start analysis
         analyze "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber" "$useVetoPaddle" "false" "false"
@@ -313,7 +330,7 @@ fi
 # Analyze runs listed in runsToSort.txt
 if [[ $runList = true && -a ../$experiment/runsToSort.txt ]]
 then
-    printf "\nRunList mode enabled. Reading runs from ./runsToSort.txt...\n"
+    printf "RunList mode enabled. Reading runs from ./runsToSort.txt...\n"
 
     # loop through all runs listed in runsToSort.txt
     while read runNumber; do
@@ -333,7 +350,7 @@ then
 
         if [ "$datapath" == 0 ]
         then
-            echo "Failed to find filepath to input data. Exiting..."
+            printf "Failed to find filepath to input data. Exiting...\n"
             exit
         fi
 
@@ -343,9 +360,9 @@ then
             mkdir "$outpath/$runNumber"
         fi
 
-        printf "\n************************************"
-        printf "\n     Reading subruns from $runNumber"
         printf "\n************************************\n"
+        printf "     Reading subruns from $runNumber\n"
+        printf "************************************\n"
 
         # Sort all sub-runs in the specified run directory
         for f in "$datapath"/"$runNumber"/data-*;
@@ -359,7 +376,7 @@ then
             do
                 if [[ "$runNumber-$subrunNo" == "$l" ]]
                 then
-                    echo "Found sub-run "$l" on blacklist; skipping..."
+                    printf "Found sub-run "$l" on blacklist; skipping...\n"
                     skip=true
                     break
                 fi
@@ -370,10 +387,10 @@ then
             fi
 
             outputDirectoryName="$outpath/$runNumber/$subrunNo/"
-            printf "\n\n***Starting analysis of sub-run $subrunNo***\n"
+            printf "\n***Starting analysis of sub-run $subrunNo***\n"
 
             analyze "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber" "$useVetoPaddle" "false" "false"
-            printf "\n\n***Finished analysis of sub-run $subrunNo***\n"
+            printf "\n***Finished analysis of sub-run $subrunNo***\n"
 
             # Skip subruns < 1GB in size
             runSize=$(du -k "$inputFileName" | cut -f 1)
