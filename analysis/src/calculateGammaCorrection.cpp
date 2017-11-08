@@ -25,7 +25,7 @@ int calculateGammaCorrection(string inputFileName, ofstream& logFile, string tre
     if(f.good())
     {
         cout << outputFileName << " already exists; skipping gamma correction and histogram production." << endl;
-        return 0;
+        return 2;
     }
 
     f.close();
@@ -70,29 +70,85 @@ int calculateGammaCorrection(string inputFileName, ofstream& logFile, string tre
     const double GAMMA_TIME = pow(10,7)*config.facility.FLIGHT_DISTANCE/C;
     const double GAMMA_WINDOW_WIDTH = config.timeOffsets.GAMMA_WINDOW_SIZE/2;
 
+    // find gamma range
+    TH1D* uncorrectedTOF = new TH1D(
+            "uncorrectedTOF",
+            "uncorrectedTOF",
+            config.plot.TOF_BINS,
+            config.plot.TOF_LOWER_BOUND,
+            config.plot.TOF_UPPER_BOUND);
+
+    unsigned int long totalEntries = tree->GetEntries();
+    tree->GetEntry(totalEntries-1);
+
+    double timeDiff;
+    double microTime;
+
+    for(long i=0; i<totalEntries; i++)
+    {
+        tree->GetEntry(i);
+
+        timeDiff = completeTime-macroTime;
+        microTime = fmod(timeDiff,config.facility.MICRO_LENGTH);
+
+        uncorrectedTOF->Fill(microTime);
+
+        if(i%10000==0)
+        {
+            cout << "Processed " << i << " events into uncorrectedTOF...\r";
+            fflush(stdout);
+        }
+    }
+
+    vector<double> sumsOfNeighborhood(config.plot.TOF_BINS,0);
+
+    int binNeighborhood = config.plot.TOF_BINS_PER_NS;
+
+    for(int i=1; i<config.plot.TOF_BINS; i++)
+    {
+        for(int j=i-binNeighborhood; j<i+binNeighborhood; j++)
+        {
+            sumsOfNeighborhood[i] += uncorrectedTOF->GetBinContent(j);
+        }
+    }
+
+    int maxSum = 0;
+    int maxBin = 0;
+
+    for(int i=0; i<sumsOfNeighborhood.size(); i++)
+    {
+        if(sumsOfNeighborhood[i] > maxSum)
+        {
+            maxSum = sumsOfNeighborhood[i];
+            maxBin = i;
+        }
+    }
+
+    double gammaWindowCenter = ((double)maxBin)/config.plot.TOF_BINS_PER_NS;
+
     // create advanced histos
     TH1D* gammaHisto = new TH1D("gamma histo", "gamma histo",
-            500, GAMMA_TIME-GAMMA_WINDOW_WIDTH,
-            GAMMA_TIME+GAMMA_WINDOW_WIDTH);
+            500, gammaWindowCenter-GAMMA_WINDOW_WIDTH,
+            gammaWindowCenter+GAMMA_WINDOW_WIDTH);
 
     TH2D* gammaHisto2D = new TH2D("gamma histo 2D", "gamma histo 2D",
-            50, GAMMA_TIME-GAMMA_WINDOW_WIDTH,
-            GAMMA_TIME+GAMMA_WINDOW_WIDTH,
-            50, GAMMA_TIME-GAMMA_WINDOW_WIDTH,
-            GAMMA_TIME+GAMMA_WINDOW_WIDTH);
+            50, gammaWindowCenter-GAMMA_WINDOW_WIDTH,
+            gammaWindowCenter+GAMMA_WINDOW_WIDTH,
+            50, gammaWindowCenter-GAMMA_WINDOW_WIDTH,
+            gammaWindowCenter+GAMMA_WINDOW_WIDTH);
 
     TH1D* gammaHistoDiff = new TH1D("gamma histo diff", "gamma histo diff",
             500, -GAMMA_WINDOW_WIDTH,
             GAMMA_WINDOW_WIDTH);
 
     TH1D *gammaAverageH = new TH1D("gammaAverageH","gammaAverageH",
-            120,GAMMA_TIME-GAMMA_WINDOW_WIDTH,
-            GAMMA_TIME-GAMMA_WINDOW_WIDTH);
+            120,gammaWindowCenter-GAMMA_WINDOW_WIDTH,
+            gammaWindowCenter-GAMMA_WINDOW_WIDTH);
 
     TH1D* numberOfGammasH = new TH1D("numberOfGammasH",
             "number of gammas in each macropulse", 35, 0, 35);
     TH2D* gammaAverageByGammaNumberH = new TH2D("gammaAverageByGammaNumber",
-            "gammaAverageByGammaNumber",40,0,40,60,GAMMA_TIME-3,GAMMA_TIME+3);
+            "gammaAverageByGammaNumber",40,0,40,60,gammaWindowCenter-3,gammaWindowCenter+3);
 
     TH1D* timeAutocorrelation;
 
@@ -105,19 +161,15 @@ int calculateGammaCorrection(string inputFileName, ofstream& logFile, string tre
 
     TH1D *gammaMicroNoH = new TH1D("gamma microNoH","gammaMicroNoH",360,0,360);
 
-    unsigned int long totalEntries = tree->GetEntries();
-    tree->GetEntry(totalEntries-1);
-    gammaCorrectionList.resize(macroNo+1, GammaCorrection());
-
     // Define the range of times considered to be gamma rays
-    double timeDiff;
-    double microTime;
     int microNo;
 
     double weight;
     double energy;
 
     double prevGammaTime = 0;
+
+    gammaCorrectionList.resize(macroNo+1, GammaCorrection());
 
     for(long i=0; i<totalEntries; i++)
     {
@@ -128,7 +180,7 @@ int calculateGammaCorrection(string inputFileName, ofstream& logFile, string tre
 
         // test if gamma:
         // if so, use for correction and populate gamma-specific histos
-        if(abs(microTime-GAMMA_TIME)<(GAMMA_WINDOW_WIDTH))
+        if(abs(microTime-gammaWindowCenter)<(GAMMA_WINDOW_WIDTH))
         {
             // weight each gamma by the inverse of the FWHM of the gamma peak of
             // just its energy
@@ -205,10 +257,11 @@ int calculateGammaCorrection(string inputFileName, ofstream& logFile, string tre
         gc.correction = gc.averageGammaTime-GAMMA_TIME;
     }
 
+    logFile << "Gamma peak center determined as: " << gammaWindowCenter << " ns." << endl;
+    logFile << "Calculated gamma average: " << overallAverageGammaTime << " ns." << endl;
     logFile << "Used flight distance of " << config.facility.FLIGHT_DISTANCE
-        << " cm. Expected gamma time is " << GAMMA_TIME << " ns." << endl;
-    logFile << "Calculated average gamma time was " << overallAverageGammaTime << " ns." << endl;
-    logFile << "Difference = " << overallAverageGammaTime - GAMMA_TIME << " ns." << endl;
+        << " cm to generate expected gamma time of " << GAMMA_TIME << " ns." << endl;
+    logFile << "Difference between calculated and expected: " << overallAverageGammaTime - GAMMA_TIME << " ns." << endl;
     logFile << (100*numberOfAverages)/(double)gammaCorrectionList.size()
         << "% of macros were used to calculate an average." << endl;
 

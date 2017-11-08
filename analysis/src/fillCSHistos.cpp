@@ -310,7 +310,7 @@ int fillCSHistos(string inputFileName, ofstream& logFile, string treeName, vecto
 
     TF1* gammaPeakFit = new TF1("gammaPeakFit","gaus",
             GAMMA_TIME-GAMMA_WINDOW_WIDTH, GAMMA_TIME+GAMMA_WINDOW_WIDTH);
-    TOFHistos[1]->Fit("gammaPeakFit","0", "Q",
+    TOFHistos[1]->Fit("gammaPeakFit","Q0", "",
             GAMMA_TIME-GAMMA_WINDOW_WIDTH, GAMMA_TIME+GAMMA_WINDOW_WIDTH);
     logFile << endl << "Blank target gamma peak FWHM = "
         << 2.355*gammaPeakFit->GetParameter(2)

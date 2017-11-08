@@ -13,7 +13,7 @@ using namespace std;
 
 extern Config config;
 
-const int DEADTIME_PERIOD = 150; // in ns
+const int DEADTIME_PERIOD = 152; // in ns
 const int DEADTIME_TRANSITION_PERIOD = 15; // in ns
 
 int produceEnergyHistos(string inputFileName, ofstream& log, string channelName, string outputFileName)
