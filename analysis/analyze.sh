@@ -93,7 +93,7 @@ overwriteHistos=false;
 useVetoPaddle=false;
 overwriteWaveform=false;
 
-while getopts "fscrithvw" opt; do
+while getopts "fscrithovw" opt; do
     case ${opt} in
         f)
             fullFilePath=true
@@ -115,6 +115,9 @@ while getopts "fscrithvw" opt; do
             ;;
         h)  
             overwriteHistos=true
+            ;;
+        o)
+            oneEach=true
             ;;
         v)  
             useVetoPaddle=true
@@ -360,6 +363,18 @@ then
             mkdir "$outpath/$runNumber"
         fi
 
+        if [[ $oneEach = true ]]
+        then
+            inputFileName="$datapath/$runNumber/data-0000.evt"
+            outputDirectoryName="$outpath/$runNumber/0000/"
+            printf "\n***Starting analysis of sub-run 0000***\n"
+
+            analyze "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber" "$useVetoPaddle" "false" "false"
+            printf "\n***Finished analysis of sub-run $subrunNo***\n"
+
+            continue
+        fi
+
         printf "\n************************************\n"
         printf "     Reading subruns from $runNumber\n"
         printf "************************************\n"
@@ -391,14 +406,6 @@ then
 
             analyze "$inputFileName" "$outputDirectoryName" "$experiment" "$runNumber" "$useVetoPaddle" "false" "false"
             printf "\n***Finished analysis of sub-run $subrunNo***\n"
-
-            # Skip subruns < 1GB in size
-            runSize=$(du -k "$inputFileName" | cut -f 1)
-            #if [ "$runSize" -lt 1000000 ]
-            #then
-            #    printf "$inputFileName is less than 1 GB in size; ignoring...\n"
-            #    continue
-            #fi
 
         done
 

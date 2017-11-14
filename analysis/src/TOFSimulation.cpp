@@ -124,7 +124,7 @@ int main(int argc, char** argv)
     TH1D* measured = (TH1D*)allLiveEvents->Clone("measured");
     TH1D* corrected = (TH1D*)allLiveEvents->Clone("corrected");
 
-    correctForDeadtimeBob(measured, corrected, DEADTIME_BINS, DEADTIME_TRANSITION_BINS, numberOfPeriods);
+    correctForDeadtime(measured, corrected, numberOfPeriods);
 
     corrected->Write();
 

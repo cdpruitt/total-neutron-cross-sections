@@ -18,18 +18,18 @@ TH1D* convertTOFtoEnergy(TH1D* tof, string name)
         return energy;
     }
 
-    unsigned int tofBins = tof->GetNbinsX()-2;
+    unsigned int tofBins = tof->GetNbinsX();
 
     TRandom3 *randomizeBin = new TRandom3();
 
-    for(unsigned int j=1; j<tofBins+1; j++)
+    for(unsigned int j=1; j<=tofBins; j++)
     {
         // convert time into neutron velocity based on flight path distance
         double velocity = pow(10.,7.)*(config.facility.FLIGHT_DISTANCE)
             /(tof->GetBinCenter(j)
-                    /*+randomizeBin->Uniform(
-                        -(config.plot.TOF_RANGE)/(double)(2*tofBins),
-                         (config.plot.TOF_RANGE)/(double)(2*tofBins))*/
+                    +randomizeBin->Uniform(
+                        -(1/(double)(2*config.plot.TOF_BINS_PER_NS)),
+                         (1/(double)(2*config.plot.TOF_BINS_PER_NS)))
              ); // in meters/sec 
 
         // convert velocity to relativistic kinetic energy

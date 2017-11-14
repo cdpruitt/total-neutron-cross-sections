@@ -5,4 +5,5 @@ litNatNiTotalXS.dat
 litNi58TotalXS.dat
 litNi64TotalXS.dat
 litNatRhTotalXS.dat
+litNatSnTotalXS.dat
 litNatPbTotalXS.dat

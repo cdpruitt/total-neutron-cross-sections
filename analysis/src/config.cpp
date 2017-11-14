@@ -121,8 +121,6 @@ PlotConfig::PlotConfig(std::vector<std::string> v)
 
 Config::Config(std::string expName, int runNumber)
 {
-    cout << "Start reading experiment config data." << endl;
-
     facility = readFacilityConfig(expName, runNumber);
     softwareCFD = readSoftwareCFDConfig(expName, runNumber);
     target = readTargetConfig(expName, runNumber);

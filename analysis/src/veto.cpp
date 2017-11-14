@@ -10,7 +10,7 @@
 
 using namespace std;
 
-const double VETO_WINDOW = 8; // in ns
+const double VETO_WINDOW = 6; // in ns
 
 int vetoEvents(string detectorFileName, string outputFileName, ofstream& logFile, string detTreeName, string vetoTreeName)
 {
@@ -26,20 +26,14 @@ int vetoEvents(string detectorFileName, string outputFileName, ofstream& logFile
 
     f.close();
 
+    // read input trees to prepare for vetoing
     TFile* detectorFile = new TFile(detectorFileName.c_str(),"READ");
-
+    TTree* detTree = (TTree*)detectorFile->Get(detTreeName.c_str());
     TTree* vetoTree = (TTree*)detectorFile->Get(vetoTreeName.c_str());
-
-    DetectorEvent veto;
-    vetoTree->SetBranchAddress("cycleNumber",&veto.cycleNumber);
-    vetoTree->SetBranchAddress("completeTime",&veto.completeTime);
-
-    TFile* outputFile = new TFile(outputFileName.c_str(),"UPDATE");
 
     DetectorEvent event;
     vector<int>* waveformPointer = 0;
 
-    TTree* detTree = (TTree*)detectorFile->Get(detTreeName.c_str());
     detTree->SetBranchAddress("cycleNumber",&event.cycleNumber);
     detTree->SetBranchAddress("macroNo",&event.macroNo);
     detTree->SetBranchAddress("macroTime",&event.macroTime);
@@ -51,36 +45,34 @@ int vetoEvents(string detectorFileName, string outputFileName, ofstream& logFile
     detTree->SetBranchAddress("lgQ",&event.lgQ);
     detTree->SetBranchAddress("waveform",&waveformPointer);
 
-    // cleanTree holds events that have survived the veto
-    string clean = detTreeName;
-    TTree* cleanTree = new TTree(clean.c_str(),clean.c_str());
-    cleanTree->Branch("cycleNumber",&event.cycleNumber, "cycleNumber/i");
-    cleanTree->Branch("macroNo",&event.macroNo, "macroNo/i");
-    cleanTree->Branch("macroTime",&event.macroTime, "macroTime/d");
-    cleanTree->Branch("fineTime",&event.fineTime, "fineTime/d");
-    cleanTree->Branch("eventNo",&event.eventNo, "eventNo/i");
-    cleanTree->Branch("completeTime",&event.completeTime, "completeTime/d");
-    cleanTree->Branch("targetPos",&event.targetPos, "targetPos/I");
-    cleanTree->Branch("sgQ",&event.sgQ, "sgQ/i");
-    cleanTree->Branch("lgQ",&event.lgQ, "lgQ/i");
-    cleanTree->Branch("waveform",&waveformPointer);
+    DetectorEvent veto;
+    vetoTree->SetBranchAddress("cycleNumber",&veto.cycleNumber);
+    vetoTree->SetBranchAddress("completeTime",&veto.completeTime);
 
-    // dirtyTree holds events that have been vetoed
-    string dirty = detTreeName + "Dirty";
-    TTree* dirtyTree = new TTree(dirty.c_str(),dirty.c_str());
-    dirtyTree->Branch("cycleNumber",&event.cycleNumber, "cycleNumber/i");
-    dirtyTree->Branch("macroNo",&event.macroNo, "macroNo/i");
-    dirtyTree->Branch("macroTime",&event.macroTime, "macroTime/d");
-    dirtyTree->Branch("fineTime",&event.fineTime, "fineTime/d");
-    dirtyTree->Branch("eventNo",&event.eventNo, "eventNo/i");
-    dirtyTree->Branch("completeTime",&event.completeTime, "completeTime/d");
-    dirtyTree->Branch("targetPos",&event.targetPos, "targetPos/I");
-    dirtyTree->Branch("sgQ",&event.sgQ, "sgQ/i");
-    dirtyTree->Branch("lgQ",&event.lgQ, "lgQ/i");
-    dirtyTree->Branch("waveform",&waveformPointer);
+    // create output file
+    TFile* outputFile = new TFile(outputFileName.c_str(),"UPDATE");
+
+    // output tree holds events that have survived the veto
+    TTree* tree = new TTree(detTreeName.c_str(),detTreeName.c_str());
+    tree->Branch("cycleNumber",&event.cycleNumber, "cycleNumber/i");
+    tree->Branch("macroNo",&event.macroNo, "macroNo/i");
+    tree->Branch("macroTime",&event.macroTime, "macroTime/d");
+    tree->Branch("fineTime",&event.fineTime, "fineTime/d");
+    tree->Branch("eventNo",&event.eventNo, "eventNo/i");
+    tree->Branch("completeTime",&event.completeTime, "completeTime/d");
+    tree->Branch("targetPos",&event.targetPos, "targetPos/I");
+    tree->Branch("sgQ",&event.sgQ, "sgQ/i");
+    tree->Branch("lgQ",&event.lgQ, "lgQ/i");
+    tree->Branch("vetoed",&event.vetoed,"vetoed/O");
+
+    tree->Branch("waveform",&waveformPointer);
+
+    TH1D* vetoedEventHisto = new TH1D("vetoed event time diff",
+            "vetoed event time diff", 20*VETO_WINDOW, -VETO_WINDOW, VETO_WINDOW);
 
     long detTreeEntries = detTree->GetEntries();
     long vetoTreeEntries = vetoTree->GetEntries();
+    double numberVetoedEvents = 0;
 
     // load the first veto event; j is the veto event counter
     int j=0;
@@ -107,7 +99,7 @@ int vetoEvents(string detectorFileName, string outputFileName, ofstream& logFile
                 while(k<detTreeEntries)
                 {
                     detTree->GetEntry(k);
-                    cleanTree->Fill();
+                    tree->Fill();
                     k++;
 
                     if(k%10000==0)
@@ -117,11 +109,11 @@ int vetoEvents(string detectorFileName, string outputFileName, ofstream& logFile
                     }
                 }
 
-                cleanTree->Write();
-                dirtyTree->Write();
+                vetoedEventHisto->Write();
 
-                double numberCleanEvents = cleanTree->GetEntries();
-                logFile << "Fraction of events surviving veto: " << numberCleanEvents/detTreeEntries << endl;
+                tree->Write();
+
+                logFile << "Fraction of events surviving veto: " << (detTreeEntries-numberVetoedEvents)/detTreeEntries << endl;
 
                 detectorFile->Close();
                 outputFile->Close();
@@ -147,7 +139,7 @@ int vetoEvents(string detectorFileName, string outputFileName, ofstream& logFile
                 while(k<detTreeEntries)
                 {
                     detTree->GetEntry(k);
-                    cleanTree->Fill();
+                    tree->Fill();
                     k++;
 
                     if(k%10000==0)
@@ -157,11 +149,11 @@ int vetoEvents(string detectorFileName, string outputFileName, ofstream& logFile
                     }
                 }
 
-                cleanTree->Write();
-                dirtyTree->Write();
+                vetoedEventHisto->Write();
 
-                double numberCleanEvents = cleanTree->GetEntries();
-                logFile << "Fraction of events surviving veto: " << numberCleanEvents/detTreeEntries << endl;
+                tree->Write();
+
+                logFile << "Fraction of events surviving veto: " << (detTreeEntries-numberVetoedEvents)/detTreeEntries << endl;
 
                 detectorFile->Close();
                 outputFile->Close();
@@ -173,13 +165,19 @@ int vetoEvents(string detectorFileName, string outputFileName, ofstream& logFile
         // test for coincidence, within VETO_WINDOW
         if(abs(event.completeTime-veto.completeTime)<VETO_WINDOW)
         {
-            // coincidence found - throw out event
-            dirtyTree->Fill();
-            continue;
+            // coincidence found - mark event as "vetoed"
+            event.vetoed = true;
+            numberVetoedEvents++;
+
+            vetoedEventHisto->Fill(event.completeTime-veto.completeTime);
         }
 
-        // event survived veto, so add to cleanTree
-        cleanTree->Fill();
+        else
+        {
+            event.vetoed = false;
+        }
+
+        tree->Fill();
 
         if(i%10000==0)
         {
@@ -188,11 +186,11 @@ int vetoEvents(string detectorFileName, string outputFileName, ofstream& logFile
         }
     }
 
-    cleanTree->Write();
-    dirtyTree->Write();
+    vetoedEventHisto->Write();
 
-    double numberCleanEvents = cleanTree->GetEntries();
-    logFile << "Fraction of events surviving veto: " << numberCleanEvents/detTreeEntries << endl;
+    tree->Write();
+
+    logFile << "Fraction of events surviving veto: " << (detTreeEntries-numberVetoedEvents)/detTreeEntries << endl;
 
     detectorFile->Close();
     outputFile->Close();

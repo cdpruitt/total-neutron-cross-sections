@@ -125,6 +125,7 @@ int fillCSHistos(string inputFileName, ofstream& logFile, string treeName, vecto
     tree->SetBranchAddress("targetPos",&event.targetPos);
     tree->SetBranchAddress("sgQ",&event.sgQ);
     tree->SetBranchAddress("lgQ",&event.lgQ);
+    tree->SetBranchAddress("vetoed",&event.vetoed);
     tree->SetBranchAddress("waveform",&waveformPointer);
 
     vector<MacropulseEvent> macropulseList;
@@ -190,8 +191,21 @@ int fillCSHistos(string inputFileName, ofstream& logFile, string treeName, vecto
             10*config.plot.NUMBER_ENERGY_BINS, floor(config.plot.ENERGY_LOWER_BOUND), ceil(config.plot.ENERGY_UPPER_BOUND),
             10*config.plot.NUMBER_ENERGY_BINS, floor(config.plot.ENERGY_LOWER_BOUND), ceil(config.plot.ENERGY_UPPER_BOUND));
 
-    TH1D *microNoH = new TH1D("microNoH","microNo",ceil(1.1*config.facility.MICROS_PER_MACRO)
+    TH1D* microNoH = new TH1D("microNoH","microNo",ceil(1.1*config.facility.MICROS_PER_MACRO)
             ,0,ceil(1.1*config.facility.MICROS_PER_MACRO));
+
+    TH1D* vetoedTOF = new TH1D("vetoedTOF",
+            "vetoedTOF",
+            config.plot.TOF_BINS,
+            config.plot.TOF_LOWER_BOUND,
+            config.plot.TOF_UPPER_BOUND);
+
+    TH2D* vetoedTriangle = new TH2D("vetoedTriangle",
+            "vetoedTriangle",
+            config.plot.TOF_RANGE,
+            config.plot.TOF_LOWER_BOUND,
+            config.plot.TOF_UPPER_BOUND/5,
+            4096,0,65536);
 
     vector<TH1D*> TOFHistos;
     vector<TH2D*> triangleHistos;
@@ -229,8 +243,11 @@ int fillCSHistos(string inputFileName, ofstream& logFile, string treeName, vecto
 
     double prevAverageTime = 0;
 
+    const double MACRO_LENGTH = config.facility.MICROS_PER_MACRO*config.facility.MICRO_LENGTH;
+
     unsigned long badMacroEvent = 0;
     unsigned long badChargeGateEvent = 0;
+    unsigned long outsideMacro = 0;
 
     unsigned int totalEntries = tree->GetEntries();
 
@@ -263,6 +280,13 @@ int fillCSHistos(string inputFileName, ofstream& logFile, string treeName, vecto
         // correct times using average gamma time
         timeDiff -= gammaCorrectionList[event.macroNo].correction;
 
+        // timing gate
+        if(timeDiff > MACRO_LENGTH)
+        {
+            outsideMacro++;
+            continue;
+        }
+
         eventTimeDiff = event.completeTime-prevCompleteTime;
         microNo = floor(timeDiff/config.facility.MICRO_LENGTH);
         microTime = fmod(timeDiff,config.facility.MICRO_LENGTH);
@@ -272,6 +296,15 @@ int fillCSHistos(string inputFileName, ofstream& logFile, string treeName, vecto
 
         // convert velocity to relativistic kinetic energy
         rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
+
+        // veto gate
+        if(event.vetoed)
+        {
+            vetoedTOF->Fill(microTime);
+            vetoedTriangle->Fill(microTime, event.lgQ);
+
+            continue;
+        }
 
         TOFHistos[event.targetPos]->Fill(microTime);
         triangleHistos[event.targetPos]->Fill(microTime, event.lgQ);
@@ -304,6 +337,9 @@ int fillCSHistos(string inputFileName, ofstream& logFile, string treeName, vecto
         << " < lgQ < " << Q_HIGH_THRESHOLD << "): "
         << 100*(double)badChargeGateEvent/totalEntries << "%." << endl;
 
+    logFile << "Fraction events outside macropulse: "
+        << 100*(double)outsideMacro/totalEntries << "%." << endl;
+
     // calculate width of gamma peak after gamma correction has been applied
     const double GAMMA_TIME = pow(10,7)*config.facility.FLIGHT_DISTANCE/C;
     const double GAMMA_WINDOW_WIDTH = config.timeOffsets.GAMMA_WINDOW_SIZE/2;
@@ -326,6 +362,9 @@ int fillCSHistos(string inputFileName, ofstream& logFile, string treeName, vecto
     {
         histo->Write();
     }
+
+    vetoedTOF->Write();
+    vetoedTriangle->Write();
 
     timeDiffHisto->Write();
     timeDiffVEnergy1->Write();

@@ -15,7 +15,7 @@ LINKOPTION = $(shell root-config --libs)
 ############################### DEFINE TARGETS #################################
 
 # List all targets
-TARGETS = driver text sumAll sumChunk readLitData subtractCS multiplyCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck rateHisto TOFSimulation
+TARGETS = driver text sumAll sumChunk readLitData subtractCS multiplyCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck rateHisto #TOFSimulation
 all: $(addprefix $(BIN), $(TARGETS))
 
 # Build driver (main data analysis engine)

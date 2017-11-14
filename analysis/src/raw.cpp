@@ -387,7 +387,7 @@ int readRawData(string inFileName, string outFileName, ofstream& logFile)
 
                     break;
                 case 5:
-                    rawEvent.completeTime += config.timeOffsets.VETO_TIME_OFFSET;
+                    rawEvent.completeTime += config.timeOffsets.DETECTOR_TIME_OFFSET + config.timeOffsets.VETO_TIME_OFFSET;
                     break;
                 case 6:
                     rawEvent.completeTime += config.timeOffsets.HIGH_T_DET_TIME_OFFSET;

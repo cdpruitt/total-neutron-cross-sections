@@ -338,6 +338,36 @@ int main(int, char* argv[])
             stringstream subRunFormatted;
             subRunFormatted << setfill('0') << setw(4) << subRun;
 
+            // Skip subruns on the blacklist
+            string blacklistDataLocation = "../" + expName + "/blacklist.txt";
+            ifstream blacklist(blacklistDataLocation);
+
+            if(!blacklist.good())
+            {
+                cerr << "Error: couldn't find blacklist in " << blacklistDataLocation << endl;
+                return 1;
+            }
+
+            bool skip = false;
+            string str;
+
+            while(getline(blacklist,str))
+            {
+                string runSubrun = runNumber + "-" + subRunFormatted.str();
+                if(runSubrun == str)
+                {
+                    cout << "Found sub-run " << runSubrun << " on blacklist; skipping..." << endl;
+
+                    skip = true;
+                    break;
+                }
+            }
+
+            if(skip)
+            {
+                continue;
+            }
+
             // open subrun
             stringstream monitorFileName;
             monitorFileName << dataLocation << "/" << runNumber << "/"

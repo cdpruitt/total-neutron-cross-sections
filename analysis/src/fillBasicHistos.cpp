@@ -114,7 +114,7 @@ int fillBasicHistos(string inputFileName, ofstream& log, string treeName, vector
 
         if(i%10000==0)
         {
-            cout << "Processed " << i << " " << treeName << " events into CS histos...\r";
+            cout << "Processed " << i << " " << treeName << " events into basic histos...\r";
 
             waveformsDir->cd();
             stringstream temp;

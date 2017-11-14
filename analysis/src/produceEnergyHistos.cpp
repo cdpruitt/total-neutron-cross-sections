@@ -13,9 +13,6 @@ using namespace std;
 
 extern Config config;
 
-const int DEADTIME_PERIOD = 152; // in ns
-const int DEADTIME_TRANSITION_PERIOD = 15; // in ns
-
 int produceEnergyHistos(string inputFileName, ofstream& log, string channelName, string outputFileName)
 {
     // open input file
@@ -66,16 +63,13 @@ int produceEnergyHistos(string inputFileName, ofstream& log, string channelName,
 
         double numberOfMicros = numberOfMacros*(config.facility.MICROS_PER_MACRO);
 
-        const int deadtimeBins = ((double)config.plot.TOF_BINS/config.plot.TOF_RANGE)*DEADTIME_PERIOD;
-        const int deadtimeTransitionBins = ((double)config.plot.TOF_BINS/config.plot.TOF_RANGE)*DEADTIME_TRANSITION_PERIOD;
-
         string correctedName = targetName + "Uncorrected";
         TH1D* correctedTOF = (TH1D*)TOF->Clone(correctedName.c_str());
 
         correctedTOF->Write();
 
         outputDirectory->cd();
-        correctForDeadtimeBob(TOF, correctedTOF, deadtimeBins, deadtimeTransitionBins, numberOfMicros);
+        correctForDeadtime(TOF, correctedTOF, numberOfMicros);
 
         correctedName = targetName + "Corrected";
         correctedTOF = (TH1D*)correctedTOF->Clone(correctedName.c_str());

@@ -44,6 +44,22 @@ then
     detectorName=$2 # which detector should be used for cross section calculation
     analysisDirectoryName="/data1/analysis"
 
+    # Skip subruns on the blacklist
+    skip=false
+    while read l
+    do
+        if [[ "$runNumber-$subrunNo" == "$l" ]]
+        then
+            printf "Found sub-run "$l" on blacklist; skipping...\n"
+            skip=true
+            break
+        fi
+    done < ../$experiment/blacklist.txt
+    if [ $skip == true ]
+    then
+        continue
+    fi
+
     ./bin/sumAll "$analysisDirectoryName" "$experiment" "$detectorName"
 fi
 

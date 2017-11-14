@@ -76,6 +76,9 @@ struct DetectorEvent
     unsigned int sgQ = 0;
     unsigned int lgQ = 0;
     unsigned int baseline = 0;
+
+    bool vetoed = false;
+
     std::vector<int> waveform;
 };
 
