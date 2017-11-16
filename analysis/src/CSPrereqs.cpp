@@ -20,27 +20,83 @@ void CSPrereqs::getHisto(TFile* histoFile, string directory, string name)
     // for histos
     string energyHistoName = name + "Energy";
 
-    // for waveforms
-    //string energyHistoName = name + "Energy";
-
     histoFile->cd(directory.c_str());
     energyHisto = ((TH1D*)gDirectory->Get(energyHistoName.c_str()));
 
-    string TOFHistoName = name + "Corrected";
+    if(!energyHisto)
+    {
+        cerr << "Error: Failed to open histogram \"" << energyHistoName
+            << "\" in file " << histoFile
+            << " (in getHisto)." << endl;
+        return;
+    }
+
+    string TOFHistoName = name + "TOFCorrected";
     TOFHisto = ((TH1D*)gDirectory->Get(TOFHistoName.c_str()));
+
+    if(!TOFHisto)
+    {
+        cerr << "Error: Failed to open histogram \"" << TOFHistoName
+            << "\" in file " << histoFile
+            << " (in getHisto)." << endl;
+        return;
+    }
 }
 
 // for histos
 void CSPrereqs::getMonitorCounts(TFile* histoFile, string directory, int targetPosition)
 {
     TDirectory* dir = (TDirectory*)histoFile->Get(directory.c_str());
-    monitorCounts = ((TH1D*)dir->Get("targetPosH"))->GetBinContent(targetPosition+1);
+    if(!dir)
+    {
+        cerr << "Error: Failed to open directory " << directory << " in file " << histoFile->GetName()
+            << " (in getMonitorCounts)." << endl;
+        return;
+    }
+
+    TH1D* targetPosHisto = (TH1D*)dir->Get("targetPosH");
+    if(!targetPosHisto)
+    {
+        cerr << "Error: Failed to open histogram \"targetPosH\" in file " << histoFile
+            << " (in getMonitorCounts)." << endl;
+        return;
+    }
+
+    monitorCounts = targetPosHisto->GetBinContent(targetPosition+1);
+
+    if(monitorCounts<=0)
+    {
+        cerr << "Error: for target position " << config.target.TARGET_ORDER[targetPosition] << ", monitor counts read was <=0 (in getMonitorCounts)." << endl;
+        return;
+    }
 }
 
-void CSPrereqs::getGoodMacroRatio(TFile* histoFile, string directory, string goodMacroHistoName, string macroHistoName)
+void CSPrereqs::getGoodMacroRatio(TFile* histoFile, TFile* monitorFile, string directory, string goodMacroHistoName, string macroHistoName)
 {
     TDirectory* dir = (TDirectory*)histoFile->Get(directory.c_str());
+    if(!dir)
+    {
+        cerr << "Error: Failed to open directory " << directory << " in file " << histoFile->GetName()
+            << " (in getMonitorCounts)." << endl;
+        return;
+    }
+
+    TDirectory* monitorDir = (TDirectory*)monitorFile->Get(directory.c_str());
+    if(!monitorDir)
+    {
+        cerr << "Error: Failed to open directory " << directory << " in file " << monitorFile->GetName()
+            << " (in getMonitorCounts)." << endl;
+        return;
+    }
+
     TH1D* goodMacrosH = (TH1D*)dir->Get(goodMacroHistoName.c_str());
+    if(!goodMacrosH)
+    {
+        cerr << "Error: Failed to open histogram \"" << goodMacroHistoName
+            << "\" in file " << histoFile->GetName() << " (in getGoodMacroRatio)." << endl;
+        return;
+    }
+
     unsigned int numberOfBins = goodMacrosH->GetNbinsX();
 
     unsigned int goodMacroCount = 0;
@@ -53,7 +109,14 @@ void CSPrereqs::getGoodMacroRatio(TFile* histoFile, string directory, string goo
         }
     }
 
-    TH1D* macroHisto = (TH1D*)dir->Get(macroHistoName.c_str());
+    TH1D* macroHisto = (TH1D*)monitorDir->Get(macroHistoName.c_str());
+    if(!macroHisto)
+    {
+        cerr << "Error: Failed to open histogram \"" << macroHistoName
+            << "\" in file " << histoFile->GetName() << " (in getGoodMacroRatio)." << endl;
+        return;
+    }
+
     numberOfBins = macroHisto->GetNbinsX();
 
     unsigned int macroCount = 0;
@@ -67,6 +130,11 @@ void CSPrereqs::getGoodMacroRatio(TFile* histoFile, string directory, string goo
     }
 
     goodMacroRatio = goodMacroCount/(double)macroCount;
+
+    if(goodMacroRatio<=0 || goodMacroRatio>=1)
+    {
+        cerr << "Error: goodMacroRatio was " << goodMacroRatio << ", outside bounds [0,1]." << endl;
+    }
 }
 
 // readData for histos
@@ -77,18 +145,18 @@ void CSPrereqs::readEnergyData(TFile* histoFile, string directory, int targetPos
     getHisto(histoFile, directory, histoName);
 }
 
-void CSPrereqs::readMonitorData(TFile* histoFile, string monitorDirectory, string macropulseDirectory, int targetPosition)
+void CSPrereqs::readMonitorData(TFile* histoFile, string monitorDirectory, int targetPosition)
 {
     // Find monitor histo for this target
     getMonitorCounts(histoFile, monitorDirectory, targetPosition);
+}
 
-    // Scale monitor counts by number of good macropulses for this target
+void CSPrereqs::readMacroData(TFile* macroFile, TFile* monitorFile, string detectorName, int targetPosition)
+{
     string goodMacroHistoName = config.target.TARGET_ORDER[targetPosition] + "GoodMacros";
     string macroHistoName = config.target.TARGET_ORDER[targetPosition] + "MacroNumber";
 
-    getGoodMacroRatio(histoFile, macropulseDirectory, goodMacroHistoName, macroHistoName);
-
-    monitorCounts *= goodMacroRatio;
+    getGoodMacroRatio(macroFile, monitorFile, detectorName, goodMacroHistoName, macroHistoName);
 }
 
 CSPrereqs operator+(CSPrereqs& augend, CSPrereqs& addend)

@@ -358,6 +358,22 @@ int main(int, char* argv[])
 
         TFile* energyFile = new TFile(energyFileName.str().c_str(),"READ");
 
+        stringstream macroFileName;
+        macroFileName << dataLocation << "/" << runNumber << "/"
+            << subRunFormatted.str() << "/gatedHistos.root";
+        ifstream h(macroFileName.str());
+        if(!h.good())
+        {
+            // failed to open this sub-run - skip to the next one
+            cerr << "Couldn't open " << macroFileName.str() << "; continuing.\r";
+            fflush(stdout);
+            continue;
+        }
+
+        h.close();
+
+        TFile* macroFile = new TFile(macroFileName.str().c_str(),"READ");
+
         // get target order for this run
         vector<string> targetOrder = getTargetOrder(expName, stoi(runNumber));
 
@@ -372,7 +388,8 @@ int main(int, char* argv[])
 
             // for histos
             subRunData.readEnergyData(energyFile, detectorName, j);
-            subRunData.readMonitorData(monitorFile, "monitor", detectorName, j);
+            subRunData.readMonitorData(monitorFile, "monitor", j);
+            subRunData.readMacroData(macroFile, monitorFile, detectorName, j);
 
             // find the correct CSPrereqs to add this target's data to
             for(CSPrereqs& csp : allCSPrereqs)

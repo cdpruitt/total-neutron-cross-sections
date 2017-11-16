@@ -15,21 +15,19 @@ using namespace std;
 
 extern Config config;
 
-int calculateGammaCorrection(string inputFileName, ofstream& logFile, string treeName, vector<GammaCorrection>& gammaCorrectionList, string outputFileName)
+int calculateGammaCorrection(string inputFileName, ofstream& logFile, string treeName, string outputFileName)
 {
-    logFile << endl << "*** Gamma Correction ***" << endl;
-
-    // check to see if output file already exists; if so, exit
+    // test if output file already exists
     ifstream f(outputFileName);
-
     if(f.good())
     {
-        cout << outputFileName << " already exists; skipping gamma correction and histogram production." << endl;
+        cout << outputFileName << " already exists; skipping gamma correction calculation." << endl;
+        logFile << outputFileName << " already exists; skipping gamma correction calculation." << endl;
         return 2;
     }
 
-    f.close();
-
+    cout << endl << "Start generating gamma correction for each macropulse..." << endl;
+    logFile << endl << "*** Gamma Correction ***" << endl;
 
     TFile* inputFile = new TFile(inputFileName.c_str(),"READ");
     if(!inputFile->IsOpen())
@@ -126,6 +124,9 @@ int calculateGammaCorrection(string inputFileName, ofstream& logFile, string tre
 
     double gammaWindowCenter = ((double)maxBin)/config.plot.TOF_BINS_PER_NS;
 
+    tree->GetEntry(totalEntries-1);
+    vector<GammaCorrection> gammaCorrectionList(macroNo+1);
+
     // create advanced histos
     TH1D* gammaHisto = new TH1D("gamma histo", "gamma histo",
             500, gammaWindowCenter-GAMMA_WINDOW_WIDTH,
@@ -161,6 +162,9 @@ int calculateGammaCorrection(string inputFileName, ofstream& logFile, string tre
 
     TH1D *gammaMicroNoH = new TH1D("gamma microNoH","gammaMicroNoH",360,0,360);
 
+    TH1D *gammaCorrectionH = new TH1D("gammaCorrection", "gammaCorrection",
+            gammaCorrectionList.size(), 0, gammaCorrectionList.size());
+
     // Define the range of times considered to be gamma rays
     int microNo;
 
@@ -168,8 +172,6 @@ int calculateGammaCorrection(string inputFileName, ofstream& logFile, string tre
     double energy;
 
     double prevGammaTime = 0;
-
-    gammaCorrectionList.resize(macroNo+1, GammaCorrection());
 
     for(long i=0; i<totalEntries; i++)
     {
@@ -265,11 +267,15 @@ int calculateGammaCorrection(string inputFileName, ofstream& logFile, string tre
     logFile << (100*numberOfAverages)/(double)gammaCorrectionList.size()
         << "% of macros were used to calculate an average." << endl;
 
-        for(auto& gc : gammaCorrectionList)
+    for(unsigned int i=0; i<gammaCorrectionList.size(); i++)
     {
+        GammaCorrection gc = gammaCorrectionList[i];
+
         gammaAverageH->Fill(gc.averageGammaTime);
         numberOfGammasH->Fill(gc.gammaList.size());
         gammaAverageByGammaNumberH->Fill(gc.gammaList.size(), gc.averageGammaTime);
+
+        gammaCorrectionH->SetBinContent(i, gc.correction);
     }
 
     // fill gamma time correction autocorrelation histogram
@@ -361,6 +367,8 @@ int calculateGammaCorrection(string inputFileName, ofstream& logFile, string tre
 
     gammaAverageDiff->Write();
     gammaAverageDiffByGammaNumber->Write();
+
+    gammaCorrectionH->Write();
 
     outputFile->Close();
     inputFile->Close();

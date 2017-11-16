@@ -46,16 +46,13 @@ vector<double> scaleBins(vector<double> inputBins, int scaledown)
 {
     vector<double> outputBins;
 
-    /*if(((int)inputBins.size())%scaledown!=0)
+    for(size_t i=0; i<inputBins.size(); i+=scaledown)
     {
-        cerr << "Error: cannot scale down bins to non-integral bin sizes." << endl;
-        exit(1);
-    }*/
-
-    for(size_t i=0; i<inputBins.size()/scaledown; i++)
-    {
-        outputBins.push_back(inputBins[scaledown*i]);
+        outputBins.push_back(inputBins[i]);
     }
+
+    // add the max edge of the input bins
+    outputBins.push_back(inputBins[inputBins.size()-1]);
 
     return outputBins;
 }
@@ -102,12 +99,14 @@ TH1D* timeBinsToRKEBins(TH1D* inputHisto, string name)
 
     // extract the total number of bins in the input Histo (minus the
     // overflow and underflow bins)
-    int nOldBins = inputHisto->GetSize()-2;
+    int nOldBins = inputHisto->GetNbinsX();
 
-    double minimumTime = (((TAxis*)inputHisto->GetXaxis())->GetXmin());
+    TAxis* oldAxis = inputHisto->GetXaxis();
+
+    double minimumTime = oldAxis->GetXmin();
     int minimumBin = 0;
 
-    for(int i=1; i<nOldBins+1; i++)
+    for(int i=1; i<=nOldBins; i++)
     {
         if(tofToRKE(minimumTime)>0 && tofToRKE(minimumTime)<config.plot.ENERGY_UPPER_BOUND)
         {
@@ -118,19 +117,16 @@ TH1D* timeBinsToRKEBins(TH1D* inputHisto, string name)
         minimumBin = i;
     }
 
-    double tentativeEnergy = tofToRKE(minimumTime);
-    if(tentativeEnergy==-1)
+    if(tofToRKE(minimumTime)==-1)
     {
-        cerr << "Error: energy of old min time " << minimumTime << " was not finite: " << tentativeEnergy << " (MeV)" << endl;
+        cerr << "Error: energy of old min time " << minimumTime << " was not finite." << endl;
         exit(1);
     }
-
-    //double newXMax = tentativeEnergy;
 
     double maximumTime = (((TAxis*)inputHisto->GetXaxis())->GetXmax());
     int maximumBin = nOldBins;
 
-    for(int i=nOldBins; i>0; i--)
+    for(int i=nOldBins; i>1; i--)
     {
         if(tofToRKE(maximumTime)>config.plot.ENERGY_LOWER_BOUND)
         {
@@ -141,20 +137,14 @@ TH1D* timeBinsToRKEBins(TH1D* inputHisto, string name)
         maximumBin = i;
     }
 
-    tentativeEnergy = tofToRKE(maximumTime);
-
-    if(tentativeEnergy==-1)
+    if(tofToRKE(maximumTime)==-1)
     {
-        cerr << "Error: energy of old maximum time " << maximumTime << " was not finite: " << tentativeEnergy << " (MeV)" << endl;
+        cerr << "Error: energy of old maximum time " << maximumTime << " was not finite." << endl;
         exit(1);
     }
 
-    //double newXMin = tentativeEnergy;
-
-    TAxis* oldAxis = inputHisto->GetXaxis();
-
     // Remap bins from old histo to new histo
-    int nUnscaledEnergyBins = maximumBin-minimumBin;
+    int nUnscaledEnergyBins = maximumBin-minimumBin+1;
     vector<double> unscaledEnergyBins;
 
     // Reorder bins to go from lowest energy (shortest time) to highest energy (longest time)
@@ -162,6 +152,7 @@ TH1D* timeBinsToRKEBins(TH1D* inputHisto, string name)
     for(int i=0; i<nUnscaledEnergyBins; i++)
     {
         double newBin = tofToRKE(oldAxis->GetBinLowEdge(maximumBin-i)+oldAxis->GetBinWidth(maximumBin-i));
+
         if(newBin<=0)
         {
             cerr << "Error: tried to make negative energy bin." << endl;
@@ -174,7 +165,7 @@ TH1D* timeBinsToRKEBins(TH1D* inputHisto, string name)
     unscaledEnergyBins.push_back(tofToRKE(oldAxis->GetBinLowEdge(minimumBin)));
     
     // Downscale bins to desired granularity
-    vector<double> scaledEnergyBins = scaleBins(unscaledEnergyBins, nUnscaledEnergyBins/config.plot.NUMBER_ENERGY_BINS);
+    vector<double> scaledEnergyBins = scaleBins(unscaledEnergyBins, unscaledEnergyBins.size()/config.plot.NUMBER_ENERGY_BINS);
 
     TH1D* outputHisto = new TH1D(name.c_str(),
             name.c_str(),

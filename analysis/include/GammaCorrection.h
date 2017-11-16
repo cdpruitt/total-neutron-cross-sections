@@ -23,6 +23,6 @@ struct GammaCorrection
 };
 
 int calculateGammaCorrection(std::string inputFileName, std::ofstream& log, std::string treeName,
-        std::vector<GammaCorrection>& gammaCorrectionList, std::string outputFileName);
+        std::string outputFileName);
 
 #endif /* GAMMA_CORRECTION_H */

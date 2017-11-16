@@ -13,8 +13,18 @@ using namespace std;
 
 extern Config config;
 
-int produceEnergyHistos(string inputFileName, ofstream& log, string channelName, string outputFileName)
+int produceEnergyHistos(string inputFileName, ofstream& log, string outputFileName)
 {
+    ifstream output(outputFileName);
+    if(output.good())
+    {
+        cout << outputFileName << " already exists; skipping energy histogram production." << endl;
+        log << outputFileName << " already exists; skipping energy histogram production." << endl;
+        return 2;
+    }
+
+    cout << endl << "Mapping TOF histograms to energy domain..." << endl;
+
     // open input file
     TFile* inputFile = new TFile(inputFileName.c_str(),"READ");
     if(!inputFile->IsOpen())
@@ -23,65 +33,45 @@ int produceEnergyHistos(string inputFileName, ofstream& log, string channelName,
         return 1;
     }
 
-    TDirectory* detectorDirectory = inputFile->GetDirectory(channelName.c_str());
-    if(!detectorDirectory)
-    {
-        cerr << "Error: failed to find " << channelName << " directory in " << inputFileName << "." << endl;
-        return 1;
-    }
-
     // create output file
-    TFile* outputFile = new TFile(outputFileName.c_str(),"UPDATE");
-    TDirectory* outputDirectory = outputFile->GetDirectory(channelName.c_str());
-    if(!outputDirectory)
+    TFile* outputFile = new TFile(outputFileName.c_str(),"RECREATE");
+
+    for(auto& channelName : config.cs.DETECTOR_NAMES)
     {
-        outputDirectory = outputFile->mkdir(channelName.c_str(),channelName.c_str());
-    }
-
-    outputDirectory->cd();
-
-    // find TOF histograms in input file
-    for(int i=0; i<config.target.TARGET_ORDER.size(); i++)
-    {
-        string targetName = config.target.TARGET_ORDER[i];
-
-        string TOFHistoName = targetName + "TOF";
-        TH1D* TOF = (TH1D*)detectorDirectory->Get(TOFHistoName.c_str());
-
-        string goodMacrosHistoName = targetName + "GoodMacros";
-        TH1I* goodMacrosH = (TH1I*)detectorDirectory->Get(goodMacrosHistoName.c_str());
-        unsigned int numberOfBins = goodMacrosH->GetNbinsX();
-        unsigned int numberOfMacros = 0;
-
-        for(int j=1; j<=numberOfBins; j++)
+        TDirectory* detectorDirectory = inputFile->GetDirectory(channelName.c_str());
+        if(!detectorDirectory)
         {
-            if(goodMacrosH->GetBinContent(j)>0)
-            {
-                numberOfMacros++;
-            }
+            cerr << "Error: failed to find " << channelName << " directory in " << inputFileName << "." << endl;
+            return 1;
         }
 
-        double numberOfMicros = numberOfMacros*(config.facility.MICROS_PER_MACRO);
+        TDirectory* outputDirectory = outputFile->mkdir(channelName.c_str(),channelName.c_str());
 
-        string correctedName = targetName + "Uncorrected";
-        TH1D* correctedTOF = (TH1D*)TOF->Clone(correctedName.c_str());
+        // find TOF histograms in input file
+        for(int i=0; i<config.target.TARGET_ORDER.size(); i++)
+        {
+            string targetName = config.target.TARGET_ORDER[i];
+            string TOFHistoName = targetName + "TOFCorrected";
 
-        correctedTOF->Write();
+            detectorDirectory->cd();
 
-        outputDirectory->cd();
-        correctForDeadtime(TOF, correctedTOF, numberOfMicros);
+            TH1D* TOF = (TH1D*)detectorDirectory->Get(TOFHistoName.c_str());
+            if(!TOF)
+            {
+                cerr << "Error: failed to open " << TOFHistoName << " in " << inputFileName << endl;
+                return 1;
+            }
 
-        correctedName = targetName + "Corrected";
-        correctedTOF = (TH1D*)correctedTOF->Clone(correctedName.c_str());
+            outputDirectory->cd();
 
-        correctedTOF->Write();
-
-        TH1D* correctedEnergy = convertTOFtoEnergy(correctedTOF, targetName + "Energy");
-        correctedEnergy->Write();
+            TH1D* correctedEnergy = convertTOFtoEnergy(TOF, targetName + "Energy");
+            TOF->Write();
+            correctedEnergy->Write();
+        }
     }
-    
-    inputFile->Close();
+
     outputFile->Close();
+    inputFile->Close();
 
     return 0;
 }

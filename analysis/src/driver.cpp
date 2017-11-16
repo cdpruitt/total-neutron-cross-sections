@@ -4,6 +4,7 @@
 #include "../include/assignEventsToMacropulses.h"
 #include "../include/fillBasicHistos.h"
 #include "../include/fillCSHistos.h"
+#include "../include/correctForDeadtime.h"
 #include "../include/produceEnergyHistos.h"
 #include "../include/plots.h"
 #include "../include/waveform.h"
@@ -133,77 +134,47 @@ int main(int, char* argv[])
         }
     }
 
+    /******************************************************************/
+    /* Populate events into basic histograms */
+    /******************************************************************/
+    string histoFileName = analysisDirectory + config.analysis.HISTOGRAM_FILE_NAME;
+    fillBasicHistos(sortedFileName, log, histoFileName);
+
+    /*****************************************************/
+    /* Use raw TOF histos to create deadtime correction  */
+    /*****************************************************/
+    string deadtimeFileName = analysisDirectory + "deadtime.root";
+    generateDeadtimeCorrection(histoFileName, log, deadtimeFileName);
+
     /*****************************************************/
     /* Calculate macropulse time correction using gammas */
     /*****************************************************/
-    string histoFileName = analysisDirectory + config.analysis.HISTOGRAM_FILE_NAME;
+    string gammaCorrectionFileName = analysisDirectory + "gammaCorrection.root";
 
-    cout << endl << "Start generating gamma correction for each macropulse..." << endl;
+    calculateGammaCorrection(
+            vetoedFileName,
+            log,
+            config.analysis.GAMMA_CORRECTION_TREE_NAME,
+            gammaCorrectionFileName);
 
-    vector<GammaCorrection> gammaCorrectionList;
-    switch(
-            calculateGammaCorrection(
-                vetoedFileName,
-                log,
-                config.analysis.GAMMA_CORRECTION_TREE_NAME,
-                gammaCorrectionList,
-                histoFileName)
-          )
-    {
-        case 0:
-            /******************************************************************/
-            /* Populate events into histograms */
-            /******************************************************************/
-            for(auto& channel : config.digitizer.CHANNEL_MAP)
-            {
-                if(
-                        channel.second == "-" ||
-                        channel.second == "targetChanger"
-                  )
-                {
-                    continue;
-                }
+    /******************************************************************/
+    /* Populate events into gated histograms, using time correction   */
+    /******************************************************************/
+    string gatedHistoFileName = analysisDirectory + "gatedHistos.root";
+    fillCSHistos(vetoedFileName, gammaCorrectionFileName, log, gatedHistoFileName);
 
-                if(fillBasicHistos(sortedFileName, log, channel.second, gammaCorrectionList, histoFileName)==1)
-                {
-                    return 1;
-                }
-            }
-
-            for(string detectorName : config.cs.DETECTOR_NAMES)
-            {
-                if(fillCSHistos(vetoedFileName, log, detectorName, gammaCorrectionList, histoFileName)==1)
-                {
-                    return 1;
-                }
-            }
-            break;
-
-        case 1:
-            // error state: end analysis
-            return 1;
-            break;
-
-        case 2:
-            // histos.root already exists; skip histo production
-            break;
-    }
+    /*****************************************************/
+    /* Apply deadtime correction to gated histograms     */
+    /*****************************************************/
+    string correctedHistoFileName = analysisDirectory + "correctedHistos.root";
+    applyDeadtimeCorrection(gatedHistoFileName, deadtimeFileName, histoFileName, gammaCorrectionFileName, log, correctedHistoFileName);
 
     /*************************************************************************/
     /* Convert TOF histograms into energy in preparation for cross section
      * calculation */
     /*************************************************************************/
     string energyFileName = analysisDirectory + config.analysis.ENERGY_PLOTS_FILE_NAME;
-
-    cout << endl << "Mapping TOF histograms to energy domain..." << endl;
-
-    for(string detectorName : config.cs.DETECTOR_NAMES)
-    {
-        if(produceEnergyHistos(histoFileName, log, detectorName, energyFileName))
-        {
-            return 1;
-        }
-    }
+    produceEnergyHistos(correctedHistoFileName, log, energyFileName);
 
     return 0;
 }
