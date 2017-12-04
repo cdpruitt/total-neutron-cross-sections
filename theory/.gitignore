@@ -1,0 +1,11 @@
+bin
+bin/*
+
+!src/
+!src/*
+
+!include/
+!include/*
+
+!config/
+!config/*
