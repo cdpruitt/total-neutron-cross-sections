@@ -243,7 +243,9 @@ int applyDeadtimeCorrection(string inputFileName, string deadtimeFileName, strin
                 }
             }
 
-            double numberOfMicros = numberOfMacros*(config.facility.MICROS_PER_MACRO);
+            double numberOfMicros = numberOfMacros
+                *(config.facility.LAST_GOOD_MICRO-config.facility.FIRST_GOOD_MICRO);
+
             if(numberOfMicros <=0)
             {
                 cerr << "Error: cannot apply deadtime for <= 0 periods." << endl;
@@ -256,23 +258,24 @@ int applyDeadtimeCorrection(string inputFileName, string deadtimeFileName, strin
 
             int numberOfBins = TOF->GetNbinsX();
 
-            for(int i=0; i<numberOfBins; i++)
+            for(int i=1; i<=numberOfBins; i++)
             {
-                double originalBin = TOF->GetBinContent(i+1);
+                double originalBin = TOF->GetBinContent(i);
 
                 double deadtime;
 
-                if(i+1+deadtimeBinOffset > numberOfBins)
+                if(i+deadtimeBinOffset > numberOfBins)
                 {
-                    deadtime = deadtimeHisto->GetBinContent(i+1+deadtimeBinOffset-numberOfBins);
+                    deadtime = deadtimeHisto->GetBinContent(i+deadtimeBinOffset-numberOfBins);
                 }
 
                 else
                 {
-                    deadtime = deadtimeHisto->GetBinContent(i+1+deadtimeBinOffset);
+                    deadtime = deadtimeHisto->GetBinContent(i+deadtimeBinOffset);
                 }
 
-                correctedTOF->SetBinContent(i+1, -log(1-(originalBin/numberOfMicros)/(1-deadtime))*numberOfMicros);
+                //correctedTOF->SetBinContent(i, originalBin);
+                correctedTOF->SetBinContent(i, -log(1-(originalBin/numberOfMicros)/(1-deadtime))*numberOfMicros);
             }
 
             correctedTOF->Write();
@@ -342,7 +345,8 @@ int generateDeadtimeCorrection(string inputFileName, ofstream& logFile, string o
                 }
             }
 
-            double numberOfMicros = numberOfMacros*(config.facility.MICROS_PER_MACRO);
+            double numberOfMicros = numberOfMacros
+                *(config.facility.LAST_GOOD_MICRO-config.facility.FIRST_GOOD_MICRO);
 
             string deadtimeHistoName = targetName + "Deadtime";
             TH1D* deadtimeHisto = (TH1D*)TOF->Clone(deadtimeHistoName.c_str());

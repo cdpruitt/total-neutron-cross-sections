@@ -388,6 +388,18 @@ int readRawData(string inFileName, string outFileName, ofstream& logFile)
                     break;
                 case 5:
                     rawEvent.completeTime += config.timeOffsets.DETECTOR_TIME_OFFSET + config.timeOffsets.VETO_TIME_OFFSET;
+
+                    // use CFD to improve timing precision
+                    rawEvent.fineTime = calculateCFDTime(
+                            rawEvent.waveform,
+                            rawEvent.baseline,
+                            config.softwareCFD.CFD_FRACTION,
+                            config.softwareCFD.CFD_DELAY); // CFD time in samples
+                    if(rawEvent.fineTime>=0)
+                    {
+                        // recovered a good fine time for this event
+                        rawEvent.completeTime += (rawEvent.fineTime-config.softwareCFD.CFD_TIME_OFFSET)*config.digitizer.SAMPLE_PERIOD;
+                    }
                     break;
                 case 6:
                     rawEvent.completeTime += config.timeOffsets.HIGH_T_DET_TIME_OFFSET;

@@ -125,13 +125,7 @@ int main(int, char* argv[])
     if(useVetoPaddle)
     {
         cout << endl << "\"Veto Events\" flag enabled; start processing detector events through veto..." << endl;
-        for(string detectorName : config.cs.DETECTOR_NAMES)
-        {
-            if(vetoEvents(sortedFileName, vetoedFileName, log, detectorName, "veto"))
-            {
-                return 1;
-            }
-        }
+        vetoEvents(sortedFileName, vetoedFileName, log, "veto");
     }
 
     /******************************************************************/

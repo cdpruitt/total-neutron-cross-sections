@@ -275,7 +275,7 @@ int calculateGammaCorrection(string inputFileName, ofstream& logFile, string tre
         numberOfGammasH->Fill(gc.gammaList.size());
         gammaAverageByGammaNumberH->Fill(gc.gammaList.size(), gc.averageGammaTime);
 
-        gammaCorrectionH->SetBinContent(i, gc.correction);
+        gammaCorrectionH->SetBinContent(i+1, gc.correction);
     }
 
     // fill gamma time correction autocorrelation histogram

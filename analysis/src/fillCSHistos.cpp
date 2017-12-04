@@ -23,8 +23,10 @@ using namespace std;
 
 extern Config config;
 
-const double Q_LOW_THRESHOLD = 0;
-const double Q_HIGH_THRESHOLD = 65550;
+const double Q_LOW_THRESHOLD = 500;
+const double Q_HIGH_THRESHOLD = 35550;
+const double Q_RATIO_LOW_THRESHOLD = 0.6;
+const double Q_RATIO_HIGH_THRESHOLD = 0.95;
 
 int identifyGoodMacros(TTree* eventTree, DetectorEvent& event, vector<MacropulseEvent>& macropulseList, ofstream& logFile)
 {
@@ -77,12 +79,12 @@ int identifyGoodMacros(TTree* eventTree, DetectorEvent& event, vector<Macropulse
     cout << "Finished calculating average events per macropulse."
         << endl;
 
-    // using the average just calculate, identify macros with too few/too many events
+    // using the average just calculate, identify macros with too few events
     // per macro (indicating readout problem)
     for(auto& macropulse : macropulseList)
     {
-        if(abs(averageEventsPerMacropulseByTarget[macropulse.targetPos]-macropulse.numberOfEventsInMacro)
-                <3*sqrt(averageEventsPerMacropulseByTarget[macropulse.targetPos]))
+        if(macropulse.numberOfEventsInMacro
+                >(0.5)*averageEventsPerMacropulseByTarget[macropulse.targetPos])
         {
             // good macro
             macropulse.isGoodMacro = true;
@@ -220,8 +222,8 @@ int fillCSHistos(string inputFileName, string gammaCorrectionFileName, ofstream&
                 10*config.plot.NUMBER_ENERGY_BINS, floor(config.plot.ENERGY_LOWER_BOUND), ceil(config.plot.ENERGY_UPPER_BOUND),
                 10*config.plot.NUMBER_ENERGY_BINS, floor(config.plot.ENERGY_LOWER_BOUND), ceil(config.plot.ENERGY_UPPER_BOUND));
 
-        TH1D* microNoH = new TH1D("microNoH","microNo",ceil(1.1*config.facility.MICROS_PER_MACRO)
-                ,0,ceil(1.1*config.facility.MICROS_PER_MACRO));
+        TH1D* microNoH = new TH1D("microNoH","microNo",config.facility.MICROS_PER_MACRO+1
+                ,0,config.facility.MICROS_PER_MACRO+1);
 
         TH1D* vetoedTOF = new TH1D("vetoedTOF",
                 "vetoedTOF",
@@ -276,6 +278,7 @@ int fillCSHistos(string inputFileName, string gammaCorrectionFileName, ofstream&
 
         unsigned long badMacroEvent = 0;
         unsigned long badChargeGateEvent = 0;
+        unsigned long badChargeRatioEvent = 0;
         unsigned long outsideMacro = 0;
 
         unsigned int totalEntries = tree->GetEntries();
@@ -299,6 +302,12 @@ int fillCSHistos(string inputFileName, string gammaCorrectionFileName, ofstream&
                 continue;
             }
 
+            if(event.sgQ/(double)event.lgQ < Q_RATIO_LOW_THRESHOLD
+                    || event.sgQ/(double)event.lgQ > Q_RATIO_HIGH_THRESHOLD)
+            {
+                badChargeRatioEvent++;
+            }
+
             /*****************************************************************/
             // Calculate event properties
 
@@ -315,16 +324,17 @@ int fillCSHistos(string inputFileName, string gammaCorrectionFileName, ofstream&
                 outsideMacro++;
                 continue;
             }
-
+            
             eventTimeDiff = event.completeTime-prevCompleteTime;
             microNo = floor(timeDiff/config.facility.MICRO_LENGTH);
             microTime = fmod(timeDiff,config.facility.MICRO_LENGTH);
 
-            // convert micropulse time into neutron velocity based on flight path distance
-            velocity = (pow(10.,7.)*config.facility.FLIGHT_DISTANCE)/microTime; // in meters/sec 
-
-            // convert velocity to relativistic kinetic energy
-            rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
+            // micropulse gate:
+            if(microNo < config.facility.FIRST_GOOD_MICRO
+                    || microNo >= config.facility.LAST_GOOD_MICRO)
+            {
+                continue;
+            }
 
             // veto gate
             if(event.vetoed)
@@ -334,6 +344,12 @@ int fillCSHistos(string inputFileName, string gammaCorrectionFileName, ofstream&
 
                 continue;
             }
+
+            // convert micropulse time into neutron velocity based on flight path distance
+            velocity = (pow(10.,7.)*config.facility.FLIGHT_DISTANCE)/microTime; // in meters/sec 
+
+            // convert velocity to relativistic kinetic energy
+            rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
 
             TOFHistos[event.targetPos]->Fill(microTime);
             triangleHistos[event.targetPos]->Fill(microTime, event.lgQ);
@@ -365,6 +381,10 @@ int fillCSHistos(string inputFileName, string gammaCorrectionFileName, ofstream&
         logFile << "Fraction events filtered out by charge gate (" << Q_LOW_THRESHOLD
             << " < lgQ < " << Q_HIGH_THRESHOLD << "): "
             << 100*(double)badChargeGateEvent/totalEntries << "%." << endl;
+
+        logFile << "Fraction events filtered out by charge ratio gate (" << Q_RATIO_LOW_THRESHOLD
+            << " < lgQ < " << Q_RATIO_HIGH_THRESHOLD << "): "
+            << 100*(double)badChargeRatioEvent/totalEntries << "%." << endl;
 
         logFile << "Fraction events outside macropulse: "
             << 100*(double)outsideMacro/totalEntries << "%." << endl;

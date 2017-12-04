@@ -120,6 +120,7 @@ int fillBasicHistos(string inputFileName, ofstream& log, string outputFileName)
 
         double timeDiff;
         double microTime;
+        unsigned int microNo;
 
         // fill basic histos
         for(long i=0; i<totalEntries; i++)
@@ -142,11 +143,19 @@ int fillBasicHistos(string inputFileName, ofstream& log, string outputFileName)
             sgQlgQH->Fill(event.sgQ,event.lgQ);
             QRatio->Fill(event.sgQ/(double)event.lgQ);
 
-            if(channel.second=="summedDet" || "highTDet")
+            if(channel.second=="summedDet" || channel.second=="highTDet")
             {
                 // fill uncorrected TOF histos
                 timeDiff = event.completeTime-event.macroTime;
+                microNo = floor(timeDiff/config.facility.MICRO_LENGTH);
                 microTime = fmod(timeDiff,config.facility.MICRO_LENGTH);
+
+                // micropulse gate:
+                if(microNo < config.facility.FIRST_GOOD_MICRO
+                        || microNo >= config.facility.LAST_GOOD_MICRO)
+                {
+                    continue;
+                }
 
                 rawTOFHistos[event.targetPos]->Fill(microTime);
             }

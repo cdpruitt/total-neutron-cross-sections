@@ -9,16 +9,20 @@ using namespace std;
 
 FacilityConfig::FacilityConfig(std::vector<std::string> facilityConfig)
 {
-    if(facilityConfig.size()!=4)
+    if(facilityConfig.size()!=6)
     {
-        std::cerr << "Error: tried to create facility configuration for current run, but " << facilityConfig.size() << " facility parameters were read in instead of the correct value of 4." << std::endl;
+        std::cerr << "Error: tried to create facility configuration for current run, but " << facilityConfig.size() << " facility parameters were read in instead of the correct value of 6." << std::endl;
         exit(1);
     }
 
     MACRO_FREQUENCY = stod(facilityConfig[0]);
     MICROS_PER_MACRO = stoi(facilityConfig[1]);
     MICRO_LENGTH = stod(facilityConfig[2]);
+
     FLIGHT_DISTANCE = stod(facilityConfig[3]);
+
+    FIRST_GOOD_MICRO = stod(facilityConfig[4]);
+    LAST_GOOD_MICRO = stod(facilityConfig[5]);
 }
 
 SoftwareCFDConfig::SoftwareCFDConfig(std::vector<std::string> softwareCFDConfig)

@@ -27,15 +27,21 @@ TH1D* convertTOFtoEnergy(TH1D* tof, string name)
         // convert time into neutron velocity based on flight path distance
         double velocity = pow(10.,7.)*(config.facility.FLIGHT_DISTANCE)
             /(tof->GetBinCenter(j)
-                    +randomizeBin->Uniform(
+                    /*+randomizeBin->Uniform(
                         -(1/(double)(2*config.plot.TOF_BINS_PER_NS)),
                          (1/(double)(2*config.plot.TOF_BINS_PER_NS)))
+                         */
              ); // in meters/sec 
 
         // convert velocity to relativistic kinetic energy
         double rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
 
         energy->Fill(rKE,tof->GetBinContent(j));
+    }
+
+    unsigned int energyBins = energy->GetNbinsX();
+    for(unsigned int j=1; j<=energyBins; j++)
+    {
         energy->SetBinError(j,pow(energy->GetBinContent(j),0.5));
     }
 
@@ -72,6 +78,7 @@ double tofToRKE(double TOF)
     {
         return -1;
     }
+
     return RKE;
 }
 
@@ -97,24 +104,21 @@ TH1D* timeBinsToRKEBins(TH1D* inputHisto, string name)
         cerr << "Error: tried to convert time bins to energy bins for histo " << name << ", but histo pointer was null." << endl;
     }
 
-    // extract the total number of bins in the input Histo (minus the
-    // overflow and underflow bins)
     int nOldBins = inputHisto->GetNbinsX();
-
     TAxis* oldAxis = inputHisto->GetXaxis();
 
-    double minimumTime = oldAxis->GetXmin();
-    int minimumBin = 0;
+    double minimumTime;
+    int minimumBin;
 
     for(int i=1; i<=nOldBins; i++)
     {
+        minimumTime = inputHisto->GetBinLowEdge(i);
+        minimumBin = i;
+
         if(tofToRKE(minimumTime)>0 && tofToRKE(minimumTime)<config.plot.ENERGY_UPPER_BOUND)
         {
             break;
         }
-
-        minimumTime = inputHisto->GetBinLowEdge(i);
-        minimumBin = i;
     }
 
     if(tofToRKE(minimumTime)==-1)
@@ -123,18 +127,18 @@ TH1D* timeBinsToRKEBins(TH1D* inputHisto, string name)
         exit(1);
     }
 
-    double maximumTime = (((TAxis*)inputHisto->GetXaxis())->GetXmax());
-    int maximumBin = nOldBins;
+    double maximumTime;
+    int maximumBin;
 
-    for(int i=nOldBins; i>1; i--)
+    for(int i=nOldBins; i>=1; i--)
     {
+        maximumTime = inputHisto->GetBinLowEdge(i) + inputHisto->GetBinWidth(i);
+        maximumBin = i;
+
         if(tofToRKE(maximumTime)>config.plot.ENERGY_LOWER_BOUND)
         {
             break;
         }
-
-        maximumTime = inputHisto->GetBinLowEdge(i) + inputHisto->GetBinWidth(i);
-        maximumBin = i;
     }
 
     if(tofToRKE(maximumTime)==-1)
@@ -148,7 +152,7 @@ TH1D* timeBinsToRKEBins(TH1D* inputHisto, string name)
     vector<double> unscaledEnergyBins;
 
     // Reorder bins to go from lowest energy (shortest time) to highest energy (longest time)
-    // n bins are defined n+1 points (like fence sections and fence posts)
+    // n bins are defined for n+1 points (like fence sections and fence posts)
     for(int i=0; i<nUnscaledEnergyBins; i++)
     {
         double newBin = tofToRKE(oldAxis->GetBinLowEdge(maximumBin-i)+oldAxis->GetBinWidth(maximumBin-i));
@@ -165,6 +169,7 @@ TH1D* timeBinsToRKEBins(TH1D* inputHisto, string name)
     unscaledEnergyBins.push_back(tofToRKE(oldAxis->GetBinLowEdge(minimumBin)));
     
     // Downscale bins to desired granularity
+    //vector<double> scaledEnergyBins = unscaledEnergyBins;
     vector<double> scaledEnergyBins = scaleBins(unscaledEnergyBins, unscaledEnergyBins.size()/config.plot.NUMBER_ENERGY_BINS);
 
     TH1D* outputHisto = new TH1D(name.c_str(),
@@ -174,13 +179,6 @@ TH1D* timeBinsToRKEBins(TH1D* inputHisto, string name)
             //newXMin,
             //newXMax);
 
-    // Assign the remapped bins to the new histo
-    //TH1* outputHistoNonZero = outputHisto->Rebin(scaledEnergyBins.size()-2,"outputHistoNonZero",&scaledEnergyBins[0]);
-
-    //double test = outputHistoNonZero->GetXaxis()->GetBinLowEdge(scaledEnergyBins.size()-2);
-    //double test2 = outputHistoNonZero->GetXaxis()->GetBinLowEdge(0);
-
-    //return outputHistoNonZero;
     return outputHisto;
 }
 

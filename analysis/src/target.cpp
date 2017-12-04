@@ -67,27 +67,27 @@ Target::Target(string targetDataLocation)
     }
 }
 
-string Target::getName()
+string Target::getName() const
 {
     return name;
 }
 
-double Target::getLength()
+double Target::getLength() const
 {
     return length;
 }
 
-double Target::getDiameter()
+double Target::getDiameter() const
 {
     return diameter;
 }
 
-double Target::getMass()
+double Target::getMass() const
 {
     return mass;
 }
 
-double Target::getMolarMass()
+double Target::getMolarMass() const
 {
     return molMass;
 }

@@ -32,6 +32,9 @@ struct FacilityConfig
         unsigned int MICROS_PER_MACRO;  // number of micropulses in each macropulse
         double MICRO_LENGTH;      // micropulse duration, in ns
         double FLIGHT_DISTANCE;   // detector distance from neutron source, in cm
+
+        unsigned int FIRST_GOOD_MICRO; // first micropulse to be used for cs calculation
+        unsigned int LAST_GOOD_MICRO;  // last micropulse to be used for cs calculation
 };
 
 struct SoftwareCFDConfig

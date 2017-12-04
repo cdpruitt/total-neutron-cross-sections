@@ -12,11 +12,11 @@ class Target
         // creates a new target, based on a text file in ./targetData/
         Target();
         Target(std::string targetDataLocation);
-        std::string getName();
-        double getLength();
-        double getDiameter();
-        double getMass();
-        double getMolarMass();
+        std::string getName() const;
+        double getLength() const;
+        double getDiameter() const;
+        double getMass() const;
+        double getMolarMass() const;
 
         void setName(std::string n);
         void setLength(double l);

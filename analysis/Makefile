@@ -15,7 +15,7 @@ LINKOPTION = $(shell root-config --libs)
 ############################### DEFINE TARGETS #################################
 
 # List all targets
-TARGETS = driver text sumAll sumChunk readLitData subtractCS multiplyCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck rateHisto #TOFSimulation
+TARGETS = driver text sumAll sumChunk readLitData subtractCS multiplyCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck rateHisto ramsauer
 all: $(addprefix $(BIN), $(TARGETS))
 
 # Build driver (main data analysis engine)
@@ -95,6 +95,10 @@ TOFSIMULATION_SOURCES = TOFSimulation.cpp correctForDeadtime.cpp
 $(BIN)TOFSimulation: $(addprefix $(SOURCE), $(TOFSIMULATION_SOURCES)) 
 	$(COMPILER) $(CFLAGS) -o $(BIN)TOFSimulation $(addprefix $(SOURCE), $(TOFSIMULATION_SOURCES)) $(LINKOPTION)
 
+# Build Ramsauer
+RAMSAUER_SOURCES = ramsauer.cpp
+$(BIN)ramsauer: $(addprefix $(SOURCE), $(RAMSAUER_SOURCES)) 
+	$(COMPILER) $(CFLAGS) -o $(BIN)ramsauer $(addprefix $(SOURCE), $(RAMSAUER_SOURCES)) $(LINKOPTION)
 
 ############################### DEFINE OBJECTS #################################
 

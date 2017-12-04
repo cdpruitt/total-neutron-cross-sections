@@ -41,7 +41,6 @@ class CrossSection
         double arealDensity;
 };
 
-CrossSection calculateCS(std::string CSFileName, CSPrereqs& targetData, CSPrereqs& blankData);
 void correctForDeadtime(std::string histoFileName, std::string deadtimeFileName, std::vector<std::string> detectorChannels);
 
 double getPartialError(DataPoint aPoint, DataPoint bPoint, double aArealDensity);
@@ -63,6 +62,10 @@ CrossSection relativeCS(std::string rawCSFileName, std::string rawCSGraphName,
                         std::string subtrahendFileName, std::string subtrahendGraphName,
                         std::string name // name given to output graph
                        );
+
+CrossSection correctForBlank(CrossSection rawCS, double targetNumberDensity, std::string expName, std::string graphFileName);
+
+CrossSection calculateCS(const CSPrereqs& targetData, const CSPrereqs& blankData);
 
 void applyCSCorrectionFactor(std::string CSCorrectionFilename, std::string CSCorrectionGraphName, std::string CSToBeCorrectedFilename, std::string CSToBeCorrectedGraphName, std::string outputFileName, std::string outputGraphName);
 
