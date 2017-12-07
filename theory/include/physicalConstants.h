@@ -13,6 +13,4 @@ const double AVOGADROS_NUMBER = 6.02214*pow(10.,23.); // in atoms/mol
 
 const double REDUCED_PLANCK_CONSTANT = 6.5821195*pow(10,-22); // in MeV*s
 
-const double TAU = 6.2831853; // = 2*pi
-
 #endif

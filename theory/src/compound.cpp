@@ -19,11 +19,10 @@ compound::compound(string* name)
   ifstream CNfile(Name.c_str());
   if (CNfile.fail())
     {
-      cout << "could not open file " << Name << endl;
       okay = 0;
       return;
     }
-  else cout << Name << " opened" << endl;
+
   okay = 1;
   CNfile >> elasticState; //file name for levels with same 
                           //entrance and exit chennels
@@ -64,7 +63,6 @@ compound::compound(string* name)
 //******************************************************
 compound::~compound()
 {
-  cout << "destroying compound" << endl;
   if (okay == 0) return;
   delete elastic;
   delete other;

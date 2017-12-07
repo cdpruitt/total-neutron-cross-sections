@@ -9,3 +9,5 @@ bin/*
 
 !config/
 !config/*
+
+*.root

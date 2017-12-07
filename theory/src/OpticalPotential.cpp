@@ -123,6 +123,22 @@ OpticalPotential::OpticalPotential(string configFileName)
             CoulombRadiusConstant = stod(tokens[2]);
             continue;
         }
-
     }
+
+    /*cout << "OP.VHF = " << OP.VHF << endl;
+          cout << "OP.VHF_Edep = " << OP.VHF_Edep << endl;
+          cout << "OP.RHF = " << OP.RHF << endl;
+          cout << "OP.RHF_Edep = " << OP.RHF_Edep << endl;
+          cout << "OP.RHF_Eshift = " << OP.RHF_Eshift << endl;
+          cout << "OP.aHF = " << OP.aHF << endl;
+          cout << "OP.Avolume = " << OP.Avolume << endl;
+          cout << "OP.Avolume_Edep = " << OP.Avolume_Edep << endl;
+          cout << "OP.Avolume_Eshift = " << OP.Avolume_Eshift << endl;
+          cout << "OP.Rvolume = " << OP.Rvolume << endl;
+          cout << "OP.avolume = " << OP.avolume << endl;
+          cout << "OP.Asurface = " << OP.Asurface << endl;
+          cout << "OP.Asurface_Edep = " << OP.Asurface_Edep << endl;
+          cout << "OP.Asurface_Eshift = " << OP.Asurface_Eshift << endl;
+          cout << "OP.CoulombRadiusConstant = " << OP.CoulombRadiusConstant << endl;
+          */
 }

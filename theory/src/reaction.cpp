@@ -755,7 +755,6 @@ reaction::~reaction()
 {
 
   delete scatter;
-  cout << "destroying reaction" << endl;
   if (flag == 0) return;
   for (int i=0;i<Ndata;i++)
     {

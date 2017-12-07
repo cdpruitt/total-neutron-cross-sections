@@ -2,6 +2,7 @@
 #define CROSS_SECTION_H
 
 #include <vector>
+#include <string>
 
 #include "../include/dataPoint.h"
 #include "../include/dataSet.h"
@@ -11,6 +12,8 @@ class CrossSection
 {
     public:
         CrossSection();
+        CrossSection(std::string name);
+
         void addDataPoint(DataPoint dataPoint);
         void addDataSet(DataSet dataSet);
         DataPoint getDataPoint(int i) const;
@@ -35,6 +38,8 @@ class CrossSection
 
         void subtractCS(std::string subtrahendFileName,
                         std::string subtrahendGraphName, double factor);
+
+        std::string name = "";
 
     private:
         DataSet dataSet;
@@ -62,8 +67,6 @@ CrossSection relativeCS(std::string rawCSFileName, std::string rawCSGraphName,
                         std::string subtrahendFileName, std::string subtrahendGraphName,
                         std::string name // name given to output graph
                        );
-
-CrossSection correctForBlank(CrossSection rawCS, double targetNumberDensity, std::string expName, std::string graphFileName);
 
 CrossSection calculateCS(const CSPrereqs& targetData, const CSPrereqs& blankData);
 

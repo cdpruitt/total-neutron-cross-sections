@@ -731,7 +731,7 @@ void scat::initIntegration()
   rStop = 12.;
   mWave = 60;
   nWave = mWave + 120;
-  lMax = 60;
+  lMax = 500;
   llMax = lMax + 1;
 // steps for wavefunction array in fm
   deltaR = (rStop-rStart)/(double)(mWave-1); 
@@ -760,7 +760,7 @@ void scat::initIntegration()
   for (int i=0;i<=Nl;i++) LogDerArray[i] = new double [NLogDer];
 
 
-  cout << " Making LogDer array" << endl;
+  //cout << " Making LogDer array" << endl;
   for (l = 0;l<=Nl;l++)
     {
 
@@ -776,7 +776,7 @@ void scat::initIntegration()
         
       }
     }
-  cout << " Finished LogDer array" << endl;
+  //cout << " Finished LogDer array" << endl;
 
   //make array for absorption cross section
   SigmaAb = new double[lMax+1];

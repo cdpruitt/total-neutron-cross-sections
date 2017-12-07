@@ -231,10 +231,11 @@ void waves::SphericalBessel()
        {
          if (k == 1)
 	   {
-	 cout << "Wronskina error" << endl;
+	 /*cout << "Wronskina error" << endl;
          cout << "l= "  << k << " rho= " << rho <<  endl;
          cout << F[k] << " " << dF[k] << " " << G[k] << " " << dG[k] << endl;
          cout << dF[k]*G[k] - F[k]*dG[k] << endl;
+         */
 	   }
        }
     }

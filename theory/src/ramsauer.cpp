@@ -21,13 +21,6 @@ double calculateCS_SA(unsigned int A, double E)
     return TAU*pow(nuclearRadius+reducedWavelength, 2);
 }
 
-// assuming the strongly absorbing "black body" model of the nucleus w/r/t
-// incident neutrons, calculate relative difference
-double calculateRelDiff_SA(unsigned int A1, unsigned int A2, double E)
-{
-    return (calculateCS_SA(A1,E)-calculateCS_SA(A2,E))/(calculateCS_SA(A1,E)+calculateCS_SA(A2,E));
-}
-
 TGraph* createSAGraph(unsigned int A1, unsigned int A2, string name)
 {
     vector<double> energy;
@@ -53,29 +46,17 @@ int main()
     TFile* file = new TFile("ramsauer.root", "RECREATE");
 
     TGraph* OGraph = createSAGraph(18, 16, "oxygen");
-    OGraph->SetLineColor(kBlue);
-    OGraph->SetLineWidth(2);
-    OGraph->SetLineStyle(1);
+    OGraph->SetNameTitle("relativeDiff(O18,O16)", "relativeDiff(O18,O16)");
+    OGraph->Write();
 
     TGraph* NiGraph = createSAGraph(64, 58, "nickel");
-    NiGraph->SetLineColor(kGreen);
-    NiGraph->SetLineWidth(2);
-    NiGraph->SetLineStyle(1);
+    NiGraph->SetNameTitle("relativeDiff(Ni64,Ni58)", "relativeDiff(Ni64,Ni58)");
+    NiGraph->Write();
+
 
     TGraph* SnGraph = createSAGraph(124, 112, "tin");
-    SnGraph->SetLineColor(kRed);
-    SnGraph->SetLineWidth(2);
-    SnGraph->SetLineStyle(1);
-
-    TMultiGraph* allGraphs = new TMultiGraph();
-    allGraphs->SetNameTitle("stronglyAbsorbing","stronglyAbsorbing");
-
-    allGraphs->Add(OGraph,"AL");
-    allGraphs->Add(NiGraph,"AL");
-    allGraphs->Add(SnGraph,"AL");
-    allGraphs->Write();
-
-    allGraphs->Draw("AL");
+    SnGraph->SetNameTitle("relativeDiff(Sn124,Sn112)", "relativeDiff(Sn124,Sn112)");
+    SnGraph->Write();
 
     file->Close();
     return 0;

@@ -17,6 +17,8 @@ class Plots
         TH1D* getEnergyHisto();
         TH1D* getDeadtimeHisto();
 
+        //CrossSection correctForBlank(CrossSection rawCS, double targetNumberDensity, std::string expName, std::string graphFileName);
+
     private:
         TH1D* TOFHisto;
         TH1D* rawTOFHisto;
