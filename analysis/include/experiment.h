@@ -15,7 +15,7 @@ std::vector<std::string> readExperimentConfig(std::string expName, std::string f
 AnalysisConfig readAnalysisConfig(std::string expName);
 FacilityConfig readFacilityConfig(std::string expName, int runNumber);
 SoftwareCFDConfig readSoftwareCFDConfig(std::string expName, int runNumber);
-TimeOffsetsConfig readTimeOffsetsConfig(std::string expName, int runNumber);
+TimeConfig readTimeConfig(std::string expName, int runNumber);
 DigitizerConfig readDigitizerConfig(std::string expName, int runNumber);
 CSConfig readCSConfig(std::string expName, int runNumber);
 PlotConfig readPlotConfig(std::string expName, int runNumber);

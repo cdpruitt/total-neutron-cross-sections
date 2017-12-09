@@ -39,20 +39,20 @@ SoftwareCFDConfig::SoftwareCFDConfig(std::vector<std::string> softwareCFDConfig)
     CFD_TIME_OFFSET = stod(softwareCFDConfig[3]);
 }
 
-TimeOffsetsConfig::TimeOffsetsConfig(std::vector<std::string> timeOffsetsConfig)
+TimeConfig::TimeConfig(std::vector<std::string> timeConfig)
 {
-    if(timeOffsetsConfig.size()!=6)
+    if(timeConfig.size()!=9)
     {
-        std::cerr << "Error: tried to create time offsets configuration for current run, but " << timeOffsetsConfig.size() << " time offsets were read in instead of the correct value of 5." << std::endl;
+        std::cerr << "Error: tried to create time offsets configuration for current run, but " << timeConfig.size() << " time offsets were read in" << std::endl;
         exit(1);
     }
 
-    TARGET_CHANGER_TIME_OFFSET = stod(timeOffsetsConfig[0]);
-    MONITOR_TIME_OFFSET = stod(timeOffsetsConfig[1]);
-    DETECTOR_TIME_OFFSET = stod(timeOffsetsConfig[2]);
-    VETO_TIME_OFFSET = stod(timeOffsetsConfig[3]);
-    HIGH_T_DET_TIME_OFFSET = stod(timeOffsetsConfig[4]);
-    GAMMA_WINDOW_SIZE = stod(timeOffsetsConfig[5]);
+    for(unsigned int i=0; i<timeConfig.size()-1; i++)
+    {
+        offsets.push_back(stod(timeConfig[i]));
+    }
+
+    GAMMA_WINDOW_SIZE = stod(timeConfig[8]);
 }
 
 DigitizerConfig::DigitizerConfig(vector<pair<unsigned int, string>> channelMap, vector<string> digitizerConfig)
@@ -131,7 +131,7 @@ Config::Config(std::string expName, int runNumber)
     cs = readCSConfig(expName, runNumber);
     plot = readPlotConfig(expName, runNumber);
     digitizer = readDigitizerConfig(expName, runNumber);
-    timeOffsets = readTimeOffsetsConfig(expName, runNumber);
+    time = readTimeConfig(expName, runNumber);
     analysis = readAnalysisConfig(expName);
 
     std::cout << "Finished reading experiment config data." << std::endl;

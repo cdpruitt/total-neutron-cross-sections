@@ -161,7 +161,7 @@ CrossSection operator*(const CrossSection& cs, double factor)
     return outputCS;
 }
 
-void CrossSection::createCSGraph(string name, string title)
+void CrossSection::createGraph(string name, string title)
 {
     TGraphErrors* t = new TGraphErrors(getNumberOfPoints(),
                                       &getEnergyValues()[0],
@@ -224,110 +224,6 @@ double getPartialError(DataPoint aPoint, DataPoint bPoint, double aArealDensity)
     return leftExpression*rightExpression;
 }
 
-void CrossSection::subtractCS(string subtrahendFileName, string subtrahendGraphName, double factor)
-{
-    // get subtrahend graph
-    TFile* subtrahendFile = new TFile(subtrahendFileName.c_str(),"READ");
-    TGraphErrors* subtrahendGraph = (TGraphErrors*)subtrahendFile->Get(subtrahendGraphName.c_str());
-    if(!subtrahendGraph)
-    {
-        cerr << "Error: failed to find " << subtrahendGraphName << " in " << subtrahendFileName << endl;
-        exit(1);
-    }
-
-    DataSet subtrahendData = DataSet();
-    DataSet rawCSData = this->getDataSet();
-
-    // for each y-value of the raw data set, read the y-value of the subtrahend
-    // and the y-error
-    for(int i=0; i<rawCSData.getNumberOfPoints(); i++)
-    {
-        subtrahendData.addPoint(
-                DataPoint(rawCSData.getPoint(i).getXValue(),
-                    rawCSData.getPoint(i).getXError(),
-                    subtrahendGraph->Eval(rawCSData.getPoint(i).getXValue()),
-                    subtrahendGraph->GetErrorY(rawCSData.getPoint(i).getXValue()))); 
-    }
-
-    // perform the subtraction
-    this->addDataSet(rawCSData-subtrahendData*factor);
-    subtrahendFile->Close();
-}
-
-CrossSection subtractCS(string rawCSFileName, string rawCSGraphName,
-        string subtrahendFileName, string subtrahendGraphName,
-        double factor, double divisor, string name)
-{
-    // get rawCS graph
-    TFile* rawCSFile = new TFile(rawCSFileName.c_str(),"UPDATE");
-    TGraphErrors* rawCSGraph = (TGraphErrors*)rawCSFile->Get(rawCSGraphName.c_str());
-    if(!rawCSGraph)
-    {
-        cerr << "Error: failed to find " << rawCSGraphName << " in " << rawCSFileName << endl;
-        exit(1);
-    }
-
-    // get subtrahend graph
-    TFile* subtrahendFile = new TFile(subtrahendFileName.c_str(),"READ");
-    TGraphErrors* subtrahendGraph = (TGraphErrors*)subtrahendFile->Get(subtrahendGraphName.c_str());
-    if(!subtrahendGraph)
-    {
-        cerr << "Error: failed to find " << subtrahendGraphName << " in " << subtrahendFileName << endl;
-        exit(1);
-    }
-
-    DataSet subtrahendData = DataSet();
-    DataSet rawCSData = DataSet(rawCSGraph, rawCSGraphName);
-
-    // for each y-value of the raw CS graph, read the y-value of the subtrahend
-    // and the y-error
-    for(int i=0; i<rawCSData.getNumberOfPoints(); i++)
-    {
-        subtrahendData.addPoint(
-                DataPoint(rawCSData.getPoint(i).getXValue(),
-                    rawCSData.getPoint(i).getXError(),
-                    subtrahendGraph->Eval(rawCSData.getPoint(i).getXValue()),
-                    subtrahendGraph->GetErrorY(rawCSData.getPoint(i).getXValue()))); 
-    }
-
-    // perform the subtraction
-    CrossSection differenceCS = CrossSection();
-    differenceCS.addDataSet((rawCSData-subtrahendData*factor)/divisor);
-
-    // create graph of difference
-    rawCSFile->cd();
-    differenceCS.createCSGraph(name, name);
-
-    return differenceCS;
-}
-
-CrossSection multiplyCS(string rawCSFileName, string rawCSGraphName,
-        double factor, string name)
-{
-    // get rawCS graph
-    TFile* rawCSFile = new TFile(rawCSFileName.c_str(),"UPDATE");
-    TGraphErrors* rawCSGraph = (TGraphErrors*)rawCSFile->Get(rawCSGraphName.c_str());
-    if(!rawCSGraph)
-    {
-        cerr << "Error: failed to find " << rawCSGraphName << " in " << rawCSFileName << endl;
-        exit(1);
-    }
-
-    DataSet rawDS = DataSet(rawCSGraph,rawCSGraphName);
-
-    // perform the multiplication
-    DataSet productDS = rawDS*factor;
-
-    CrossSection productCS = CrossSection();
-    productCS.addDataSet(productDS);
-
-    // create graph of difference
-    rawCSFile->cd();
-    productCS.createCSGraph(name, name);
-
-    return productCS;
-}
-
 void produceRunningRMS(DataSet firstDS, DataSet secondDS, string name)
 {
     DataSet rms;
@@ -366,7 +262,7 @@ void produceRunningRMS(DataSet firstDS, DataSet secondDS, string name)
     rmsPlot.addDataSet(rms);
 
     string n = name + "rms";
-    rmsPlot.createCSGraph(n.c_str(), n.c_str());
+    rmsPlot.createGraph(n.c_str(), n.c_str());
 }
 
 CrossSection relativeCS(string firstCSFileName, string firstCSGraphName,
@@ -420,7 +316,7 @@ CrossSection relativeCS(string firstCSFileName, string firstCSGraphName,
 
     // create graph of relative difference
     firstCSFile->cd();
-    relDiffCS.createCSGraph(name, name);
+    relDiffCS.createGraph(name, name);
 
     // create running RMS plot
     CrossSection firstCS = CrossSection();
@@ -478,7 +374,7 @@ void applyCSCorrectionFactor(string CSCorrectionFileName, string CSCorrectionGra
 
     // create graph of correctedCS
     outputFile->cd();
-    correctedCS.createCSGraph(outputGraphName, outputGraphName);
+    correctedCS.createGraph(outputGraphName, outputGraphName);
 
     outputFile->Close();
 }
@@ -533,7 +429,102 @@ void scaledownCS(string CSToBeCorrectedFileName, string CSToBeCorrectedGraphName
 
     // create graph of correctedCS
     outputFile->cd();
-    correctedCS.createCSGraph(outputGraphName, outputGraphName);
+    correctedCS.createGraph(outputGraphName, outputGraphName);
 
     outputFile->Close();
+}
+
+void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& blankData)
+{
+    // make sure the monitor recorded counts for both the blank and the target
+    // of interest so we can normalize the flux between them
+    if(targetData.monitorCounts == 0 || blankData.monitorCounts == 0)
+    {
+        cerr << "Error - didn't find any monitor counts for target while trying to calculate cross sections. Returning empty cross section..." << endl;
+        return;
+    }
+
+    // define variables to hold cross section information
+    CrossSection crossSection;
+    double energyValue;
+    double energyError;
+    double crossSectionValue;
+    double crossSectionError;
+
+    int numberOfBins = targetData.energyHisto->GetNbinsX();
+
+    // calculate the ratio of target/blank monitor counts (normalize
+    // flux/macropulse)
+    double tMon = targetData.monitorCounts;
+    double bMon = blankData.monitorCounts;
+    double monitorRatio = tMon/bMon;
+
+    // calculate the ratio of target/blank good macropulse ratio (normalize
+    // macropulse number)
+    double tGMN = targetData.goodMacroNumber;
+    double bTMN = blankData.totalMacroNumber;
+    double macroNumberRatio = (targetData.goodMacroNumber/targetData.totalMacroNumber)
+        /(blankData.goodMacroNumber/blankData.totalMacroNumber);
+    //macroNumberRatio = 1;
+
+    // calculate number of atoms in this target
+    long double numberOfAtoms =
+        (targetData.target.getMass()/targetData.target.getMolarMass())*AVOGADROS_NUMBER;
+
+    // calculate areal density (atoms/cm^2) in target
+    double arealDensity =
+        numberOfAtoms/(pow(targetData.target.getDiameter()/2,2)*M_PI); // area of cylinder end
+
+    // calculate volume density (atoms/cm^3) in target
+    double volumeDensity =
+        arealDensity/targetData.target.getLength();
+
+    // save this areal density for later error propagation
+    crossSection.setArealDensity(arealDensity);
+
+    // loop through each bin in the energy histo, calculating a cross section
+    // for each bin
+    for(int i=1; i<=numberOfBins; i++) // skip the overflow and underflow bins
+    {
+        // read data from detector histograms for target and blank
+        TH1D* bCounts = blankData.energyHisto;
+        TH1D* tCounts = targetData.energyHisto;
+
+        energyValue = tCounts->GetBinCenter(i);
+        energyError = tCounts->GetBinWidth(i)/2;
+
+        long bDet = bCounts->GetBinContent(i);
+        long tDet = tCounts->GetBinContent(i);
+
+        // if any essential values are 0, return an empty DataPoint
+        if(bMon <=0 || tMon <=0 || bDet <=0 || tDet <=0)
+        {
+            crossSectionValue = 0;
+            crossSectionError = 0;
+            crossSection.addDataPoint(
+                DataPoint(energyValue, energyError, crossSectionValue, crossSectionError,
+                          bMon, tMon, bDet, tDet));
+            continue;
+        }
+
+        // calculate the ratio of target/blank counts in the detector
+        double detectorRatio = (double)tDet/bDet;
+
+        crossSectionValue =
+            -log(detectorRatio/(macroNumberRatio*monitorRatio))/arealDensity; // in cm^2
+
+        crossSectionValue *= pow(10,24); // in barns 
+            
+        // calculate the statistical error
+        crossSectionError =
+            pow(1/tDet+1/bDet+1/bMon+1/tMon,0.5)/arealDensity; // in cm^2
+
+        crossSectionError *= pow(10,24); // in barns
+
+        crossSection.addDataPoint(
+                DataPoint(energyValue, energyError, crossSectionValue, crossSectionError,
+                    bMon, tMon, bDet, tDet));
+    }
+
+    crossSection.name = targetData.target.getName();
 }

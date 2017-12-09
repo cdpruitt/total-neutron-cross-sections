@@ -1,0 +1,9 @@
+This file lists run-dependent experimental facility parameters needed for cross
+section calculations
+
+***********************************************************************************************************
+Run range      Macropulse          Micros per       Micropulse       Flight path    First good    Last good
+               frequency (Hz)      Macro (#)        length (ns)      length (cm)    micro         micro
+
+***********************************************************************************************************
+57-102         120                 350              1788.8148        2709.4         40            340

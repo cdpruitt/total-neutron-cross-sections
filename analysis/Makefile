@@ -15,22 +15,22 @@ LINKOPTION = $(shell root-config --libs)
 ############################### DEFINE TARGETS #################################
 
 # List all targets
-TARGETS = driver text sumAll sumChunk readLitData subtractCS multiplyCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck rateHisto ramsauer
+TARGETS = driver text sumAll sumChunk readLitData subtractCS multiplyCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck rateHisto
 all: $(addprefix $(BIN), $(TARGETS))
 
 # Build driver (main data analysis engine)
-DRIVER_SOURCES = dataPoint.cpp dataSet.cpp driver.cpp config.cpp experiment.cpp fillBasicHistos.cpp fillCSHistos.cpp plots.cpp raw.cpp identifyMacropulses.cpp assignEventsToMacropulses.cpp calculateGammaCorrection.cpp correctForDeadtime.cpp produceEnergyHistos.cpp target.cpp veto.cpp softwareCFD.cpp #waveform.cpp
+DRIVER_SOURCES = dataPoint.cpp dataSet.cpp driver.cpp config.cpp experiment.cpp fillBasicHistos.cpp fillCSHistos.cpp plots.cpp raw.cpp identifyMacropulses.cpp assignEventsToMacropulses.cpp calculateGammaCorrection.cpp correctForDeadtime.cpp produceEnergyHistos.cpp target.cpp veto.cpp softwareCFD.cpp crossSection.cpp CSUtilities.cpp
 
 $(BIN)driver: $(addprefix $(SOURCE), $(DRIVER_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)driver $(addprefix $(SOURCE), $(DRIVER_SOURCES)) $(LINKOPTION)
 
 # Build sumAll (for generating cross sections using data from all available runs)
-SUMALL_SOURCES = sumAll.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp config.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp
+SUMALL_SOURCES = sumAll.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp config.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp CSUtilities.cpp
 $(BIN)sumAll: $(addprefix $(SOURCE), $(SUMALL_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)sumAll $(addprefix $(SOURCE), $(SUMALL_SOURCES)) $(LINKOPTION)
 
 # Build sumChunk (for generating cross sections using data from a select set of subruns)
-SUMCHUNK_SOURCES = sumChunk.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp config.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp
+SUMCHUNK_SOURCES = sumChunk.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp config.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp CSUtilities.cpp
 $(BIN)sumChunk: $(addprefix $(SOURCE), $(SUMCHUNK_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)sumChunk $(addprefix $(SOURCE), $(SUMCHUNK_SOURCES)) $(LINKOPTION)
 
@@ -55,33 +55,33 @@ $(BIN)makeCSText: $(addprefix $(SOURCE), $(MAKECSTEXT_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)makeCSText $(addprefix $(SOURCE), $(MAKECSTEXT_SOURCES)) $(LINKOPTION)
 
 # Build subtractCS (for taking the difference of two cross section graphs)
-SUBTRACTCS_SOURCES = subtractCS.cpp dataSet.cpp dataPoint.cpp crossSection.cpp target.cpp plots.cpp
+SUBTRACTCS_SOURCES = subtractCS.cpp dataSet.cpp dataPoint.cpp crossSection.cpp target.cpp plots.cpp CSUtilities.cpp
 $(BIN)subtractCS: $(addprefix $(SOURCE), $(SUBTRACTCS_SOURCES)) 
 	$(COMPILER) $(CFLAGS) -o $(BIN)subtractCS $(addprefix $(SOURCE), $(SUBTRACTCS_SOURCES)) $(LINKOPTION)
 
 # Build multiplyCS (for multiplying two cross section graphs)
-MULTIPLYCS_SOURCES = multiplyCS.cpp dataSet.cpp dataPoint.cpp crossSection.cpp target.cpp plots.cpp
+MULTIPLYCS_SOURCES = multiplyCS.cpp dataSet.cpp dataPoint.cpp crossSection.cpp target.cpp plots.cpp CSUtilities.cpp
 $(BIN)multiplyCS: $(addprefix $(SOURCE), $(MULTIPLYCS_SOURCES)) 
 	$(COMPILER) $(CFLAGS) -o $(BIN)multiplyCS $(addprefix $(SOURCE), $(MULTIPLYCS_SOURCES)) $(LINKOPTION)
 
 # Build relativeCS (for calculating the relative difference of two cross section graphs)
-RELATIVECS_SOURCES = relativeCS.cpp dataSet.cpp dataPoint.cpp crossSection.cpp target.cpp plots.cpp
+RELATIVECS_SOURCES = relativeCS.cpp dataSet.cpp dataPoint.cpp crossSection.cpp target.cpp plots.cpp CSUtilities.cpp
 $(BIN)relativeCS: $(addprefix $(SOURCE), $(RELATIVECS_SOURCES)) 
 	$(COMPILER) $(CFLAGS) -o $(BIN)relativeCS $(addprefix $(SOURCE), $(RELATIVECS_SOURCES)) $(LINKOPTION)
 
 # Build applyCSCorrectionFactor (for scaling each point in a cross section by a factor)
-APPLYCSCORRECTIONFACTOR_SOURCES = applyCSCorrectionFactor.cpp dataSet.cpp dataPoint.cpp crossSection.cpp target.cpp plots.cpp
+APPLYCSCORRECTIONFACTOR_SOURCES = applyCSCorrectionFactor.cpp dataSet.cpp dataPoint.cpp crossSection.cpp target.cpp plots.cpp CSUtilities.cpp
 $(BIN)applyCSCorrectionFactor: $(addprefix $(SOURCE), $(APPLYCSCORRECTIONFACTOR_SOURCES)) 
 	$(COMPILER) $(CFLAGS) -o $(BIN)applyCSCorrectionFactor $(addprefix $(SOURCE), $(APPLYCSCORRECTIONFACTOR_SOURCES)) $(LINKOPTION)
 
 # Build scaledownCS (for rebinning a cross section with a coarser bin size)
-SCALEDOWNCS_SOURCES = scaledownCS.cpp dataSet.cpp dataPoint.cpp crossSection.cpp target.cpp plots.cpp
+SCALEDOWNCS_SOURCES = scaledownCS.cpp dataSet.cpp dataPoint.cpp crossSection.cpp target.cpp plots.cpp CSUtilities.cpp
 $(BIN)scaledownCS: $(addprefix $(SOURCE), $(SCALEDOWNCS_SOURCES)) 
 	$(COMPILER) $(CFLAGS) -o $(BIN)scaledownCS $(addprefix $(SOURCE), $(SCALEDOWNCS_SOURCES)) $(LINKOPTION)
 
 # Build produceRunningRMS (for plotting the running root-mean-squared difference between two cross
 # section graphs)
-PRODUCERUNNINGRMS_SOURCES = produceRunningRMS.cpp dataSet.cpp dataPoint.cpp crossSection.cpp target.cpp plots.cpp
+PRODUCERUNNINGRMS_SOURCES = produceRunningRMS.cpp dataSet.cpp dataPoint.cpp crossSection.cpp target.cpp plots.cpp CSUtilities.cpp
 $(BIN)produceRunningRMS: $(addprefix $(SOURCE), $(PRODUCERUNNINGRMS_SOURCES)) 
 	$(COMPILER) $(CFLAGS) -o $(BIN)produceRunningRMS $(addprefix $(SOURCE), $(PRODUCERUNNINGRMS_SOURCES)) $(LINKOPTION)
 
@@ -94,11 +94,6 @@ $(BIN)rateHisto: $(addprefix $(SOURCE), $(RATEHISTO_SOURCES))
 TOFSIMULATION_SOURCES = TOFSimulation.cpp correctForDeadtime.cpp
 $(BIN)TOFSimulation: $(addprefix $(SOURCE), $(TOFSIMULATION_SOURCES)) 
 	$(COMPILER) $(CFLAGS) -o $(BIN)TOFSimulation $(addprefix $(SOURCE), $(TOFSIMULATION_SOURCES)) $(LINKOPTION)
-
-# Build Ramsauer
-RAMSAUER_SOURCES = ramsauer.cpp
-$(BIN)ramsauer: $(addprefix $(SOURCE), $(RAMSAUER_SOURCES)) 
-	$(COMPILER) $(CFLAGS) -o $(BIN)ramsauer $(addprefix $(SOURCE), $(RAMSAUER_SOURCES)) $(LINKOPTION)
 
 ############################### DEFINE OBJECTS #################################
 

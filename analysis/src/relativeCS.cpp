@@ -9,6 +9,7 @@
 #include "../include/crossSection.h"
 #include "../include/plots.h"
 #include "../include/config.h"
+#include "../include/CSUtilities.h"
 
 #include "TFile.h"
 #include "TGraphErrors.h"

@@ -18,7 +18,7 @@ class CrossSection
         void addDataSet(DataSet dataSet);
         DataPoint getDataPoint(int i) const;
         DataSet getDataSet();
-        void createCSGraph(std::string name, std::string title);
+        void createGraph(std::string name, std::string title);
 
         int getNumberOfPoints() const;
         std::vector<double> getEnergyValues() const;
@@ -36,8 +36,7 @@ class CrossSection
 
         double calculateRMSError();
 
-        void subtractCS(std::string subtrahendFileName,
-                        std::string subtrahendGraphName, double factor);
+        void calculateCS(const CSPrereqs& targetData, const CSPrereqs& blankData);
 
         std::string name = "";
 
@@ -49,31 +48,4 @@ class CrossSection
 void correctForDeadtime(std::string histoFileName, std::string deadtimeFileName, std::vector<std::string> detectorChannels);
 
 double getPartialError(DataPoint aPoint, DataPoint bPoint, double aArealDensity);
-CrossSection calculateRelative(CrossSection a, CrossSection b);
-
-CrossSection subtractCS(std::string rawCSFileName, std::string rawCSGraphName,
-                        std::string subtrahendFileName, std::string subtrahendGraphName,
-                        double factor,  // multiplies the subtrahend
-                        double divisor, // divides the final difference
-                        std::string name // name given to output graph
-                       );
-
-CrossSection multiplyCS(std::string rawCSFileName, std::string rawCSGraphName,
-                        double factor,  // multiplies the subtrahend
-                        std::string name // name given to output graph
-                       );
-
-CrossSection relativeCS(std::string rawCSFileName, std::string rawCSGraphName,
-                        std::string subtrahendFileName, std::string subtrahendGraphName,
-                        std::string name // name given to output graph
-                       );
-
-CrossSection calculateCS(const CSPrereqs& targetData, const CSPrereqs& blankData);
-
-void applyCSCorrectionFactor(std::string CSCorrectionFilename, std::string CSCorrectionGraphName, std::string CSToBeCorrectedFilename, std::string CSToBeCorrectedGraphName, std::string outputFileName, std::string outputGraphName);
-
-void scaledownCS(std::string CSToBeCorrectedFileName, std::string CSToBeCorrectedGraphName, int scaledown, std::string outputFileName, std::string outputGraphName);
-
-void produceRunningRMS(DataSet firstDS, DataSet secondDS, std::string name);
-
 #endif

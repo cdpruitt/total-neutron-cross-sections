@@ -16,6 +16,8 @@
 #include "../include/CSPrereqs.h"
 #include "../include/crossSection.h"
 #include "../include/experiment.h"
+#include "../include/plots.h"
+#include "../include/CSUtilities.h"
 
 using namespace std;
 
@@ -65,5 +67,57 @@ int main(int, char* argv[])
         }
     }
 
-    producePlots(dataLocation, allCSPrereqs);
+    string outFileName = dataLocation + "/total.root";
+    TFile* outFile = new TFile(outFileName.c_str(), "UPDATE");
+
+    CSPrereqs blank;
+    for(auto& p : allCSPrereqs)
+    {
+        if(p.target.getName()=="blank")
+        {
+            blank = p;
+        }
+
+        cout << "all CS Prereqs name = " << p.target.getName() << endl;
+
+        long totalCounts = 0;
+        for(int i=0; i<p.energyHisto->GetNbinsX(); i++)
+        {
+            long tempCounts = p.energyHisto->GetBinContent(i);
+            if(tempCounts < 0)
+            {
+                continue;
+            }
+
+            totalCounts += tempCounts;
+        }
+
+        cout << endl << "Total statistics over all runs: " << endl << endl;
+        cout << p.target.getName() << ": total events in energy histo = "
+            << totalCounts << ", total monitor events = "
+            << p.monitorCounts << ", good macro number = "
+            << p.goodMacroNumber << ", total macro number = "
+            << p.totalMacroNumber << endl;
+
+        p.energyHisto->SetDirectory(outFile);
+        p.energyHisto->Write();
+
+        string name = p.target.getName() + "TOF";
+        p.TOFHisto->SetNameTitle(name.c_str(),name.c_str());
+        p.TOFHisto->SetDirectory(outFile);
+
+        p.TOFHisto->Write();
+    }
+
+    outFile->Close();
+
+    vector<CrossSection> crossSections;
+    for(auto& p : allCSPrereqs)
+    {
+        CrossSection cs;
+        cs.calculateCS(blank,p);
+        crossSections.push_back(cs);;
+    }
+
+    produceTotalCSPlots(dataLocation, crossSections);
 }

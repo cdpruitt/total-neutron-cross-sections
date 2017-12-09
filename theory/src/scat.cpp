@@ -731,7 +731,7 @@ void scat::initIntegration()
   rStop = 12.;
   mWave = 60;
   nWave = mWave + 120;
-  lMax = 500;
+  lMax = 100;
   llMax = lMax + 1;
 // steps for wavefunction array in fm
   deltaR = (rStop-rStart)/(double)(mWave-1); 

@@ -364,19 +364,19 @@ SoftwareCFDConfig readSoftwareCFDConfig(string expName, int runNumber)
 
 
 // Read time offset parameters
-TimeOffsetsConfig readTimeOffsetsConfig(string expName, int runNumber)
+TimeConfig readTimeConfig(string expName, int runNumber)
 {
-    string timeOffsetsConfigLocation = "../" + expName + "/TimeOffsetsConfig.txt";
-    ifstream dataFile(timeOffsetsConfigLocation.c_str());
+    string timeConfigLocation = "../" + expName + "/TimeConfig.txt";
+    ifstream dataFile(timeConfigLocation.c_str());
     if(!dataFile.is_open())
     {
-        std::cout << "Failed to find timeOffsets configuration in " << timeOffsetsConfigLocation << std::endl;
+        std::cout << "Failed to find time configuration in " << timeConfigLocation << std::endl;
         exit(1);
     }
 
     string str;
     unsigned int run;
-    vector<string> timeOffsetsConfig;
+    vector<string> timeConfig;
 
     while(getline(dataFile,str))
     {
@@ -408,14 +408,14 @@ TimeOffsetsConfig readTimeOffsetsConfig(string expName, int runNumber)
         {
             for(int i=1; (size_t)i<tokens.size(); i++)
             {
-                timeOffsetsConfig.push_back(tokens[i]);
+                timeConfig.push_back(tokens[i]);
             }
 
             break;
         }
     }
 
-    return TimeOffsetsConfig(timeOffsetsConfig);
+    return TimeConfig(timeConfig);
 }
 
 // Read time offset parameters

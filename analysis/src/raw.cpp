@@ -187,6 +187,7 @@ bool readExtras(ifstream& file, RawEvent& rawEvent)
             readWord(file, rawEvent.PZC);
             rawEvent.fineTime = ((double)(8192-rawEvent.NZC)/
                 (rawEvent.PZC-rawEvent.NZC));
+            rawEvent.extTime = 0;
             return true;
 
         default:
@@ -340,7 +341,7 @@ int readRawData(string inFileName, string outFileName, ofstream& logFile)
         rawEvent.completeTime *= config.digitizer.SAMPLE_PERIOD; // converts from samples to ns
 
         // Discard events with digitizer rollover error (i.e., incrementing extTime before clearing the timetag, near the rollover period at 2^31 bits)
-/*
+        /*
         if(macropulseEvent.timeExtTime > prevExtTime
                 && macropulseEvent.timeTimetag > pow(2,31)-1000)
         {
@@ -355,25 +356,27 @@ int readRawData(string inFileName, string outFileName, ofstream& logFile)
         if(rawEvent.evtType==1)
         {
             // sync times to the macropulse timing channel by applying an channel-dependent offset (accounts for cable delay)
+            rawEvent.completeTime += config.time.offsets[rawEvent.chNo];
+
             switch(rawEvent.chNo)
             {
                 case 0:
-                    rawEvent.completeTime += config.timeOffsets.TARGET_CHANGER_TIME_OFFSET;
-                    break;
                 case 1:
-                    break;
                 case 2:
-                    rawEvent.completeTime += config.timeOffsets.MONITOR_TIME_OFFSET;
+                case 3:
+                case 7:
                     break;
-                case 4:
-                    rawEvent.completeTime += config.timeOffsets.DETECTOR_TIME_OFFSET;
 
+                case 4:
+                case 5:
+                case 6:
                     // use CFD to improve timing precision
                     rawEvent.fineTime = calculateCFDTime(
                             rawEvent.waveform,
                             rawEvent.baseline,
                             config.softwareCFD.CFD_FRACTION,
                             config.softwareCFD.CFD_DELAY); // CFD time in samples
+
                     if(rawEvent.fineTime>=0)
                     {
                         // recovered a good fine time for this event
@@ -386,37 +389,7 @@ int readRawData(string inFileName, string outFileName, ofstream& logFile)
                     }
 
                     break;
-                case 5:
-                    rawEvent.completeTime += config.timeOffsets.DETECTOR_TIME_OFFSET + config.timeOffsets.VETO_TIME_OFFSET;
 
-                    // use CFD to improve timing precision
-                    rawEvent.fineTime = calculateCFDTime(
-                            rawEvent.waveform,
-                            rawEvent.baseline,
-                            config.softwareCFD.CFD_FRACTION,
-                            config.softwareCFD.CFD_DELAY); // CFD time in samples
-                    if(rawEvent.fineTime>=0)
-                    {
-                        // recovered a good fine time for this event
-                        rawEvent.completeTime += (rawEvent.fineTime-config.softwareCFD.CFD_TIME_OFFSET)*config.digitizer.SAMPLE_PERIOD;
-                    }
-                    break;
-                case 6:
-                    rawEvent.completeTime += config.timeOffsets.HIGH_T_DET_TIME_OFFSET;
-
-                    // use CFD to improve timing precision
-                    rawEvent.fineTime = calculateCFDTime(
-                            rawEvent.waveform,
-                            rawEvent.baseline,
-                            config.softwareCFD.CFD_FRACTION,
-                            config.softwareCFD.CFD_DELAY); // CFD time in samples
-                    if(rawEvent.fineTime>=0)
-                    {
-                        // recovered a good fine time for this event
-                        rawEvent.completeTime += (rawEvent.fineTime-config.softwareCFD.CFD_TIME_OFFSET)*config.digitizer.SAMPLE_PERIOD;
-                    }
-                    break;
-                case 7:
                 default:
                     cerr << "Error: encountered unimplemented channel number " << rawEvent.chNo << " during complete time assignment. Ending raw data read-in..." << endl;
                     return 1;

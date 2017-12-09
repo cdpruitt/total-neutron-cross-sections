@@ -53,8 +53,6 @@ double calculateRMS(std::vector<double> graph1Data, std::vector<double> graph2Da
 
 DataSet scale(DataSet setToScale, DataSet expReference, DataSet litReference);
 
-int producePlots(std::string dataLocation, const std::vector<CSPrereqs>& allCSPrereqs);
-
 int readTargetData(std::vector<CSPrereqs>& allCSPrereqs, std::string expName);
 
 int readSubRun(std::vector<CSPrereqs>& allCSPrereqs, std::string expName, int runNumber, int subRun, std::string detectorName, std::string dataLocation);

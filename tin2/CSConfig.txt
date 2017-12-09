@@ -1,0 +1,9 @@
+This file lists, for each run, which channel's events should be used to
+calculate cross sections
+
+********************************************************************************
+Run         Channel
+range       name
+********************************************************************************
+0-56        -
+57-102      summedDet

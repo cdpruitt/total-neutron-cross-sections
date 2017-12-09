@@ -1,6 +1,0 @@
-blankContainer
-NatPb
-longCarbon
-Sn112
-NatSn
-Sn124

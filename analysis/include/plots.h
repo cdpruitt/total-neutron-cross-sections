@@ -1,10 +1,13 @@
 #ifndef PLOTS_H
 #define PLOTS_H
 
+#include <vector>
 #include <string>
 
 #include "TH1D.h"
 #include "TFile.h"
+
+#include "crossSection.h"
 
 class Plots
 {

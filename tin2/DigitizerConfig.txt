@@ -1,0 +1,7 @@
+This file lists relevant digitizer configuration for each run
+*************************************************************
+Run       Sample period
+range     (in ns)
+*************************************************************
+
+57-102    2

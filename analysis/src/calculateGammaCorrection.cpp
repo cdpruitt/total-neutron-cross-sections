@@ -66,7 +66,7 @@ int calculateGammaCorrection(string inputFileName, ofstream& logFile, string tre
     directory->cd();
 
     const double GAMMA_TIME = pow(10,7)*config.facility.FLIGHT_DISTANCE/C;
-    const double GAMMA_WINDOW_WIDTH = config.timeOffsets.GAMMA_WINDOW_SIZE/2;
+    const double GAMMA_WINDOW_WIDTH = config.time.GAMMA_WINDOW_SIZE/2;
 
     // find gamma range
     TH1D* uncorrectedTOF = new TH1D(

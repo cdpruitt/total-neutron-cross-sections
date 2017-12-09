@@ -391,7 +391,7 @@ int fillCSHistos(string inputFileName, string gammaCorrectionFileName, ofstream&
 
         // calculate width of gamma peak after gamma correction has been applied
         const double GAMMA_TIME = pow(10,7)*config.facility.FLIGHT_DISTANCE/C;
-        const double GAMMA_WINDOW_WIDTH = config.timeOffsets.GAMMA_WINDOW_SIZE/2;
+        const double GAMMA_WINDOW_WIDTH = config.time.GAMMA_WINDOW_SIZE/2;
 
         TF1* gammaPeakFit = new TF1("gammaPeakFit","gaus",
                 GAMMA_TIME-GAMMA_WINDOW_WIDTH, GAMMA_TIME+GAMMA_WINDOW_WIDTH);

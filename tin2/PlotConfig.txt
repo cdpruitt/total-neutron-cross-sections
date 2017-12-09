@@ -1,0 +1,8 @@
+This file lists the plotting parameters that should be used for visualizing each
+run's results
+
+**********************************************************************************************************************
+Run        TOF plots         TOF plots         TOF plots       Energy plots       Energy plots       Energy plots
+range      lower bound (ns)  upper bound (ns)  number of bins  lower bound (MeV)  upper bound (MeV)  number of bins
+**********************************************************************************************************************
+57-102     0                 1789              4               2.0                400                200

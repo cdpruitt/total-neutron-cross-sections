@@ -1,2 +1,1 @@
-0 75 /media/cdpruitt/tin2 /data2
-100 101 /media/cdpruitt/tin2 /data2
+57 102 /media/cdpruitt/oxygen/output /data2/analysis

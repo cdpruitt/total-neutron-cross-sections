@@ -54,21 +54,13 @@ struct SoftwareCFDConfig
         double CFD_TIME_OFFSET; // offsets the calculated CFD time so that the average CFD time correction is 0 (in samples)
 };
 
-struct TimeOffsetsConfig
+struct TimeConfig
 {
     public:
-        TimeOffsetsConfig() {}
-        TimeOffsetsConfig(std::vector<std::string> timeOffsetsConfig);
+        TimeConfig() {}
+        TimeConfig(std::vector<std::string> timeConfig);
 
-        double TARGET_CHANGER_TIME_OFFSET; // timing delay between macropulse start and target changer position channel (in ns)
-
-        double MONITOR_TIME_OFFSET; // timing delay between macropulse start and monitor channel (in ns)
-
-        double DETECTOR_TIME_OFFSET; // timing delay between macropulse start and main detector channel (in ns)
-
-        double VETO_TIME_OFFSET; // timing delay between macropulse start and veto detector channel (in ns)
-
-        double HIGH_T_DET_TIME_OFFSET; // timing delay between macropulse start and high threshold detector channel (in ns)
+        std::vector<double> offsets;
 
         double GAMMA_WINDOW_SIZE; // width of window used to identify gammas for gamma time correction to macropulse times
 };
@@ -132,7 +124,7 @@ struct Config
         CSConfig cs;
         PlotConfig plot;
         DigitizerConfig digitizer;
-        TimeOffsetsConfig timeOffsets;
+        TimeConfig time;
 };
 
 extern Config config;
