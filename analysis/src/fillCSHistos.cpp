@@ -23,10 +23,10 @@ using namespace std;
 
 extern Config config;
 
-const double Q_LOW_THRESHOLD = 500;
-const double Q_HIGH_THRESHOLD = 35550;
-const double Q_RATIO_LOW_THRESHOLD = 0.6;
-const double Q_RATIO_HIGH_THRESHOLD = 0.95;
+const double Q_LOW_THRESHOLD = 0;
+const double Q_HIGH_THRESHOLD = 65550;
+const double Q_RATIO_LOW_THRESHOLD = 0;
+const double Q_RATIO_HIGH_THRESHOLD = 1;
 
 int identifyGoodMacros(TTree* eventTree, DetectorEvent& event, vector<MacropulseEvent>& macropulseList, ofstream& logFile)
 {
@@ -123,7 +123,7 @@ int fillCSHistos(string inputFileName, string gammaCorrectionFileName, ofstream&
         return 1;
     }
 
-    TDirectory* gammaDirectory = (TDirectory*)gammaCorrectionFile->Get("summedDet");
+    TDirectory* gammaDirectory = (TDirectory*)gammaCorrectionFile->Get(config.analysis.GAMMA_CORRECTION_TREE_NAME.c_str());
     if(!gammaDirectory)
     {
         cerr << "Error: failed to open summedDet directory in " << gammaCorrectionFileName << " for reading gamma corrections." << endl;

@@ -43,6 +43,11 @@ int vetoEvents(string detectorFileName, string outputFileName, ofstream& logFile
     {
         // read input trees to prepare for vetoing
         TTree* detTree = (TTree*)detectorFile->Get(detTreeName.c_str());
+        if(!detTree)
+        {
+            cerr << "Error: failed to find detector tree " << detTreeName << endl;
+            return 1;
+        }
 
         DetectorEvent event;
         vector<int>* waveformPointer = 0;

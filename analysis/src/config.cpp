@@ -132,6 +132,7 @@ Config::Config(std::string expName, int runNumber)
     plot = readPlotConfig(expName, runNumber);
     digitizer = readDigitizerConfig(expName, runNumber);
     time = readTimeConfig(expName, runNumber);
+    deadtime = readDeadtimeConfig(expName);
     analysis = readAnalysisConfig(expName);
 
     std::cout << "Finished reading experiment config data." << std::endl;

@@ -252,6 +252,50 @@ AnalysisConfig readAnalysisConfig(string expName)
     return analysisConfig;
 }
 
+// Read deadtime correction parameters
+DeadtimeConfig readDeadtimeConfig(string expName)
+{
+    string deadtimeConfigLocation = "../" + expName + "/DeadtimeConfig.txt";
+    ifstream dataFile(deadtimeConfigLocation.c_str());
+    if(!dataFile.is_open())
+    {
+        std::cout << "Failed to find deadtime configuration in " << deadtimeConfigLocation << std::endl;
+        exit(1);
+    }
+
+    string str;
+    unsigned int run;
+
+    DeadtimeConfig deadtimeConfig;
+
+    while(getline(dataFile,str))
+    {
+        // parse into tokens
+        vector<string> tokens;
+        istringstream iss(str);
+        copy(istream_iterator<string>(iss),
+                istream_iterator<string>(),
+                back_inserter(tokens));
+
+        if(!tokens.size())
+        {
+            continue;
+        }
+
+        if(tokens[0]=="Logistic_k")
+        {
+            deadtimeConfig.LOGISTIC_K = stod(tokens.back());
+        }
+
+        else if(tokens[0]=="Logistic_mu")
+        {
+            deadtimeConfig.LOGISTIC_K = stod(tokens.back());
+        }
+    }
+
+    return deadtimeConfig;
+}
+
 // Read facility  parameters
 FacilityConfig readFacilityConfig(string expName, int runNumber)
 {

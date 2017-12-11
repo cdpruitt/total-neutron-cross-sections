@@ -87,22 +87,17 @@ using namespace std;
     return correctedCS;
 }*/
 
-int produceTotalCSPlots(string dataLocation, vector<CrossSection>& crossSections)
+/*int produceTotalCSPlots(string dataLocation, vector<CrossSection>& crossSections)
 {
     //  Create total cross section plots
 
     string outFileName = dataLocation + "/total.root";
     TFile* outFile = new TFile(outFileName.c_str(), "UPDATE");
 
-    for(auto& cs : crossSections)
-    {
-        cs.createGraph(cs.name, cs.name);
-    }
-
     outFile->Close();
 
     return 0;
-}
+}*/
 
 /*int produceRelativeCSPlots(string dataLocation, string string expName,
  * vector<CrossSection>& crossSections)

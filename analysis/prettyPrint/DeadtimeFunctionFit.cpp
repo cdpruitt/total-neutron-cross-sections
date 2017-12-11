@@ -40,9 +40,9 @@
     gPad->SetBottomMargin(0.20);
     //gPad->SetTicky(2);
 
-    string fileName = "/data1/analysis/11/0000/histos.root";
+    string fileName = "/data2/analysis/66/0000/gatedHistos.root";
     TFile* file = new TFile(fileName.c_str(),"READ");
-    file->cd("summedDet");
+    file->cd("lowThresholdDet");
 
     string histoName = "time since last event";
     TH1D* histo = (TH1D*)gDirectory->Get(histoName.c_str());
@@ -82,15 +82,15 @@
     histo->GetYaxis()->SetLabelSize(0.04);
     histo->GetYaxis()->SetLabelFont(2);
 
-    histo->GetXaxis()->SetRangeUser(140,170);
+    histo->GetXaxis()->SetRangeUser(200,250);
     histo->GetYaxis()->SetRangeUser(0,7000);
 
     histo->Draw("");
 
-    TF1* timeDiffFit = new TF1("logisticFit","(6922-8.82223*x)/(1+exp(-[0]*(x-[1])))",
-            140, 170);
-    timeDiffFit->SetParameter(1,142);
-    histo->Fit("logisticFit","", "", 140, 170);
+    TF1* timeDiffFit = new TF1("logisticFit","(1627.16-1.75548*x)/(1+exp(-[0]*(x-[1])))",
+            200, 250);
+    timeDiffFit->SetParameter(1,200);
+    histo->Fit("logisticFit","", "", 200, 250);
     timeDiffFit->SetLineWidth(3);
 
     /*TLatex latex;

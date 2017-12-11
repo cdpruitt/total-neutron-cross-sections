@@ -38,7 +38,7 @@ class CrossSection
 
         void calculateCS(const CSPrereqs& targetData, const CSPrereqs& blankData);
 
-        std::string name = "";
+        std::string name;
 
     private:
         DataSet dataSet;

@@ -145,17 +145,38 @@ int main(int, char* argv[])
     /*****************************************************/
     string gammaCorrectionFileName = analysisDirectory + "gammaCorrection.root";
 
-    calculateGammaCorrection(
-            vetoedFileName,
-            log,
-            config.analysis.GAMMA_CORRECTION_TREE_NAME,
-            gammaCorrectionFileName);
+    if(useVetoPaddle)
+    {
+        calculateGammaCorrection(
+                vetoedFileName,
+                log,
+                config.analysis.GAMMA_CORRECTION_TREE_NAME,
+                gammaCorrectionFileName);
+    }
+
+    else
+    {
+        calculateGammaCorrection(
+                sortedFileName,
+                log,
+                config.analysis.GAMMA_CORRECTION_TREE_NAME,
+                gammaCorrectionFileName);
+    }
 
     /******************************************************************/
     /* Populate events into gated histograms, using time correction   */
     /******************************************************************/
     string gatedHistoFileName = analysisDirectory + "gatedHistos.root";
-    fillCSHistos(vetoedFileName, gammaCorrectionFileName, log, gatedHistoFileName);
+
+    if(useVetoPaddle)
+    {
+        fillCSHistos(vetoedFileName, gammaCorrectionFileName, log, gatedHistoFileName);
+    }
+
+    else
+    {
+        fillCSHistos(sortedFileName, gammaCorrectionFileName, log, gatedHistoFileName);
+    }
 
     /*****************************************************/
     /* Apply deadtime correction to gated histograms     */

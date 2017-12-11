@@ -109,15 +109,18 @@ int main(int, char* argv[])
         p.TOFHisto->Write();
     }
 
-    outFile->Close();
-
     vector<CrossSection> crossSections;
     for(auto& p : allCSPrereqs)
     {
         CrossSection cs;
-        cs.calculateCS(blank,p);
+        cs.calculateCS(p,blank);
         crossSections.push_back(cs);;
     }
 
-    produceTotalCSPlots(dataLocation, crossSections);
+    for(auto& cs : crossSections)
+    {
+        cs.createGraph(cs.name, cs.name);
+    }
+
+    outFile->Close();
 }

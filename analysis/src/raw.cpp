@@ -185,8 +185,6 @@ bool readExtras(ifstream& file, RawEvent& rawEvent)
         case 5:
             readWord(file, rawEvent.NZC);
             readWord(file, rawEvent.PZC);
-            rawEvent.fineTime = ((double)(8192-rawEvent.NZC)/
-                (rawEvent.PZC-rawEvent.NZC));
             rawEvent.extTime = 0;
             return true;
 
@@ -358,41 +356,66 @@ int readRawData(string inFileName, string outFileName, ofstream& logFile)
             // sync times to the macropulse timing channel by applying an channel-dependent offset (accounts for cable delay)
             rawEvent.completeTime += config.time.offsets[rawEvent.chNo];
 
-            switch(rawEvent.chNo)
+            if(rawEvent.extraSelect==0)
             {
-                case 0:
-                case 1:
-                case 2:
-                case 3:
-                case 7:
-                    break;
+                // use software CFD to improve timing precision
+                switch(rawEvent.chNo)
+                {
+                    case 0:
+                    case 1:
+                    case 2:
+                    case 3:
+                    case 7:
+                        break;
 
-                case 4:
-                case 5:
-                case 6:
-                    // use CFD to improve timing precision
-                    rawEvent.fineTime = calculateCFDTime(
-                            rawEvent.waveform,
-                            rawEvent.baseline,
-                            config.softwareCFD.CFD_FRACTION,
-                            config.softwareCFD.CFD_DELAY); // CFD time in samples
+                    case 4:
+                    case 5:
+                    case 6:
+                        rawEvent.fineTime = calculateCFDTime(
+                                rawEvent.waveform,
+                                rawEvent.baseline,
+                                config.softwareCFD.CFD_FRACTION,
+                                config.softwareCFD.CFD_DELAY); // CFD time in samples
 
-                    if(rawEvent.fineTime>=0)
-                    {
-                        // recovered a good fine time for this event
-                        rawEvent.completeTime += (rawEvent.fineTime-config.softwareCFD.CFD_TIME_OFFSET)*config.digitizer.SAMPLE_PERIOD;
-                    }
+                        if(rawEvent.fineTime>=0)
+                        {
+                            // recovered a good fine time for this event
+                            rawEvent.completeTime += (rawEvent.fineTime-config.softwareCFD.CFD_TIME_OFFSET)*config.digitizer.SAMPLE_PERIOD;
+                        }
 
-                    else
-                    {
-                        badCFDs++;
-                    }
+                        else
+                        {
+                            badCFDs++;
+                        }
 
-                    break;
+                        break;
 
-                default:
-                    cerr << "Error: encountered unimplemented channel number " << rawEvent.chNo << " during complete time assignment. Ending raw data read-in..." << endl;
-                    return 1;
+                    default:
+                        cerr << "Error: encountered unimplemented channel number " << rawEvent.chNo << " during complete time assignment. Ending raw data read-in..." << endl;
+                        return 1;
+                }
+            }
+
+            else if(rawEvent.extraSelect==5)
+            {
+                // calculate fine time based on on-board PZC and NZC
+                switch(rawEvent.chNo)
+                {
+                    case 0:
+                    case 1:
+                    case 2:
+                    case 3:
+                    case 7:
+                        break;
+
+                    case 4:
+                    case 5:
+                    case 6:
+                        rawEvent.fineTime = ((double)(8192-rawEvent.NZC)/
+                                (rawEvent.PZC-rawEvent.NZC));
+
+                        rawEvent.completeTime += rawEvent.fineTime*config.digitizer.SAMPLE_PERIOD;
+                }
             }
 
             if(prevEvtType==2)

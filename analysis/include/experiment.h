@@ -13,6 +13,7 @@ std::vector<std::pair<std::string,std::string>> getRelativePlotNames(std::string
 std::vector<std::string> readExperimentConfig(std::string expName, std::string fileName);
 
 AnalysisConfig readAnalysisConfig(std::string expName);
+DeadtimeConfig readDeadtimeConfig(std::string expName);
 FacilityConfig readFacilityConfig(std::string expName, int runNumber);
 SoftwareCFDConfig readSoftwareCFDConfig(std::string expName, int runNumber);
 TimeConfig readTimeConfig(std::string expName, int runNumber);

@@ -22,6 +22,15 @@ struct AnalysisConfig
         std::string GAMMA_CORRECTION_TREE_NAME;
 };
 
+struct DeadtimeConfig
+{
+    public:
+        DeadtimeConfig() {}
+
+        double LOGISTIC_K;
+        double LOGISTIC_MU;
+};
+
 struct FacilityConfig
 {
     public:
@@ -118,6 +127,7 @@ struct Config
         Config(std::string expName, int runNumber);
 
         AnalysisConfig analysis;
+        DeadtimeConfig deadtime;
         FacilityConfig facility;
         SoftwareCFDConfig softwareCFD;
         TargetConfig target;

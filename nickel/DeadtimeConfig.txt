@@ -1,0 +1,8 @@
+This file lists the parameters needed for applying a deadtime correction
+
+********************************************************************************
+                           Logistic function parameters
+********************************************************************************
+
+Logistic_k  = 0.546698
+Logistic_mu = 155.73

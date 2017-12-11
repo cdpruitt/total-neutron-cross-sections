@@ -59,10 +59,18 @@ int main(int, char* argv[])
         if(p.target.getName()=="blank")
         {
             blank = p;
+            break;
         }
+    }
 
-        cout << "all CS Prereqs name = " << p.target.getName() << endl;
+    if(blank.target.getName()!="blank")
+    {
+        cerr << "Error: failed to find blank target for cross section calculation." << endl;
+        return 1;
+    }
 
+    for(auto& p : allCSPrereqs)
+    {
         long totalCounts = 0;
         for(int i=0; i<p.energyHisto->GetNbinsX(); i++)
         {
@@ -92,15 +100,19 @@ int main(int, char* argv[])
         p.TOFHisto->Write();
     }
 
-    outFile->Close();
-
     vector<CrossSection> crossSections;
     for(auto& p : allCSPrereqs)
     {
-        CrossSection cs;
-        cs.calculateCS(blank,p);
-        crossSections.push_back(cs);;
+        crossSections.push_back(CrossSection());
+        crossSections.back().calculateCS(p,blank);
+
+        cout << "Created cross section for " << crossSections.back().name << " target." << endl;
     }
 
-    produceTotalCSPlots(dataLocation, crossSections);
+    for(auto& cs : crossSections)
+    {
+        cs.createGraph(cs.name, cs.name);
+    }
+
+    outFile->Close();
 }

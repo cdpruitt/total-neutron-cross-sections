@@ -6,4 +6,4 @@ channel.
 Run range   Ch0     Ch1     Ch2     Ch3     Ch4     Ch5     Ch6     Ch7      Gamma window
             offset  offset  offset  offset  offset  offset  offset  offset  
 *************************************************************************************************************************
-57-102      -778.5  0       0       0      0       0        18      0        5
+57-102      -578.5  0       0       0       0       0        18      0        5

@@ -445,7 +445,6 @@ void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& bla
     }
 
     // define variables to hold cross section information
-    CrossSection crossSection;
     double energyValue;
     double energyError;
     double crossSectionValue;
@@ -479,9 +478,6 @@ void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& bla
     double volumeDensity =
         arealDensity/targetData.target.getLength();
 
-    // save this areal density for later error propagation
-    crossSection.setArealDensity(arealDensity);
-
     // loop through each bin in the energy histo, calculating a cross section
     // for each bin
     for(int i=1; i<=numberOfBins; i++) // skip the overflow and underflow bins
@@ -501,7 +497,7 @@ void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& bla
         {
             crossSectionValue = 0;
             crossSectionError = 0;
-            crossSection.addDataPoint(
+            addDataPoint(
                 DataPoint(energyValue, energyError, crossSectionValue, crossSectionError,
                           bMon, tMon, bDet, tDet));
             continue;
@@ -521,10 +517,10 @@ void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& bla
 
         crossSectionError *= pow(10,24); // in barns
 
-        crossSection.addDataPoint(
+        addDataPoint(
                 DataPoint(energyValue, energyError, crossSectionValue, crossSectionError,
                     bMon, tMon, bDet, tDet));
     }
 
-    crossSection.name = targetData.target.getName();
+    name = targetData.target.getName();
 }

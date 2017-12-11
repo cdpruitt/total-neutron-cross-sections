@@ -1,5 +1,0 @@
-Name: longCarbon
-Length:     2.729 cm
-Diameter:   0.826 cm
-Mass:       2.4680 g
-Molar Mass: 12.01 g/mol

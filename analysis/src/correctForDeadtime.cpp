@@ -17,23 +17,21 @@ extern Config config;
 // logistic curve for deadtime response
 // (calculated by fitting "time difference between events" histogram using a
 // logistic curve)
-const double DEADTIME_LOGISTIC_k = 0.546698;
-const double DEADTIME_LOGISTIC_MU = 155.73; // in ns
 
 // input x in ns
 double logisticDeadtimeFunction(double x)
 {
-    if(x<140)
+    if(x<config.deadtime.LOGISTIC_MU-15)
     {
         return 1;
     }
 
-    return (1-1/(1+exp(-DEADTIME_LOGISTIC_k*(x-DEADTIME_LOGISTIC_MU))));
+    return (1-1/(1+exp(-config.deadtime.LOGISTIC_K*(x-config.deadtime.LOGISTIC_MU))));
 }
 
 int generateDeadtimeCorrection(TH1D*& TOFtoCorrect, TH1D*& deadtimeHisto, const unsigned int& numberOfPeriods)
 {
-    int DEADTIME_BINS = 170*config.plot.TOF_BINS_PER_NS;
+    int DEADTIME_BINS = (config.deadtime.LOGISTIC_MU+15)*config.plot.TOF_BINS_PER_NS;
 
     string targetName = TOFtoCorrect->GetName();
     unsigned int numberOfBins = TOFtoCorrect->GetNbinsX();
@@ -122,10 +120,10 @@ int applyDeadtimeCorrection(string inputFileName, string deadtimeFileName, strin
         return 1;
     }
 
-    TDirectory* gammaDirectory = (TDirectory*)gammaCorrectionFile->Get("summedDet");
+    TDirectory* gammaDirectory = (TDirectory*)gammaCorrectionFile->Get(config.analysis.GAMMA_CORRECTION_TREE_NAME.c_str());
     if(!gammaDirectory)
     {
-        cerr << "Error: failed to open summedDet directory in " << gammaCorrectionFileName << " for reading gamma corrections." << endl;
+        cerr << "Error: failed to open " << config.analysis.GAMMA_CORRECTION_TREE_NAME << " directory in " << gammaCorrectionFileName << " for reading gamma corrections." << endl;
         return 1;
     }
 

@@ -6,4 +6,4 @@ Run range      Macropulse          Micros per       Micropulse       Flight path
                frequency (Hz)      Macro (#)        length (ns)      length (cm)    micro         micro
 
 ***********************************************************************************************************
-57-102         120                 350              1788.8148        2709.4         40            340
+57-102         120                 350              1788.8148        2554.3         40            340

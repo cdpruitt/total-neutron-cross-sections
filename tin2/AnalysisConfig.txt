@@ -17,4 +17,4 @@ Energy plots filename             = energy.root
 DPP tree name                        = DPPTree
 Waveform tree name                   = WaveformTree
 Macropulse tree name                 = macroTime
-Gamma correction tree name           = summedDet
+Gamma correction tree name           = lowThresholdDet
