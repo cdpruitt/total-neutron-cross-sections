@@ -179,6 +179,7 @@ int calculateGammaCorrection(string inputFileName, ofstream& logFile, string tre
 
         timeDiff = completeTime-macroTime;
         microTime = fmod(timeDiff,config.facility.MICRO_LENGTH);
+        microNo = floor(timeDiff/config.facility.MICRO_LENGTH);
 
         // test if gamma:
         // if so, use for correction and populate gamma-specific histos
@@ -192,8 +193,8 @@ int calculateGammaCorrection(string inputFileName, ofstream& logFile, string tre
             }
 
             energy = lgQ/(double)200;
-            weight = 1/(0.340626 + 1.03717/(energy) + 3.25392/(energy*energy));
-            //weight = 1;
+            //weight = 1/(0.340626 + 1.03717/(energy) + 3.25392/(energy*energy));
+            weight = 1;
 
             gammaCorrectionList[macroNo].gammaList
                 .push_back(GammaEvent(microTime, energy, weight));

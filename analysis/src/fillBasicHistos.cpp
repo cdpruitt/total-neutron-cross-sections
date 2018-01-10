@@ -127,6 +127,11 @@ int fillBasicHistos(string inputFileName, ofstream& log, string outputFileName)
         {
             tree->GetEntry(i);
 
+            if(channel.second == "monitor" && event.sgQ/(double)event.lgQ < 0.7)
+            {
+                continue;
+            }
+
             event.waveform = *waveformPointer;
 
             cycleNumberH->Fill(event.cycleNumber);

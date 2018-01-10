@@ -15,11 +15,11 @@ LINKOPTION = $(shell root-config --libs)
 ############################### DEFINE TARGETS #################################
 
 # List all targets
-TARGETS = driver text sumAll sumChunk readLitData subtractCS multiplyCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck rateHisto
+TARGETS = driver text sumAll sumChunk readLitData subtractCS shiftCS multiplyCS relativeDiffCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck rateHisto plotCSPrereqs
 all: $(addprefix $(BIN), $(TARGETS))
 
 # Build driver (main data analysis engine)
-DRIVER_SOURCES = dataPoint.cpp dataSet.cpp driver.cpp config.cpp experiment.cpp fillBasicHistos.cpp fillCSHistos.cpp plots.cpp raw.cpp identifyMacropulses.cpp assignEventsToMacropulses.cpp calculateGammaCorrection.cpp correctForDeadtime.cpp produceEnergyHistos.cpp target.cpp veto.cpp softwareCFD.cpp crossSection.cpp CSUtilities.cpp
+DRIVER_SOURCES = dataPoint.cpp dataSet.cpp driver.cpp config.cpp experiment.cpp fillBasicHistos.cpp fillCSHistos.cpp plots.cpp raw.cpp identifyMacropulses.cpp assignEventsToMacropulses.cpp calculateGammaCorrection.cpp correctForDeadtime.cpp produceEnergyHistos.cpp target.cpp veto.cpp softwareCFD.cpp identifyGoodMacros.cpp
 
 $(BIN)driver: $(addprefix $(SOURCE), $(DRIVER_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)driver $(addprefix $(SOURCE), $(DRIVER_SOURCES)) $(LINKOPTION)
@@ -33,6 +33,11 @@ $(BIN)sumAll: $(addprefix $(SOURCE), $(SUMALL_SOURCES))
 SUMCHUNK_SOURCES = sumChunk.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp config.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp CSUtilities.cpp
 $(BIN)sumChunk: $(addprefix $(SOURCE), $(SUMCHUNK_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)sumChunk $(addprefix $(SOURCE), $(SUMCHUNK_SOURCES)) $(LINKOPTION)
+
+# Build plotCSPrereqs (for generating cross sections using data from a select set of subruns)
+PLOTCSPREREQS_SOURCES = plotCSPrereqs.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp config.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp CSUtilities.cpp
+$(BIN)plotCSPrereqs: $(addprefix $(SOURCE), $(PLOTCSPREREQS_SOURCES))
+	$(COMPILER) $(CFLAGS) -o $(BIN)plotCSPrereqs $(addprefix $(SOURCE), $(PLOTCSPREREQS_SOURCES)) $(LINKOPTION)
 
 # Build readLitData (for reading pre-formatted literature data into ROOT Graphs)
 READLITDATA_SOURCES = readLitData.cpp dataSet.cpp dataPoint.cpp 
@@ -59,15 +64,25 @@ SUBTRACTCS_SOURCES = subtractCS.cpp dataSet.cpp dataPoint.cpp crossSection.cpp t
 $(BIN)subtractCS: $(addprefix $(SOURCE), $(SUBTRACTCS_SOURCES)) 
 	$(COMPILER) $(CFLAGS) -o $(BIN)subtractCS $(addprefix $(SOURCE), $(SUBTRACTCS_SOURCES)) $(LINKOPTION)
 
+# Build shiftCS (for taking the difference of two cross section graphs)
+SHIFTCS_SOURCES = shiftCS.cpp dataSet.cpp dataPoint.cpp crossSection.cpp target.cpp plots.cpp CSUtilities.cpp
+$(BIN)shiftCS: $(addprefix $(SOURCE), $(SHIFTCS_SOURCES)) 
+	$(COMPILER) $(CFLAGS) -o $(BIN)shiftCS $(addprefix $(SOURCE), $(SHIFTCS_SOURCES)) $(LINKOPTION)
+
 # Build multiplyCS (for multiplying two cross section graphs)
 MULTIPLYCS_SOURCES = multiplyCS.cpp dataSet.cpp dataPoint.cpp crossSection.cpp target.cpp plots.cpp CSUtilities.cpp
 $(BIN)multiplyCS: $(addprefix $(SOURCE), $(MULTIPLYCS_SOURCES)) 
 	$(COMPILER) $(CFLAGS) -o $(BIN)multiplyCS $(addprefix $(SOURCE), $(MULTIPLYCS_SOURCES)) $(LINKOPTION)
 
-# Build relativeCS (for calculating the relative difference of two cross section graphs)
+# Build relativeCS (for calculating the absolute difference of two cross section graphs)
 RELATIVECS_SOURCES = relativeCS.cpp dataSet.cpp dataPoint.cpp crossSection.cpp target.cpp plots.cpp CSUtilities.cpp
 $(BIN)relativeCS: $(addprefix $(SOURCE), $(RELATIVECS_SOURCES)) 
 	$(COMPILER) $(CFLAGS) -o $(BIN)relativeCS $(addprefix $(SOURCE), $(RELATIVECS_SOURCES)) $(LINKOPTION)
+
+# Build relativeDiffCS (for calculating the relative difference of two cross section graphs)
+RELATIVEDIFFCS_SOURCES = relativeDiffCS.cpp dataSet.cpp dataPoint.cpp crossSection.cpp target.cpp plots.cpp CSUtilities.cpp
+$(BIN)relativeDiffCS: $(addprefix $(SOURCE), $(RELATIVEDIFFCS_SOURCES)) 
+	$(COMPILER) $(CFLAGS) -o $(BIN)relativeDiffCS $(addprefix $(SOURCE), $(RELATIVEDIFFCS_SOURCES)) $(LINKOPTION)
 
 # Build applyCSCorrectionFactor (for scaling each point in a cross section by a factor)
 APPLYCSCORRECTIONFACTOR_SOURCES = applyCSCorrectionFactor.cpp dataSet.cpp dataPoint.cpp crossSection.cpp target.cpp plots.cpp CSUtilities.cpp

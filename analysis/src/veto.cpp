@@ -13,7 +13,7 @@ using namespace std;
 
 extern Config config;
 
-const double VETO_WINDOW = 3; // in ns
+const double VETO_WINDOW = 5; // in ns
 
 int vetoEvents(string detectorFileName, string outputFileName, ofstream& logFile, string vetoTreeName)
 {
@@ -141,7 +141,7 @@ int vetoEvents(string detectorFileName, string outputFileName, ofstream& logFile
             }
 
             while(veto.cycleNumber == event.cycleNumber &&
-                    veto.completeTime < event.completeTime-VETO_WINDOW)
+                    (abs(event.completeTime-veto.completeTime)<VETO_WINDOW))
             {
                 j++;
 

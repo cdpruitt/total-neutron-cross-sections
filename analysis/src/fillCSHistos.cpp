@@ -23,78 +23,7 @@ using namespace std;
 
 extern Config config;
 
-const double Q_LOW_THRESHOLD = 0;
-const double Q_HIGH_THRESHOLD = 65550;
-const double Q_RATIO_LOW_THRESHOLD = 0;
-const double Q_RATIO_HIGH_THRESHOLD = 1;
-
-int identifyGoodMacros(TTree* eventTree, DetectorEvent& event, vector<MacropulseEvent>& macropulseList, ofstream& logFile)
-{
-    cout << "Starting identification of good macropulses..." << endl;
-
-    // tally the number of events in each macropulse
-    eventTree->GetEntry(0);
-    macropulseList.push_back(MacropulseEvent(event.macroNo,0,event.targetPos));
-
-    unsigned int totalEntries = eventTree->GetEntries();
-    for(long i=1; i<totalEntries; i++)
-    {
-        eventTree->GetEntry(i);
-
-        if(macropulseList.back().macroNo<event.macroNo)
-        {
-            macropulseList.push_back(MacropulseEvent(event.macroNo, 0, event.targetPos));
-        }
-
-        macropulseList.back().numberOfEventsInMacro++;
-
-        if(i%10000==0)
-        {
-            cout << "Found " << macropulseList.size() << " macropulses during good macropulse identification...\r";
-            fflush(stdout);
-        }
-    }
-
-    cout << endl;
-
-    // calculate the average number of events in each macropulse, by target
-    vector<double> averageEventsPerMacropulseByTarget(config.target.TARGET_ORDER.size(),0);
-    vector<unsigned int> numberOfMacropulsesByTarget(config.target.TARGET_ORDER.size(),0);
-
-    for(auto& macropulse : macropulseList)
-    {
-        averageEventsPerMacropulseByTarget[macropulse.targetPos]
-            += macropulse.numberOfEventsInMacro;
-        numberOfMacropulsesByTarget[macropulse.targetPos]++;
-    }
-
-    for(int i=0; i<averageEventsPerMacropulseByTarget.size(); i++)
-    {
-        averageEventsPerMacropulseByTarget[i] /= numberOfMacropulsesByTarget[i];
-        logFile << "Target \"" << config.target.TARGET_ORDER[i]
-            << "\" had, on average, " << averageEventsPerMacropulseByTarget[i]
-            << " events per macropulse." << endl;
-    }
-
-    cout << "Finished calculating average events per macropulse."
-        << endl;
-
-    // using the average just calculate, identify macros with too few events
-    // per macro (indicating readout problem)
-    for(auto& macropulse : macropulseList)
-    {
-        if(macropulse.numberOfEventsInMacro
-                >(0.5)*averageEventsPerMacropulseByTarget[macropulse.targetPos])
-        {
-            // good macro
-            macropulse.isGoodMacro = true;
-        }
-    }
-
-    return 0;
-}
-
-int fillCSHistos(string inputFileName, string gammaCorrectionFileName, ofstream& logFile, string outputFileName)
+int fillCSHistos(string inputFileName, vector<MacropulseEvent>& macropulseList, string gammaCorrectionFileName, ofstream& logFile, string outputFileName)
 {
     ifstream f(outputFileName);
 
@@ -176,9 +105,6 @@ int fillCSHistos(string inputFileName, string gammaCorrectionFileName, ofstream&
         tree->SetBranchAddress("lgQ",&event.lgQ);
         tree->SetBranchAddress("vetoed",&event.vetoed);
         tree->SetBranchAddress("waveform",&waveformPointer);
-
-        vector<MacropulseEvent> macropulseList;
-        identifyGoodMacros(tree, event, macropulseList, logFile);
 
         TDirectory* directory = outputFile->mkdir(channelName.c_str(),channelName.c_str());
         directory->cd();
@@ -296,16 +222,18 @@ int fillCSHistos(string inputFileName, string gammaCorrectionFileName, ofstream&
             }
 
             // charge gates:
-            if(event.lgQ<Q_LOW_THRESHOLD || event.lgQ>Q_HIGH_THRESHOLD)
+            if(event.lgQ<config.analysis.CHARGE_GATE_LOW_THRESHOLD
+                    || event.lgQ>config.analysis.CHARGE_GATE_HIGH_THRESHOLD)
             {
                 badChargeGateEvent++;
                 continue;
             }
 
-            if(event.sgQ/(double)event.lgQ < Q_RATIO_LOW_THRESHOLD
-                    || event.sgQ/(double)event.lgQ > Q_RATIO_HIGH_THRESHOLD)
+            if(event.sgQ/(double)event.lgQ < config.analysis.Q_RATIO_LOW_THRESHOLD
+                    || event.sgQ/(double)event.lgQ > config.analysis.Q_RATIO_HIGH_THRESHOLD)
             {
                 badChargeRatioEvent++;
+                continue;
             }
 
             /*****************************************************************/
@@ -378,12 +306,12 @@ int fillCSHistos(string inputFileName, string gammaCorrectionFileName, ofstream&
         logFile << endl << "Fraction events filtered out by good macro gate: "
             << 100*(double)badMacroEvent/totalEntries << "%." << endl;
 
-        logFile << "Fraction events filtered out by charge gate (" << Q_LOW_THRESHOLD
-            << " < lgQ < " << Q_HIGH_THRESHOLD << "): "
+        logFile << "Fraction events filtered out by charge gate (" << config.analysis.CHARGE_GATE_LOW_THRESHOLD
+            << " < lgQ < " << config.analysis.CHARGE_GATE_HIGH_THRESHOLD << "): "
             << 100*(double)badChargeGateEvent/totalEntries << "%." << endl;
 
-        logFile << "Fraction events filtered out by charge ratio gate (" << Q_RATIO_LOW_THRESHOLD
-            << " < lgQ < " << Q_RATIO_HIGH_THRESHOLD << "): "
+        logFile << "Fraction events filtered out by charge ratio gate (" << config.analysis.Q_RATIO_LOW_THRESHOLD
+            << " < lgQ < " << config.analysis.Q_RATIO_HIGH_THRESHOLD << "): "
             << 100*(double)badChargeRatioEvent/totalEntries << "%." << endl;
 
         logFile << "Fraction events outside macropulse: "
@@ -431,6 +359,259 @@ int fillCSHistos(string inputFileName, string gammaCorrectionFileName, ofstream&
     inputFile->Close();
 
     logFile << endl << "*** Finished filling CS histos ***" << endl;
+
+    return 0;
+}
+
+int fillMonitorHistos(string inputFileName, vector<MacropulseEvent>& macropulseList, ofstream& logFile, string outputFileName)
+{
+    logFile << endl << "*** Filling monitor histos ***" << endl;
+
+    // open input tree
+    TFile* inputFile = new TFile(inputFileName.c_str(),"READ");
+    if(!inputFile->IsOpen())
+    {
+        cerr << "Error: failed to open " << inputFileName << "  to fill histos." << endl;
+        return 1;
+    }
+
+    // create outputFile
+    TFile* outputFile = new TFile(outputFileName.c_str(),"UPDATE");
+
+    TTree* tree = (TTree*)inputFile->Get(config.analysis.MONITOR_TREE_NAME.c_str());
+    if(!tree)
+    {
+        cerr << "Error: tried to populate advanced histos, but failed to find " << config.analysis.MONITOR_TREE_NAME << " in " << inputFileName << endl;
+        return 1;
+    }
+
+    // connect input tree to event data buffer
+    DetectorEvent event;
+    vector<int>* waveformPointer = 0;
+
+    tree->SetBranchAddress("cycleNumber",&event.cycleNumber);
+    tree->SetBranchAddress("macroNo",&event.macroNo);
+    tree->SetBranchAddress("macroTime",&event.macroTime);
+    tree->SetBranchAddress("fineTime",&event.fineTime);
+    tree->SetBranchAddress("eventNo",&event.eventNo);
+    tree->SetBranchAddress("completeTime",&event.completeTime);
+    tree->SetBranchAddress("targetPos",&event.targetPos);
+    tree->SetBranchAddress("sgQ",&event.sgQ);
+    tree->SetBranchAddress("lgQ",&event.lgQ);
+    tree->SetBranchAddress("waveform",&waveformPointer);
+
+    TDirectory* directory = outputFile->mkdir(config.analysis.MONITOR_TREE_NAME.c_str(),config.analysis.MONITOR_TREE_NAME.c_str());
+    directory->cd();
+
+    vector<TH1D*> goodMacroHistos;
+    for(string targetName : config.target.TARGET_ORDER)
+    {
+        string macroNumberName = targetName + "GoodMacros";
+        goodMacroHistos.push_back(new TH1D(macroNumberName.c_str(),
+                    macroNumberName.c_str(), 200000, 0, 200000));
+    }
+
+    unsigned long goodMacroNumber = 0;
+    for(auto& macropulse : macropulseList)
+    {
+        if(macropulse.isGoodMacro)
+        {
+            goodMacroHistos[macropulse.targetPos]
+                ->SetBinContent(macropulse.macroNo+1, macropulse.numberOfMonitorsInMacro);
+            goodMacroNumber++;
+        }
+    }
+
+    logFile << "Fraction of all macropulses that were \"good\":"
+        << 100*(double)goodMacroNumber/macropulseList.size() << "%." << endl;
+
+    // create other diagnostic histograms used to examine run data
+    TH1D* timeDiffHisto = new TH1D("time since last event","time since last event",
+            config.plot.TOF_RANGE,0,config.plot.TOF_RANGE);
+    TH2D* timeDiffVEnergy1 = new TH2D("time difference vs. energy of first",
+            "time difference vs. energy of first",config.plot.TOF_RANGE,
+            0,config.plot.TOF_RANGE,10*config.plot.NUMBER_ENERGY_BINS,2,700);
+
+    TH2D* time1Vtime2 = new TH2D("time of first vs. time of second",
+            "time of first vs. time of second",config.plot.TOF_RANGE,0,
+            config.plot.TOF_RANGE,config.plot.TOF_RANGE,0,
+            config.plot.TOF_RANGE);
+
+    TH2D* energy1VEnergy2 = new TH2D("energy of first vs. energy of second",
+            "energy of first vs. energy of second",
+            10*config.plot.NUMBER_ENERGY_BINS, floor(config.plot.ENERGY_LOWER_BOUND), ceil(config.plot.ENERGY_UPPER_BOUND),
+            10*config.plot.NUMBER_ENERGY_BINS, floor(config.plot.ENERGY_LOWER_BOUND), ceil(config.plot.ENERGY_UPPER_BOUND));
+
+    TH1D* microNoH = new TH1D("microNoH","microNo",config.facility.MICROS_PER_MACRO+1
+            ,0,config.facility.MICROS_PER_MACRO+1);
+
+    vector<TH1D*> TOFHistos;
+    vector<TH2D*> triangleHistos;
+
+    for(string targetName : config.target.TARGET_ORDER)
+    {
+        string TOFName = targetName + "TOF";
+        TOFHistos.push_back(new TH1D(TOFName.c_str(),
+                    TOFName.c_str(),
+                    config.plot.TOF_BINS,
+                    config.plot.TOF_LOWER_BOUND,
+                    config.plot.TOF_UPPER_BOUND));
+
+        string triangleName = targetName + "Triangle";
+        triangleHistos.push_back(new TH2D(triangleName.c_str(),
+                    triangleName.c_str(),
+                    config.plot.TOF_RANGE,
+                    config.plot.TOF_LOWER_BOUND,
+                    config.plot.TOF_UPPER_BOUND/5,
+                    4096,0,65536));
+    }
+
+    double prevCompleteTime = 0;
+    double prevlgQ = 0;
+
+    double microTime;
+    double prevMicroTime = 0;
+    int microNo;
+
+    double timeDiff;
+    double eventTimeDiff = 0;
+    double velocity;
+    double rKE;
+    double prevRKE = 0;
+
+    double prevAverageTime = 0;
+
+    const double MACRO_LENGTH = config.facility.MICROS_PER_MACRO*config.facility.MICRO_LENGTH;
+
+    unsigned long badMacroEvent = 0;
+    unsigned long badChargeGateEvent = 0;
+    unsigned long badChargeRatioEvent = 0;
+    unsigned long outsideMacro = 0;
+
+    unsigned int totalEntries = tree->GetEntries();
+
+    // fill advanced histos
+    for(long i=0; i<totalEntries; i++)
+    {
+        tree->GetEntry(i);
+
+        // throw away events during "bad" macropulses
+        if(!macropulseList[event.macroNo].isGoodMacro)
+        {
+            badMacroEvent++;
+            continue;
+        }
+
+        // charge gates:
+        /*if(event.lgQ<config.analysis.CHARGE_GATE_LOW_THRESHOLD
+          || event.lgQ>config.analysis.CHARGE_GATE_HIGH_THRESHOLD)
+          {
+          badChargeGateEvent++;
+          continue;
+          }
+
+          if(event.sgQ/(double)event.lgQ < config.analysis.Q_RATIO_LOW_THRESHOLD
+          || event.sgQ/(double)event.lgQ > config.analysis.Q_RATIO_HIGH_THRESHOLD)
+          {
+          badChargeRatioEvent++;
+          continue;
+          }*/
+
+        /*****************************************************************/
+        // Calculate event properties
+
+        // find which micropulse the event is in and the time since the start of
+        // the micropulse (the TOF)
+        timeDiff = event.completeTime-event.macroTime;
+
+        // timing gate
+        if(timeDiff > MACRO_LENGTH)
+        {
+            outsideMacro++;
+            continue;
+        }
+
+        eventTimeDiff = event.completeTime-prevCompleteTime;
+        microNo = floor(timeDiff/config.facility.MICRO_LENGTH);
+        microTime = fmod(timeDiff,config.facility.MICRO_LENGTH);
+
+        // micropulse gate:
+        if(microNo < config.facility.FIRST_GOOD_MICRO
+                || microNo >= config.facility.LAST_GOOD_MICRO)
+        {
+            continue;
+        }
+
+        // convert micropulse time into neutron velocity based on flight path distance
+        velocity = (pow(10.,7.)*config.facility.FLIGHT_DISTANCE)/microTime; // in meters/sec 
+
+        // convert velocity to relativistic kinetic energy
+        rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
+
+        TOFHistos[event.targetPos]->Fill(microTime);
+        triangleHistos[event.targetPos]->Fill(microTime, event.lgQ);
+
+        // fill detector histograms with event data
+        timeDiffHisto->Fill(eventTimeDiff);
+        timeDiffVEnergy1->Fill(eventTimeDiff,prevRKE);
+        time1Vtime2->Fill(prevMicroTime,microTime);
+        energy1VEnergy2->Fill(prevRKE,rKE);
+        microNoH->Fill(microNo);
+
+        prevlgQ = event.lgQ;
+        prevMicroTime = microTime;
+        prevCompleteTime = event.completeTime;
+        prevRKE = rKE;
+
+        if(i%10000==0)
+        {
+            cout << "Processed " << i << " " << config.analysis.MONITOR_TREE_NAME << " events into advanced CS histos...\r";
+        }
+    }
+
+    cout << endl << "Finished populating \"" << config.analysis.MONITOR_TREE_NAME << "\" events into CS histos." << endl;
+    cout << "Total events processed = " << totalEntries << endl;
+
+    logFile << endl << "Fraction events filtered out by good macro gate: "
+        << 100*(double)badMacroEvent/totalEntries << "%." << endl;
+
+    /*logFile << "Fraction events filtered out by charge gate (" << config.analysis.CHARGE_GATE_LOW_THRESHOLD
+      << " < lgQ < " << config.analysis.CHARGE_GATE_HIGH_THRESHOLD << "): "
+      << 100*(double)badChargeGateEvent/totalEntries << "%." << endl;
+
+      logFile << "Fraction events filtered out by charge ratio gate (" << config.analysis.Q_RATIO_LOW_THRESHOLD
+      << " < lgQ < " << config.analysis.Q_RATIO_HIGH_THRESHOLD << "): "
+      << 100*(double)badChargeRatioEvent/totalEntries << "%." << endl;
+      */
+
+    logFile << "Fraction events outside macropulse: "
+        << 100*(double)outsideMacro/totalEntries << "%." << endl;
+
+    for(auto& histo : TOFHistos)
+    {
+        histo->Write();
+    }
+
+    for(auto& histo : triangleHistos)
+    {
+        histo->Write();
+    }
+
+    timeDiffHisto->Write();
+    timeDiffVEnergy1->Write();
+    time1Vtime2->Write();
+    energy1VEnergy2->Write();
+    microNoH->Write();
+
+    for(auto& histo : goodMacroHistos)
+    {
+        histo->Write();
+    }
+
+    outputFile->Close();
+    inputFile->Close();
+
+    logFile << endl << "*** Finished filling monitor histos ***" << endl;
 
     return 0;
 }

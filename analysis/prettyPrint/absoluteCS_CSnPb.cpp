@@ -1,26 +1,5 @@
 void absoluteCS_CSnPb()
 {
-    string expFileName = "/data2/analysis/scaledown.root";
-    string litFileName = "/data2/analysis/literatureData.root";
-
-    TFile* expFile = new TFile(expFileName.c_str(),"READ");
-    TFile* litFile = new TFile(litFileName.c_str(),"READ");
-    
-    string expCGraphName = "NatC100";
-    string expSnGraphName = "NatSn100";
-    string expPbGraphName = "NatPb100";
-    string litCGraphName = "NatC_sd10";
-    string litSnGraphName = "NatSn_sd10";
-    string litPbGraphName = "NatPb_sd10";
-    
-    TGraphErrors* expCGraph = (TGraphErrors*)expFile->Get(expCGraphName.c_str());
-    TGraphErrors* expSnGraph = (TGraphErrors*)expFile->Get(expSnGraphName.c_str());
-    TGraphErrors* expPbGraph = (TGraphErrors*)expFile->Get(expPbGraphName.c_str());
-
-    TGraphErrors* litCGraph = (TGraphErrors*)litFile->Get(litCGraphName.c_str());
-    TGraphErrors* litSnGraph = (TGraphErrors*)litFile->Get(litSnGraphName.c_str());
-    TGraphErrors* litPbGraph = (TGraphErrors*)litFile->Get(litPbGraphName.c_str());
-
     TStyle * style = (TStyle*)gROOT->FindObject("graphStyle");
 
     if(!style)      
@@ -52,6 +31,29 @@ void absoluteCS_CSnPb()
 
     gROOT->SetStyle("graphStyle");
     gROOT->ForceStyle();
+
+    // read graphs
+    string expFileName = "/data2/analysis/total.root";
+    string litFileName = "/data2/analysis/literatureData.root";
+
+    TFile* expFile = new TFile(expFileName.c_str(),"READ");
+    TFile* litFile = new TFile(litFileName.c_str(),"READ");
+    
+    string expCGraphName = "CNat";
+    string expSnGraphName = "SnNat";
+    string expPbGraphName = "PbNat";
+
+    string litCGraphName = "Natural C (n,tot)";
+    string litSnGraphName = "Natural Sn (n,tot)";
+    string litPbGraphName = "Natural Pb (n,tot)";
+    
+    TGraphErrors* expCGraph = (TGraphErrors*)expFile->Get(expCGraphName.c_str());
+    TGraphErrors* expSnGraph = (TGraphErrors*)expFile->Get(expSnGraphName.c_str());
+    TGraphErrors* expPbGraph = (TGraphErrors*)expFile->Get(expPbGraphName.c_str());
+
+    TGraphErrors* litCGraph = (TGraphErrors*)litFile->Get(litCGraphName.c_str());
+    TGraphErrors* litSnGraph = (TGraphErrors*)litFile->Get(litSnGraphName.c_str());
+    TGraphErrors* litPbGraph = (TGraphErrors*)litFile->Get(litPbGraphName.c_str());
 
     // Set graph point and line characteristics
     expCGraph->SetLineColor(kRed);
@@ -139,7 +141,7 @@ void absoluteCS_CSnPb()
     latex.SetTextSize(0.035);
     latex.SetTextAlign(13); // align at top
     latex.DrawLatex(0.65,0.65,"Pb (elem.)");
-    latex.DrawLatex(0.40,0.52,"Sn (elem.)");
+    latex.DrawLatex(0.35,0.52,"Sn (elem.)");
     latex.DrawLatex(0.32,0.4,"C (elem.)");
 
     // Define legend format and contents

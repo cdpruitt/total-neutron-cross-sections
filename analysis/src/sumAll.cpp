@@ -73,7 +73,7 @@ int main(int, char* argv[])
     CSPrereqs blank;
     for(auto& p : allCSPrereqs)
     {
-        if(p.target.getName()=="blank")
+        if(p.target.getName()=="blank" || p.target.getName()=="blankW")
         {
             blank = p;
         }
@@ -97,7 +97,8 @@ int main(int, char* argv[])
             << totalCounts << ", total monitor events = "
             << p.monitorCounts << ", good macro number = "
             << p.goodMacroNumber << ", total macro number = "
-            << p.totalMacroNumber << endl;
+            << p.totalMacroNumber << ", total event number = "
+            << p.totalEventNumber << endl;
 
         p.energyHisto->SetDirectory(outFile);
         p.energyHisto->Write();

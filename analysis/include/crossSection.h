@@ -45,7 +45,5 @@ class CrossSection
         double arealDensity;
 };
 
-void correctForDeadtime(std::string histoFileName, std::string deadtimeFileName, std::vector<std::string> detectorChannels);
-
 double getPartialError(DataPoint aPoint, DataPoint bPoint, double aArealDensity);
 #endif

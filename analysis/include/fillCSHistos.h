@@ -6,7 +6,9 @@
 
 #include "../include/GammaCorrection.h"
 
-int fillCSHistos(std::string inputFileName, std::string gammaCorrectionFileName, std::ofstream& log, std::string outputFileName);
+int fillCSHistos(std::string inputFileName, std::vector<MacropulseEvent>& macropulseList, std::string gammaCorrectionFileName, std::ofstream& log, std::string outputFileName);
+
+int fillMonitorHistos(std::string inputFileName, std::vector<MacropulseEvent>& macropulseList, std::ofstream& log, std::string outputFileName);
 
 TH1D* convertTOFtoEnergy(TH1D* tof, std::string name);
 

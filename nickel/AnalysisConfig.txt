@@ -17,4 +17,14 @@ Energy plots filename             = energy.root
 DPP tree name                        = DPPTree
 Waveform tree name                   = WaveformTree
 Macropulse tree name                 = macroTime
+Monitor tree name                    = monitor
 Gamma correction tree name           = summedDet
+
+********************************************************************************
+                                Event gates
+********************************************************************************
+
+Low threshold, Q ratio               = 0.6
+High threshold, Q ratio              = 0.97
+lgQ_low threshold                    = 50
+lgQ_high threshold                   = 60000

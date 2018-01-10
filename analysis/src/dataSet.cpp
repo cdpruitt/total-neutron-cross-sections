@@ -56,6 +56,11 @@ DataSet::DataSet(string dataSetLocation)
 
 DataSet::DataSet(TGraphErrors* graph, string ref)
 {
+    if(!graph)
+    {
+        cerr << "Error: cannot create a dataset from a non-existent graph" << endl;
+        exit(1);
+    }
 
     int numberOfPoints = graph->GetN();
 
@@ -196,6 +201,28 @@ const DataSet operator*(const DataSet& set1, const DataSet& set2)
     return productDataSet;
 }
 
+const DataSet operator+(const DataSet& rawDataSet, const double addend)
+{
+    DataSet sum;
+
+    for(int i=0; i<rawDataSet.getNumberOfPoints(); i++)
+    {
+        sum.addPoint(rawDataSet.getPoint(i)+addend);
+    }
+
+    return sum;
+}
+
+vector<double> DataSet::getXValues() const
+{
+    vector<double> xValues;
+    for(const DataPoint point : data)
+    {
+        xValues.push_back(point.getXValue());
+    }
+    return xValues;
+}
+
 const DataSet operator*(const DataSet& multiplicand, const double multiplier)
 {
     DataSet product;
@@ -262,9 +289,9 @@ const DataSet correctCSUsingControl(const DataSet& dataSetToCorrect, const DataS
         double xValue = dataSetToCorrect.getPoint(i).getXValue();
         double xError = dataSetToCorrect.getPoint(i).getXError();
         double yValue = dataSetToCorrect.getPoint(i).getYValue()/
-                        (1+correction.getPoint(i).getYValue());
+                        correction.getPoint(i).getYValue();
         double yError = dataSetToCorrect.getPoint(i).getYError()/
-                        (1+correction.getPoint(i).getYValue());
+                        correction.getPoint(i).getYValue();
 
         correctedDataSet.addPoint(DataPoint(xValue,xError,yValue,yError));
     }
@@ -283,16 +310,6 @@ const DataSet operator/(const DataSet& dividend, const double divisor)
     }
 
     return quotient;
-}
-
-vector<double> DataSet::getXValues() const
-{
-    vector<double> xValues;
-    for(const DataPoint point : data)
-    {
-        xValues.push_back(point.getXValue());
-    }
-    return xValues;
 }
 
 vector<double> DataSet::getYValues() const

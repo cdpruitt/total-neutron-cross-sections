@@ -18,8 +18,15 @@ struct AnalysisConfig
 
         std::string DPP_TREE_NAME;
         std::string WAVEFORM_TREE_NAME;
+        std::string MONITOR_TREE_NAME;
         std::string MACROPULSE_TREE_NAME;
         std::string GAMMA_CORRECTION_TREE_NAME;
+
+        double Q_RATIO_LOW_THRESHOLD;
+        double Q_RATIO_HIGH_THRESHOLD;
+
+        double CHARGE_GATE_LOW_THRESHOLD;
+        double CHARGE_GATE_HIGH_THRESHOLD;
 };
 
 struct DeadtimeConfig

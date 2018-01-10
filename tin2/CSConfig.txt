@@ -5,5 +5,5 @@ calculate cross sections
 Run         Channel
 range       name
 ********************************************************************************
-0-56        -
-57-102      lowThresholdDet
+0-56        highThresholdDet
+57-102      highThresholdDet

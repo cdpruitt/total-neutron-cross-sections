@@ -17,12 +17,19 @@ int producePlots(
 CrossSection correctForBlank(CrossSection rawCS, double targetNumberDensity, std::string expName, std::string graphFileName);
 
 CrossSection calculateRelative(CrossSection a, CrossSection b);
+
 CrossSection subtractCS(std::string rawCSFileName, std::string rawCSGraphName,
                         std::string subtrahendFileName, std::string subtrahendGraphName,
                         double factor,  // multiplies the subtrahend
                         double divisor, // divides the final difference
                         std::string name // name given to output graph
                        );
+
+CrossSection shiftCS(std::string rawCSFileName, std::string rawCSGraphName,
+                        double shift,  // shift to be added, in barns
+                        std::string outputFileName, std::string outputGraphName // name given to output graph
+                       );
+
 
 CrossSection multiplyCS(std::string rawCSFileName, std::string rawCSGraphName,
                         double factor,  // multiplies the subtrahend
@@ -31,7 +38,12 @@ CrossSection multiplyCS(std::string rawCSFileName, std::string rawCSGraphName,
 
 CrossSection relativeCS(std::string rawCSFileName, std::string rawCSGraphName,
                         std::string subtrahendFileName, std::string subtrahendGraphName,
-                        std::string name // name given to output graph
+                        std::string outputFileName, std::string name // name given to output graph
+                       );
+
+CrossSection relativeDiffCS(std::string rawCSFileName, std::string rawCSGraphName,
+                        std::string subtrahendFileName, std::string subtrahendGraphName,
+                        std::string outputFileName, std::string name // name given to output graph
                        );
 
 CrossSection calculateCS(const CSPrereqs& targetData, const CSPrereqs& blankData);

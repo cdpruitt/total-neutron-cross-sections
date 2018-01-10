@@ -99,6 +99,8 @@ struct MacropulseEvent
     std::vector<int> waveform;
 
     unsigned int numberOfEventsInMacro = 0;
+    unsigned int numberOfMonitorsInMacro = 0;
+
     bool isGoodMacro = 0;
 };
 

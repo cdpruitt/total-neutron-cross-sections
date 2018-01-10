@@ -17,9 +17,9 @@ relCGraphName="relDiff_natC_expLit"
 relNiGraphName="relDiff_natNi_expLit"
 relPbGraphName="relDiff_natPb_expLit"
 
-../bin/relativeCS "$expFile" "$expCGraphName" "$litFile" "$litCGraphName" "$relCGraphName"
-../bin/relativeCS "$expFile" "$expNiGraphName" "$litFile" "$litNiGraphName" "$relNiGraphName"
-../bin/relativeCS "$expFile" "$expPbGraphName" "$litFile" "$litPbGraphName" "$relPbGraphName"
+../bin/relativeDiffCS "$expFile" "$expCGraphName" "$litFile" "$litCGraphName" "$relCGraphName"
+../bin/relativeDiffCS "$expFile" "$expNiGraphName" "$litFile" "$litNiGraphName" "$relNiGraphName"
+../bin/relativeDiffCS "$expFile" "$expPbGraphName" "$litFile" "$litPbGraphName" "$relPbGraphName"
 
 if [ "$scaledown" -gt 1 ]
 then

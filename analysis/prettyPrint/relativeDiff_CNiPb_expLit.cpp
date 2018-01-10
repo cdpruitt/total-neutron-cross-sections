@@ -1,12 +1,11 @@
-void relativeDiff_CNiPb_expLit()
 {
-    string fileName = "/data1/analysis/scaledown.root";
+    string fileName = "/data1/analysis/relative.root";
 
     TFile* file = new TFile(fileName.c_str(),"READ");
     
-    string CGraphName = "relDiff_natC_expLit_percent";
-    string NiGraphName = "relDiff_natNi_expLit_percent";
-    string PbGraphName = "relDiff_natPb_expLit_percent";
+    string CGraphName = "NatC, expLit";
+    string NiGraphName = "NatNi, expLit";
+    string PbGraphName = "NatPb, expLit";
         
     TGraphErrors* CGraph = (TGraphErrors*)file->Get(CGraphName.c_str());
     TGraphErrors* NiGraph = (TGraphErrors*)file->Get(NiGraphName.c_str());
@@ -83,10 +82,10 @@ void relativeDiff_CNiPb_expLit()
     CGraph->GetXaxis()->SetTickLength(0.03);
 
     // Y-axis parameters
-    CGraph->GetYaxis()->SetTitle("(#frac{#sigma_{exp} - #sigma_{lit}}{#sigma_{exp} + #sigma_{lit}}) x 100");
+    CGraph->GetYaxis()->SetTitle("(#frac{#sigma_{exp} - #sigma_{lit}}{#sigma_{exp} + #sigma_{lit}})");
     CGraph->GetYaxis()->SetTitleSize(0.06);
     CGraph->GetYaxis()->SetTitleFont(2);
-    CGraph->GetYaxis()->SetTitleOffset(1.2);
+    CGraph->GetYaxis()->SetTitleOffset(1.4);
     CGraph->GetYaxis()->CenterTitle();
 
     CGraph->GetYaxis()->SetLabelOffset(0.01);
@@ -102,7 +101,7 @@ void relativeDiff_CNiPb_expLit()
     
     gPad->SetLogx(1);
     
-    CGraph->GetYaxis()->SetRangeUser(-10,4);
+    CGraph->GetYaxis()->SetRangeUser(-0.12,0.05);
 
     //TLatex latex;
     //latex.SetNDC();

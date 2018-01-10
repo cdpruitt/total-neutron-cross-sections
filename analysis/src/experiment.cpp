@@ -242,10 +242,35 @@ AnalysisConfig readAnalysisConfig(string expName)
         {
             analysisConfig.MACROPULSE_TREE_NAME = tokens.back();
         }
+
+        else if(tokens[0]=="Monitor")
+        {
+            analysisConfig.MONITOR_TREE_NAME = tokens.back();
+        }
         
         else if(tokens[0]=="Gamma")
         {
             analysisConfig.GAMMA_CORRECTION_TREE_NAME = tokens.back();
+        }
+
+        else if(tokens[0]=="Low")
+        {
+            analysisConfig.Q_RATIO_LOW_THRESHOLD = stod(tokens.back());
+        }
+
+        else if(tokens[0]=="High")
+        {
+            analysisConfig.Q_RATIO_HIGH_THRESHOLD = stod(tokens.back());
+        }
+
+        else if(tokens[0]=="lgQ_low")
+        {
+            analysisConfig.CHARGE_GATE_LOW_THRESHOLD = stod(tokens.back());
+        }
+
+        else if(tokens[0]=="lgQ_high")
+        {
+            analysisConfig.CHARGE_GATE_HIGH_THRESHOLD = stod(tokens.back());
         }
     }
 
@@ -289,7 +314,7 @@ DeadtimeConfig readDeadtimeConfig(string expName)
 
         else if(tokens[0]=="Logistic_mu")
         {
-            deadtimeConfig.LOGISTIC_K = stod(tokens.back());
+            deadtimeConfig.LOGISTIC_MU = stod(tokens.back());
         }
     }
 

@@ -1,9 +1,9 @@
 {
-    string fileName = "/data1/analysis/scaledown.root";
+    string fileName = "/data1/analysis/relative.root";
 
     TFile* file = new TFile(fileName.c_str(),"READ");
     
-    string relGraphName = "relativeNi64Ni58_scaledown_5";
+    string relGraphName = "Ni";
         
     TGraphErrors* relGraph = (TGraphErrors*)file->Get(relGraphName.c_str());
 
@@ -68,10 +68,10 @@
     relGraph->GetXaxis()->SetTickLength(0.03);
 
     // Y-axis parameters
-    relGraph->GetYaxis()->SetTitle("(#frac{#sigma_{64} - #sigma_{58}}{#sigma_{64} + #sigma_{58}}) x 100");
+    relGraph->GetYaxis()->SetTitle("(#frac{#sigma_{64} - #sigma_{58}}{#sigma_{64} + #sigma_{58}})");
     relGraph->GetYaxis()->SetTitleSize(0.06);
     relGraph->GetYaxis()->SetTitleFont(2);
-    relGraph->GetYaxis()->SetTitleOffset(1.1);
+    relGraph->GetYaxis()->SetTitleOffset(1.3);
     relGraph->GetYaxis()->CenterTitle();
 
     relGraph->GetYaxis()->SetLabelOffset(0.01);
@@ -87,7 +87,7 @@
     gPad->SetLogx(1);
     
     relGraph->GetXaxis()->SetRangeUser(5,300);
-    relGraph->GetYaxis()->SetRangeUser(-1.5,1.5);
+    relGraph->GetYaxis()->SetRangeUser(-0.05,0.05);
 
     //TLatex latex;
     //latex.SetNDC();

@@ -4,6 +4,7 @@ each run. Starting with ch0, the function of each channel is listed in order:
 Run Nos. |  Channel functions
 ********************************************************************************
 
+0-56        targetChanger - monitor -               highThresholdDet -               veto -
 57-78       targetChanger - monitor -               highThresholdDet lowThresholdDet veto -
 79-83       targetChanger - monitor lowThresholdDet highThresholdDet -               veto -
 84-102      targetChanger - monitor -               highThresholdDet lowThresholdDet veto -

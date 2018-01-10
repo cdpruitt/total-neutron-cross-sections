@@ -259,6 +259,34 @@ CrossSection subtractCS(string rawCSFileName, string rawCSGraphName,
     return differenceCS;
 }
 
+CrossSection shiftCS(string rawCSFileName, string rawCSGraphName,
+        double shift, string outputFileName, string outputGraphName)
+{
+    // get rawCS graph
+    TFile* rawCSFile = new TFile(rawCSFileName.c_str(),"READ");
+    TGraphErrors* rawCSGraph = (TGraphErrors*)rawCSFile->Get(rawCSGraphName.c_str());
+    if(!rawCSGraph)
+    {
+        cerr << "Error: failed to find " << rawCSGraphName << " in " << rawCSFileName << endl;
+        exit(1);
+    }
+
+    DataSet rawCSData = DataSet(rawCSGraph, rawCSGraphName);
+
+    // perform the shift
+    CrossSection shiftedCS = CrossSection();
+    shiftedCS.addDataSet(rawCSData+shift);
+
+    // write output graph
+    TFile* outputFile = new TFile(outputFileName.c_str(),"UPDATE");
+    shiftedCS.createGraph(outputGraphName, outputGraphName);
+
+    rawCSFile->Close();
+    outputFile->Close();
+
+    return shiftedCS;
+}
+
 CrossSection multiplyCS(string rawCSFileName, string rawCSGraphName,
         double factor, string name)
 {
@@ -285,3 +313,333 @@ CrossSection multiplyCS(string rawCSFileName, string rawCSGraphName,
 
     return productCS;
 }
+
+double getPartialError(DataPoint aPoint, DataPoint bPoint, double aArealDensity)
+{
+    double aYValue = aPoint.getYValue();
+    double bYValue = bPoint.getYValue();
+
+    double aBMon = aPoint.getBlankMonitorCounts();
+    double aTMon = aPoint.getTargetMonitorCounts();
+    double aBDet = aPoint.getBlankDetCounts();
+    double aTDet = aPoint.getTargetDetCounts();
+
+    if(aBMon<=0 || aTMon<=0 || aBDet<=0 || aTDet<=0)
+    {
+        //cerr << "Error: could not calculate partial error with non-finite count ratio. " << endl;
+        return 0;
+    }
+
+    // first calculate ratio of monitor/detector counts for each data set
+    double aCountRatio = (aBDet/aTDet)/(aBMon/aTMon);
+
+    // calculate error of aCountRatio
+    double errorACountRatio = aCountRatio * pow(1/aBDet+1/aTDet+1/aBMon+1/aTMon,0.5);
+
+    // calculate error of data point from data set a partial derivative
+    double leftExpression = errorACountRatio/(aCountRatio*aArealDensity*pow(10,-24)*(aYValue+bYValue));
+    double rightExpression = 1-(aYValue/(aYValue+bYValue));
+
+    return leftExpression*rightExpression;
+}
+
+void produceRunningRMS(DataSet firstDS, DataSet secondDS, string name)
+{
+    DataSet rms;
+
+    for(int i=0; i<firstDS.getNumberOfPoints(); i++)
+    {
+        double relDiff = 
+            (firstDS.getPoint(i).getYValue() -
+            secondDS.getPoint(i).getYValue())/
+            (firstDS.getPoint(i).getYValue() +
+             secondDS.getPoint(i).getYValue());
+
+        if(i==0)
+        {
+            rms.addPoint(
+                    DataPoint(firstDS.getPoint(i).getXValue(),
+                        0,
+                        pow(pow(relDiff,2),0.5),
+                        0)
+                    );
+        }
+
+        else
+        {
+            rms.addPoint(DataPoint(firstDS.getPoint(i).getXValue(),
+                        0,
+                        pow((pow(relDiff,2)+pow(rms.getPoint(i-1).getYValue(),2)*i)/(i+1),0.5),
+                        0));
+        }
+    }
+
+    cout << "Total RMS at " << rms.getPoint(rms.getNumberOfPoints()-1).getXValue()
+        << " MeV = " << rms.getPoint(rms.getNumberOfPoints()-1).getYValue() << endl;
+
+    CrossSection rmsPlot = CrossSection();
+    rmsPlot.addDataSet(rms);
+
+    string n = name + "rms";
+    rmsPlot.createGraph(n.c_str(), n.c_str());
+}
+
+CrossSection relativeCS(string firstCSFileName, string firstCSGraphName,
+        string secondCSFileName, string secondCSGraphName,
+        string outputFileName, string name)
+{
+    // get firstCS graph
+    TFile* firstCSFile = new TFile(firstCSFileName.c_str(),"READ");
+    TGraphErrors* firstCSGraph = (TGraphErrors*)firstCSFile->Get(firstCSGraphName.c_str());
+    if(!firstCSGraph)
+    {
+        cerr << "Error: failed to find " << firstCSGraphName << " in " << firstCSFileName << endl;
+        exit(1);
+    }
+
+    // get second graph
+    TFile* secondCSFile = new TFile(secondCSFileName.c_str(),"READ");
+    TGraphErrors* secondCSGraph = (TGraphErrors*)secondCSFile->Get(secondCSGraphName.c_str());
+    if(!secondCSGraph)
+    {
+        cerr << "Error: failed to find " << secondCSGraphName << " in " << secondCSFileName << endl;
+        exit(1);
+    }
+
+    DataSet firstCSData = DataSet();
+    DataSet secondCSData = DataSet();
+
+    // find maximum value of second CS dataset
+    DataSet firstCSDataRaw = DataSet(firstCSGraph, firstCSGraphName);
+    DataSet secondCSDataRaw = DataSet(secondCSGraph, secondCSGraphName);
+    double maxEnergyValue = secondCSDataRaw.getPoint(secondCSDataRaw.getNumberOfPoints()-1).getXValue();
+
+    // for each y-value of the first CS graph, read the y-value of the second
+    // and the y-error
+    for(int i=0; i<firstCSDataRaw.getNumberOfPoints(); i++)
+    {
+        if(firstCSDataRaw.getPoint(i).getXValue()>maxEnergyValue)
+        {
+            break;
+        }
+
+        firstCSData.addPoint(firstCSDataRaw.getPoint(i));
+
+        secondCSData.addPoint(
+                DataPoint(firstCSDataRaw.getPoint(i).getXValue(),
+                    firstCSDataRaw.getPoint(i).getXError(),
+                    secondCSGraph->Eval(firstCSDataRaw.getPoint(i).getXValue()),
+                    0
+                    /*secondCSGraph->GetErrorY(firstCSDataRaw.getPoint(i).getXValue())*/)); 
+    }
+
+    // perform the division
+    CrossSection relCS = CrossSection();
+    relCS.addDataSet(firstCSData/secondCSData);
+
+    // create graph of relative difference
+    TFile* outputFile = new TFile(outputFileName.c_str(), "UPDATE");
+    relCS.createGraph(name, name);
+
+    // create running RMS plot
+    CrossSection firstCS = CrossSection();
+    firstCS.addDataSet(firstCSData);
+
+    CrossSection secondCS = CrossSection();
+    secondCS.addDataSet(secondCSData);
+
+    produceRunningRMS(firstCS.getDataSet(), secondCS.getDataSet(), name);
+
+    outputFile->Close();
+
+    firstCSFile->Close();
+    secondCSFile->Close();
+
+    return relCS;
+}
+
+CrossSection relativeDiffCS(string firstCSFileName, string firstCSGraphName,
+        string secondCSFileName, string secondCSGraphName,
+        string outputFileName, string name)
+{
+    // get firstCS graph
+    TFile* firstCSFile = new TFile(firstCSFileName.c_str(),"READ");
+    TGraphErrors* firstCSGraph = (TGraphErrors*)firstCSFile->Get(firstCSGraphName.c_str());
+    if(!firstCSGraph)
+    {
+        cerr << "Error: failed to find " << firstCSGraphName << " in " << firstCSFileName << endl;
+        exit(1);
+    }
+
+    // get secondCS graph
+    TFile* secondCSFile = new TFile(secondCSFileName.c_str(),"READ");
+    TGraphErrors* secondCSGraph = (TGraphErrors*)secondCSFile->Get(secondCSGraphName.c_str());
+    if(!secondCSGraph)
+    {
+        cerr << "Error: failed to find " << secondCSGraphName << " in " << secondCSFileName << endl;
+        exit(1);
+    }
+
+    DataSet firstCSData = DataSet();
+    DataSet secondCSData = DataSet();
+
+    DataSet firstCSDataRaw = DataSet(firstCSGraph, firstCSGraphName);
+    DataSet secondCSDataRaw = DataSet(secondCSGraph, secondCSGraphName);
+
+    // find maximum value of second CS dataset
+    double maxEnergyValue = secondCSDataRaw.getPoint(secondCSDataRaw.getNumberOfPoints()-1).getXValue();
+
+    // for each y-value of the first CS graph, read the y-value of the second
+    // and the y-error
+    for(int i=0; i<firstCSDataRaw.getNumberOfPoints(); i++)
+    {
+        if(firstCSDataRaw.getPoint(i).getXValue()>maxEnergyValue)
+        {
+            break;
+        }
+
+        firstCSData.addPoint(firstCSDataRaw.getPoint(i));
+
+        secondCSData.addPoint(
+                DataPoint(firstCSDataRaw.getPoint(i).getXValue(),
+                    firstCSDataRaw.getPoint(i).getXError(),
+                    secondCSGraph->Eval(firstCSDataRaw.getPoint(i).getXValue()),
+                    0
+                    /*secondCSGraph->GetErrorY(firstCSDataRaw.getPoint(i).getXValue())*/)); 
+    }
+
+    // perform the difference
+    CrossSection differenceCS = CrossSection();
+    differenceCS.addDataSet(firstCSData-secondCSData);
+
+    // perform the sum
+    CrossSection sumCS = CrossSection();
+    sumCS.addDataSet(firstCSData+secondCSData);
+
+    // perform the division
+    CrossSection relDiffCS = CrossSection();
+    relDiffCS.addDataSet(differenceCS.getDataSet()/sumCS.getDataSet());
+
+    // create graph of relative difference
+    TFile* outputFile = new TFile(outputFileName.c_str(), "UPDATE");
+    relDiffCS.createGraph(name, name);
+
+    // create running RMS plot
+    CrossSection firstCS = CrossSection();
+    firstCS.addDataSet(firstCSData);
+
+    CrossSection secondCS = CrossSection();
+    secondCS.addDataSet(secondCSData);
+
+    produceRunningRMS(firstCS.getDataSet(), secondCS.getDataSet(), name);
+
+    outputFile->Close();
+
+    firstCSFile->Close();
+    secondCSFile->Close();
+
+    return relDiffCS;
+}
+
+void applyCSCorrectionFactor(string CSCorrectionFileName, string CSCorrectionGraphName, string CSToBeCorrectedFileName, string CSToBeCorrectedGraphName, string outputFileName, string outputGraphName)
+{
+    // get CS correction graph
+    TFile* CSCorrectionFile = new TFile(CSCorrectionFileName.c_str(),"READ");
+    TGraphErrors* CSCorrectionGraph = (TGraphErrors*)CSCorrectionFile->Get(CSCorrectionGraphName.c_str());
+    if(!CSCorrectionGraph)
+    {
+        cerr << "Error: failed to find " << CSCorrectionGraphName << " in " << CSCorrectionFileName << endl;
+        exit(1);
+    }
+
+    // get CSToBeCorrected graph
+    TFile* CSToBeCorrectedFile = new TFile(CSToBeCorrectedFileName.c_str(),"READ");
+    TGraphErrors* CSToBeCorrectedGraph = (TGraphErrors*)CSToBeCorrectedFile->Get(CSToBeCorrectedGraphName.c_str());
+    if(!CSToBeCorrectedGraph)
+    {
+        cerr << "Error: failed to find " << CSToBeCorrectedGraphName << " in " << CSToBeCorrectedFileName << endl;
+        exit(1);
+    }
+
+    TFile* outputFile = new TFile(outputFileName.c_str(),"UPDATE");
+
+    DataSet CSToBeCorrectedData = DataSet(CSToBeCorrectedGraph, CSToBeCorrectedGraphName);
+    DataSet CSCorrectionData = DataSet();
+
+    // for each y-value of the CSToBeCorrected graph, read the y-value of the CSCorrection graph
+    for(int i=0; i<CSToBeCorrectedData.getNumberOfPoints(); i++)
+    {
+        CSCorrectionData.addPoint(
+                DataPoint(CSToBeCorrectedData.getPoint(i).getXValue(),
+                    CSToBeCorrectedData.getPoint(i).getXError(),
+                    CSCorrectionGraph->Eval(CSToBeCorrectedData.getPoint(i).getXValue()),
+                    CSCorrectionGraph->GetErrorY(CSToBeCorrectedData.getPoint(i).getXValue())));
+    }
+
+    // perform the correction
+    CrossSection correctedCS = CrossSection();
+    correctedCS.addDataSet(correctCSUsingControl(CSToBeCorrectedData,CSCorrectionData));
+
+    // create graph of correctedCS
+    outputFile->cd();
+    correctedCS.createGraph(outputGraphName, outputGraphName);
+
+    outputFile->Close();
+}
+
+void scaledownCS(string CSToBeCorrectedFileName, string CSToBeCorrectedGraphName, int scaledown, string outputFileName, string outputGraphName)
+{
+    // get CSToBeCorrected graph
+    TFile* CSToBeCorrectedFile = new TFile(CSToBeCorrectedFileName.c_str(),"READ");
+    TGraphErrors* CSToBeCorrectedGraph = (TGraphErrors*)CSToBeCorrectedFile->Get(CSToBeCorrectedGraphName.c_str());
+    if(!CSToBeCorrectedGraph)
+    {
+        cerr << "Error: failed to find " << CSToBeCorrectedGraphName << " in " << CSToBeCorrectedFileName << endl;
+        exit(1);
+    }
+
+    TFile* outputFile = new TFile(outputFileName.c_str(),"UPDATE");
+
+    DataSet CSToBeCorrectedData = DataSet(CSToBeCorrectedGraph, CSToBeCorrectedGraphName);
+    DataSet CorrectedCSData = DataSet();
+
+    double rebinnedXValue = 0;
+    double rebinnedYValue = 0;
+    double rebinnedYError = 0;
+    int numberOfPoints = 0;
+
+    // create downscaled CSToBeCorrected graph
+    for(int i=0; i<CSToBeCorrectedData.getNumberOfPoints(); i++)
+    {
+        rebinnedXValue += CSToBeCorrectedData.getPoint(i).getXValue();
+        rebinnedYValue += CSToBeCorrectedData.getPoint(i).getYValue();
+        rebinnedYError += CSToBeCorrectedData.getPoint(i).getYError();
+        numberOfPoints++;
+
+        if(i%scaledown==scaledown-1)
+        {
+            rebinnedYError /= numberOfPoints;
+            CorrectedCSData.addPoint(
+                DataPoint(rebinnedXValue/numberOfPoints,
+                    CSToBeCorrectedData.getPoint(i).getXError(),
+                    rebinnedYValue/numberOfPoints,
+                    rebinnedYError));
+
+            rebinnedXValue = 0;
+            rebinnedYValue = 0;
+            numberOfPoints = 0;
+        }
+    }
+
+    // perform the correction
+    CrossSection correctedCS = CrossSection();
+    correctedCS.addDataSet(CorrectedCSData);
+
+    // create graph of correctedCS
+    outputFile->cd();
+    correctedCS.createGraph(outputGraphName, outputGraphName);
+
+    outputFile->Close();
+}
+
+

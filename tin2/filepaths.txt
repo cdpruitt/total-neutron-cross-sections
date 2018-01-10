@@ -1,1 +1,1 @@
-57 102 /media/cdpruitt/oxygen/output /data2/analysis
+0 102 /media/cdpruitt/oxygen/output /data2/analysis

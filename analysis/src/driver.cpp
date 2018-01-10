@@ -12,6 +12,7 @@
 #include "../include/experiment.h"
 #include "../include/config.h"
 #include "../include/GammaCorrection.h"
+#include "../include/identifyGoodMacros.h"
 
 // ROOT library classes
 #include "TFile.h"
@@ -163,19 +164,39 @@ int main(int, char* argv[])
                 gammaCorrectionFileName);
     }
 
-    /******************************************************************/
-    /* Populate events into gated histograms, using time correction   */
-    /******************************************************************/
     string gatedHistoFileName = analysisDirectory + "gatedHistos.root";
 
-    if(useVetoPaddle)
-    {
-        fillCSHistos(vetoedFileName, gammaCorrectionFileName, log, gatedHistoFileName);
-    }
+    ifstream f(gatedHistoFileName);
 
-    else
+    if(!f.good())
     {
-        fillCSHistos(sortedFileName, gammaCorrectionFileName, log, gatedHistoFileName);
+        /******************************************************************/
+        /* Identify "good" macropulses */
+        /******************************************************************/
+        vector<MacropulseEvent> macropulseList;
+        switch(identifyGoodMacros(sortedFileName, macropulseList, log))
+        {
+            case 2:
+                return 1;
+            default:
+                cout << "Finished identifying good macropulses." << endl;
+        }
+
+        /******************************************************************/
+        /* Populate events into gated histograms, using time correction   */
+        /******************************************************************/
+
+        if(useVetoPaddle)
+        {
+            fillCSHistos(vetoedFileName, macropulseList, gammaCorrectionFileName, log, gatedHistoFileName);
+        }
+
+        else
+        {
+            fillCSHistos(sortedFileName, macropulseList, gammaCorrectionFileName, log, gatedHistoFileName);
+        }
+
+        fillMonitorHistos(sortedFileName, macropulseList, log, gatedHistoFileName);
     }
 
     /*****************************************************/

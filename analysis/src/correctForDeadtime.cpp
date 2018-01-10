@@ -41,11 +41,6 @@ int generateDeadtimeCorrection(TH1D*& TOFtoCorrect, TH1D*& deadtimeHisto, const 
     for(int i=0; i<measuredRatePerBin.size(); i++)
     {
         measuredRatePerBin[i] = TOFtoCorrect->GetBinContent(i+1)/(double)numberOfPeriods;
-
-        /*if(i>85*config.plot.TOF_BINS_PER_NS && i<95*config.plot.TOF_BINS_PER_NS)
-          {
-          measuredRatePerBin[i] *= 1.2;
-          }*/
     }
 
     vector<long double> deadtimePerBin(numberOfBins);
@@ -68,8 +63,6 @@ int generateDeadtimeCorrection(TH1D*& TOFtoCorrect, TH1D*& deadtimeHisto, const 
 
         deadtimeHisto->SetBinContent(i+1,deadtimePerBin[i]);
     }
-
-    cout << "Finished generating deadtime correction for " << targetName << "." << endl;
 
     return 0;
 }
