@@ -355,6 +355,15 @@ int readRawData(string inFileName, string outFileName, ofstream& logFile)
         {
             // sync times to the macropulse timing channel by applying an channel-dependent offset (accounts for cable delay)
             rawEvent.completeTime += config.time.offsets[rawEvent.chNo];
+            if(rawEvent.completeTime < 0)
+            {
+                cerr << "For event on channel " << config.digitizer.CHANNEL_MAP[rawEvent.chNo].second << ", completeTime was less than time offset (" <<
+                    rawEvent.completeTime << " < " << config.time.offsets[rawEvent.chNo] << "). Continuing..." << endl;
+                logFile << "For event on channel " << config.digitizer.CHANNEL_MAP[rawEvent.chNo].second << ", completeTime was less than time offset (" <<
+                    rawEvent.completeTime << " < " << config.time.offsets[rawEvent.chNo] << "). Continuing..." << endl;
+
+                continue;
+            }
 
             if(rawEvent.extraSelect==0)
             {

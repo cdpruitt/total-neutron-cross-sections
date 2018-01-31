@@ -81,14 +81,15 @@ int fillBasicHistos(string inputFileName, ofstream& log, string outputFileName)
 
         // create histos for visualizing basic event data
         TH1D* cycleNumberH = new TH1D("cycleNumberH","cycleNumberH",500,0,500);
-        TH1D* macroNoH = new TH1D("macroNoH","macroNo",200000,0,200000);
+        TH1D* macroNoH = new TH1D("macroNoH","macroNo",500000,0,500000);
+        TH1D* macroTimeH = new TH1D("macroTimeH","macroTime",5000,0,5000000000);
 
         vector<TH1D*> macroNumberHistos;
         for(string targetName : config.target.TARGET_ORDER)
         {
             string macroNumberName = targetName + "MacroNumber";
             macroNumberHistos.push_back(new TH1D(macroNumberName.c_str(), macroNumberName.c_str(),
-                        200000, 0, 200000));
+                        500000, 0, 500000));
         }
 
         TH1D* eventNoH = new TH1D("eventNoH","eventNo",300,0,300);
@@ -116,26 +117,25 @@ int fillBasicHistos(string inputFileName, ofstream& log, string outputFileName)
         directory->mkdir("waveformsDir","raw DPP waveforms");
         TDirectory* waveformsDir = (TDirectory*)gDirectory->Get("waveformsDir");
 
-        unsigned int totalEntries = tree->GetEntries();
+        int totalEntries = tree->GetEntries();
 
         double timeDiff;
         double microTime;
-        unsigned int microNo;
+        int microNo;
 
         // fill basic histos
-        for(long i=0; i<totalEntries; i++)
+        for(int i=0; i<totalEntries; i++)
         {
             tree->GetEntry(i);
-
-            if(channel.second == "monitor" && event.sgQ/(double)event.lgQ < 0.7)
-            {
-                continue;
-            }
 
             event.waveform = *waveformPointer;
 
             cycleNumberH->Fill(event.cycleNumber);
             macroNoH->Fill(event.macroNo);
+            if(event.cycleNumber==1)
+            {
+                macroTimeH->Fill(event.macroTime);
+            }
 
             macroNumberHistos[event.targetPos]->Fill(event.macroNo);
 
@@ -191,6 +191,7 @@ int fillBasicHistos(string inputFileName, ofstream& log, string outputFileName)
 
         cycleNumberH->Write();
         macroNoH->Write();
+        macroTimeH->Write();
 
         for(auto& histo : macroNumberHistos)
         {

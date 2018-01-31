@@ -6,7 +6,7 @@
 double calculateCFDTime(const std::vector<int>& waveform,
         const double& baseline,
         const double& fraction,
-        const unsigned int& delay);
+        const int& delay);
 
 double calculateMacropulseFineTime(std::vector<int>* waveform, double threshold);
 

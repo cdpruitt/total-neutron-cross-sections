@@ -5,10 +5,8 @@
 #include <vector>
 #include <string>
 
-#include "TTree.h"
-
 #include "dataStructures.h"
 
-int identifyGoodMacros(std::string inputFileName, std::vector<MacropulseEvent>& macropulseList, std::ofstream& logFile);
+int identifyGoodMacros(std::string macropulseFileName, std::vector<MacropulseEvent>& macropulseList, std::ofstream& logFile);
 
 #endif /* IDENTIFY_GOOD_MACROS_H */

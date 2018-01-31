@@ -23,19 +23,18 @@ TH1D* convertTOFtoEnergy(TH1D* tof, string name)
         return energy;
     }
 
-    unsigned int tofBins = tof->GetNbinsX();
+    int tofBins = tof->GetNbinsX();
 
     TRandom3 *randomizeBin = new TRandom3();
 
-    for(unsigned int j=1; j<=tofBins; j++)
+    for(int j=1; j<=tofBins; j++)
     {
         // convert time into neutron velocity based on flight path distance
         double velocity = pow(10.,7.)*(config.facility.FLIGHT_DISTANCE)
             /(tof->GetBinCenter(j)
-                    /*+randomizeBin->Uniform(
+                    +randomizeBin->Uniform(
                         -(1/(double)(2*config.plot.TOF_BINS_PER_NS)),
                          (1/(double)(2*config.plot.TOF_BINS_PER_NS)))
-                         */
              ); // in meters/sec 
 
         // convert velocity to relativistic kinetic energy
@@ -44,8 +43,8 @@ TH1D* convertTOFtoEnergy(TH1D* tof, string name)
         energy->Fill(rKE,tof->GetBinContent(j));
     }
 
-    unsigned int energyBins = energy->GetNbinsX();
-    for(unsigned int j=1; j<=energyBins; j++)
+    int energyBins = energy->GetNbinsX();
+    for(int j=1; j<=energyBins; j++)
     {
         energy->SetBinError(j,pow(energy->GetBinContent(j),0.5));
     }
@@ -53,17 +52,20 @@ TH1D* convertTOFtoEnergy(TH1D* tof, string name)
     return energy;
 }
 
-vector<double> scaleBins(vector<double> inputBins, int scaledown)
+vector<double> scaleBins(vector<double> inputBins, double scaledown)
 {
     vector<double> outputBins;
 
-    for(size_t i=0; i<inputBins.size(); i+=scaledown)
+    for(double i=0; i<inputBins.size(); i+=scaledown)
     {
-        outputBins.push_back(inputBins[i]);
+        outputBins.push_back(inputBins[((int)i)]);
     }
 
     // add the max edge of the input bins
-    outputBins.push_back(inputBins[inputBins.size()-1]);
+    if(outputBins.back() != inputBins.back())
+    {
+        outputBins.push_back(inputBins.back());
+    }
 
     return outputBins;
 }
@@ -72,7 +74,7 @@ double tofToRKE(double TOF)
 {
     double velocity = pow(10.,7.)*config.facility.FLIGHT_DISTANCE/TOF; // in meters/sec 
 
-    if (velocity>C)
+    if(velocity>C)
     {
         return -1;
     }
@@ -113,14 +115,15 @@ TH1D* timeBinsToRKEBins(TH1D* inputHisto, string name)
     TAxis* oldAxis = inputHisto->GetXaxis();
 
     double minimumTime;
-    int minimumBin;
+    int minimumTimeBinEdgeNumber;
 
     for(int i=1; i<=nOldBins; i++)
     {
         minimumTime = inputHisto->GetBinLowEdge(i);
-        minimumBin = i;
+        minimumTimeBinEdgeNumber = i;
 
-        if(tofToRKE(minimumTime)>0 && tofToRKE(minimumTime)<config.plot.ENERGY_UPPER_BOUND)
+        double rke =  tofToRKE(minimumTime);
+        if(rke>0 && rke<config.plot.ENERGY_UPPER_BOUND)
         {
             break;
         }
@@ -133,12 +136,12 @@ TH1D* timeBinsToRKEBins(TH1D* inputHisto, string name)
     }
 
     double maximumTime;
-    int maximumBin;
+    int maximumTimeBinEdgeNumber;
 
     for(int i=nOldBins; i>=1; i--)
     {
         maximumTime = inputHisto->GetBinLowEdge(i) + inputHisto->GetBinWidth(i);
-        maximumBin = i;
+        maximumTimeBinEdgeNumber = i;
 
         if(tofToRKE(maximumTime)>config.plot.ENERGY_LOWER_BOUND)
         {
@@ -153,36 +156,35 @@ TH1D* timeBinsToRKEBins(TH1D* inputHisto, string name)
     }
 
     // Remap bins from old histo to new histo
-    int nUnscaledEnergyBins = maximumBin-minimumBin+1;
-    vector<double> unscaledEnergyBins;
+    int numberEnergyBins = maximumTimeBinEdgeNumber-minimumTimeBinEdgeNumber+1;
+    vector<double> unscaledEnergyBinEdges;
 
     // Reorder bins to go from lowest energy (shortest time) to highest energy (longest time)
-    // n bins are defined for n+1 points (like fence sections and fence posts)
-    for(int i=0; i<nUnscaledEnergyBins; i++)
+    // n points are defined for n+1 bin edges (like fence sections and fence posts)
+    for(int i=0; i<numberEnergyBins-1; i++)
     {
-        double newBin = tofToRKE(oldAxis->GetBinLowEdge(maximumBin-i)+oldAxis->GetBinWidth(maximumBin-i));
+        double newBinEdge = tofToRKE(oldAxis->GetBinLowEdge(maximumTimeBinEdgeNumber-i)+oldAxis->GetBinWidth(maximumTimeBinEdgeNumber-i));
 
-        if(newBin<=0)
+        if(newBinEdge<=0)
         {
             cerr << "Error: tried to make negative energy bin." << endl;
             exit(1);
         }
 
-        unscaledEnergyBins.push_back(newBin);
+        unscaledEnergyBinEdges.push_back(newBinEdge);
     }
 
-    unscaledEnergyBins.push_back(tofToRKE(oldAxis->GetBinLowEdge(minimumBin)));
-    
+    unscaledEnergyBinEdges.push_back(tofToRKE(oldAxis->GetBinLowEdge(minimumTimeBinEdgeNumber)));
+
     // Downscale bins to desired granularity
-    //vector<double> scaledEnergyBins = unscaledEnergyBins;
-    vector<double> scaledEnergyBins = scaleBins(unscaledEnergyBins, unscaledEnergyBins.size()/config.plot.NUMBER_ENERGY_BINS);
+    double scaledown = ((double)unscaledEnergyBinEdges.size())/config.plot.NUMBER_ENERGY_BINS;
+
+    vector<double> scaledEnergyBinEdges = scaleBins(unscaledEnergyBinEdges, scaledown);
 
     TH1D* outputHisto = new TH1D(name.c_str(),
             name.c_str(),
-            scaledEnergyBins.size()-1,
-            &scaledEnergyBins[0]);
-            //newXMin,
-            //newXMax);
+            scaledEnergyBinEdges.size()-1,
+            &scaledEnergyBinEdges[0]);
 
     return outputHisto;
 }
@@ -290,10 +292,6 @@ Plots::Plots(string name)
     deadtimeHisto = new TH1D(deadtimeName.c_str(),deadtimeName.c_str(),config.plot.TOF_BINS,config.plot.TOF_LOWER_BOUND,config.plot.TOF_UPPER_BOUND);
 
     energyHisto = timeBinsToRKEBins(TOFHisto,energyName);
-
-    //energyHisto = new TH1D(energyName.c_str(),energyName.c_str(),ENERGY_BINS,0,ENERGY_RANGE);
-    //TOFHisto = RKEBinsToTimeBins(energyHisto,tofName);
-    //deadtimeHisto = RKEBinsToTimeBins(energyHisto,deadtimeName);
 }
 
 TH1D* Plots::getTOFHisto()

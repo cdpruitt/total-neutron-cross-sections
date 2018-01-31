@@ -86,7 +86,7 @@
     gPad->SetLogx(1);
     
     relGraph->GetYaxis()->SetRangeUser(-0.03,0.03);
-    relGraph->GetXaxis()->SetRangeUser(10,400);
+    relGraph->GetXaxis()->SetRangeUser(3,600);
 
     //TLatex latex;
     //latex.SetNDC();

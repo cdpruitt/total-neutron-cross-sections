@@ -7,7 +7,7 @@ SOURCE = src/
 
 # Define compilation flags
 COMPILER = clang++ 
-CFLAGS = -lstdc++ -O3 -I$(shell root-config --incdir) -std=c++11
+CFLAGS = -lstdc++ -I$(shell root-config --incdir) -std=c++11
 
 # For integration with ROOT data analysis framework
 LINKOPTION = $(shell root-config --libs)
@@ -15,11 +15,11 @@ LINKOPTION = $(shell root-config --libs)
 ############################### DEFINE TARGETS #################################
 
 # List all targets
-TARGETS = driver text sumAll sumChunk readLitData subtractCS shiftCS multiplyCS relativeDiffCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck rateHisto plotCSPrereqs
+TARGETS = driver text sumAll eachSubrun sumChunk readLitData subtractCS shiftCS multiplyCS relativeDiffCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck rateHisto #plotCSPrereqs
 all: $(addprefix $(BIN), $(TARGETS))
 
 # Build driver (main data analysis engine)
-DRIVER_SOURCES = dataPoint.cpp dataSet.cpp driver.cpp config.cpp experiment.cpp fillBasicHistos.cpp fillCSHistos.cpp plots.cpp raw.cpp identifyMacropulses.cpp assignEventsToMacropulses.cpp calculateGammaCorrection.cpp correctForDeadtime.cpp produceEnergyHistos.cpp target.cpp veto.cpp softwareCFD.cpp identifyGoodMacros.cpp
+DRIVER_SOURCES = dataPoint.cpp dataSet.cpp driver.cpp config.cpp experiment.cpp fillBasicHistos.cpp fillCSHistos.cpp plots.cpp raw.cpp identifyMacropulses.cpp assignEventsToMacropulses.cpp calculateGammaCorrection.cpp correctForDeadtime.cpp produceEnergyHistos.cpp target.cpp veto.cpp softwareCFD.cpp identifyGoodMacros.cpp correctForBackground.cpp
 
 $(BIN)driver: $(addprefix $(SOURCE), $(DRIVER_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)driver $(addprefix $(SOURCE), $(DRIVER_SOURCES)) $(LINKOPTION)
@@ -28,6 +28,11 @@ $(BIN)driver: $(addprefix $(SOURCE), $(DRIVER_SOURCES))
 SUMALL_SOURCES = sumAll.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp config.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp CSUtilities.cpp
 $(BIN)sumAll: $(addprefix $(SOURCE), $(SUMALL_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)sumAll $(addprefix $(SOURCE), $(SUMALL_SOURCES)) $(LINKOPTION)
+
+# Build eachSubrun (for generating cross sections using data from all available runs)
+EACHSUBRUN_SOURCES = eachSubrun.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp config.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp CSUtilities.cpp
+$(BIN)eachSubrun: $(addprefix $(SOURCE), $(EACHSUBRUN_SOURCES))
+	$(COMPILER) $(CFLAGS) -o $(BIN)eachSubrun $(addprefix $(SOURCE), $(EACHSUBRUN_SOURCES)) $(LINKOPTION)
 
 # Build sumChunk (for generating cross sections using data from a select set of subruns)
 SUMCHUNK_SOURCES = sumChunk.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp config.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp CSUtilities.cpp

@@ -17,28 +17,24 @@ class CSPrereqs
         CSPrereqs(Target t);
         CSPrereqs(std::string targetDataLocation);
 
-        void readEnergyData(TFile* histoFile, std::string directory, int targetPosition);
-        void readMonitorData(TFile* histoFile, std::string monitorDirectory, int targetPosition);
-        void readMacroData(TFile* macroFile, std::string directory, int targetPosition);
-        void readEventData(TFile* macroFile, std::string directory, int targetPosition);
+        int readEnergyHisto(TFile* histoFile, std::string directory, std::string targetName);
+        int readMonitorCounts(TFile* histoFile, std::string directory, std::string targetName);
+        int readMacroData(TFile* macroFile, std::string directory, std::string targetName);
+        int readEventData(TFile* macroFile, std::string directory, std::string targetName);
 
-        void getHisto(TFile* histoFile, std::string directory, std::string name);
-        void getMonitorCounts(TFile* histoFile, std::string directory, int targetPosition);
-        void getMonitorCounts(std::string monitorFileName, std::string directory, int targetPosition);
-        void getTargetData(std::string expName, std::string targetName);
-        void getMacroNumber(TFile* histoFile, std::string directory, std::string goodMacroHistoName, std::string macroHistoName);
-        void getAverageRate(TFile* histoFile, std::string averageRateDataName, unsigned int targetNumber);
+        void readTargetData(std::string expName, std::string targetName);
+        void getAverageRate(TFile* histoFile, std::string averageRateDataName, int targetNumber);
 
         friend CSPrereqs operator+(CSPrereqs& augend, CSPrereqs& addend);
 
         Target target;     // physical data for this target
-        double monitorCounts;// target-specific counts on monitor for a subrun
-        double goodMacroNumber;
-        double totalMacroNumber;
-        double totalEventNumber;
+        double monitorCounts = 0;// target-specific counts on monitor for a subrun
+        double goodMacroNumber = 0;
+        double totalMacroNumber = 0;
+        double totalEventNumber = 0;
 
-        TH1D* energyHisto; // target-specific energy histo, corrected for deadtime
-        TH1D* TOFHisto; // target-specific energy histo, corrected for deadtime
+        TH1D* energyHisto = 0; // target-specific energy histo, corrected for deadtime
+        TH1D* TOFHisto = 0; // target-specific energy histo, corrected for deadtime
 };
 
 void extractGraphData(
@@ -58,6 +54,6 @@ DataSet scale(DataSet setToScale, DataSet expReference, DataSet litReference);
 
 int readTargetData(std::vector<CSPrereqs>& allCSPrereqs, std::string expName);
 
-int readSubRun(std::vector<CSPrereqs>& allCSPrereqs, std::string expName, int runNumber, int subRun, std::string detectorName, std::string dataLocation);
+int readSubRun(CSPrereqs& subRunData, std::string expName, int runNumber, int subRun, std::string detectorName, std::string dataLocation);
 
 #endif

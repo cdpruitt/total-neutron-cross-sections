@@ -12,6 +12,7 @@ struct AnalysisConfig
 
         std::string RAW_TREE_FILE_NAME;
         std::string MACROPULSE_ASSIGNED_FILE_NAME;
+        std::string MACROPULSES_FILE_NAME;
         std::string PASSED_VETO_FILE_NAME;
         std::string HISTOGRAM_FILE_NAME;
         std::string ENERGY_PLOTS_FILE_NAME;
@@ -45,12 +46,12 @@ struct FacilityConfig
         FacilityConfig(std::vector<std::string> facilityConfig);
 
         double MACRO_FREQUENCY;   // frequency of macropulses, in Hz
-        unsigned int MICROS_PER_MACRO;  // number of micropulses in each macropulse
+        int MICROS_PER_MACRO;  // number of micropulses in each macropulse
         double MICRO_LENGTH;      // micropulse duration, in ns
         double FLIGHT_DISTANCE;   // detector distance from neutron source, in cm
 
-        unsigned int FIRST_GOOD_MICRO; // first micropulse to be used for cs calculation
-        unsigned int LAST_GOOD_MICRO;  // last micropulse to be used for cs calculation
+        int FIRST_GOOD_MICRO; // first micropulse to be used for cs calculation
+        int LAST_GOOD_MICRO;  // last micropulse to be used for cs calculation
 };
 
 struct SoftwareCFDConfig
@@ -85,9 +86,9 @@ struct DigitizerConfig
 {
     public:
         DigitizerConfig() {}
-        DigitizerConfig(std::vector<std::pair<unsigned int, std::string>> channelMap, std::vector<std::string> digitizerConfig);
+        DigitizerConfig(std::vector<std::pair<int, std::string>> channelMap, std::vector<std::string> digitizerConfig);
 
-        std::vector<std::pair<unsigned int, std::string>> CHANNEL_MAP;
+        std::vector<std::pair<int, std::string>> CHANNEL_MAP;
         double SAMPLE_PERIOD;
 };
 
@@ -116,15 +117,15 @@ struct PlotConfig
         PlotConfig() {}
         PlotConfig(std::vector<std::string> v);
 
-        unsigned int TOF_LOWER_BOUND;   // lower bound of cross-section plots
-        unsigned int TOF_UPPER_BOUND; // upper bound of cross-section plots
-        unsigned int TOF_BINS_PER_NS;
-        unsigned int TOF_RANGE;
-        unsigned int TOF_BINS;
+        int TOF_LOWER_BOUND;   // lower bound of cross-section plots
+        int TOF_UPPER_BOUND; // upper bound of cross-section plots
+        int TOF_BINS_PER_NS;
+        int TOF_RANGE;
+        int TOF_BINS;
 
         double ENERGY_LOWER_BOUND;   // lower bound of cross-section plots, in MeV
         double ENERGY_UPPER_BOUND; // upper bound of cross-section plots, in MeV
-        unsigned int NUMBER_ENERGY_BINS;    // for plots with energy units as abscissa
+        int NUMBER_ENERGY_BINS;    // for plots with energy units as abscissa
 };
 
 struct Config

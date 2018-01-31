@@ -29,23 +29,23 @@ double logisticDeadtimeFunction(double x)
     return (1-1/(1+exp(-config.deadtime.LOGISTIC_K*(x-config.deadtime.LOGISTIC_MU))));
 }
 
-int generateDeadtimeCorrection(TH1D*& TOFtoCorrect, TH1D*& deadtimeHisto, const unsigned int& numberOfPeriods)
+int generateDeadtimeCorrection(TH1D*& TOFtoCorrect, TH1D*& deadtimeHisto, const int& numberOfPeriods)
 {
     int DEADTIME_BINS = (config.deadtime.LOGISTIC_MU+15)*config.plot.TOF_BINS_PER_NS;
 
     string targetName = TOFtoCorrect->GetName();
-    unsigned int numberOfBins = TOFtoCorrect->GetNbinsX();
+    int numberOfBins = TOFtoCorrect->GetNbinsX();
 
     vector<double> measuredRatePerBin(numberOfBins);
 
-    for(int i=0; i<measuredRatePerBin.size(); i++)
+    for(int i=1; i<=numberOfBins; i++)
     {
-        measuredRatePerBin[i] = TOFtoCorrect->GetBinContent(i+1)/(double)numberOfPeriods;
+        measuredRatePerBin[i-1] = TOFtoCorrect->GetBinContent(i)/(double)numberOfPeriods;
     }
 
     vector<long double> deadtimePerBin(numberOfBins);
 
-    for(int i=0; i<numberOfBins; i++)
+    for(int i=0; i<measuredRatePerBin.size(); i++)
     {
         double cumulativeDeadtime = 0;
         for(int j=0; j<DEADTIME_BINS; j++)
@@ -131,14 +131,14 @@ int applyDeadtimeCorrection(string inputFileName, string deadtimeFileName, strin
 
     double overallAverageGammaTime = 0;
 
-    unsigned int gammaCorrectionBins = gammaCorrectionHisto->GetNbinsX();
+    int gammaCorrectionBins = gammaCorrectionHisto->GetNbinsX();
     if(gammaCorrectionBins<=0)
     {
         cerr << "Cannot divide by 0 to calculate overall average gamma time (in applyDeadtimeCorrection)." << endl;
         return 1;
     }
 
-    for(unsigned int i=1; i<=gammaCorrectionBins; i++)
+    for(int i=1; i<=gammaCorrectionBins; i++)
     {
         overallAverageGammaTime += gammaCorrectionHisto->GetBinContent(i);
     }
@@ -220,15 +220,15 @@ int applyDeadtimeCorrection(string inputFileName, string deadtimeFileName, strin
                 return 1;
             }
 
-            string correctedTOFName = TOFHistoName + "Corrected";
+            string correctedTOFName = TOFHistoName;
             TH1D* correctedTOF = (TH1D*)TOF->Clone(correctedTOFName.c_str());
 
-            unsigned int numberOfMacroBins = macroHisto->GetNbinsX();
-            unsigned int numberOfMacros = 0;
+            int numberOfMacroBins = macroHisto->GetNbinsX();
+            int numberOfMacros = 0;
 
             for(int j=1; j<=numberOfMacroBins; j++)
             {
-                if(macroHisto->GetBinContent(j)>0)
+                if(macroHisto->GetBinContent(j)>=1)
                 {
                     numberOfMacros++;
                 }
@@ -265,7 +265,6 @@ int applyDeadtimeCorrection(string inputFileName, string deadtimeFileName, strin
                     deadtime = deadtimeHisto->GetBinContent(i+deadtimeBinOffset);
                 }
 
-                //correctedTOF->SetBinContent(i, originalBin);
                 correctedTOF->SetBinContent(i, -log(1-(originalBin/numberOfMicros)/(1-deadtime))*numberOfMicros);
             }
 
@@ -325,12 +324,12 @@ int generateDeadtimeCorrection(string inputFileName, ofstream& logFile, string o
 
             string macroHistoName = targetName + "MacroNumber";
             TH1I* macroHisto = (TH1I*)detectorDirectory->Get(macroHistoName.c_str());
-            unsigned int numberOfBins = macroHisto->GetNbinsX();
-            unsigned int numberOfMacros = 0;
+            int numberOfBins = macroHisto->GetNbinsX();
+            int numberOfMacros = 0;
 
             for(int j=1; j<=numberOfBins; j++)
             {
-                if(macroHisto->GetBinContent(j)>0)
+                if(macroHisto->GetBinContent(j)>=1)
                 {
                     numberOfMacros++;
                 }

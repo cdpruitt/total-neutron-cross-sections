@@ -18,7 +18,7 @@ struct GammaCorrection
     std::vector<GammaEvent> gammaList;
 
     double averageGammaTime = 0;
-    unsigned int numberOfGammas = 0;
+    int numberOfGammas = 0;
     double correction = 0;
 };
 

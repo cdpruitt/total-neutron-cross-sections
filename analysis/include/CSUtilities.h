@@ -6,6 +6,9 @@
 
 #include "../include/crossSection.h"
 #include "../include/CSPrereqs.h"
+#include "../include/config.h"
+
+int readLitData(std::string litDirectory, std::string litOutputName, const Config& config);
 
 CrossSection calculateRelativeDiff(CrossSection a, CrossSection b);
 
@@ -14,12 +17,20 @@ int producePlots(
         std::string expName,
         std::vector<CrossSection>& crossSections);
 
-CrossSection correctForBlank(CrossSection rawCS, double targetNumberDensity, std::string expName, std::string graphFileName);
+int correctForBlank(CrossSection& rawCS, CSPrereqs& targetData, std::string expName);
 
 CrossSection calculateRelative(CrossSection a, CrossSection b);
 
 CrossSection subtractCS(std::string rawCSFileName, std::string rawCSGraphName,
                         std::string subtrahendFileName, std::string subtrahendGraphName,
+                        double factor,  // multiplies the subtrahend
+                        double divisor, // divides the final difference
+                        std::string name // name given to output graph
+                       );
+
+CrossSection subtractCS(CrossSection rawCS,
+                        std::string subtrahendFileName,
+                        std::string subtrahendGraphName,
                         double factor,  // multiplies the subtrahend
                         double divisor, // divides the final difference
                         std::string name // name given to output graph

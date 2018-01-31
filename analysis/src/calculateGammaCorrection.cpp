@@ -44,10 +44,10 @@ int calculateGammaCorrection(string inputFileName, ofstream& logFile, string tre
     }
 
     // re-attach to the channel-specific tree for reading out data
-    unsigned int macroNo;
+    int macroNo;
     double macroTime;
     double completeTime;
-    unsigned int lgQ;
+    int lgQ;
 
     tree->SetBranchAddress("macroTime",&macroTime);
     tree->SetBranchAddress("completeTime",&completeTime);
@@ -76,7 +76,7 @@ int calculateGammaCorrection(string inputFileName, ofstream& logFile, string tre
             config.plot.TOF_LOWER_BOUND,
             config.plot.TOF_UPPER_BOUND);
 
-    unsigned int long totalEntries = tree->GetEntries();
+    long totalEntries = tree->GetEntries();
     tree->GetEntry(totalEntries-1);
 
     double timeDiff;
@@ -214,7 +214,7 @@ int calculateGammaCorrection(string inputFileName, ofstream& logFile, string tre
         }
     }
 
-    unsigned int numberOfAverages = 0;
+    int numberOfAverages = 0;
     double overallAverageGammaTime = 0;
 
     for(auto& gc : gammaCorrectionList)
@@ -268,7 +268,7 @@ int calculateGammaCorrection(string inputFileName, ofstream& logFile, string tre
     logFile << (100*numberOfAverages)/(double)gammaCorrectionList.size()
         << "% of macros were used to calculate an average." << endl;
 
-    for(unsigned int i=0; i<gammaCorrectionList.size(); i++)
+    for(int i=0; i<gammaCorrectionList.size(); i++)
     {
         GammaCorrection gc = gammaCorrectionList[i];
 
@@ -300,7 +300,7 @@ int calculateGammaCorrection(string inputFileName, ofstream& logFile, string tre
 
     for(int delay = 100; delay<gammaCorrectionList.size()/50; delay += 100)
     {
-        for(unsigned int i=0; i+delay<gammaCorrectionList.size(); i++)
+        for(int i=0; i+delay<gammaCorrectionList.size(); i++)
         {
             correlation +=
                 (gammaCorrectionList[i].averageGammaTime-overallAverageGammaTime)
@@ -314,7 +314,7 @@ int calculateGammaCorrection(string inputFileName, ofstream& logFile, string tre
 
         correlation /= (gammaCorrectionList.size()-1)*gammaAverageVariance;
 
-        timeAutocorrelation->Fill(delay,correlation);
+        timeAutocorrelation->SetBinContent(delay,correlation);
     }
 
     TRandom3* rng = new TRandom3();
@@ -327,7 +327,7 @@ int calculateGammaCorrection(string inputFileName, ofstream& logFile, string tre
 
         vector<GammaEvent> selectedGammas;
 
-        unsigned int randomGammaNumber = 0;
+        int randomGammaNumber = 0;
 
         while(selectedGammas.size()<gc.gammaList.size())
         {

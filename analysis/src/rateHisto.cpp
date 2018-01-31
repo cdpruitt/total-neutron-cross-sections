@@ -61,8 +61,8 @@ int main()
         return 1;
     }
 
-    unsigned int numberOfBins = goodMacrosH->GetNbinsX();
-    unsigned int numberOfMacros = 0;
+    int numberOfBins = goodMacrosH->GetNbinsX();
+    int numberOfMacros = 0;
 
     for(int j=1; j<=numberOfBins; j++)
     {
@@ -74,18 +74,18 @@ int main()
 
     double numberOfMicros = numberOfMacros*250;
 
-    unsigned int tofBins = TOFHisto->GetNbinsX();
+    int tofBins = TOFHisto->GetNbinsX();
 
     string outputFileName = "rateHisto.root";
     string rateHistoName = "rateHisto";
 
-    unsigned int numberOfRateHistoBins = 1000;
+    int numberOfRateHistoBins = 1000;
 
     TFile* outputFile = new TFile(outputFileName.c_str(),"RECREATE");
     TH1D* rateHisto = new TH1D(rateHistoName.c_str(), rateHistoName.c_str(),
             numberOfRateHistoBins, 0, numberOfRateHistoBins);
 
-    for(unsigned int i=0; i<numberOfRateHistoBins; i++)
+    for(int i=0; i<numberOfRateHistoBins; i++)
     {
         rateHisto->SetBinContent(i+1,RATE);
     }
@@ -96,7 +96,7 @@ int main()
     TH1D* outputHisto = new TH1D(outputHistoName.c_str(), outputHistoName.c_str(),
             tofBins, 0, tofBins);
 
-    for(unsigned int i=0; i<tofBins; i++)
+    for(int i=0; i<tofBins; i++)
     {
         outputHisto->SetBinContent(i+1,TOFHisto->GetBinContent(i+1)/numberOfMicros);
     }

@@ -3,6 +3,7 @@
 
 #include "TFile.h"
 #include "TTree.h"
+#include "TH1.h"
 
 #include <iostream>
 
@@ -10,105 +11,11 @@ using namespace std;
 
 extern Config config;
 
-int identifyGoodMacros(string inputFileName, vector<MacropulseEvent>& macropulseList, ofstream& logFile)
+int identifyGoodMacros(string macropulseFileName, vector<MacropulseEvent>& macropulseList, ofstream& logFile)
 {
-    ifstream f(inputFileName);
-    if(!f.good())
-    {
-        cout << inputFileName << " does not exist; cannot identify good macros." << endl;
-        logFile << inputFileName << " does not exist; cannot identify good macros. " << endl;
-        return 2;
-    }
-
-    cout << "Starting identification of good macropulses..." << endl;
-
-    TFile* inputFile = new TFile(inputFileName.c_str(), "READ");
-    if(!inputFile->IsOpen())
-    {
-        cerr << "Error: failed to open " << inputFileName << "  to fill histos." << endl;
-        return 1;
-    }
-
-    TTree* eventTree =
-        (TTree*)inputFile->Get(config.analysis.GAMMA_CORRECTION_TREE_NAME.c_str());
-
-    TTree* monitorTree =
-        (TTree*)inputFile->Get(config.analysis.MONITOR_TREE_NAME.c_str());
-
-    if(!eventTree || !monitorTree)
-    {
-        cerr << "Error: couldn't find either event tree or monitor tree when trying to identify good macropulses." << endl;
-        inputFile->Close();
-        return 1;
-    }
-
-    // connect event tree to event data buffer
-    DetectorEvent event;
-    vector<int>* waveformPointer = 0;
-
-    eventTree->SetBranchAddress("cycleNumber",&event.cycleNumber);
-    eventTree->SetBranchAddress("macroNo",&event.macroNo);
-    eventTree->SetBranchAddress("macroTime",&event.macroTime);
-    eventTree->SetBranchAddress("fineTime",&event.fineTime);
-    eventTree->SetBranchAddress("eventNo",&event.eventNo);
-    eventTree->SetBranchAddress("completeTime",&event.completeTime);
-    eventTree->SetBranchAddress("targetPos",&event.targetPos);
-    eventTree->SetBranchAddress("sgQ",&event.sgQ);
-    eventTree->SetBranchAddress("lgQ",&event.lgQ);
-    eventTree->SetBranchAddress("waveform",&waveformPointer);
-
-    DetectorEvent monitorEvent;
-    monitorTree->SetBranchAddress("macroNo",&monitorEvent.macroNo);
-
-    // tally the number of events in each macropulse
-    eventTree->GetEntry(0);
-    macropulseList.push_back(MacropulseEvent(event.macroNo,0,event.targetPos));
-
-    unsigned int totalEntries = eventTree->GetEntries();
-    for(long i=1; i<totalEntries; i++)
-    {
-        eventTree->GetEntry(i);
-
-        if(macropulseList.back().macroNo<event.macroNo)
-        {
-            macropulseList.push_back(MacropulseEvent(event.macroNo, 0, event.targetPos));
-        }
-
-        macropulseList.back().numberOfEventsInMacro++;
-
-        if(i%10000==0)
-        {
-            cout << "Found " << macropulseList.size() << " macropulses during good macropulse identification...\r";
-            fflush(stdout);
-        }
-    }
-
-    unsigned int currentEntry = 0;
-
-    unsigned int monitorTotalEntries = monitorTree->GetEntries();
-    for(int i=0; i<monitorTotalEntries; i++)
-    {
-        monitorTree->GetEntry(i);
-
-        while(macropulseList[currentEntry].macroNo < monitorEvent.macroNo)
-        {
-            currentEntry++;
-        }
-
-        macropulseList[currentEntry].numberOfMonitorsInMacro++;
-
-        if(i%10000==0)
-        {
-            cout << "Found " << macropulseList.size() << " macropulses during good macropulse identification...\r";
-            fflush(stdout);
-        }
-    }
-
-    cout << endl;
-
     // calculate the average number of events in each macropulse, by target
     vector<double> averageEventsPerMacropulseByTarget(config.target.TARGET_ORDER.size(),0);
-    vector<unsigned int> numberOfMacropulsesByTarget(config.target.TARGET_ORDER.size(),0);
+    vector<int> numberOfMacropulsesByTarget(config.target.TARGET_ORDER.size(),0);
 
     for(auto& macropulse : macropulseList)
     {
@@ -119,7 +26,7 @@ int identifyGoodMacros(string inputFileName, vector<MacropulseEvent>& macropulse
 
     for(int i=0; i<averageEventsPerMacropulseByTarget.size(); i++)
     {
-        averageEventsPerMacropulseByTarget[i] /= numberOfMacropulsesByTarget[i];
+        averageEventsPerMacropulseByTarget[i] /= (double)(numberOfMacropulsesByTarget[i]);
         logFile << "Target \"" << config.target.TARGET_ORDER[i]
             << "\" had, on average, " << averageEventsPerMacropulseByTarget[i]
             << " events per macropulse." << endl;
@@ -128,28 +35,14 @@ int identifyGoodMacros(string inputFileName, vector<MacropulseEvent>& macropulse
     cout << "Finished calculating average events per macropulse."
         << endl;
 
-    /*TH1D* averageRatePerTarget = new TH1D("average rate per target", "average rate per target",
-      config.target.TARGET_ORDER.size(), 0, config.target.TARGET_ORDER.size());
-
-    for(int i=0; i<averageEventsPerMacropulseByTarget.size(); i++)
-    {
-        averageRatePerTarget->SetBinContent(i+1, averageEventsPerMacropulseByTarget[i]);
-    }
-
-    averageRatePerTarget->Write();
-    */
-
     // using the average just calculated, identify macros with too few events
     // per macro (indicating readout problem)
     for(auto& macropulse : macropulseList)
     {
         if((macropulse.numberOfEventsInMacro
-              >(0.8)*averageEventsPerMacropulseByTarget[macropulse.targetPos])
+              >(0.5)*averageEventsPerMacropulseByTarget[macropulse.targetPos])
          && (macropulse.numberOfMonitorsInMacro > 0)
          )
-        /*if((macropulse.numberOfEventsInMacro > 0) &
-                (macropulse.numberOfMonitorsInMacro > 0))
-                */
         {
             // good macro
             macropulse.isGoodMacro = true;
@@ -161,7 +54,90 @@ int identifyGoodMacros(string inputFileName, vector<MacropulseEvent>& macropulse
         }
     }
 
-    inputFile->Close();
+    cout << "Finished identifying good macropulses." << endl;
+
+    ifstream f(macropulseFileName);
+
+    if(f.good())
+    {
+        cout << macropulseFileName << "already exists; skipping identification of good macropulses." << endl;
+        return 0;
+    }
+
+    f.close();
+
+    TFile* outputFile = new TFile(macropulseFileName.c_str(),"CREATE");
+
+    TH1D* cycleNumber = new TH1D("cycleNumber","cycleNumber", 1000, 0, 1000);
+    TH1D* macroNumber = new TH1D("macroNo","macroNo", 500000, 0, 500000);
+    TH1D* macroTime = new TH1D("macroTime","macroTime", 5000000, 0, 5000000000);
+
+    vector<TH1D*> macroNumberByTargets;
+    vector<TH1D*> eventsPerMacroByTargets;
+    vector<TH1D*> monitorsPerMacroByTargets;
+
+    for(auto& targetName : config.target.TARGET_ORDER)
+    {
+        string macroNumberByTargetsName = targetName + "macroNo";
+        macroNumberByTargets.push_back(new TH1D(macroNumberByTargetsName.c_str(), macroNumberByTargetsName.c_str(), 500000, 0, 500000));
+
+        string eventsPerMacroName = targetName + "eventsPerMacro";
+        eventsPerMacroByTargets.push_back(new TH1D(eventsPerMacroName.c_str(), eventsPerMacroName.c_str(), 300, 0, 300));
+
+        string monitorsPerMacroName = targetName + "monitorsPerMacro";
+        monitorsPerMacroByTargets.push_back(new TH1D(monitorsPerMacroName.c_str(), monitorsPerMacroName.c_str(), 100, 0, 100));
+    }
+
+    for(auto& macropulse : macropulseList)
+    {
+        cycleNumber->Fill(macropulse.cycleNumber);
+        macroNumber->Fill(macropulse.macroNo);
+        macroTime->Fill(macropulse.macroTime);
+
+        macroNumberByTargets[macropulse.targetPos]->Fill(macropulse.macroNo);
+        eventsPerMacroByTargets[macropulse.targetPos]->Fill(macropulse.numberOfEventsInMacro);
+        monitorsPerMacroByTargets[macropulse.targetPos]->Fill(macropulse.numberOfMonitorsInMacro);
+    }
+
+    TTree* macropulseTree = new TTree("macropulses","");
+
+    MacropulseEvent me;
+
+    macropulseTree->Branch("cycleNumber",&me.cycleNumber,"cycleNumber/I");
+    macropulseTree->Branch("macroNo",&me.macroNo,"macroNo/I");
+    macropulseTree->Branch("macroTime",&me.macroTime,"macroTime/d");
+    macropulseTree->Branch("targetPos",&me.targetPos,"targetPos/I");
+    macropulseTree->Branch("numberOfEventsInMacro",&me.numberOfEventsInMacro,"numberOfEventsInMacro/I");
+    macropulseTree->Branch("numberOfMonitorsInMacro",&me.numberOfMonitorsInMacro,"numberOfMonitorsInMacro/I");
+    macropulseTree->Branch("isGoodMacro",&me.isGoodMacro,"isGoodMacro/O");
+
+    for(auto& macropulse : macropulseList)
+    {
+        me.cycleNumber = macropulse.cycleNumber;
+        me.macroNo = macropulse.macroNo;
+        me.macroTime = macropulse.macroTime;
+        me.targetPos = macropulse.targetPos;
+        me.numberOfEventsInMacro = macropulse.numberOfEventsInMacro;
+        me.numberOfMonitorsInMacro = macropulse.numberOfMonitorsInMacro;
+        me.isGoodMacro = macropulse.isGoodMacro;
+
+        macropulseTree->Fill();
+    }
+
+    macropulseTree->Write();
+
+    cycleNumber->Write();
+    macroNumber->Write();
+    macroTime->Write();
+
+    for(int i=0; i<macroNumberByTargets.size(); i++)
+    {
+        macroNumberByTargets[i]->Write();
+        eventsPerMacroByTargets[i]->Write();
+        monitorsPerMacroByTargets[i]->Write();
+    }
+
+    outputFile->Close();
 
     return 0;
 }

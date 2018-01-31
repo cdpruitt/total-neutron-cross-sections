@@ -5,6 +5,7 @@
 #include "../include/fillBasicHistos.h"
 #include "../include/fillCSHistos.h"
 #include "../include/correctForDeadtime.h"
+#include "../include/correctForBackground.h"
 #include "../include/produceEnergyHistos.h"
 #include "../include/plots.h"
 #include "../include/waveform.h"
@@ -84,29 +85,20 @@ int main(int, char* argv[])
 
     string sortedFileName = analysisDirectory + config.analysis.MACROPULSE_ASSIGNED_FILE_NAME;
 
-    switch(identifyMacropulses(rawTreeFileName, sortedFileName, log))
+    vector<MacropulseEvent> macropulseList;
+
+    switch(identifyMacropulses(rawTreeFileName, sortedFileName, log, macropulseList))
     {
         case 0:
             // recreate sorted.root file
-            for(auto& channel : config.digitizer.CHANNEL_MAP)
-            {
-                if(
-                        channel.second == "-" ||
-                        channel.second == "macroTime" ||
-                        channel.second == "targetChanger"
-                  )
-                {
-                    continue;
-                }
 
-                cout << endl << "Start assigning \"" << channel.second << "\" events to macropulses..." << endl;
+            assignEventsToMacropulses(
+                    rawTreeFileName,
+                    sortedFileName,
+                    log,
+                    macropulseList
+                    );
 
-                assignEventsToMacropulses(
-                        rawTreeFileName,
-                        sortedFileName,
-                        log,
-                        channel);
-            }
             break;
 
         case 1:
@@ -118,6 +110,12 @@ int main(int, char* argv[])
             // sorted.root already exists; skip to next analysis step
             break;
     }
+
+    /******************************************************************/
+    /* Identify "good" macropulses */
+    /******************************************************************/
+    string macropulseFileName = analysisDirectory + config.analysis.MACROPULSES_FILE_NAME;
+    identifyGoodMacros(macropulseFileName, macropulseList, log);
 
     /*************************************************************************/
     /* Veto detector events using the charged-particle paddle */
@@ -146,23 +144,11 @@ int main(int, char* argv[])
     /*****************************************************/
     string gammaCorrectionFileName = analysisDirectory + "gammaCorrection.root";
 
-    if(useVetoPaddle)
-    {
-        calculateGammaCorrection(
-                vetoedFileName,
-                log,
-                config.analysis.GAMMA_CORRECTION_TREE_NAME,
-                gammaCorrectionFileName);
-    }
-
-    else
-    {
-        calculateGammaCorrection(
-                sortedFileName,
-                log,
-                config.analysis.GAMMA_CORRECTION_TREE_NAME,
-                gammaCorrectionFileName);
-    }
+    calculateGammaCorrection(
+            sortedFileName,
+            log,
+            config.analysis.GAMMA_CORRECTION_TREE_NAME,
+            gammaCorrectionFileName);
 
     string gatedHistoFileName = analysisDirectory + "gatedHistos.root";
 
@@ -171,39 +157,30 @@ int main(int, char* argv[])
     if(!f.good())
     {
         /******************************************************************/
-        /* Identify "good" macropulses */
-        /******************************************************************/
-        vector<MacropulseEvent> macropulseList;
-        switch(identifyGoodMacros(sortedFileName, macropulseList, log))
-        {
-            case 2:
-                return 1;
-            default:
-                cout << "Finished identifying good macropulses." << endl;
-        }
-
-        /******************************************************************/
         /* Populate events into gated histograms, using time correction   */
         /******************************************************************/
 
         if(useVetoPaddle)
         {
-            fillCSHistos(vetoedFileName, macropulseList, gammaCorrectionFileName, log, gatedHistoFileName);
+            fillCSHistos(vetoedFileName, macropulseFileName, gammaCorrectionFileName, log, gatedHistoFileName);
         }
 
         else
         {
-            fillCSHistos(sortedFileName, macropulseList, gammaCorrectionFileName, log, gatedHistoFileName);
+            fillCSHistos(sortedFileName, macropulseFileName, gammaCorrectionFileName, log, gatedHistoFileName);
         }
 
-        fillMonitorHistos(sortedFileName, macropulseList, log, gatedHistoFileName);
+        //fillMonitorHistos(sortedFileName, macropulseFileName, log, gatedHistoFileName);
     }
+
+    f.close();
 
     /*****************************************************/
     /* Apply deadtime correction to gated histograms     */
     /*****************************************************/
     string correctedHistoFileName = analysisDirectory + "correctedHistos.root";
     applyDeadtimeCorrection(gatedHistoFileName, deadtimeFileName, histoFileName, gammaCorrectionFileName, log, correctedHistoFileName);
+    correctForBackground(correctedHistoFileName, log);
 
     /*************************************************************************/
     /* Convert TOF histograms into energy in preparation for cross section

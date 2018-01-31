@@ -67,15 +67,15 @@ int vetoEvents(string detectorFileName, string outputFileName, ofstream& logFile
 
         // output tree holds events that have survived the veto
         TTree* tree = new TTree(detTreeName.c_str(),detTreeName.c_str());
-        tree->Branch("cycleNumber",&event.cycleNumber, "cycleNumber/i");
-        tree->Branch("macroNo",&event.macroNo, "macroNo/i");
-        tree->Branch("macroTime",&event.macroTime, "macroTime/d");
+        tree->Branch("cycleNumber",&event.cycleNumber, "cycleNumber/I");
+        tree->Branch("macroNo",&event.macroNo, "macroNo/I");
+        tree->Branch("macroTime",&event.macroTime, "macroTime/D");
         tree->Branch("fineTime",&event.fineTime, "fineTime/d");
-        tree->Branch("eventNo",&event.eventNo, "eventNo/i");
+        tree->Branch("eventNo",&event.eventNo, "eventNo/I");
         tree->Branch("completeTime",&event.completeTime, "completeTime/d");
         tree->Branch("targetPos",&event.targetPos, "targetPos/I");
-        tree->Branch("sgQ",&event.sgQ, "sgQ/i");
-        tree->Branch("lgQ",&event.lgQ, "lgQ/i");
+        tree->Branch("sgQ",&event.sgQ, "sgQ/I");
+        tree->Branch("lgQ",&event.lgQ, "lgQ/I");
         tree->Branch("vetoed",&event.vetoed,"vetoed/O");
 
         tree->Branch("waveform",&waveformPointer);
@@ -110,7 +110,7 @@ int vetoEvents(string detectorFileName, string outputFileName, ofstream& logFile
                 else
                 {
                     cout << "Reached end of veto tree - allowing all remaining events." << endl;
-                    unsigned int k=i;
+                    int k=i;
                     while(k<detTreeEntries)
                     {
                         detTree->GetEntry(k);
@@ -153,7 +153,7 @@ int vetoEvents(string detectorFileName, string outputFileName, ofstream& logFile
                 else
                 {
                     cout << "Reached end of veto tree - allowing all remaining events." << endl;
-                    unsigned int k=i;
+                    int k=i;
                     while(k<detTreeEntries)
                     {
                         detTree->GetEntry(k);

@@ -163,7 +163,7 @@ void printEvent(RawEvent& rawEvent, TextOutput& text)
                 break;
             /*case 7:
                 // fixed value of 0x12345678 (for diagnostics)
-                const unsigned int extras = (extras2 << 16) | extras1;
+                const int extras = (extras2 << 16) | extras1;
                 *out << "| Fixed value of 305419896 (0x12345678) outputted: " << left << setfill(' ') << setw(17) << rawEvent.extras << "|" << endl;
                 break;
                 */

@@ -1,20 +1,20 @@
 #!/bin/bash
 
-expFile="/data1/analysis/corrected.root"
+expFile="/data2/analysis/corrected.root"
 expCGraphName="CNat"
-expNiGraphName="NiNat"
+expNiGraphName="SnNat"
 expPbGraphName="PbNat"
 
-litFile="/data1/analysis/literatureData.root"
-litCGraphName="Natural carbon (n,tot)"
-litNiGraphName="Natural Ni (n,tot)"
+litFile="/data2/analysis/literatureData.root"
+litCGraphName="Natural C (n,tot)"
+litNiGraphName="Natural Sn (n,tot)"
 litPbGraphName="Natural Pb (n,tot)"
 
 relCGraphName="NatC, expLit, corrected"
-relNiGraphName="NatNi, expLit, corrected"
+relNiGraphName="NatSn, expLit, corrected"
 relPbGraphName="NatPb, expLit, corrected"
 
-outputFile="/data1/analysis/relative.root"
+outputFile="/data2/analysis/relative.root"
 
 ../bin/relativeDiffCS "$expFile" "$expCGraphName" "$litFile" "$litCGraphName" "$outputFile" "$relCGraphName"
 ../bin/relativeDiffCS "$expFile" "$expNiGraphName" "$litFile" "$litNiGraphName" "$outputFile" "$relNiGraphName"

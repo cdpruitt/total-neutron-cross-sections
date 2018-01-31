@@ -37,7 +37,7 @@ vector<pair<string,string>> getRelativePlotNames(string expName, string fileName
 }
 
 // read the channel mapping of the current run
-vector<pair<unsigned int, string>> getChannelMap(string expName, unsigned int runNumber)
+vector<pair<int, string>> getChannelMap(string expName, int runNumber)
 {
     string channelMapLocation = "../" + expName + "/channelMap.txt";
     ifstream dataFile(channelMapLocation.c_str());
@@ -48,8 +48,8 @@ vector<pair<unsigned int, string>> getChannelMap(string expName, unsigned int ru
     }
 
     string str;
-    unsigned int run;
-    vector<pair<unsigned int, string>> channelMap;
+    int run;
+    vector<pair<int, string>> channelMap;
 
     while(getline(dataFile,str))
     {
@@ -109,7 +109,7 @@ vector<string> getTargetOrder(string expName, int runNumber)
     }
 
     string str;
-    unsigned int run;
+    int run;
     vector<string> targetOrder;
 
     while(getline(dataFile,str))
@@ -185,7 +185,7 @@ AnalysisConfig readAnalysisConfig(string expName)
     }
 
     string str;
-    unsigned int run;
+    int run;
 
     AnalysisConfig analysisConfig;
 
@@ -211,6 +211,11 @@ AnalysisConfig readAnalysisConfig(string expName)
         else if(tokens[0]=="Macropulse-assigned")
         {
             analysisConfig.MACROPULSE_ASSIGNED_FILE_NAME = tokens.back();
+        }
+
+        else if(tokens[0]=="Macro")
+        {
+            analysisConfig.MACROPULSES_FILE_NAME = tokens.back();
         }
 
         else if(tokens[0]=="Survived-veto")
@@ -289,7 +294,7 @@ DeadtimeConfig readDeadtimeConfig(string expName)
     }
 
     string str;
-    unsigned int run;
+    int run;
 
     DeadtimeConfig deadtimeConfig;
 
@@ -333,7 +338,7 @@ FacilityConfig readFacilityConfig(string expName, int runNumber)
     }
 
     string str;
-    unsigned int run;
+    int run;
     vector<string> facilityConfig;
 
     while(getline(dataFile,str))
@@ -388,7 +393,7 @@ SoftwareCFDConfig readSoftwareCFDConfig(string expName, int runNumber)
     }
 
     string str;
-    unsigned int run;
+    int run;
     vector<string> softwareCFDConfig;
 
     while(getline(dataFile,str))
@@ -444,7 +449,7 @@ TimeConfig readTimeConfig(string expName, int runNumber)
     }
 
     string str;
-    unsigned int run;
+    int run;
     vector<string> timeConfig;
 
     while(getline(dataFile,str))
@@ -499,7 +504,7 @@ DigitizerConfig readDigitizerConfig(string expName, int runNumber)
     }
 
     string str;
-    unsigned int run;
+    int run;
     vector<string> digitizerConfig;
 
     while(getline(dataFile,str))
@@ -539,7 +544,7 @@ DigitizerConfig readDigitizerConfig(string expName, int runNumber)
         }
     }
 
-    vector<pair<unsigned int, string>> channelMap = getChannelMap(expName, runNumber);
+    vector<pair<int, string>> channelMap = getChannelMap(expName, runNumber);
 
     return DigitizerConfig(channelMap, digitizerConfig);
 }
@@ -557,7 +562,7 @@ CSConfig readCSConfig(string expName, int runNumber)
     }
 
     string str;
-    unsigned int run;
+    int run;
     vector<string> csConfig;
 
     while(getline(dataFile,str))
@@ -613,7 +618,7 @@ PlotConfig readPlotConfig(string expName, int runNumber)
     }
 
     string str;
-    unsigned int run;
+    int run;
     vector<string> plotConfig;
 
     while(getline(dataFile,str))
@@ -668,7 +673,7 @@ TargetConfig readTargetConfig(string expName, int runNumber)
     }
 
     string str;
-    unsigned int run;
+    int run;
     vector<pair<int,int>> targetConfig;
 
     while(getline(dataFile,str))

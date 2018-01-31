@@ -46,6 +46,9 @@ int main(int, char* argv[])
 
     // store run data in a "cross section prerequisites" structure
     vector<CSPrereqs> allCSPrereqs;
+    vector<vector<double>> runningFluxAvg;
+
+    bool printRunCount;
 
     // Ingest data from every run in the run list
     int runNumber;
@@ -63,9 +66,83 @@ int main(int, char* argv[])
         // Loop through all subruns of this run
         for(int subRun=0; subRun<=MAX_SUBRUN_NUMBER; subRun++)
         {
-            readSubRun(allCSPrereqs, expName, runNumber, subRun, detectorName, dataLocation);
+            printRunCount = false;
+
+            // Loop through all target positions in this subrun
+            for(int j=0; (size_t)j<config.target.TARGET_ORDER.size(); j++)
+            {
+                // pull data needed for CS calculation from subrun 
+                string targetDataLocation = "../" + expName + "/targetData/" + config.target.TARGET_ORDER[j] + ".txt";
+                CSPrereqs subRunData(targetDataLocation);
+
+                if(readSubRun(subRunData, expName, runNumber, subRun, detectorName, dataLocation))
+                {
+                    continue;
+                }
+
+                printRunCount = true;
+
+                /*if(subRunData.target.getName() == "blank")
+                  {
+                  cout << "monitor/detector ratio during blank = "
+                  << subRunData.monitorCounts/subRunData.totalEventNumber << endl;
+                  }*/
+
+                // find the correct CSPrereqs to add this target's data to
+
+                for(CSPrereqs& csp : allCSPrereqs)
+                {
+                    if(csp.target.getName() == subRunData.target.getName())
+                    {
+                        // add subrun data to total
+                        csp = csp + subRunData;
+                    }
+                }
+
+                vector<double> currentFluxAvg;
+
+                for(auto& p : allCSPrereqs)
+                {
+                    currentFluxAvg.push_back(p.monitorCounts);
+                }
+
+                runningFluxAvg.push_back(currentFluxAvg);
+
+            }
+
+            if(printRunCount)
+            {
+                cout << "Read " << runNumber << "-" << subRun << endl;
+            }
         }
     }
+
+    /*string CSPrereqsFileName = dataLocation + "/CSPrereqs.root";
+      TFile* CSPrereqsFile = new TFile(CSPrereqsFileName.c_str(), "UPDATE");
+
+      vector<TH1D*> runningFluxHistos;
+      for(string targetName : config.target.TARGET_ORDER)
+      {
+      string runningFluxHistoName = targetName + "RunningFluxAvg";
+      runningFluxHistos.push_back(new TH1D(runningFluxHistoName.c_str(),
+      runningFluxHistoName.c_str(), counter, 0, counter));
+      }
+
+      for(int i=0; i<runningFluxAvg.size(); i++)
+      {
+      for(int j=0; j<runningFluxAvg[i].size(); j++)
+      {
+      runningFluxHistos[j]->SetBinContent(i+1, runningFluxAvg[i][1]/runningFluxAvg[i][j]);
+      }
+      }
+
+      for(auto& histo : runningFluxHistos)
+      {
+      histo->Write();
+      }
+
+      CSPrereqsFile->Close();
+      */
 
     string outFileName = dataLocation + "/total.root";
     TFile* outFile = new TFile(outFileName.c_str(), "UPDATE");
@@ -80,10 +157,12 @@ int main(int, char* argv[])
 
         cout << "all CS Prereqs name = " << p.target.getName() << endl;
 
-        long totalCounts = 0;
-        for(int i=0; i<p.energyHisto->GetNbinsX(); i++)
+        double totalCounts = 0;
+        int numberOfBins = p.energyHisto->GetNbinsX();
+
+        for(int i=1; i<=numberOfBins; i++)
         {
-            long tempCounts = p.energyHisto->GetBinContent(i);
+            double tempCounts = p.energyHisto->GetBinContent(i);
             if(tempCounts < 0)
             {
                 continue;
@@ -115,8 +194,12 @@ int main(int, char* argv[])
     {
         CrossSection cs;
         cs.calculateCS(p,blank);
+
+        correctForBlank(cs, p, expName);
         crossSections.push_back(cs);;
     }
+
+    outFile->cd();
 
     for(auto& cs : crossSections)
     {
@@ -124,4 +207,17 @@ int main(int, char* argv[])
     }
 
     outFile->Close();
+
+    // read literature data and bin to appropriate energy range
+    string litDirectory = "../" + expName + "/literatureData";
+    string litOutputName = dataLocation + "/literatureData.root";
+    if(readLitData(litDirectory, litOutputName, config))
+    {
+        cerr << "Error: failed to produce properly binned literature cross sections. Exiting..." << endl;
+        return 1;
+    }
+
+    cout << "Finished binning/plotting literature cross sections." << endl;
+
+    return 0;
 }

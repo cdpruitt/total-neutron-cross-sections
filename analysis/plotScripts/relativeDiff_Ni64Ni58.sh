@@ -4,7 +4,7 @@ expFile="/data1/analysis/total.root"
 expGraph1Name="Ni64"
 expGraph2Name="Ni58"
 
-relGraph1Name="Ni"
+relGraph1Name="Ni64Ni58"
 
 outputFile="/data1/analysis/relative.root"
 

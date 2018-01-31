@@ -173,6 +173,7 @@ void CrossSection::createGraph(string name, string title)
                                       &getCrossSectionErrors()[0]);
     t->SetNameTitle(name.c_str(),title.c_str());
     gDirectory->WriteTObject(t);
+    cout << "created graph for " << name << endl;
 }
 
 double CrossSection::calculateRMSError()
@@ -200,20 +201,7 @@ double CrossSection::calculateRMSError()
 
 void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& blankData)
 {
-    // make sure the monitor recorded counts for both the blank and the target
-    // of interest so we can normalize the flux between them
-    if(targetData.monitorCounts == 0 || blankData.monitorCounts == 0)
-    {
-        cerr << "Error - didn't find any monitor counts for target while trying to calculate cross sections. Returning empty cross section..." << endl;
-        return;
-    }
-
     // define variables to hold cross section information
-    double energyValue;
-    double energyError;
-    double crossSectionValue;
-    double crossSectionError;
-
     int numberOfBins = targetData.energyHisto->GetNbinsX();
 
     // calculate the ratio of target/blank monitor counts (normalize
@@ -225,28 +213,18 @@ void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& bla
 
     // calculate the ratio of target/blank good macropulse ratio (normalize
     // macropulse number)
-    double goodMacroNumberRatio = targetData.goodMacroNumber/blankData.goodMacroNumber;
+    double goodMacroRatio = targetData.goodMacroNumber/blankData.goodMacroNumber;
+    double totalMacroRatio = targetData.totalMacroNumber/blankData.totalMacroNumber;
 
-    cout << "flux per macro ratio = " << monitorRatio << endl;
-    cout << "goodMacroNumber ratio = " << goodMacroNumberRatio << endl;
-
-    cout << "total scaling ratio = " << monitorRatio * goodMacroNumberRatio << endl;
-
-    double dutyFactor = 
-        (config.facility.MICROS_PER_MACRO*config.facility.MICRO_LENGTH)
-       /(pow(10,9)/config.facility.MACRO_FREQUENCY);
+    double avgFluxRatio = monitorRatio*goodMacroRatio;
 
     // calculate number of atoms in this target
-    long double numberOfAtoms =
+    double numberOfAtoms =
         (targetData.target.getMass()/targetData.target.getMolarMass())*AVOGADROS_NUMBER;
 
     // calculate areal density (atoms/cm^2) in target
     double arealDensity =
         numberOfAtoms/(pow(targetData.target.getDiameter()/2,2)*M_PI); // area of cylinder end
-
-    // calculate volume density (atoms/cm^3) in target
-    double volumeDensity =
-        arealDensity/targetData.target.getLength();
 
     // loop through each bin in the energy histo, calculating a cross section
     // for each bin
@@ -256,35 +234,34 @@ void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& bla
         TH1D* bCounts = blankData.energyHisto;
         TH1D* tCounts = targetData.energyHisto;
 
-        energyValue = tCounts->GetBinCenter(i);
-        energyError = tCounts->GetBinWidth(i)/2;
+        double energyValue = tCounts->GetBinCenter(i);
+        double energyError = tCounts->GetBinWidth(i)/2;
 
-        long bDet = bCounts->GetBinContent(i);
-        long tDet = tCounts->GetBinContent(i);
+        double tDet = tCounts->GetBinContent(i);
+        double bDet = bCounts->GetBinContent(i);
 
         // calculate the ratio of target/blank counts in the detector
-        double detectorRatio = tDet/(double)bDet;
+        double detectorRatio = tDet/bDet;
 
         // if any essential values are 0, return an empty DataPoint
         if(detectorRatio <=0 || monitorRatio <=0
-                || goodMacroNumberRatio <=0 || arealDensity <=0)
+                || goodMacroRatio <=0 || arealDensity <=0)
         {
-            crossSectionValue = 0;
-            crossSectionError = 0;
             addDataPoint(
-                DataPoint(energyValue, energyError, crossSectionValue, crossSectionError,
+                DataPoint(0, 0, 0, 0,
                           bMon, tMon, bDet, tDet));
             continue;
         }
 
-        crossSectionValue =
+        double crossSectionValue =
             -log(detectorRatio/(monitorRatio))/arealDensity; // in cm^2
 
         crossSectionValue *= pow(10,24); // in barns 
             
         // calculate the statistical error
-        crossSectionError =
-            pow(1/tDet+1/bDet+1/bMon+1/tMon,0.5)/arealDensity; // in cm^2
+        double crossSectionError =
+            //pow(1/tDet+1/bDet+1/bMon+1/tMon,0.5)/arealDensity; // in cm^2
+            pow(1/tDet+1/bDet,0.5)/arealDensity; // in cm^2
 
         crossSectionError *= pow(10,24); // in barns
 

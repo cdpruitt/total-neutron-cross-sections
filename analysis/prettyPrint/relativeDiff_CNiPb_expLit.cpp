@@ -3,9 +3,9 @@
 
     TFile* file = new TFile(fileName.c_str(),"READ");
     
-    string CGraphName = "NatC, expLit";
-    string NiGraphName = "NatNi, expLit";
-    string PbGraphName = "NatPb, expLit";
+    string CGraphName = "NatC, expLit, percent";
+    string NiGraphName = "NatNi, expLit, percent";
+    string PbGraphName = "NatPb, expLit, percent";
         
     TGraphErrors* CGraph = (TGraphErrors*)file->Get(CGraphName.c_str());
     TGraphErrors* NiGraph = (TGraphErrors*)file->Get(NiGraphName.c_str());
@@ -101,7 +101,7 @@
     
     gPad->SetLogx(1);
     
-    CGraph->GetYaxis()->SetRangeUser(-0.12,0.05);
+    CGraph->GetYaxis()->SetRangeUser(-6,6);
 
     //TLatex latex;
     //latex.SetNDC();

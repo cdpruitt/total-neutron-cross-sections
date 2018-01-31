@@ -1,16 +1,74 @@
+#include "../include/config.h"
 #include "../include/CSUtilities.h"
 #include "../include/crossSection.h"
 #include "../include/dataSet.h"
 #include "../include/dataPoint.h"
 #include "../include/experiment.h"
+#include "../include/physicalConstants.h"
+#include "../include/plots.h"
 
 #include <iostream>
+#include <fstream>
 
 using namespace std;
 
-/*CrossSection correctForBlank(CrossSection rawCS, double targetNumberDensity, string expName, string graphFileName)
+int readLitData(string litDirectory, string litOutputName, const Config& config)
 {
-    string blankDataLocation = "../" + expName + "/targetData/" + "blank.txt";
+    string inFileName = litDirectory + "/filesToRead.txt";
+    ifstream inFile(inFileName);
+    if(!inFile.is_open())
+    {
+        cout << "Failed to open " << inFileName << endl;
+        return(1);
+    }
+
+    string dummy;
+    vector<string> fileNames;
+
+    while(inFile >> dummy)
+    {
+        dummy = litDirectory + "/" + dummy;
+        fileNames.push_back(dummy);
+    }
+
+    // read energy bins from config
+    TH1D* TOFHisto = new TH1D("","",config.plot.TOF_BINS, config.plot.TOF_LOWER_BOUND, config.plot.TOF_UPPER_BOUND);
+    TH1D* energyHisto = timeBinsToRKEBins(TOFHisto, "");
+
+    vector<double> energyBins;
+    
+    int numberOfBins = energyHisto->GetNbinsX();
+
+    for(int i=1; i<=numberOfBins; i++)
+    {
+        energyBins.push_back(energyHisto->GetBinLowEdge(i));
+    }
+
+    energyBins.push_back(
+            energyHisto->GetBinLowEdge(numberOfBins)
+           +energyHisto->GetBinWidth(numberOfBins));
+
+    // recreate output file
+    TFile* outFile = new TFile(litOutputName.c_str(),"RECREATE");
+
+    vector<DataSet> allData;
+
+    for(string s : fileNames)
+    {
+        cout << "Creating plot for " << s << endl;
+        allData.push_back(DataSet(s, energyBins));
+        outFile->cd();
+        allData.back().getPlot()->Write();
+    }
+
+    outFile->Close();
+
+    return 0;
+}
+
+int correctForBlank(CrossSection& rawCS, CSPrereqs& targetData, string expName)
+{
+    string blankDataLocation = "../" + expName + "/targetData/blankCorrection.txt";
     ifstream blankDataFile(blankDataLocation.c_str());
     if(!blankDataFile.is_open())
     {
@@ -65,27 +123,30 @@ using namespace std;
         }
     }
 
-    CrossSection correctedCS = rawCS;
-
     for(Target t : blankComposition)
     {
-        double factor = (t.getMass()/t.getMolarMass())*AVOGADROS_NUMBER/(t.getLength()*M_PI*pow((t.getDiameter()/2),2));
+        double blankNumberDensity = (t.getMass()/t.getMolarMass())*AVOGADROS_NUMBER/(t.getLength()*M_PI*pow((t.getDiameter()/2),2));
 
-        if(targetNumberDensity==0)
-        {
-            continue;
-        }
+        // calculate number of atoms in this target
+        double numberTargetAtoms =
+            (targetData.target.getMass()/targetData.target.getMolarMass())*AVOGADROS_NUMBER;
 
-        factor /= targetNumberDensity; // ratio of atoms of this element in blank, compared to target
-        factor *= -1; // the correction should be additive, not subtractive
+        // calculate number density (atoms/cm^3) in target
+    double targetNumberDensity =
+        numberTargetAtoms/(targetData.target.getLength()*pow(targetData.target.getDiameter()/2,2)*M_PI); // area of cylinder end
 
-        string graphFileLocation = "../" + expName + "/literatureData/" + graphFileName;
-        string graphFileName = t.getName() + "(n,tot)";
-        correctedCS.subtractCS(graphFileLocation, graphFileName, factor);
+        double ratioNumberDensities = blankNumberDensity/targetNumberDensity; // ratio of atoms of this element in blank, compared to target
+        ratioNumberDensities *= -1; // the correction should be additive, not subtractive
+
+        string graphFileName = "../" + expName + "/literatureData/literatureData.root";
+        string blankCSGraphName = t.getName() + "(n,tot)";
+
+        string name = rawCS.name + "blankCorrected";
+        rawCS = subtractCS(rawCS, graphFileName, blankCSGraphName, ratioNumberDensities, 1, "blankCorrected");
     }
 
-    return correctedCS;
-}*/
+    return 0;
+}
 
 /*int produceTotalCSPlots(string dataLocation, vector<CrossSection>& crossSections)
 {
@@ -256,6 +317,40 @@ CrossSection subtractCS(string rawCSFileName, string rawCSGraphName,
     rawCSFile->cd();
     differenceCS.createGraph(name, name);
 
+    return differenceCS;
+}
+
+CrossSection subtractCS(CrossSection rawCS, string subtrahendFileName,
+        string subtrahendGraphName, double factor, double divisor, string name)
+{
+    // get subtrahend graph
+    TFile* subtrahendFile = new TFile(subtrahendFileName.c_str(),"READ");
+    TGraphErrors* subtrahendGraph = (TGraphErrors*)subtrahendFile->Get(subtrahendGraphName.c_str());
+    if(!subtrahendGraph)
+    {
+        cerr << "Error: failed to find " << subtrahendGraphName << " in " << subtrahendFileName << endl;
+        exit(1);
+    }
+
+    DataSet subtrahendData = DataSet();
+    DataSet rawCSData = rawCS.getDataSet();
+
+    // for each y-value of the raw CS graph, read the y-value of the subtrahend
+    // and the y-error
+    for(int i=0; i<rawCSData.getNumberOfPoints(); i++)
+    {
+        subtrahendData.addPoint(
+                DataPoint(rawCSData.getPoint(i).getXValue(),
+                    rawCSData.getPoint(i).getXError(),
+                    subtrahendGraph->Eval(rawCSData.getPoint(i).getXValue()),
+                    subtrahendGraph->GetErrorY(rawCSData.getPoint(i).getXValue()))); 
+    }
+
+    // perform the subtraction
+    CrossSection differenceCS = CrossSection();
+    differenceCS.addDataSet((rawCSData-subtrahendData*factor)/divisor);
+
+    differenceCS.name = rawCS.name;
     return differenceCS;
 }
 

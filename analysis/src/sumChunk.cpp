@@ -47,7 +47,37 @@ int main(int, char* argv[])
     // Loop through all subruns of this run
     for(int subRun=lowSubrun; subRun<=highSubrun; subRun++)
     {
-        readSubRun(allCSPrereqs, expName, runNumber, subRun, detectorName, dataLocation);
+        // Loop through all target positions in this subrun
+        for(int j=0; (size_t)j<config.target.TARGET_ORDER.size(); j++)
+        {
+            // pull data needed for CS calculation from subrun 
+            string targetDataLocation = "../" + expName + "/targetData/" + config.target.TARGET_ORDER[j] + ".txt";
+            CSPrereqs subRunData(targetDataLocation);
+
+            if(readSubRun(subRunData, expName, runNumber, subRun, detectorName, dataLocation))
+            {
+                continue;
+            }
+
+            cout << "Read " << runNumber << "-" << subRun << endl;
+
+            /*if(subRunData.target.getName() == "blank")
+              {
+              cout << "monitor/detector ratio during blank = "
+              << subRunData.monitorCounts/subRunData.totalEventNumber << endl;
+              }*/
+
+            // find the correct CSPrereqs to add this target's data to
+
+            for(CSPrereqs& csp: allCSPrereqs)
+            {
+                if(csp.target.getName() == subRunData.target.getName())
+                {
+                    // add subrun data to total
+                    csp = csp + subRunData;
+                }
+            }
+        }
     }
 
     string outFileName = dataLocation + "/total.root";
@@ -71,10 +101,12 @@ int main(int, char* argv[])
 
     for(auto& p : allCSPrereqs)
     {
-        long totalCounts = 0;
-        for(int i=0; i<p.energyHisto->GetNbinsX(); i++)
+        double totalCounts = 0;
+        int numberOfBins = p.energyHisto->GetNbinsX();
+
+        for(int i=1; i<=numberOfBins; i++)
         {
-            long tempCounts = p.energyHisto->GetBinContent(i);
+            double tempCounts = p.energyHisto->GetBinContent(i);
             if(tempCounts < 0)
             {
                 continue;
@@ -104,11 +136,16 @@ int main(int, char* argv[])
     vector<CrossSection> crossSections;
     for(auto& p : allCSPrereqs)
     {
-        crossSections.push_back(CrossSection());
-        crossSections.back().calculateCS(p,blank);
+        CrossSection cs = CrossSection();
+        cs.calculateCS(p,blank);
+        correctForBlank(cs, p, expName);
+
+        crossSections.push_back(cs);
 
         cout << "Created cross section for " << crossSections.back().name << " target." << endl;
     }
+
+    outFile->cd();
 
     for(auto& cs : crossSections)
     {

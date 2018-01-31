@@ -6,6 +6,7 @@ This file lists the filenames and tree names used for analysis output
 
 Raw tree filename                 = raw.root
 Macropulse-assigned tree filename = sorted.root
+Macro filename                    = macropulses.root
 Survived-veto tree filename       = vetoed.root
 Histogram filename                = histos.root
 Energy plots filename             = energy.root

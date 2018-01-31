@@ -12,7 +12,7 @@ fi
 
 # SECTION 2: define analysis workflow
 
-while getopts "scr" opt; do
+while getopts "scre" opt; do
     case ${opt} in
         s)
             runSubrunPath=true
@@ -23,12 +23,16 @@ while getopts "scr" opt; do
         r)
             runList=true
             ;;
+        e)
+            eachSubrun=true
+            ;;
         \?)
             # Flags unrecognized - exit script and give the user a help message
             printf "\nInvalid flag given.\n\nValid flags are:\n"
             printf "    -s (analyze a single file, given as runNumber subRunNumber)\n"
             printf "    -c (analyze a chunk of subruns, given as runNumber, first subRunNumber, last subRunNumber)\n"
             printf "    -r (analyze runs listed in ../<experiment>/runsToSort.txt)\n"
+            printf "    -e (analyze each subrun separately to produce its own cross section)\n"
             exit
             ;;
     esac
@@ -42,7 +46,15 @@ then
     printf "\nAnalyzing all runs in runList.txt...\n"
 
     detectorName=$2 # which detector should be used for cross section calculation
-    analysisDirectoryName="/data1/analysis"
+    if [ "$experiment" = "nickel" ]
+    then
+        analysisDirectoryName="/data1/analysis"
+    fi
+
+    if [ "$experiment" = "tin2" ]
+    then
+        analysisDirectoryName="/data2/analysis"
+    fi
 
     # Skip subruns on the blacklist
     skip=false
@@ -55,12 +67,17 @@ then
             break
         fi
     done < ../$experiment/blacklist.txt
-    if [ $skip == true ]
+    if [ "$skip" = true ]
     then
         continue
     fi
 
-    ./bin/sumAll "$analysisDirectoryName" "$experiment" "$detectorName"
+    if [ "$eachSubrun" = true ]
+    then
+        ./bin/eachSubrun "$analysisDirectoryName" "$experiment" "$detectorName"
+    else
+        ./bin/sumAll "$analysisDirectoryName" "$experiment" "$detectorName"
+    fi
 fi
 
 if [ "$runChunk" = true ]

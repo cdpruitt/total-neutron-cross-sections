@@ -64,17 +64,17 @@ struct SeparatedEvent
 struct DetectorEvent
 {
     double macroTime = 0;
-    unsigned int macroNo = 0;
+    int macroNo = 0;
     int targetPos = 0;
 
-    unsigned int cycleNumber = 0;
+    int cycleNumber = 0;
     double completeTime = 0;
     unsigned int timetag = 0;
     unsigned int extTime = 0;
     double fineTime = 0;
-    unsigned int eventNo = 0;
-    unsigned int sgQ = 0;
-    unsigned int lgQ = 0;
+    int eventNo = 0;
+    int sgQ = 0;
+    int lgQ = 0;
     unsigned int baseline = 0;
 
     bool vetoed = false;
@@ -86,20 +86,20 @@ struct MacropulseEvent
 {
     MacropulseEvent() {}
     MacropulseEvent(
-            unsigned int mn,
-            unsigned int ne,
-            unsigned int tp) :
+            int mn,
+            int ne,
+            int tp) :
         macroNo(mn), numberOfEventsInMacro(ne), targetPos(tp) {}
 
-    unsigned int cycleNumber = 0;
-    unsigned int macroNo = 0;
+    int cycleNumber = 0;
+    int macroNo = 0;
     double macroTime = 0;
     int targetPos = 0;
-    unsigned int lgQ = 0;
+    int lgQ = 0;
     std::vector<int> waveform;
 
-    unsigned int numberOfEventsInMacro = 0;
-    unsigned int numberOfMonitorsInMacro = 0;
+    int numberOfEventsInMacro = 0;
+    int numberOfMonitorsInMacro = 0;
 
     bool isGoodMacro = 0;
 };

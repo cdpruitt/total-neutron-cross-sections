@@ -12,6 +12,7 @@ class DataSet
         // constructors
         DataSet();
         DataSet(std::string dataSetLocation);
+        DataSet(std::string dataSetLocation, const std::vector<double>& energyBins);
         DataSet(std::vector<double> energy, std::vector<double> xsection, std::vector<double> error, std::string reference);
         DataSet(TGraphErrors* graph, std::string reference);
 

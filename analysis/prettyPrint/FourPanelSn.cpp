@@ -34,10 +34,10 @@
     gROOT->ForceStyle();
 
     // read graphs
-    string expFileName = "/data1/analysis/total.root";
-    string relFileName = "/data1/analysis/relative.root";
-    string corFileName = "/data1/analysis/corrected.root";
-    string litFileName = "/data1/analysis/literatureData.root";
+    string expFileName = "/data2/analysis/total.root";
+    string relFileName = "/data2/analysis/relative.root";
+    string corFileName = "/data2/analysis/corrected.root";
+    string litFileName = "/data2/analysis/literatureData.root";
 
     TFile* expFile = new TFile(expFileName.c_str(),"READ");
     TFile* relFile = new TFile(relFileName.c_str(),"READ");
@@ -47,81 +47,81 @@
     if(!expFile || !relFile || !corFile || !litFile)
     {
         cout << "Error: failed to open a required file (check filenames). Exiting..." << endl;
-        exit(1);
+        return 0;
     }
     
     string expCGraphName = "CNat";
-    string expNiGraphName = "NiNat";
+    string expSnGraphName = "SnNat";
     string expPbGraphName = "PbNat";
 
     string relCGraphName = "NatC, expLit, percent";
-    string relNiGraphName = "NatNi, expLit, percent";
+    string relSnGraphName = "NatSn, expLit, percent";
     string relPbGraphName = "NatPb, expLit, percent";
 
     string relCorCGraphName = "NatC, expLit, corrected, percent";
-    string relCorNiGraphName = "NatNi, expLit, corrected, percent";
+    string relCorSnGraphName = "NatSn, expLit, corrected, percent";
     string relCorPbGraphName = "NatPb, expLit, corrected, percent";
 
-    string litCGraphName = "Natural carbon (n,tot)";
-    string litNiGraphName = "Natural Ni (n,tot)";
+    string litCGraphName = "Natural C (n,tot)";
+    string litSnGraphName = "Natural Sn (n,tot)";
     string litPbGraphName = "Natural Pb (n,tot)";
     
     TGraphErrors* expCGraph = (TGraphErrors*)expFile->Get(expCGraphName.c_str());
-    TGraphErrors* expNiGraph = (TGraphErrors*)expFile->Get(expNiGraphName.c_str());
+    TGraphErrors* expSnGraph = (TGraphErrors*)expFile->Get(expSnGraphName.c_str());
     TGraphErrors* expPbGraph = (TGraphErrors*)expFile->Get(expPbGraphName.c_str());
 
     TGraphErrors* relCGraph = (TGraphErrors*)relFile->Get(relCGraphName.c_str());
-    TGraphErrors* relNiGraph = (TGraphErrors*)relFile->Get(relNiGraphName.c_str());
+    TGraphErrors* relSnGraph = (TGraphErrors*)relFile->Get(relSnGraphName.c_str());
     TGraphErrors* relPbGraph = (TGraphErrors*)relFile->Get(relPbGraphName.c_str());
 
     TGraphErrors* corCGraph = (TGraphErrors*)corFile->Get(expCGraphName.c_str());
-    TGraphErrors* corNiGraph = (TGraphErrors*)corFile->Get(expNiGraphName.c_str());
+    TGraphErrors* corSnGraph = (TGraphErrors*)corFile->Get(expSnGraphName.c_str());
     TGraphErrors* corPbGraph = (TGraphErrors*)corFile->Get(expPbGraphName.c_str());
 
     TGraphErrors* relCorCGraph = (TGraphErrors*)relFile->Get(relCorCGraphName.c_str());
-    TGraphErrors* relCorNiGraph = (TGraphErrors*)relFile->Get(relCorNiGraphName.c_str());
+    TGraphErrors* relCorSnGraph = (TGraphErrors*)relFile->Get(relCorSnGraphName.c_str());
     TGraphErrors* relCorPbGraph = (TGraphErrors*)relFile->Get(relCorPbGraphName.c_str());
 
     TGraphErrors* litCGraph = (TGraphErrors*)litFile->Get(litCGraphName.c_str());
-    TGraphErrors* litNiGraph = (TGraphErrors*)litFile->Get(litNiGraphName.c_str());
+    TGraphErrors* litSnGraph = (TGraphErrors*)litFile->Get(litSnGraphName.c_str());
     TGraphErrors* litPbGraph = (TGraphErrors*)litFile->Get(litPbGraphName.c_str());
 
-    if(!expCGraph || !expNiGraph || !expPbGraph)
+    if(!expCGraph || !expSnGraph || !expPbGraph)
     {
         cout << "Error: failed to open an experimental absolute cross section graph." << endl;
-        exit(1);
+        return 1;
     }
 
-    if(!relCGraph || !relNiGraph || !relPbGraph)
+    if(!relCGraph || !relSnGraph || !relPbGraph)
     {
         cout << "Error: failed to open an relative diff to lit cross section graph." << endl;
-        exit(1);
+        return 1;
     }
 
-    if(!corCGraph || !corNiGraph || !corPbGraph)
+    if(!corCGraph || !corSnGraph || !corPbGraph)
     {
         cout << "Error: failed to open an corrected absolute cross section graph." << endl;
-        exit(1);
+        return 1;
     }
 
-    if(!relCorCGraph || !relCorNiGraph || !relCorPbGraph)
+    if(!relCorCGraph || !relCorSnGraph || !relCorPbGraph)
     {
         cout << "Error: failed to open an corrected relative diff to lit cross section graph." << endl;
-        exit(1);
+        return 1;
     }
 
-    if(!litCGraph || !litNiGraph || !litPbGraph)
+    if(!litCGraph || !litSnGraph || !litPbGraph)
     {
         cout << "Error: failed to open an lit cross section graph." << endl;
-        exit(1);
+        return 1;
     }
 
     // Set graph point and line characteristics
     expCGraph->SetLineColor(kRed);
     expCGraph->SetMarkerColor(kRed);
 
-    expNiGraph->SetLineColor(kRed);
-    expNiGraph->SetMarkerColor(kRed);
+    expSnGraph->SetLineColor(kRed);
+    expSnGraph->SetMarkerColor(kRed);
 
     expPbGraph->SetLineColor(kRed);
     expPbGraph->SetMarkerColor(kRed);
@@ -131,10 +131,10 @@
     relCGraph->SetLineStyle(0);
     relCGraph->SetMarkerColor(kRed-9);
 
-    relNiGraph->SetLineColor(kRed);
-    relNiGraph->SetLineWidth(4);
-    relNiGraph->SetLineStyle(0);
-    relNiGraph->SetMarkerColor(kRed);
+    relSnGraph->SetLineColor(kRed);
+    relSnGraph->SetLineWidth(4);
+    relSnGraph->SetLineStyle(0);
+    relSnGraph->SetMarkerColor(kRed);
 
     relPbGraph->SetLineColor(kRed+3);
     relPbGraph->SetLineWidth(4);
@@ -144,8 +144,8 @@
     corCGraph->SetLineColor(kRed);
     corCGraph->SetMarkerColor(kRed);
 
-    corNiGraph->SetLineColor(kRed);
-    corNiGraph->SetMarkerColor(kRed);
+    corSnGraph->SetLineColor(kRed);
+    corSnGraph->SetMarkerColor(kRed);
 
     corPbGraph->SetLineColor(kRed);
     corPbGraph->SetMarkerColor(kRed);
@@ -155,10 +155,10 @@
     relCorCGraph->SetLineStyle(0);
     relCorCGraph->SetMarkerColor(kRed-9);
 
-    relCorNiGraph->SetLineColor(kRed);
-    relCorNiGraph->SetLineWidth(4);
-    relCorNiGraph->SetLineStyle(0);
-    relCorNiGraph->SetMarkerColor(kRed);
+    relCorSnGraph->SetLineColor(kRed);
+    relCorSnGraph->SetLineWidth(4);
+    relCorSnGraph->SetLineStyle(0);
+    relCorSnGraph->SetMarkerColor(kRed);
 
     relCorPbGraph->SetLineColor(kRed+3);
     relCorPbGraph->SetLineWidth(4);
@@ -170,10 +170,10 @@
     litCGraph->SetLineStyle(0);
     litCGraph->SetMarkerColor(kBlue);
 
-    litNiGraph->SetLineColor(kBlue);
-    litNiGraph->SetLineWidth(4);
-    litNiGraph->SetLineStyle(0);
-    litNiGraph->SetMarkerColor(kBlue);
+    litSnGraph->SetLineColor(kBlue);
+    litSnGraph->SetLineWidth(4);
+    litSnGraph->SetLineStyle(0);
+    litSnGraph->SetMarkerColor(kBlue);
 
     litPbGraph->SetLineColor(kBlue);
     litPbGraph->SetLineWidth(4);
@@ -214,33 +214,33 @@
         expCGraph->GetYaxis()->SetLabelSize(0.08);
 
         expCGraph->GetYaxis()->SetLabelFont(2);
-        expCGraph->GetYaxis()->SetNdivisions(5);
+        expCGraph->GetYaxis()->SetNdivisions(10);
         expCGraph->GetYaxis()->SetTickLength(0.02);
 
-        expCGraph->GetXaxis()->SetRangeUser(2,600);
+        expCGraph->GetXaxis()->SetRangeUser(3,600);
         expCGraph->GetYaxis()->SetRangeUser(0,9);
 
         gStyle->SetLineWidth(3);
 
         expCGraph->Draw("");
         litCGraph->Draw("same");
-        litNiGraph->Draw("same");
+        litSnGraph->Draw("same");
         litPbGraph->Draw("same");
         expCGraph->Draw("same");
-        expNiGraph->Draw("same");
+        expSnGraph->Draw("same");
         expPbGraph->Draw("same");
         
         TLatex latex;
         latex.SetNDC();
-        latex.SetTextSize(0.08);
+        latex.SetTextSize(0.06);
         latex.SetTextAlign(13); // align at top
         latex.DrawLatex(0.62,0.57,"^{nat}Pb");
-        latex.DrawLatex(0.52,0.33,"^{nat}Ni");
+        latex.DrawLatex(0.52,0.33,"^{nat}Sn");
         latex.DrawLatex(0.51,0.13,"^{nat}C");
 
         // Define legend format and contents
         TLegend *legend = new TLegend(0.7,0.70,0.9,0.9);
-        legend->SetTextSize(0.08);
+        legend->SetTextSize(0.06);
         legend->SetTextAlign(12);
         legend->AddEntry(litCGraph,"Analog","l");
         legend->AddEntry(corCGraph,"DSP","l");
@@ -261,10 +261,10 @@
 
         expCGraph->Draw("");
         litCGraph->Draw("same");
-        litNiGraph->Draw("same");
+        litSnGraph->Draw("same");
         litPbGraph->Draw("same");
         corCGraph->Draw("same");
-        corNiGraph->Draw("same");
+        corSnGraph->Draw("same");
         corPbGraph->Draw("same");
 
         // Pad dimensions and margins
@@ -272,15 +272,15 @@
 
         TLatex latex;
         latex.SetNDC();
-        latex.SetTextSize(0.08);
+        latex.SetTextSize(0.06);
         latex.SetTextAlign(13); // align at top
         latex.DrawLatex(0.515,0.57,"^{nat}Pb");
-        latex.DrawLatex(0.40,0.33,"^{nat}Ni");
+        latex.DrawLatex(0.40,0.33,"^{nat}Sn");
         latex.DrawLatex(0.38,0.13,"^{nat}C");
 
         // Define legend format and contents
         TLegend *legend = new TLegend(0.7,0.70,0.9,0.9);
-        legend->SetTextSize(0.08);
+        legend->SetTextSize(0.06);
         legend->SetTextAlign(12);
         legend->AddEntry(litCGraph,"Analog","l");
         legend->AddEntry(corCGraph,"DSP","l");
@@ -327,14 +327,14 @@
         relCGraph->GetYaxis()->SetLabelSize(0.08);
 
         relCGraph->GetYaxis()->SetLabelFont(2);
-        relCGraph->GetYaxis()->SetNdivisions(10);
+        relCGraph->GetYaxis()->SetNdivisions(5);
         relCGraph->GetYaxis()->SetTickLength(0.02);
 
         relCGraph->Draw("");
-        relNiGraph->Draw("same");
+        relSnGraph->Draw("same");
         relPbGraph->Draw("same");
         
-        relCGraph->GetXaxis()->SetRangeUser(2,600);
+        relCGraph->GetXaxis()->SetRangeUser(3,600);
         relCGraph->GetYaxis()->SetRangeUser(-8,8);
 
         //TLatex latex;
@@ -342,16 +342,16 @@
         //latex.SetTextSize(0.035);
         //latex.SetTextAlign(13); // align at top
         //latex.DrawLatex(0.65,0.65,"Pb (elem.)");
-        //latex.DrawLatex(0.35,0.52,"Ni (elem.)");
+        //latex.DrawLatex(0.35,0.52,"Sn (elem.)");
         //latex.DrawLatex(0.32,0.4,"C (elem.)");
 
         // Define legend format and contents
         TLegend *legend = new TLegend(0.57,0.81,0.94,0.92);
         legend->SetNColumns(3);
-        legend->SetTextSize(0.065);
+        legend->SetTextSize(0.055);
         legend->SetTextAlign(12);
         legend->AddEntry(relCGraph,"{}^{nat}C","l");
-        legend->AddEntry(relNiGraph,"{}^{nat}Ni","l");
+        legend->AddEntry(relSnGraph,"{}^{nat}Sn","l");
         legend->AddEntry(relPbGraph,"{}^{nat}Pb","l");
 
         legend->Draw();
@@ -383,7 +383,7 @@
         relCorCGraph->GetXaxis()->SetLabelSize(0.08);
         relCorCGraph->GetXaxis()->SetLabelFont(2);
 
-        relCorCGraph->GetXaxis()->SetNdivisions(10);
+        relCorCGraph->GetXaxis()->SetNdivisions(20);
         relCorCGraph->GetXaxis()->SetTickLength(0.03);
 
         // Y-axis parameters
@@ -397,14 +397,14 @@
         relCorCGraph->GetYaxis()->SetLabelSize(0.08);
 
         relCorCGraph->GetYaxis()->SetLabelFont(2);
-        relCorCGraph->GetYaxis()->SetNdivisions(10);
+        relCorCGraph->GetYaxis()->SetNdivisions(5);
         relCorCGraph->GetYaxis()->SetTickLength(0.02);
 
         relCorCGraph->Draw("");
-        relCorNiGraph->Draw("same");
+        relCorSnGraph->Draw("same");
         relCorPbGraph->Draw("same");
 
-        relCorCGraph->GetXaxis()->SetRangeUser(2,600);
+        relCorCGraph->GetXaxis()->SetRangeUser(3,600);
         relCorCGraph->GetYaxis()->SetRangeUser(-8,8);
 
         //TLatex latex;
@@ -412,16 +412,16 @@
         //latex.SetTextSize(0.035);
         //latex.SetTextAlign(13); // align at top
         //latex.DrawLatex(0.65,0.65,"Pb (elem.)");
-        //latex.DrawLatex(0.35,0.52,"Ni (elem.)");
+        //latex.DrawLatex(0.35,0.52,"Sn (elem.)");
         //latex.DrawLatex(0.32,0.4,"C (elem.)");
 
         // Define legend format and contents
         TLegend *legend = new TLegend(0.45,0.81,0.85,0.92);
         legend->SetNColumns(3);
-        legend->SetTextSize(0.065);
+        legend->SetTextSize(0.055);
         legend->SetTextAlign(12);
         legend->AddEntry(relCGraph,"{}^{nat}C","l");
-        legend->AddEntry(relNiGraph,"{}^{nat}Ni","l");
+        legend->AddEntry(relSnGraph,"{}^{nat}Sn","l");
         legend->AddEntry(relPbGraph,"{}^{nat}Pb","l");
 
         legend->Draw();
@@ -429,7 +429,7 @@
 
     //TImage* image = TImage::Create();
     //image->FromPad(canvas);
-    //image->WriteImage("../plots/crossSections/FourPanelNi.png");
+    //image->WriteImage("../plots/crossSections/FourPanelSn.png");
 
     // close it all up
     expFile->Close();

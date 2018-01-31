@@ -3,12 +3,13 @@
 
 #include <string>
 #include <utility>
+#include "dataStructures.h"
 
 int assignEventsToMacropulses(
         std::string inputFileName,
         std::string outputFileName,
         std::ofstream& log,
-        std::pair<unsigned int, std::string> channel);
+        std::vector<MacropulseEvent>& macropulseList);
 
 #endif /* ASSIGN_EVENTS_TO_MACROPULSES_H */
 

@@ -47,7 +47,7 @@ TimeConfig::TimeConfig(std::vector<std::string> timeConfig)
         exit(1);
     }
 
-    for(unsigned int i=0; i<timeConfig.size()-1; i++)
+    for(int i=0; i<timeConfig.size()-1; i++)
     {
         offsets.push_back(stod(timeConfig[i]));
     }
@@ -55,7 +55,7 @@ TimeConfig::TimeConfig(std::vector<std::string> timeConfig)
     GAMMA_WINDOW_SIZE = stod(timeConfig[8]);
 }
 
-DigitizerConfig::DigitizerConfig(vector<pair<unsigned int, string>> channelMap, vector<string> digitizerConfig)
+DigitizerConfig::DigitizerConfig(vector<pair<int, string>> channelMap, vector<string> digitizerConfig)
 {
     if(channelMap.size()==0)
     {

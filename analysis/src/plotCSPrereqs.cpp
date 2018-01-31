@@ -38,8 +38,9 @@ int main(int, char* argv[])
     string detectorName = argv[6]; // detector name to be used for calculating cross sections
 
     vector<CSPrereqs> allCSPrereqs;
-    vector<vector<double>> runningFluxAvg;
-    
+    vector<vector<double>> runningMonitorCounts;
+    vector<vector<double>> runningGoodMacroCounts;
+ 
     // read in run config file
     config = Config(expName, runNumber);
 
@@ -49,15 +50,17 @@ int main(int, char* argv[])
     for(int subRun=lowSubrun; subRun<=highSubrun; subRun++)
     {
         readSubRun(allCSPrereqs, expName, runNumber, subRun, detectorName, dataLocation);
-
-        vector<double> currentFluxAvg;
+        vector<double> currentMonitorCounts;
+        vector<double> currentGoodMacroCounts;
 
         for(auto& p : allCSPrereqs)
         {
-            currentFluxAvg.push_back(p.monitorCounts);
+            currentMonitorCounts.push_back(p.monitorCounts);
+            currentGoodMacroCounts.push_back(p.goodMacroNumber);
         }
 
-        runningFluxAvg.push_back(currentFluxAvg);
+        runningMonitorCounts.push_back(currentMonitorCounts);
+        runningGoodMacroCounts.push_back(currentGoodMacroCounts);
     }
 
     string outFileName = dataLocation + "/CSPrereqs.root";
@@ -71,11 +74,14 @@ int main(int, char* argv[])
                     runningFluxHistoName.c_str(), highSubrun-lowSubrun, lowSubrun, highSubrun));
     }
 
-    for(unsigned int i=0; i<runningFluxAvg.size(); i++)
+    for(int i=0; i<runningMonitorCounts.size(); i++)
     {
-        for(unsigned int j=0; j<runningFluxAvg[i].size(); j++)
+        for(int j=0; j<runningMonitorCounts[i].size(); j++)
         {
-            runningFluxHistos[j]->SetBinContent(i+1, runningFluxAvg[i][1]/runningFluxAvg[i][j]);
+            double targetFluxAvg = runningMonitorCounts[i][j]/runningGoodMacroCounts[i][j];
+            double blankFluxAvg = runningMonitorCounts[i][1]/runningGoodMacroCounts[i][1];
+
+            runningFluxHistos[j]->SetBinContent(i+1, targetFluxAvg/blankFluxAvg);
         }
     }
 

@@ -2,10 +2,9 @@
 
 expFile="/data2/analysis/total.root"
 expCGraphName="CNat"
-expPbGraphName="PbNat"
-
-expSn112GraphName="Sn112"
 expSnNatGraphName="SnNat"
+expPbGraphName="PbNat"
+expSn112GraphName="Sn112"
 expSn124GraphName="Sn124"
 
 litFile="/data2/analysis/literatureData.root"
@@ -21,10 +20,17 @@ correctionAverage="CPb_correctionAverage"
 ../bin/subtractCS "$relativeFile" "$relCGraphName" "$relativeFile" "$relPbGraphName" -1 2 "$correctionAverage"
 
 correctedFile="/data2/analysis/corrected.root"
-correctedSn112GraphName="Sn112_corrected"
-correctedSnNatGraphName="SnNat_corrected"
-correctedSn124GraphName="Sn124_corrected"
+correctedCNatGraphName="CNat"
+correctedSnNatGraphName="SnNat"
+correctedPbNatGraphName="PbNat"
+correctedSn112GraphName="Sn112"
+correctedSn124GraphName="Sn124"
 
-../bin/applyCSCorrectionFactor "$relativeFile" "$correctionAverage" "$expFile" "$expSn112GraphName" "$correctedFile" "$correctedSn112GraphName"
+../bin/applyCSCorrectionFactor "$relativeFile" "$correctionAverage" "$expFile" "$expCGraphName" "$correctedFile" "$correctedCNatGraphName"
 ../bin/applyCSCorrectionFactor "$relativeFile" "$correctionAverage" "$expFile" "$expSnNatGraphName" "$correctedFile" "$correctedSnNatGraphName"
+../bin/applyCSCorrectionFactor "$relativeFile" "$correctionAverage" "$expFile" "$expPbGraphName" "$correctedFile" "$correctedPbNatGraphName"
+../bin/applyCSCorrectionFactor "$relativeFile" "$correctionAverage" "$expFile" "$expSn112GraphName" "$correctedFile" "$correctedSn112GraphName"
 ../bin/applyCSCorrectionFactor "$relativeFile" "$correctionAverage" "$expFile" "$expSn124GraphName" "$correctedFile" "$correctedSn124GraphName"
+
+
+

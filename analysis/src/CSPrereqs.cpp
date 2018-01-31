@@ -16,166 +16,136 @@ using namespace std;
 
 extern Config config;
 
-void CSPrereqs::getHisto(TFile* histoFile, string directory, string name)
+int CSPrereqs::readEnergyHisto(TFile* histoFile, string directory, string targetName)
 {
     // for histos
-    string energyHistoName = name + "Energy";
-
     histoFile->cd(directory.c_str());
-    energyHisto = ((TH1D*)gDirectory->Get(energyHistoName.c_str()));
 
-    string TOFHistoName = name + "TOFCorrected";
-    TOFHisto = ((TH1D*)gDirectory->Get(TOFHistoName.c_str()));
+    string energyHistoName = targetName + "Energy";
+    TH1D* energyHistoTemp = (TH1D*)gDirectory->Get(energyHistoName.c_str());
 
-    /*if(!energyHisto)
+    if(!energyHistoTemp)
     {
         cerr << "Error: Failed to open histogram \"" << energyHistoName
             << "\" in file " << histoFile
             << " (in getHisto)." << endl;
-        return;
+        return 1;
     }
 
-    if(!TOFHisto)
+    energyHisto = (TH1D*)energyHistoTemp->Clone();
+    energyHisto->SetDirectory(0);
+
+    string TOFHistoName = targetName + "TOFCorrected";
+    TH1D* TOFHistoTemp = (TH1D*)gDirectory->Get(TOFHistoName.c_str());
+
+    if(!TOFHistoTemp)
     {
         cerr << "Error: Failed to open histogram \"" << TOFHistoName
             << "\" in file " << histoFile
             << " (in getHisto)." << endl;
-        return;
-    }*/
+        return 1;
+    }
+
+    TOFHisto = (TH1D*)TOFHistoTemp->Clone();
+    TOFHisto->SetDirectory(0);
+
+    return 0;
 }
 
 // for histos
-void CSPrereqs::getMonitorCounts(TFile* histoFile, string directory, int targetPosition)
+int CSPrereqs::readMonitorCounts(TFile* histoFile, string directory, string targetName)
 {
     TDirectory* dir = (TDirectory*)histoFile->Get(directory.c_str());
     if(!dir)
     {
         cerr << "Error: Failed to open directory " << directory << " in file " << histoFile->GetName()
-            << " (in getMonitorCounts)." << endl;
-        return;
+            << " (in readMonitorCounts)." << endl;
+        return 1;
     }
 
-    string histoName = config.target.TARGET_ORDER[targetPosition] + "GoodMacros";
+    string histoName = targetName + "GoodMacros";
     TH1D* histo = (TH1D*)dir->Get(histoName.c_str());
     if(!histo)
     {
-        //cerr << "Error: Failed to open histogram \"targetPosH\" in file " << histoFile
-        //    << " (in getMonitorCounts)." << endl;
-        return;
+        cerr << "Error: Failed to open histogram " << histoName << " in file " << histoFile->GetName()
+            << " (in readMonitorCounts)." << endl;
+        return 1;
     }
 
-    unsigned int numberOfBins = histo->GetNbinsX();
+    int numberOfBins = histo->GetNbinsX();
 
-    for(unsigned int i=1; i<=numberOfBins; i++)
+    double totalMonitorCounts = 0;
+    int totalGoodMonitorMacros = 0;
+
+    for(int i=1; i<=numberOfBins; i++)
     {
-        monitorCounts += histo->GetBinContent(i);
+        double binContent = histo->GetBinContent(i);
+
+        if(binContent<=0.5)
+        {
+            continue;
+        }
+
+        totalMonitorCounts += binContent;
+        totalGoodMonitorMacros++;
     }
 
-    /*if(monitorCounts<=0)
-    {
-        cerr << "Error: for target position " << config.target.TARGET_ORDER[targetPosition] << ", monitor counts read was <=0 (in getMonitorCounts)." << endl;
-        return;
-    }*/
+    monitorCounts = totalMonitorCounts;
+    goodMacroNumber = totalGoodMonitorMacros;
 
-    return;
+    return 0;
 }
 
-void CSPrereqs::getMacroNumber(TFile* histoFile, string directory, string goodMacroHistoName, string macroHistoName)
+int CSPrereqs::readMacroData(TFile* histoFile, string directory, string totalMacrosHistoName)
 {
     TDirectory* dir = (TDirectory*)histoFile->Get(directory.c_str());
     if(!dir)
     {
         cerr << "Error: Failed to open directory " << directory << " in file " << histoFile->GetName()
-            << " (in getMonitorCounts)." << endl;
-        return;
+            << " (in getMacroNumber)." << endl;
+        return 1;
     }
 
     /*TDirectory* monitorDir = (TDirectory*)monitorFile->Get(directory.c_str());
     if(!monitorDir)
     {
         cerr << "Error: Failed to open directory " << directory << " in file " << monitorFile->GetName()
-            << " (in getMonitorCounts)." << endl;
+            << " (in getMacroNumber)." << endl;
         return;
     }*/
 
-    TH1D* goodMacrosH = (TH1D*)dir->Get(goodMacroHistoName.c_str());
-    if(!goodMacrosH)
+    string name = totalMacrosHistoName + "MacroNumber";
+    TH1D* totalMacrosHisto = (TH1D*)dir->Get(name.c_str());
+    if(!totalMacrosHisto)
     {
-        /*cerr << "Error: Failed to open histogram \"" << goodMacroHistoName
-            << "\" in file " << histoFile->GetName() << " (in getMacroRatio)." << endl;*/
-        return;
+        cerr << "Error: Failed to open histogram \"" << totalMacrosHistoName
+            << "\" in file " << histoFile->GetName() << " (in getMacroRatio)." << endl;
+        return 1;
     }
 
-    unsigned int numberOfBins = goodMacrosH->GetNbinsX();
-
-    unsigned int goodMacroCount = 0;
+    int numberOfBins = totalMacrosHisto->GetNbinsX();
 
     for(int j=1; j<=numberOfBins; j++)
     {
-        if(goodMacrosH->GetBinContent(j)>0)
-        {
-            goodMacroNumber++;
-        }
-    }
-
-    /*TH1D* macroHisto = (TH1D*)monitorDir->Get(macroHistoName.c_str());
-    if(!macroHisto)
-    {
-        cerr << "Error: Failed to open histogram \"" << macroHistoName
-            << "\" in file " << histoFile->GetName() << " (in getMacroRatio)." << endl;
-        return;
-    }
-
-    numberOfBins = macroHisto->GetNbinsX();
-
-    unsigned int macroCount = 0;
-
-    for(int j=1; j<numberOfBins; j++)
-    {
-        if(macroHisto->GetBinContent(j)>0)
+        if(totalMacrosHisto->GetBinContent(j)>0)
         {
             totalMacroNumber++;
         }
-    }*/
+    }
 
-    /*if(goodMacroNumber<=0 || totalMacroNumber<=0)
-    {
-        cerr << "Error: total and/or good macro number cannot be <= 0." << endl;
-    }*/
+    return 0;
 }
 
-// readData for histos
-void CSPrereqs::readEnergyData(TFile* histoFile, string directory, int targetPosition)
+int CSPrereqs::readEventData(TFile* histoFile, string directoryName, string targetName)
 {
-    // Find deadtime-corrected energy histo for this target
-    string histoName = config.target.TARGET_ORDER[targetPosition];
-    getHisto(histoFile, directory, histoName);
-}
-
-void CSPrereqs::readMonitorData(TFile* histoFile, string monitorDirectory, int targetPosition)
-{
-    // Find monitor histo for this target
-    getMonitorCounts(histoFile, monitorDirectory, targetPosition);
-}
-
-void CSPrereqs::readMacroData(TFile* macroFile, string detectorName, int targetPosition)
-{
-    string goodMacroHistoName = config.target.TARGET_ORDER[targetPosition] + "GoodMacros";
-    string macroHistoName = config.target.TARGET_ORDER[targetPosition] + "MacroNumber";
-
-    getMacroNumber(macroFile, detectorName, goodMacroHistoName, macroHistoName);
-}
-
-void CSPrereqs::readEventData(TFile* histoFile, string directoryName, int targetPosition)
-{
-    string eventDataHistoName = config.target.TARGET_ORDER[targetPosition] + "MacroNumber";
+    string eventDataHistoName = targetName + "TOF";
 
     TDirectory* dir = (TDirectory*)histoFile->Get(directoryName.c_str());
     if(!dir)
     {
         cerr << "Error: Failed to open directory " << directoryName << " in file " << histoFile->GetName()
-            << " (in getMonitorCounts)." << endl;
-        return;
+            << " (in readEventData)." << endl;
+        return 1;
     }
 
     TH1D* eventDataHisto = (TH1D*)dir->Get(eventDataHistoName.c_str());
@@ -183,10 +153,12 @@ void CSPrereqs::readEventData(TFile* histoFile, string directoryName, int target
     {
         cerr << "Error: Failed to open histogram \"" << eventDataHistoName
             << "\" in file " << histoFile->GetName() << " (in readEventData)." << endl;
-        return;
+        return 1;
     }
 
    totalEventNumber = eventDataHisto->GetEntries();
+
+   return 0;
 }
 
 CSPrereqs operator+(CSPrereqs& augend, CSPrereqs& addend)
@@ -197,7 +169,8 @@ CSPrereqs operator+(CSPrereqs& augend, CSPrereqs& addend)
         exit(1);
     }
 
-    if(!addend.energyHisto || !addend.TOFHisto)
+    if(!addend.energyHisto || !addend.TOFHisto
+            || !addend.monitorCounts || !addend.goodMacroNumber)
     {
         return augend;
     }
@@ -216,7 +189,7 @@ CSPrereqs operator+(CSPrereqs& augend, CSPrereqs& addend)
 CSPrereqs::CSPrereqs(Target t)
 {
     target = t;
-    TOFHisto = new TH1D("","",config.plot.TOF_BINS,config.plot.TOF_LOWER_BOUND,config.plot.TOF_UPPER_BOUND),target.getName();
+    TOFHisto = new TH1D("","",config.plot.TOF_BINS,config.plot.TOF_LOWER_BOUND,config.plot.TOF_UPPER_BOUND);
     TOFHisto->SetDirectory(0);
     energyHisto = timeBinsToRKEBins(TOFHisto,target.getName());
     energyHisto->SetDirectory(0);
@@ -347,7 +320,7 @@ int readTargetData(vector<CSPrereqs>& allCSPrereqs, string expName)
     return 0;
 }
 
-int readSubRun(vector<CSPrereqs>& allCSPrereqs, string expName, int runNumber, int subRun, string detectorName, string dataLocation)
+int readSubRun(CSPrereqs& subRunData, string expName, int runNumber, int subRun, string detectorName, string dataLocation)
 {
     stringstream subRunFormatted;
     subRunFormatted << setfill('0') << setw(4) << subRun;
@@ -379,25 +352,10 @@ int readSubRun(vector<CSPrereqs>& allCSPrereqs, string expName, int runNumber, i
 
     if(skip)
     {
-        return 0;
+        return 1;
     }
 
-    // open subrun
-    /*stringstream monitorFileName;
-    monitorFileName << dataLocation << "/" << runNumber << "/"
-        << subRunFormatted.str() << "/histos.root";
-    ifstream f(monitorFileName.str());
-    if(!f.good())
-    {
-        // failed to open this sub-run - skip to the next one
-        cerr << "Couldn't open " << monitorFileName.str() << "; continuing.\r";
-        fflush(stdout);
-        return 0;
-    }
-
-    TFile* monitorFile = new TFile(monitorFileName.str().c_str(),"READ");
-    */
-
+    // open file containing energy histograms
     stringstream energyFileName;
     energyFileName << dataLocation << "/" << runNumber << "/"
         << subRunFormatted.str() << "/energy.root";
@@ -407,13 +365,14 @@ int readSubRun(vector<CSPrereqs>& allCSPrereqs, string expName, int runNumber, i
         // failed to open this sub-run - skip to the next one
         cerr << "Couldn't open " << energyFileName.str() << "; continuing.\r";
         fflush(stdout);
-        return 0;
+        return 1;
     }
 
     g.close();
 
     TFile* energyFile = new TFile(energyFileName.str().c_str(),"READ");
 
+    // open file containing macropulse number data
     stringstream macroFileName;
     macroFileName << dataLocation << "/" << runNumber << "/"
         << subRunFormatted.str() << "/gatedHistos.root";
@@ -423,42 +382,31 @@ int readSubRun(vector<CSPrereqs>& allCSPrereqs, string expName, int runNumber, i
         // failed to open this sub-run - skip to the next one
         cerr << "Couldn't open " << macroFileName.str() << "; continuing.\r";
         fflush(stdout);
-        return 0;
+        return 1;
     }
 
     h.close();
 
     TFile* macroFile = new TFile(macroFileName.str().c_str(),"READ");
 
-    // get target order for this run
-    vector<string> targetOrder = getTargetOrder(expName, runNumber);
+    // pull data needed for CS calculation from subrun 
+    string targetName = subRunData.target.getName();
 
-    cout << "Adding " << runNumber << ", subrun " << subRun << endl;
-
-    // Loop through all target positions in this subrun
-    for(int j=0; (size_t)j<targetOrder.size(); j++)
+    if(subRunData.readEnergyHisto(energyFile, detectorName, targetName)
+            || subRunData.readMonitorCounts(macroFile, "monitor", targetName)
+            || subRunData.readEventData(macroFile, detectorName, targetName))
     {
-        // pull data needed for CS calculation from subrun 
-        string targetDataLocation = "../" + expName + "/targetData/" + targetOrder[j] + ".txt";
-        CSPrereqs subRunData(targetDataLocation);
+        // error: failed to read one of the essential cross section quantities
+        // for this target.
 
-        subRunData.readEnergyData(energyFile, detectorName, j);
-        subRunData.readMonitorData(macroFile, "monitor", j);
-        subRunData.readMacroData(macroFile, detectorName, j);
-        //subRunData.readEventData(monitorFile, detectorName, j);
+        // Close the sub-run input file
+        energyFile->Close();
+        macroFile->Close();
 
-        // find the correct CSPrereqs to add this target's data to
-        for(CSPrereqs& csp : allCSPrereqs)
-        {
-            if(csp.target.getName() == subRunData.target.getName())
-            {
-                // add subrun data to total
-                csp = csp + subRunData;
-            }
-        }
+        return 1;
     }
 
-    // Close the sub-run input file
+    // successfully read all subrun quantities required for CS calculation
     energyFile->Close();
     macroFile->Close();
 

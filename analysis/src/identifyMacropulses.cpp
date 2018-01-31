@@ -54,7 +54,8 @@ int assignTargetPos(int lgQ)
 int identifyMacropulses(
         string inputFileName,
         string outputFileName,
-        ofstream& logFile)
+        ofstream& logFile,
+        vector<MacropulseEvent>& macropulseList)
 {
     // check to see if output file already exists; if so, exit
     ifstream f(outputFileName);
@@ -81,6 +82,7 @@ int identifyMacropulses(
         cerr << "Error: couldn't find " << config.analysis.DPP_TREE_NAME << " tree in "
             << inputFileName << " when attempting to identify macropulses." << endl;
         cerr << "Please check that the tree exists. " << endl;
+        inputFile->Close();
         return 1;
     }
 
@@ -101,15 +103,15 @@ int identifyMacropulses(
         // create structs for holding macropulse event data, and link it to the trees
         struct MacrotimeEvent
         {
-            unsigned int cycleNumber = 0;
-            unsigned int macroNo = 0;
+            int cycleNumber = 0;
+            int macroNo = 0;
             double completeTime = 0;
             vector<int> waveform;
         } macrotimeEvent;
 
         struct TargetChangerEvent
         {
-            unsigned int cycleNumber = 0;
+            int cycleNumber = 0;
             double completeTime = 0;
             unsigned int lgQ = 0;
         } targetChangerEvent;
@@ -128,8 +130,8 @@ int identifyMacropulses(
         vector<MacrotimeEvent> macroTimeList;
         vector<TargetChangerEvent> targetChangerList;
 
-        long unsigned int inputTreeEntries = inputTree->GetEntries();
-        long unsigned int currentTreeEntry = 0;
+        int inputTreeEntries = inputTree->GetEntries();
+        int currentTreeEntry = 0;
 
         while(currentTreeEntry<inputTreeEntries)
         {
@@ -163,8 +165,14 @@ int identifyMacropulses(
         cout << "Finished processing events from raw data file. Total macropulses recovered = "
             << macroTimeList.size() << endl;
 
+        cout << "Total target changer events recovered = "
+            << targetChangerList.size() << endl;
+
         logFile << endl << "Finished processing events from raw data file. Total macropulses recovered = "
             << macroTimeList.size() << endl;
+
+        logFile << "Total target changer events recovered = "
+            << targetChangerList.size() << endl;
 
         // all macrotime and target changer events have been identified;
         // time to combine them into full-fledged macropulse events
@@ -173,6 +181,7 @@ int identifyMacropulses(
         if(!outputFile)
         {
             cerr << "Error: could not create " << outputFileName << " (does it already exist?)." << endl;
+            inputFile->Close();
             return 1;
         }
 
@@ -182,14 +191,14 @@ int identifyMacropulses(
         TTree* macropulseTree = new TTree(config.analysis.MACROPULSE_TREE_NAME.c_str(),"");
 
         macropulseTree->Branch("macroTime",&macropulseEvent.macroTime,"macroTime/d");
-        macropulseTree->Branch("cycleNumber",&macropulseEvent.cycleNumber,"cycleNumber/i");
-        macropulseTree->Branch("macroNo",&macropulseEvent.macroNo,"macroNo/i");
-        macropulseTree->Branch("lgQ",&macropulseEvent.lgQ,"lgQ/i");
+        macropulseTree->Branch("cycleNumber",&macropulseEvent.cycleNumber,"cycleNumber/I");
+        macropulseTree->Branch("macroNo",&macropulseEvent.macroNo,"macroNo/I");
+        macropulseTree->Branch("lgQ",&macropulseEvent.lgQ,"lgQ/I");
         macropulseTree->Branch("targetPos",&macropulseEvent.targetPos,"targetPos/I");
         macropulseTree->Branch("waveform",&(macropulseEvent.waveform));
 
-        unsigned int currentMacrotimeEntry = 0;
-        unsigned int currentTargetChangerEntry = 0;
+        int currentMacrotimeEntry = 0;
+        int currentTargetChangerEntry = 0;
 
         bool endAssignment = false;
 
@@ -261,7 +270,8 @@ int identifyMacropulses(
                 }
             }
 
-            if((macroTimeList[currentMacrotimeEntry].cycleNumber == 
+            if(
+                    (macroTimeList[currentMacrotimeEntry].cycleNumber == 
                         targetChangerList[currentTargetChangerEntry].cycleNumber)
                     && (abs(macroTimeList[currentMacrotimeEntry].completeTime - 
                             targetChangerList[currentTargetChangerEntry].completeTime)<20)
@@ -295,6 +305,8 @@ int identifyMacropulses(
 
             macropulseTree->Fill();
 
+            macropulseList.push_back(MacropulseEvent(macropulseEvent));
+
             if(currentMacrotimeEntry%100==0)
             {
                 cout << "Identified " << currentMacrotimeEntry << " macropulses...\r";
@@ -323,8 +335,8 @@ int identifyMacropulses(
     {
         struct TargetChangerEvent
         {
-            unsigned int cycleNumber = 0;
-            unsigned int macroNo = 0;
+            int cycleNumber = 0;
+            int macroNo = 0;
             double completeTime = 0;
             unsigned int lgQ = 0;
             vector<int> waveform;
@@ -343,8 +355,8 @@ int identifyMacropulses(
 
         vector<TargetChangerEvent> targetChangerList;
 
-        long unsigned int inputTreeEntries = inputTree->GetEntries();
-        long unsigned int currentTreeEntry = 0;
+        int inputTreeEntries = inputTree->GetEntries();
+        int currentTreeEntry = 0;
 
         while(currentTreeEntry<inputTreeEntries)
         {
@@ -381,6 +393,7 @@ int identifyMacropulses(
         if(!outputFile)
         {
             cerr << "Error: could not create " << outputFileName << " (does it already exist?)." << endl;
+            inputFile->Close();
             return 1;
         }
 
@@ -390,13 +403,13 @@ int identifyMacropulses(
         TTree* macropulseTree = new TTree(config.analysis.MACROPULSE_TREE_NAME.c_str(),"");
 
         macropulseTree->Branch("macroTime",&macropulseEvent.macroTime,"macroTime/d");
-        macropulseTree->Branch("cycleNumber",&macropulseEvent.cycleNumber,"cycleNumber/i");
-        macropulseTree->Branch("macroNo",&macropulseEvent.macroNo,"macroNo/i");
-        macropulseTree->Branch("lgQ",&macropulseEvent.lgQ,"lgQ/i");
+        macropulseTree->Branch("cycleNumber",&macropulseEvent.cycleNumber,"cycleNumber/I");
+        macropulseTree->Branch("macroNo",&macropulseEvent.macroNo,"macroNo/I");
+        macropulseTree->Branch("lgQ",&macropulseEvent.lgQ,"lgQ/I");
         macropulseTree->Branch("targetPos",&macropulseEvent.targetPos,"targetPos/I");
         macropulseTree->Branch("waveform",&(macropulseEvent.waveform));
 
-        unsigned int currentTargetChangerEntry = 0;
+        int currentTargetChangerEntry = 0;
 
         bool endAssignment = false;
 
@@ -419,6 +432,8 @@ int identifyMacropulses(
             macropulseEvent.waveform = tc.waveform;
 
             macropulseTree->Fill();
+
+            macropulseList.push_back(MacropulseEvent(macropulseEvent));
 
             if(macropulseEvent.macroNo%100==0)
             {

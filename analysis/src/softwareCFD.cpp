@@ -6,7 +6,7 @@
 
 using namespace std;
 
-double calculateCFDTime(const vector<int>& waveform, const double& baseline, const double& fraction, const unsigned int& delay)
+double calculateCFDTime(const vector<int>& waveform, const double& baseline, const double& fraction, const int& delay)
 {
     if(delay<=0 || delay>=waveform.size())
     {
@@ -24,7 +24,7 @@ double calculateCFDTime(const vector<int>& waveform, const double& baseline, con
     double CFDSample;
     double prevCFDSample = 0;
 
-    for(unsigned int i=1; i<waveform.size()-(delay+1); i++)
+    for(int i=1; i<waveform.size()-(delay+1); i++)
     {
         // produce CFD sum: opposite-sign waveform*fraction + normal-sign waveform, centered at
         // baseline
@@ -52,7 +52,7 @@ double calculateCFDTime(const vector<int>& waveform, const double& baseline, con
 
 double calculateMacropulseFineTime(vector<int>* waveform, double threshold)
 {
-    for(unsigned int i=1; i<waveform->size(); i++)
+    for(int i=1; i<waveform->size(); i++)
     {
         if(waveform->at(i) < threshold)
         {
@@ -65,7 +65,7 @@ double calculateMacropulseFineTime(vector<int>* waveform, double threshold)
     exit(1);
 }
 
-/*double calculateTCFineTime(vector<int>* waveform, double baseline, double fraction, unsigned int delay)
+/*double calculateTCFineTime(vector<int>* waveform, double baseline, double fraction, int delay)
 {
     if(delay<=0 || delay>=waveform->size())
     {
@@ -83,7 +83,7 @@ double calculateMacropulseFineTime(vector<int>* waveform, double threshold)
     double CFDSample;
     double prevCFDSample=0;
 
-    for(unsigned int i=1; i<waveform->size()-(delay+1); i++)
+    for(int i=1; i<waveform->size()-(delay+1); i++)
     {
         // produce CFD sum: opposite-sign waveform*fraction + normal-sign waveform, centered at
         // baseline

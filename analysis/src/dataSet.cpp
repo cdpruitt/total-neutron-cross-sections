@@ -54,6 +54,118 @@ DataSet::DataSet(string dataSetLocation)
     dataFile.close();
 }
 
+DataSet::DataSet(string dataSetLocation, const vector<double>& energyBins)
+{
+    std::ifstream dataFile(dataSetLocation.c_str());
+    if(!dataFile.is_open())
+    {
+        std::cout << "Attempted to create DataSet, but failed to find " << dataSetLocation << std::endl;
+        exit(1);
+    }
+
+    vector<DataPoint> rawDataPoints;
+
+    string dummy;
+    std::getline(dataFile,dummy);
+    std::getline(dataFile,reference);
+    std::getline(dataFile,dummy);
+
+    double dum,dum2,dum3;
+
+    while(dataFile >> dum >> dum2 >> dum3)
+    {
+        rawDataPoints.push_back(DataPoint(dum, 0, dum2, dum3));
+    }
+
+    vector<vector<DataPoint>> binnedDataPoints;
+
+    for(int i=0; i<energyBins.size()-1; i++)
+    {
+        binnedDataPoints.push_back(vector<DataPoint>());
+    }
+
+    int energyBinCounter = 0;
+    double lowEnergy = energyBins[energyBinCounter];
+    double highEnergy = energyBins[energyBinCounter+1];
+
+    bool endSort = false;
+
+    // average data in rawDataPoints according to energy bins
+    for(int i=0; i<rawDataPoints.size(); i++)
+    {
+        DataPoint dp = rawDataPoints[i];
+
+        if(dp.getXValue() < lowEnergy)
+        {
+            continue;
+        }
+
+        while(dp.getXValue() > highEnergy)
+        {
+            energyBinCounter++;
+            if(energyBinCounter>=energyBins.size()-1)
+            {
+                endSort = true;
+                break;
+            }
+
+            lowEnergy = energyBins[energyBinCounter];
+            highEnergy = energyBins[energyBinCounter+1];
+        }
+
+        if(endSort)
+        {
+            break;
+        }
+        
+        if(dp.getXValue()>=lowEnergy
+                && dp.getXValue()<=highEnergy)
+        {
+            // found correct bin for this data point
+            binnedDataPoints[energyBinCounter].push_back(dp);
+        }
+
+        else
+        {
+            cerr << "Error: assignment error while reading literature dataset. Exiting..." << endl;
+            exit(1);
+        }
+
+        if(i%10==0)
+        {
+            cout << "Read " << i << " data points in from literature file...\r";
+            fflush(stdout);
+        }
+    }
+
+    for(int i=0; i<binnedDataPoints.size(); i++)
+    {
+        double averageCrossSection = 0;
+        double averageError = 0;
+
+        for(int j=0; j<binnedDataPoints[i].size(); j++)
+        {
+            averageCrossSection += binnedDataPoints[i][j].getYValue();
+            averageError += binnedDataPoints[i][j].getYError();
+        }
+
+        if(binnedDataPoints[i].size()==0)
+        {
+            continue;
+        }
+
+        averageCrossSection /= binnedDataPoints[i].size();
+        averageError /= binnedDataPoints[i].size();
+
+        double energy = (energyBins[i] + energyBins[i+1])/2;
+
+        data.push_back(DataPoint(energy, 0, averageCrossSection, averageError));
+    }
+
+    createPlot(reference);
+    dataFile.close();
+}
+
 DataSet::DataSet(TGraphErrors* graph, string ref)
 {
     if(!graph)
