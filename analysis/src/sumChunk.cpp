@@ -153,4 +153,17 @@ int main(int, char* argv[])
     }
 
     outFile->Close();
+
+    // read literature data and bin to appropriate energy range
+    string litDirectory = "../" + expName + "/literatureData";
+    string litOutputName = dataLocation + "/literatureData.root";
+    if(readLitData(litDirectory, litOutputName, config))
+    {
+        cerr << "Error: failed to produce properly binned literature cross sections. Exiting..." << endl;
+        return 1;
+    }
+
+    cout << "Finished binning/plotting literature cross sections." << endl;
+
+    return 0;
 }

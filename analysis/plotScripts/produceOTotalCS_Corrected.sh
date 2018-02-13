@@ -1,6 +1,6 @@
 #!/bin/bash
 
-expFile="/data2/analysis/total.root"
+expFile="/data2/analysis/corrected.root"
 
 inputGraph1Name="H2O"
 inputGraph2Name="H2O18"
@@ -21,7 +21,7 @@ litDGraphName="Deuterium (n,tot)"
 
 # shift O18 cross section up by 1 barn, for readability on plots
 
-shiftFileName="/data2/analysis/shifted.root"
+shiftFileName="/data2/analysis/shifted_Corrected.root"
 shiftGraphName="$outputGraph2Name+1Barn"
 
 ../bin/shiftCS "$expFile" "$outputGraph2Name" "1" "$shiftFileName" "$shiftGraphName"

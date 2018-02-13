@@ -1,12 +1,12 @@
 #!/bin/bash
 
-expFile="/data1/analysis/total.root"
-expGraph1Name="Ni64"
-expGraph2Name="Ni58"
+expFile="/data2/analysis/total.root"
+expGraph1Name="Sn124"
+expGraph2Name="Sn112"
 
-relGraph1Name="Ni64Ni58"
+relGraph1Name="Sn124Sn112"
 
-outputFile="/data1/analysis/relative.root"
+outputFile="/data2/analysis/relative.root"
 
 ../bin/relativeDiffCS "$expFile" "$expGraph1Name" "$expFile" "$expGraph2Name" "$outputFile" "$relGraph1Name"
 

@@ -1,9 +1,9 @@
 {
-    string fileName = "/data1/analysis/relative.root";
+    string fileName = "/data2/analysis/relative.root";
 
     TFile* file = new TFile(fileName.c_str(),"READ");
     
-    string relGraphName = "Ni64Ni58, percent";
+    string relGraphName = "longCShortC, percent";
         
     TGraphErrors* relGraph = (TGraphErrors*)file->Get(relGraphName.c_str());
 
@@ -68,7 +68,7 @@
     relGraph->GetXaxis()->SetTickLength(0.03);
 
     // Y-axis parameters
-    relGraph->GetYaxis()->SetTitle("(#frac{#sigma_{64} - #sigma_{58}}{#sigma_{64} + #sigma_{58}})");
+    relGraph->GetYaxis()->SetTitle("(#frac{#sigma_{l} - #sigma_{s}}{#sigma_{l} + #sigma_{s}})");
     relGraph->GetYaxis()->SetTitleSize(0.06);
     relGraph->GetYaxis()->SetTitleFont(2);
     relGraph->GetYaxis()->SetTitleOffset(1.3);
@@ -86,7 +86,7 @@
     gPad->SetLogx(1);
     
     relGraph->GetYaxis()->SetRangeUser(-3,3);
-    relGraph->GetXaxis()->SetLimits(5,600);
+    relGraph->GetXaxis()->SetLimits(2,600);
 
     //TLatex latex;
     //latex.SetNDC();
@@ -94,32 +94,6 @@
     //latex.SetTextAlign(13); // align at top
     //latex.DrawLatex(0.47,0.52,"Ni");
     //latex.DrawLatex(0.32,0.4,"C");
-
-    // Define legend format and contents
-    //TLegend *legend = new TLegend(0.5,0.67,0.96,0.96);
-    //legend->SetTextSize(0.07);
-    //legend->SetTextAlign(12);
-
-    //legend->Draw();
-
-    TLine* zeroLine = new TLine(0, 0, 600, 0);
-    zeroLine->SetLineColor(kBlack);
-    zeroLine->SetLineWidth(3);
-    zeroLine->SetLineStyle(9);
-    zeroLine->Draw();
-
-    /*TLine* SixthLine = new TLine(0, 0, 600, 0);
-    zeroLine->SetLineColor(kBlack);
-    zeroLine->SetLineWidth(3);
-    zeroLine->SetLineStyle(9);
-    zeroLine->Draw();
-
-    TLine* ThirdLine = new TLine(0, 0, 600, 0);
-    zeroLine->SetLineColor(kBlack);
-    zeroLine->SetLineWidth(3);
-    zeroLine->SetLineStyle(9);
-    zeroLine->Draw();
-    */
 
     file->Close();
 }

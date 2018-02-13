@@ -35,7 +35,7 @@
 
     TFile* file = new TFile(fileName.c_str(),"READ");
     
-    string CGraphName = "Natural carbon (n,tot)";
+    string CGraphName = "Natural C (n,tot)";
     string NiGraphName = "Natural Ni (n,tot)";
     string SnGraphName = "Natural Sn (n,tot)";
     string PbGraphName = "Natural Pb (n,tot)";

@@ -7,7 +7,7 @@ SOURCE = src/
 
 # Define compilation flags
 COMPILER = clang++ 
-CFLAGS = -lstdc++ -I$(shell root-config --incdir) -std=c++11
+CFLAGS = -lstdc++ -O3 -I$(shell root-config --incdir) -std=c++11
 
 # For integration with ROOT data analysis framework
 LINKOPTION = $(shell root-config --libs)
@@ -15,7 +15,7 @@ LINKOPTION = $(shell root-config --libs)
 ############################### DEFINE TARGETS #################################
 
 # List all targets
-TARGETS = driver text sumAll eachSubrun sumChunk readLitData subtractCS shiftCS multiplyCS relativeDiffCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck rateHisto #plotCSPrereqs
+TARGETS = driver text sumAll eachSubrun sumChunk readLitData subtractCS mergeCS shiftCS multiplyCS relativeDiffCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck rateHisto #plotCSPrereqs
 all: $(addprefix $(BIN), $(TARGETS))
 
 # Build driver (main data analysis engine)
@@ -68,6 +68,11 @@ $(BIN)makeCSText: $(addprefix $(SOURCE), $(MAKECSTEXT_SOURCES))
 SUBTRACTCS_SOURCES = subtractCS.cpp dataSet.cpp dataPoint.cpp crossSection.cpp target.cpp plots.cpp CSUtilities.cpp
 $(BIN)subtractCS: $(addprefix $(SOURCE), $(SUBTRACTCS_SOURCES)) 
 	$(COMPILER) $(CFLAGS) -o $(BIN)subtractCS $(addprefix $(SOURCE), $(SUBTRACTCS_SOURCES)) $(LINKOPTION)
+
+# Build mergeCS (for taking the difference of two cross section graphs)
+MERGECS_SOURCES = mergeCS.cpp dataSet.cpp dataPoint.cpp crossSection.cpp target.cpp plots.cpp CSUtilities.cpp
+$(BIN)mergeCS: $(addprefix $(SOURCE), $(MERGECS_SOURCES)) 
+	$(COMPILER) $(CFLAGS) -o $(BIN)mergeCS $(addprefix $(SOURCE), $(MERGECS_SOURCES)) $(LINKOPTION)
 
 # Build shiftCS (for taking the difference of two cross section graphs)
 SHIFTCS_SOURCES = shiftCS.cpp dataSet.cpp dataPoint.cpp crossSection.cpp target.cpp plots.cpp CSUtilities.cpp

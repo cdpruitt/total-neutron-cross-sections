@@ -1,4 +1,4 @@
-Name:       Rh103
+Name:       RhNat
 Length:     0.23368 cm
 Diameter:   1.2027 cm
 Mass:       2.8359 g

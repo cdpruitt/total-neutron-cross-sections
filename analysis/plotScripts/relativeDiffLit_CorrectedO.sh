@@ -1,6 +1,6 @@
 #!/bin/bash
 
-expFile="/data2/analysis/total.root"
+expFile="/data2/analysis/corrected.root"
 expGraph1Name="ONat_fromH2O"
 expGraph2Name="O18"
 expGraph3Name="ONat_fromD2O"
@@ -9,9 +9,9 @@ litFile="/data2/analysis/literatureData.root"
 litGraph1Name="NatO(n,tot)"
 litGraph2Name="18O(n,tot)"
 
-relGraph1Name="ONat_fromH2O, expLit"
-relGraph2Name="O18, expLit"
-relGraph3Name="ONat_fromD2O, expLit"
+relGraph1Name="ONat_fromH2O, expLit, corrected"
+relGraph2Name="O18, expLit, corrected"
+relGraph3Name="ONat_fromD2O, expLit, corrected"
 
 outputFile="/data2/analysis/relative.root"
 

@@ -68,6 +68,8 @@ int main(int, char* argv[])
         {
             vector<CSPrereqs> subRunCSPrereqs;
 
+            cout << "Reading subrun " << runNumber << " " << subRun << endl;
+
             // Loop through all target positions in this subrun
             for(int j=0; (size_t)j<config.target.TARGET_ORDER.size(); j++)
             {
@@ -79,8 +81,6 @@ int main(int, char* argv[])
                 {
                     break;
                 }
-
-                cout << "Read subrun " << runNumber << " " << subRun << endl;
 
                 subRunCSPrereqs.push_back(subRunData);
             }

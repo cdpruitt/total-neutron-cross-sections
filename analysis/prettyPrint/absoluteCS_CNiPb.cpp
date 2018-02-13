@@ -42,7 +42,7 @@
     string expNiGraphName = "NiNat";
     string expPbGraphName = "PbNat";
 
-    string litCGraphName = "Natural carbon (n,tot)";
+    string litCGraphName = "Natural C (n,tot)";
     string litNiGraphName = "Natural Ni (n,tot)";
     string litPbGraphName = "Natural Pb (n,tot)";
     

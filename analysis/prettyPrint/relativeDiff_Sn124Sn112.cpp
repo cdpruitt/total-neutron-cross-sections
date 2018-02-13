@@ -3,7 +3,7 @@
 
     TFile* file = new TFile(fileName.c_str(),"READ");
     
-    string relGraphName = "Sn";
+    string relGraphName = "Sn124Sn112, percent";
         
     TGraphErrors* relGraph = (TGraphErrors*)file->Get(relGraphName.c_str());
 
@@ -85,8 +85,8 @@
 
     gPad->SetLogx(1);
     
-    relGraph->GetYaxis()->SetRangeUser(-0.01,0.05);
-    relGraph->GetXaxis()->SetRangeUser(10,400);
+    relGraph->GetYaxis()->SetRangeUser(0,5);
+    relGraph->GetXaxis()->SetLimits(5,600);
 
     //TLatex latex;
     //latex.SetNDC();

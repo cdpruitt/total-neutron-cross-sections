@@ -6,7 +6,7 @@
 
 #include "../include/GammaCorrection.h"
 
-int fillCSHistos(std::string inputFileName, std::string macropulseFileName, std::string gammaCorrectionFileName, std::ofstream& log, std::string outputFileName);
+int fillCSHistos(std::string vetoedInputFileName, std::string nonVetoInputFileName, bool useVetoPaddle, std::string macropulseFileName, std::string gammaCorrectionFileName, std::ofstream& log, std::string outputFileName);
 
 int fillMonitorHistos(std::string inputFileName, std::string macropulseFileName, std::ofstream& log, std::string outputFileName);
 

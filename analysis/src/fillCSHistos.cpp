@@ -23,7 +23,7 @@ using namespace std;
 
 extern Config config;
 
-int fillCSHistos(string inputFileName, string macropulseFileName, string gammaCorrectionFileName, ofstream& logFile, string outputFileName)
+int fillCSHistos(string vetoedInputFileName, string nonVetoInputFileName, bool useVetoPaddle, string macropulseFileName, string gammaCorrectionFileName, ofstream& logFile, string outputFileName)
 {
     ifstream f(outputFileName);
 
@@ -36,11 +36,23 @@ int fillCSHistos(string inputFileName, string macropulseFileName, string gammaCo
 
     logFile << endl << "*** Filling CS histos ***" << endl;
 
-    // open input tree
-    TFile* inputFile = new TFile(inputFileName.c_str(),"READ");
-    if(!inputFile->IsOpen())
+    TFile* vetoedInputFile;
+    if(useVetoPaddle)
     {
-        cerr << "Error: failed to open " << inputFileName << "  to fill histos." << endl;
+        // open vetoed input tree
+        vetoedInputFile = new TFile(vetoedInputFileName.c_str(),"READ");
+        if(!vetoedInputFile->IsOpen())
+        {
+            cerr << "Error: failed to open " << vetoedInputFileName << "  to fill histos." << endl;
+            return 1;
+        }
+    }
+
+    // open non-vetoed input tree
+    TFile* nonVetoInputFile = new TFile(nonVetoInputFileName.c_str(),"READ");
+    if(!nonVetoInputFile->IsOpen())
+    {
+        cerr << "Error: failed to open " << nonVetoInputFileName << "  to fill histos." << endl;
         return 1;
     }
 
@@ -49,7 +61,7 @@ int fillCSHistos(string inputFileName, string macropulseFileName, string gammaCo
     if(!macropulseFile->IsOpen())
     {
         cerr << "Error: failed to open " << macropulseFileName << "  to fill histos." << endl;
-        inputFile->Close();
+        vetoedInputFile->Close();
         return 1;
     }
 
@@ -57,7 +69,7 @@ int fillCSHistos(string inputFileName, string macropulseFileName, string gammaCo
     if(!macropulseTree)
     {
         cerr << "Error: failed to open macropulses tree to gate histos." << endl;
-        inputFile->Close();
+        vetoedInputFile->Close();
         macropulseFile->Close();
         return 1;
     }
@@ -79,7 +91,13 @@ int fillCSHistos(string inputFileName, string macropulseFileName, string gammaCo
     if(numberOfEntries==0)
     {
         cerr << "Error: no macropulses found in macropulseTree during fillCSHistos." << endl;
-        inputFile->Close();
+
+        if(vetoedInputFile)
+        {
+            vetoedInputFile->Close();
+        }
+
+        nonVetoInputFile->Close();
         macropulseFile->Close();
         return 1;
     }
@@ -96,7 +114,13 @@ int fillCSHistos(string inputFileName, string macropulseFileName, string gammaCo
     if(!gammaCorrectionFile->IsOpen())
     {
         cerr << "Error: failed to open " << gammaCorrectionFileName << "  to read gamma correction." << endl;
-        inputFile->Close();
+
+        if(vetoedInputFile)
+        {
+            vetoedInputFile->Close();
+        }
+
+        nonVetoInputFile->Close();
         macropulseFile->Close();
         return 1;
     }
@@ -105,7 +129,13 @@ int fillCSHistos(string inputFileName, string macropulseFileName, string gammaCo
     if(!gammaDirectory)
     {
         cerr << "Error: failed to open summedDet directory in " << gammaCorrectionFileName << " for reading gamma corrections." << endl;
-        inputFile->Close();
+
+        if(vetoedInputFile)
+        {
+            vetoedInputFile->Close();
+        }
+
+        nonVetoInputFile->Close();
         macropulseFile->Close();
         gammaCorrectionFile->Close();
         return 1;
@@ -117,7 +147,13 @@ int fillCSHistos(string inputFileName, string macropulseFileName, string gammaCo
     if(!gammaCorrectionHisto)
     {
         cerr << "Error: failed to open gammaCorrections histo in " << gammaCorrectionFileName << " for reading gamma corrections." << endl;
-        inputFile->Close();
+
+        if(vetoedInputFile)
+        {
+            vetoedInputFile->Close();
+        }
+
+        nonVetoInputFile->Close();
         macropulseFile->Close();
         gammaCorrectionFile->Close();
 
@@ -132,6 +168,10 @@ int fillCSHistos(string inputFileName, string macropulseFileName, string gammaCo
         gammaCorrectionList.push_back(gammaCorrectionHisto->GetBinContent(i));
     }
 
+    // define gamma times
+    const double GAMMA_TIME = pow(10,7)*config.facility.FLIGHT_DISTANCE/C;
+    const double GAMMA_WINDOW_WIDTH = config.time.GAMMA_WINDOW_SIZE/2;
+
     // create outputFile
     TFile* outputFile = new TFile(outputFileName.c_str(),"UPDATE");
 
@@ -143,13 +183,35 @@ int fillCSHistos(string inputFileName, string macropulseFileName, string gammaCo
             continue;
         }
 
+        bool isDetector = false;
+
+        TTree* tree;
+
+        for(auto& detName : config.cs.DETECTOR_NAMES)
+        {
+            if(channel.second == detName)
+            {
+                isDetector = true;
+                break;
+            }
+        }
+
         cout << "Filling gated histograms for tree \"" << channel.second << "\"..." << endl;
 
-        TTree* tree = (TTree*)inputFile->Get(channel.second.c_str());
+        if(isDetector && useVetoPaddle)
+        {
+            tree = (TTree*)vetoedInputFile->Get(channel.second.c_str());
+        }
+
+        else
+        {
+            tree = (TTree*)nonVetoInputFile->Get(channel.second.c_str());
+        }
+
         if(!tree)
         {
-            cerr << "Error: tried to populate advanced histos, but failed to find " << channel.second << " in " << inputFileName << endl;
-            inputFile->Close();
+            cerr << "Error: tried to populate advanced histos, but failed to find " << channel.second << " in " << vetoedInputFileName << endl;
+            vetoedInputFile->Close();
             macropulseFile->Close();
             gammaCorrectionFile->Close();
 
@@ -169,8 +231,12 @@ int fillCSHistos(string inputFileName, string macropulseFileName, string gammaCo
         tree->SetBranchAddress("targetPos",&event.targetPos);
         tree->SetBranchAddress("sgQ",&event.sgQ);
         tree->SetBranchAddress("lgQ",&event.lgQ);
-        tree->SetBranchAddress("vetoed",&event.vetoed);
         tree->SetBranchAddress("waveform",&waveformPointer);
+
+        if(isDetector)
+        {
+            tree->SetBranchAddress("vetoed",&event.vetoed);
+        }
 
         TDirectory* directory = outputFile->mkdir(channel.second.c_str(),channel.second.c_str());
         directory->cd();
@@ -181,30 +247,6 @@ int fillCSHistos(string inputFileName, string macropulseFileName, string gammaCo
             string macroNumberName = targetName + "GoodMacros";
             goodMacroHistos.push_back(new TH1D(macroNumberName.c_str(),
                         macroNumberName.c_str(), 500000, 0, 500000));
-        }
-
-        vector<TH1D*> macrosSinceCycleHistos;
-        for(string targetName : config.target.TARGET_ORDER)
-        {
-            string macrosSinceCycleName = targetName + "MacrosSinceCycle";
-            macrosSinceCycleHistos.push_back(new TH1D(macrosSinceCycleName.c_str(),
-                        macrosSinceCycleName.c_str(), 1000, 0, 1000));
-        }
-
-        vector<TH1D*> macrosSinceFacilityGapHistos;
-        for(string targetName : config.target.TARGET_ORDER)
-        {
-            string macrosSinceFacilityGapName = targetName + "MacrosSinceFacilityGap";
-            macrosSinceFacilityGapHistos.push_back(new TH1D(macrosSinceFacilityGapName.c_str(),
-                        macrosSinceFacilityGapName.c_str(), 100, 0, 100));
-        }
-
-        vector<TH1D*> postCycleHistos;
-        for(string targetName : config.target.TARGET_ORDER)
-        {
-            string postCycleHistoName = targetName + "postCycle";
-            postCycleHistos.push_back(new TH1D(postCycleHistoName.c_str(),
-                        postCycleHistoName.c_str(), 500000, 0, 500000));
         }
 
         // create other diagnostic histograms used to examine run data
@@ -227,21 +269,10 @@ int fillCSHistos(string inputFileName, string macropulseFileName, string gammaCo
         TH1D* microNoH = new TH1D("microNoH","microNo",config.facility.MICROS_PER_MACRO+1
                 ,0,config.facility.MICROS_PER_MACRO+1);
 
-        TH1D* vetoedTOF = new TH1D("vetoedTOF",
-                "vetoedTOF",
-                config.plot.TOF_BINS,
-                config.plot.TOF_LOWER_BOUND,
-                config.plot.TOF_UPPER_BOUND);
-
-        TH2D* vetoedTriangle = new TH2D("vetoedTriangle",
-                "vetoedTriangle",
-                config.plot.TOF_RANGE,
-                config.plot.TOF_LOWER_BOUND,
-                config.plot.TOF_UPPER_BOUND/5,
-                4096,0,65536);
-
         vector<TH1D*> TOFHistos;
         vector<TH2D*> triangleHistos;
+        vector<TH1D*> vetoTOFHistos;
+        vector<TH2D*> vetoTriangleHistos;
 
         for(string targetName : config.target.TARGET_ORDER)
         {
@@ -257,8 +288,23 @@ int fillCSHistos(string inputFileName, string macropulseFileName, string gammaCo
                         triangleName.c_str(),
                         config.plot.TOF_RANGE,
                         config.plot.TOF_LOWER_BOUND,
-                        config.plot.TOF_UPPER_BOUND/5,
-                        4096,0,65536));
+                        config.plot.TOF_UPPER_BOUND,
+                        pow(2,9),0,pow(2,15)));
+
+            string vetoTOFName = "veto" + TOFName;
+            vetoTOFHistos.push_back(new TH1D(vetoTOFName.c_str(),
+                        vetoTOFName.c_str(),
+                        config.plot.TOF_BINS,
+                        config.plot.TOF_LOWER_BOUND,
+                        config.plot.TOF_UPPER_BOUND));
+
+            string vetoTriangleName = "veto" + triangleName;
+            vetoTriangleHistos.push_back(new TH2D(vetoTriangleName.c_str(),
+                        vetoTriangleName.c_str(),
+                        config.plot.TOF_RANGE,
+                        config.plot.TOF_LOWER_BOUND,
+                        config.plot.TOF_UPPER_BOUND,
+                        pow(2,9),0,pow(2,15)));
         }
 
         double prevCompleteTime = 0;
@@ -340,19 +386,22 @@ int fillCSHistos(string inputFileName, string macropulseFileName, string gammaCo
             }
 
             // charge gates:
-            /*if(event.lgQ<config.analysis.CHARGE_GATE_LOW_THRESHOLD
-                    || event.lgQ>config.analysis.CHARGE_GATE_HIGH_THRESHOLD)
+            if(isDetector)
             {
-                badChargeGateEvent++;
-                continue;
-            }
+                if(event.lgQ<config.analysis.CHARGE_GATE_LOW_THRESHOLD
+                        || event.lgQ>config.analysis.CHARGE_GATE_HIGH_THRESHOLD)
+                {
+                    badChargeGateEvent++;
+                    continue;
+                }
 
-            if(event.sgQ/(double)event.lgQ < config.analysis.Q_RATIO_LOW_THRESHOLD
-                    || event.sgQ/(double)event.lgQ > config.analysis.Q_RATIO_HIGH_THRESHOLD)
-            {
-                badChargeRatioEvent++;
-                continue;
-            }*/
+                /*if(event.sgQ/(double)event.lgQ < config.analysis.Q_RATIO_LOW_THRESHOLD
+                        || event.sgQ/(double)event.lgQ > config.analysis.Q_RATIO_HIGH_THRESHOLD)
+                {
+                    badChargeRatioEvent++;
+                    continue;
+                }*/
+            }
 
             /*****************************************************************/
             // Calculate event properties
@@ -382,11 +431,11 @@ int fillCSHistos(string inputFileName, string macropulseFileName, string gammaCo
                 continue;
             }
 
-            // veto gate
-            if(event.vetoed)
+            // veto gate: apply to neutron events only
+            if(event.vetoed && microTime > GAMMA_TIME+GAMMA_WINDOW_WIDTH*2)
             {
-                vetoedTOF->Fill(microTime);
-                vetoedTriangle->Fill(microTime, event.lgQ);
+                vetoTOFHistos[event.targetPos]->Fill(microTime);
+                vetoTriangleHistos[event.targetPos]->Fill(microTime, event.lgQ);
 
                 continue;
             }
@@ -414,12 +463,6 @@ int fillCSHistos(string inputFileName, string macropulseFileName, string gammaCo
 
             goodMacroHistos[event.targetPos]->Fill(event.macroNo+1);
 
-            macrosSinceCycleHistos[event.targetPos]
-                ->Fill(event.macroNo-startOfCycleMacro);
-
-            macrosSinceFacilityGapHistos[event.targetPos]
-                ->Fill(facilityCounter);
-
             if(i%10000==0)
             {
                 cout << "Processed " << i << " " << channel.second << " events into advanced CS histos...\r";
@@ -444,9 +487,6 @@ int fillCSHistos(string inputFileName, string macropulseFileName, string gammaCo
             << 100*(double)outsideMacro/totalEntries << "%." << endl;
 
         // calculate width of gamma peak after gamma correction has been applied
-        const double GAMMA_TIME = pow(10,7)*config.facility.FLIGHT_DISTANCE/C;
-        const double GAMMA_WINDOW_WIDTH = config.time.GAMMA_WINDOW_SIZE/2;
-
         TF1* gammaPeakFit = new TF1("gammaPeakFit","gaus",
                 GAMMA_TIME-GAMMA_WINDOW_WIDTH, GAMMA_TIME+GAMMA_WINDOW_WIDTH);
         TOFHistos[1]->Fit("gammaPeakFit","Q0", "",
@@ -466,8 +506,15 @@ int fillCSHistos(string inputFileName, string macropulseFileName, string gammaCo
             histo->Write();
         }
 
-        vetoedTOF->Write();
-        vetoedTriangle->Write();
+        for(auto& histo : vetoTOFHistos)
+        {
+            histo->Write();
+        }
+
+        for(auto& histo : vetoTriangleHistos)
+        {
+            histo->Write();
+        }
 
         timeDiffHisto->Write();
         timeDiffVEnergy1->Write();
@@ -479,120 +526,18 @@ int fillCSHistos(string inputFileName, string macropulseFileName, string gammaCo
         {
             histo->Write();
         }
-
-        for(auto& histo : macrosSinceCycleHistos)
-        {
-            histo->Write();
-        }
-
-        for(auto& histo : macrosSinceFacilityGapHistos)
-        {
-            histo->Write();
-        }
-
-        // calculate time autocorrelation of number of events in good macro histos
-        /*vector<TH1D*> macroAutocorrelationHistos;
-        for(string targetName : config.target.TARGET_ORDER)
-        {
-            string macroAutocorrelationName = targetName + "MacroAutocorrelation";
-            macroAutocorrelationHistos.push_back(new TH1D(macroAutocorrelationName.c_str(),
-                        macroAutocorrelationName.c_str(), 1000, 0, 1000));
-        }
-
-        // calculate average number of events per macro for each target
-        vector<double> goodMacrosAverageByTarget(goodMacroHistos.size());
-        vector<double> goodMacrosAverageVarianceByTarget(goodMacroHistos.size());
-
-        for(int i=0; i<goodMacroHistos.size(); i++)
-        {
-            cout << "calculating macro average for " << config.target.TARGET_ORDER[i]
-                << "..." << endl;
-
-            TH1D* histo = goodMacroHistos[i];
-            int numberOfBins = histo->GetNbinsX();
-            int numberOfMacros = 0;
-
-            for(int j=1; j<numberOfBins-1; j++)
-            {
-                double binContent = histo->GetBinContent(j);
-                if(binContent>0)
-                {
-                    goodMacrosAverageByTarget[i] += binContent;
-                    numberOfMacros++;
-                }
-            }
-
-            goodMacrosAverageByTarget[i] /= numberOfMacros;
-
-            for(int j=1; j<numberOfBins-1; j++)
-            {
-                double binContent = histo->GetBinContent(j);
-                if(binContent>0)
-                {
-                    goodMacrosAverageVarianceByTarget[i] += pow(binContent-goodMacrosAverageByTarget[i],2);
-                }
-            }
-
-            goodMacrosAverageVarianceByTarget[i] /= numberOfMacros;
-
-            cout << "macro average for " << config.target.TARGET_ORDER[i]
-                << " = " << goodMacrosAverageByTarget[i] << endl;
-
-            cout << "macro average variance for " << config.target.TARGET_ORDER[i]
-                << " = " << goodMacrosAverageVarianceByTarget[i] << endl;
-        }
-
-        for(int i=0; i<goodMacroHistos.size(); i++)
-        {
-            TH1D* macroHisto = goodMacroHistos[i];
-            double average = goodMacrosAverageByTarget[i];
-            double averageVariance = goodMacrosAverageVarianceByTarget[i];
-
-            int numberOfBins = macroHisto->GetNbinsX();
-
-            for(int delay = 1; delay<1000; delay+=1)
-            {
-                double correlation = 0;
-
-                int macroCounter = 0;
-
-                for(int j=0; j+delay<numberOfBins; j++)
-                {
-                    double binContent = macroHisto->GetBinContent(j);
-                    double delayedBinContent = macroHisto->GetBinContent(j+delay);
-
-                    if(binContent<=0 || delayedBinContent<=0)
-                    {
-                        continue;
-                    }
-
-                    correlation +=
-                        (binContent-average)*
-                        (delayedBinContent-average);
-
-                    macroCounter++;
-
-                    if(j%1000==0)
-                    {
-                        cout << "Calculated autocorrelation (delay = " << delay << ") through " << j << " good macropulses...\r";
-                    }
-                }
-
-                correlation /= (macroCounter-1)*averageVariance;
-
-                macroAutocorrelationHistos[i]->SetBinContent(delay, correlation);
-            }
-        }
-
-        for(auto& histo : macroAutocorrelationHistos)
-        {
-            histo->Write();
-        }*/
     }
 
     macropulseFile->Close();
+
+    if(useVetoPaddle)
+    {
+        vetoedInputFile->Close();
+    }
+
+    nonVetoInputFile->Close();
+
     outputFile->Close();
-    inputFile->Close();
 
     logFile << endl << "*** Finished filling CS histos ***" << endl;
 

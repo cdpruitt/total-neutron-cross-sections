@@ -1,9 +1,9 @@
 {
-    string fileName = "/data1/analysis/relative.root";
+    string fileName = "/data2/analysis/relative.root";
 
     TFile* file = new TFile(fileName.c_str(),"READ");
     
-    string relGraphName = "Ni64Ni58, percent";
+    string relGraphName = "O18O16, percent";
         
     TGraphErrors* relGraph = (TGraphErrors*)file->Get(relGraphName.c_str());
 
@@ -68,7 +68,7 @@
     relGraph->GetXaxis()->SetTickLength(0.03);
 
     // Y-axis parameters
-    relGraph->GetYaxis()->SetTitle("(#frac{#sigma_{64} - #sigma_{58}}{#sigma_{64} + #sigma_{58}})");
+    relGraph->GetYaxis()->SetTitle("(#frac{#sigma_{18} - #sigma_{16}}{#sigma_{18} + #sigma_{16}}) [%]");
     relGraph->GetYaxis()->SetTitleSize(0.06);
     relGraph->GetYaxis()->SetTitleFont(2);
     relGraph->GetYaxis()->SetTitleOffset(1.3);
@@ -85,8 +85,8 @@
 
     gPad->SetLogx(1);
     
-    relGraph->GetYaxis()->SetRangeUser(-3,3);
-    relGraph->GetXaxis()->SetLimits(5,600);
+    relGraph->GetYaxis()->SetRangeUser(-5,10);
+    relGraph->GetXaxis()->SetLimits(10,600);
 
     //TLatex latex;
     //latex.SetNDC();

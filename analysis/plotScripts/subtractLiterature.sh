@@ -1,7 +1,7 @@
 #!/bin/bash
 
 litFile="/data1/analysis/literatureData.root"
-litGraphName="Natural carbon (n,tot)"
+litGraphName="Natural C (n,tot)"
 
 expFile=
 

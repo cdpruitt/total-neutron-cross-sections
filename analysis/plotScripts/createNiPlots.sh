@@ -1,9 +1,9 @@
 #!/bin/bash
 
-./relativeDiffLit_CNiPb.sh
-./relativeLit_CNiPb.sh
+./relativeDiffLit_Ni.sh
+./relativeLit_Ni.sh
+./relativeDiff_Ni64Ni58.sh
 
-./absoluteCS_CNiPb_correctedByLitCPb.sh
-./relativeDiffLit_CorrectedCNiPb.sh
-
-./relativeDiffLit_CorrectedNi64Ni58.sh
+./absoluteCS_Ni_correctedByLitCPb.sh
+./relativeDiffLit_CorrectedNi.sh
+./relativeDiff_CorrectedNi64Ni58.sh

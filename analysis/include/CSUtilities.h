@@ -8,6 +8,9 @@
 #include "../include/CSPrereqs.h"
 #include "../include/config.h"
 
+CrossSection mergeCrossSections(CrossSection firstCS, double juncture,
+        CrossSection secondCS);
+
 int readLitData(std::string litDirectory, std::string litOutputName, const Config& config);
 
 CrossSection calculateRelativeDiff(CrossSection a, CrossSection b);

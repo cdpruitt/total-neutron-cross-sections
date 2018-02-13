@@ -77,16 +77,10 @@ int main(int, char* argv[])
 
                 if(readSubRun(subRunData, expName, runNumber, subRun, detectorName, dataLocation))
                 {
-                    continue;
+                    break;
                 }
 
                 printRunCount = true;
-
-                /*if(subRunData.target.getName() == "blank")
-                  {
-                  cout << "monitor/detector ratio during blank = "
-                  << subRunData.monitorCounts/subRunData.totalEventNumber << endl;
-                  }*/
 
                 // find the correct CSPrereqs to add this target's data to
 
@@ -116,33 +110,6 @@ int main(int, char* argv[])
             }
         }
     }
-
-    /*string CSPrereqsFileName = dataLocation + "/CSPrereqs.root";
-      TFile* CSPrereqsFile = new TFile(CSPrereqsFileName.c_str(), "UPDATE");
-
-      vector<TH1D*> runningFluxHistos;
-      for(string targetName : config.target.TARGET_ORDER)
-      {
-      string runningFluxHistoName = targetName + "RunningFluxAvg";
-      runningFluxHistos.push_back(new TH1D(runningFluxHistoName.c_str(),
-      runningFluxHistoName.c_str(), counter, 0, counter));
-      }
-
-      for(int i=0; i<runningFluxAvg.size(); i++)
-      {
-      for(int j=0; j<runningFluxAvg[i].size(); j++)
-      {
-      runningFluxHistos[j]->SetBinContent(i+1, runningFluxAvg[i][1]/runningFluxAvg[i][j]);
-      }
-      }
-
-      for(auto& histo : runningFluxHistos)
-      {
-      histo->Write();
-      }
-
-      CSPrereqsFile->Close();
-      */
 
     string outFileName = dataLocation + "/total.root";
     TFile* outFile = new TFile(outFileName.c_str(), "UPDATE");

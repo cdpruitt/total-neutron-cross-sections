@@ -13,6 +13,24 @@ extern Config config;
 
 int identifyGoodMacros(string macropulseFileName, vector<MacropulseEvent>& macropulseList, ofstream& logFile)
 {
+    if(macropulseList.size()==0)
+    {
+        cerr << "Error: cannot identify good macros from empty macro list." << endl;
+        return 1;
+    }
+
+    // check to see if output file already exists; if so, exit
+    ifstream f(macropulseFileName);
+
+    if(f.good())
+    {
+        cout << macropulseFileName << " already exists; skipping event assignment to macropulses." << endl;
+        logFile << macropulseFileName << " already exists; skipping event assignment to macropulses." << endl;
+        return 2;
+    }
+
+    f.close();
+
     // calculate the average number of events in each macropulse, by target
     vector<double> averageEventsPerMacropulseByTarget(config.target.TARGET_ORDER.size(),0);
     vector<int> numberOfMacropulsesByTarget(config.target.TARGET_ORDER.size(),0);
@@ -55,16 +73,6 @@ int identifyGoodMacros(string macropulseFileName, vector<MacropulseEvent>& macro
     }
 
     cout << "Finished identifying good macropulses." << endl;
-
-    ifstream f(macropulseFileName);
-
-    if(f.good())
-    {
-        cout << macropulseFileName << "already exists; skipping identification of good macropulses." << endl;
-        return 0;
-    }
-
-    f.close();
 
     TFile* outputFile = new TFile(macropulseFileName.c_str(),"CREATE");
 

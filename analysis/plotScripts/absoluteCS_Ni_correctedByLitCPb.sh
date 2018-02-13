@@ -12,8 +12,8 @@ litPbGraphName="Natural Pb (n,tot)"
 litCGraphName="Natural C (n,tot)"
 
 relativeFile="/data1/analysis/relative.root"
-relPbGraphName="NatPb, expLit absolute"
-relCGraphName="NatC, expLit absolute"
+relPbGraphName="PbNat, expLit, absolute"
+relCGraphName="CNat, expLit, absolute"
 
 correctionAverage="CPb_correctionAverage"
 

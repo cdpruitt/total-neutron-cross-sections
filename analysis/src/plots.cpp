@@ -25,17 +25,11 @@ TH1D* convertTOFtoEnergy(TH1D* tof, string name)
 
     int tofBins = tof->GetNbinsX();
 
-    TRandom3 *randomizeBin = new TRandom3();
-
     for(int j=1; j<=tofBins; j++)
     {
         // convert time into neutron velocity based on flight path distance
         double velocity = pow(10.,7.)*(config.facility.FLIGHT_DISTANCE)
-            /(tof->GetBinCenter(j)
-                    +randomizeBin->Uniform(
-                        -(1/(double)(2*config.plot.TOF_BINS_PER_NS)),
-                         (1/(double)(2*config.plot.TOF_BINS_PER_NS)))
-             ); // in meters/sec 
+            /tof->GetBinCenter(j); // in meters/sec 
 
         // convert velocity to relativistic kinetic energy
         double rKE = (pow((1.-pow((velocity/C),2.)),-0.5)-1.)*NEUTRON_MASS; // in MeV
@@ -43,6 +37,7 @@ TH1D* convertTOFtoEnergy(TH1D* tof, string name)
         energy->Fill(rKE,tof->GetBinContent(j));
     }
 
+    // calculate energy error
     int energyBins = energy->GetNbinsX();
     for(int j=1; j<=energyBins; j++)
     {

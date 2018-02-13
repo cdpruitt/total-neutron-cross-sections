@@ -84,6 +84,7 @@ int main(int, char* argv[])
     cout << endl << "Start macropulse identification..." << endl;
 
     string sortedFileName = analysisDirectory + config.analysis.MACROPULSE_ASSIGNED_FILE_NAME;
+    string macropulseFileName = analysisDirectory + config.analysis.MACROPULSES_FILE_NAME;
 
     vector<MacropulseEvent> macropulseList;
 
@@ -99,24 +100,23 @@ int main(int, char* argv[])
                     macropulseList
                     );
 
+            /******************************************************************/
+            /* Identify "good" macropulses */
+            /******************************************************************/
+            identifyGoodMacros(macropulseFileName, macropulseList, log);
+
             break;
 
         case 1:
             // error state - end analysis
             return 1;
-            break;
 
         case 2:
             // sorted.root already exists; skip to next analysis step
             break;
     }
 
-    /******************************************************************/
-    /* Identify "good" macropulses */
-    /******************************************************************/
-    string macropulseFileName = analysisDirectory + config.analysis.MACROPULSES_FILE_NAME;
-    identifyGoodMacros(macropulseFileName, macropulseList, log);
-
+    
     /*************************************************************************/
     /* Veto detector events using the charged-particle paddle */
     /*************************************************************************/
@@ -150,30 +150,11 @@ int main(int, char* argv[])
             config.analysis.GAMMA_CORRECTION_TREE_NAME,
             gammaCorrectionFileName);
 
+    /******************************************************************/
+    /* Populate events into gated histograms, using time correction   */
+    /******************************************************************/
     string gatedHistoFileName = analysisDirectory + "gatedHistos.root";
-
-    ifstream f(gatedHistoFileName);
-
-    if(!f.good())
-    {
-        /******************************************************************/
-        /* Populate events into gated histograms, using time correction   */
-        /******************************************************************/
-
-        if(useVetoPaddle)
-        {
-            fillCSHistos(vetoedFileName, macropulseFileName, gammaCorrectionFileName, log, gatedHistoFileName);
-        }
-
-        else
-        {
-            fillCSHistos(sortedFileName, macropulseFileName, gammaCorrectionFileName, log, gatedHistoFileName);
-        }
-
-        //fillMonitorHistos(sortedFileName, macropulseFileName, log, gatedHistoFileName);
-    }
-
-    f.close();
+    fillCSHistos(vetoedFileName, sortedFileName, useVetoPaddle, macropulseFileName, gammaCorrectionFileName, log, gatedHistoFileName);
 
     /*****************************************************/
     /* Apply deadtime correction to gated histograms     */

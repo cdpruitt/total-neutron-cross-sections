@@ -201,8 +201,6 @@
         expCGraph->GetXaxis()->SetNdivisions(10);
         expCGraph->GetXaxis()->SetTickLength(0.03);
 
-        //expCGraph->GetXaxis()->SetLineWidth(3);
-
         // Y-axis parameters
         expCGraph->GetYaxis()->SetTitle("#sigma_{tot} [b]");
         expCGraph->GetYaxis()->SetTitleSize(0.10);
@@ -214,7 +212,7 @@
         expCGraph->GetYaxis()->SetLabelSize(0.08);
 
         expCGraph->GetYaxis()->SetLabelFont(2);
-        expCGraph->GetYaxis()->SetNdivisions(10);
+        expCGraph->GetYaxis()->SetNdivisions(5);
         expCGraph->GetYaxis()->SetTickLength(0.02);
 
         expCGraph->GetXaxis()->SetRangeUser(3,600);
@@ -232,15 +230,15 @@
         
         TLatex latex;
         latex.SetNDC();
-        latex.SetTextSize(0.06);
+        latex.SetTextSize(0.08);
         latex.SetTextAlign(13); // align at top
-        latex.DrawLatex(0.62,0.57,"^{nat}Pb");
+        latex.DrawLatex(0.58,0.62,"^{nat}Pb");
         latex.DrawLatex(0.52,0.33,"^{nat}Sn");
         latex.DrawLatex(0.51,0.13,"^{nat}C");
 
         // Define legend format and contents
-        TLegend *legend = new TLegend(0.7,0.70,0.9,0.9);
-        legend->SetTextSize(0.06);
+        TLegend *legend = new TLegend(0.7,0.70,0.94,0.9);
+        legend->SetTextSize(0.08);
         legend->SetTextAlign(12);
         legend->AddEntry(litCGraph,"Analog","l");
         legend->AddEntry(corCGraph,"DSP","l");
@@ -259,28 +257,51 @@
 
         gPad->SetFrameLineWidth(3);
 
-        expCGraph->Draw("");
+        corCGraph->GetXaxis()->SetLabelOffset(0.01);
+        corCGraph->GetXaxis()->SetLabelSize(0.06);
+        corCGraph->GetXaxis()->SetLabelFont(2);
+
+        corCGraph->GetXaxis()->SetNdivisions(10);
+        corCGraph->GetXaxis()->SetTickLength(0.03);
+
+        // Y-axis parameters
+        corCGraph->GetYaxis()->SetTitle("#sigma_{tot} [b]");
+        corCGraph->GetYaxis()->SetTitleSize(0.10);
+        corCGraph->GetYaxis()->SetTitleFont(2);
+        corCGraph->GetYaxis()->SetTitleOffset(0.7);
+        corCGraph->GetYaxis()->CenterTitle();
+
+        corCGraph->GetYaxis()->SetLabelOffset(0.01);
+        corCGraph->GetYaxis()->SetLabelSize(0.08);
+
+        corCGraph->GetYaxis()->SetLabelFont(2);
+        corCGraph->GetYaxis()->SetNdivisions(5);
+        corCGraph->GetYaxis()->SetTickLength(0.02);
+
+        corCGraph->GetXaxis()->SetRangeUser(3,600);
+        corCGraph->GetYaxis()->SetRangeUser(0,9);
+
+        gStyle->SetLineWidth(3);
+
+        corCGraph->Draw("");
         litCGraph->Draw("same");
         litSnGraph->Draw("same");
         litPbGraph->Draw("same");
         corCGraph->Draw("same");
         corSnGraph->Draw("same");
         corPbGraph->Draw("same");
-
-        // Pad dimensions and margins
-        corCGraph->GetYaxis()->SetRangeUser(0,9);
-
+        
         TLatex latex;
         latex.SetNDC();
-        latex.SetTextSize(0.06);
+        latex.SetTextSize(0.08);
         latex.SetTextAlign(13); // align at top
-        latex.DrawLatex(0.515,0.57,"^{nat}Pb");
-        latex.DrawLatex(0.40,0.33,"^{nat}Sn");
-        latex.DrawLatex(0.38,0.13,"^{nat}C");
+        latex.DrawLatex(0.46,0.62,"^{nat}Pb");
+        latex.DrawLatex(0.39,0.33,"^{nat}Sn");
+        latex.DrawLatex(0.37,0.13,"^{nat}C");
 
         // Define legend format and contents
-        TLegend *legend = new TLegend(0.7,0.70,0.9,0.9);
-        legend->SetTextSize(0.06);
+        TLegend *legend = new TLegend(0.67,0.70,0.94,0.9);
+        legend->SetTextSize(0.08);
         legend->SetTextAlign(12);
         legend->AddEntry(litCGraph,"Analog","l");
         legend->AddEntry(corCGraph,"DSP","l");
@@ -327,7 +348,7 @@
         relCGraph->GetYaxis()->SetLabelSize(0.08);
 
         relCGraph->GetYaxis()->SetLabelFont(2);
-        relCGraph->GetYaxis()->SetNdivisions(5);
+        relCGraph->GetYaxis()->SetNdivisions(10);
         relCGraph->GetYaxis()->SetTickLength(0.02);
 
         relCGraph->Draw("");
@@ -346,15 +367,21 @@
         //latex.DrawLatex(0.32,0.4,"C (elem.)");
 
         // Define legend format and contents
-        TLegend *legend = new TLegend(0.57,0.81,0.94,0.92);
-        legend->SetNColumns(3);
-        legend->SetTextSize(0.055);
+        TLegend *legend = new TLegend(0.81,0.69,0.97,0.97);
+        //legend->SetNColumns(3);
+        legend->SetTextSize(0.065);
         legend->SetTextAlign(12);
         legend->AddEntry(relCGraph,"{}^{nat}C","l");
         legend->AddEntry(relSnGraph,"{}^{nat}Sn","l");
         legend->AddEntry(relPbGraph,"{}^{nat}Pb","l");
 
         legend->Draw();
+
+        TLine* zeroLine = new TLine(0, 0, 600, 0);
+        zeroLine->SetLineColor(kBlack);
+        zeroLine->SetLineWidth(3);
+        zeroLine->SetLineStyle(9);
+        zeroLine->Draw();
     }
 
     // fourth panel
@@ -397,7 +424,7 @@
         relCorCGraph->GetYaxis()->SetLabelSize(0.08);
 
         relCorCGraph->GetYaxis()->SetLabelFont(2);
-        relCorCGraph->GetYaxis()->SetNdivisions(5);
+        relCorCGraph->GetYaxis()->SetNdivisions(10);
         relCorCGraph->GetYaxis()->SetTickLength(0.02);
 
         relCorCGraph->Draw("");
@@ -416,20 +443,22 @@
         //latex.DrawLatex(0.32,0.4,"C (elem.)");
 
         // Define legend format and contents
-        TLegend *legend = new TLegend(0.45,0.81,0.85,0.92);
-        legend->SetNColumns(3);
-        legend->SetTextSize(0.055);
+        TLegend *legend = new TLegend(0.77,0.69,0.95,0.97);
+        //legend->SetNColumns(3);
+        legend->SetTextSize(0.065);
         legend->SetTextAlign(12);
         legend->AddEntry(relCGraph,"{}^{nat}C","l");
         legend->AddEntry(relSnGraph,"{}^{nat}Sn","l");
         legend->AddEntry(relPbGraph,"{}^{nat}Pb","l");
 
         legend->Draw();
-    }
 
-    //TImage* image = TImage::Create();
-    //image->FromPad(canvas);
-    //image->WriteImage("../plots/crossSections/FourPanelSn.png");
+        TLine* zeroLine = new TLine(0, 0, 600, 0);
+        zeroLine->SetLineColor(kBlack);
+        zeroLine->SetLineWidth(3);
+        zeroLine->SetLineStyle(9);
+        zeroLine->Draw();
+    }
 
     // close it all up
     expFile->Close();

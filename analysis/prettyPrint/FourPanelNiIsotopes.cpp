@@ -20,8 +20,6 @@
     style->SetPadColor(10);
     style->SetHistLineWidth(4);
     style->SetHistLineColor(kRed);
-    style->SetMarkerSize(0.6);
-    style->SetMarkerStyle(8);
     //style->SetFuncWidth(3);
     //style->SetFuncColor(kRed);
     style->SetLabelColor(kBlack,"xyz");
@@ -51,62 +49,57 @@
     }
     
     string expNi58GraphName = "Ni58";
-    string expNiGraphName = "NiNat";
     string expNi64GraphName = "Ni64";
 
     string relNi58GraphName = "Ni58, expLit, percent";
-    string relNiGraphName = "NatNi, expLit, percent";
     string relNi64GraphName = "Ni64, expLit, percent";
 
     string relCorNi58GraphName = "Ni58, expLit, corrected, percent";
-    string relCorNiGraphName = "NatNi, expLit, corrected, percent";
     string relCorNi64GraphName = "Ni64, expLit, corrected, percent";
 
-    string litNiNatGraphName = "Natural Ni (n,tot)";
+    string litNi58GraphName = "Ni58 (n,tot)";
+    string litNi64GraphName = "Ni64 (n,tot)";
     
     TGraphErrors* expNi58Graph = (TGraphErrors*)expFile->Get(expNi58GraphName.c_str());
-    TGraphErrors* expNiGraph = (TGraphErrors*)expFile->Get(expNiGraphName.c_str());
     TGraphErrors* expNi64Graph = (TGraphErrors*)expFile->Get(expNi64GraphName.c_str());
 
     TGraphErrors* relNi58Graph = (TGraphErrors*)relFile->Get(relNi58GraphName.c_str());
-    TGraphErrors* relNiGraph = (TGraphErrors*)relFile->Get(relNiGraphName.c_str());
     TGraphErrors* relNi64Graph = (TGraphErrors*)relFile->Get(relNi64GraphName.c_str());
 
     TGraphErrors* corNi58Graph = (TGraphErrors*)corFile->Get(expNi58GraphName.c_str());
-    TGraphErrors* corNiGraph = (TGraphErrors*)corFile->Get(expNiGraphName.c_str());
     TGraphErrors* corNi64Graph = (TGraphErrors*)corFile->Get(expNi64GraphName.c_str());
 
     TGraphErrors* relCorNi58Graph = (TGraphErrors*)relFile->Get(relCorNi58GraphName.c_str());
-    TGraphErrors* relCorNiGraph = (TGraphErrors*)relFile->Get(relCorNiGraphName.c_str());
     TGraphErrors* relCorNi64Graph = (TGraphErrors*)relFile->Get(relCorNi64GraphName.c_str());
 
-    TGraphErrors* litNiNatGraph = (TGraphErrors*)litFile->Get(litNiNatGraphName.c_str());
+    TGraphErrors* litNi58Graph = (TGraphErrors*)litFile->Get(litNi58GraphName.c_str());
+    TGraphErrors* litNi64Graph = (TGraphErrors*)litFile->Get(litNi64GraphName.c_str());
 
-    if(!expNi58Graph || !expNiGraph || !expNi64Graph)
+    if(!expNi58Graph || !expNi64Graph)
     {
         cout << "Error: failed to open an experimental absolute cross section graph." << endl;
         exit(1);
     }
 
-    if(!relNi58Graph || !relNiGraph || !relNi64Graph)
+    if(!relNi58Graph || !relNi64Graph)
     {
         cout << "Error: failed to open an relative diff to lit cross section graph." << endl;
         exit(1);
     }
 
-    if(!corNi58Graph || !corNiGraph || !corNi64Graph)
+    if(!corNi58Graph || !corNi64Graph)
     {
         cout << "Error: failed to open an corrected absolute cross section graph." << endl;
         exit(1);
     }
 
-    if(!relCorNi58Graph || !relCorNiGraph || !relCorNi64Graph)
+    if(!relCorNi58Graph || !relCorNi64Graph)
     {
         cout << "Error: failed to open an corrected relative diff to lit cross section graph." << endl;
         exit(1);
     }
 
-    if(!litNiNatGraph)
+    if(!litNi58Graph || !litNi64Graph)
     {
         cout << "Error: failed to open an lit cross section graph." << endl;
         exit(1);
@@ -114,57 +107,56 @@
 
     // Set graph point and line characteristics
     expNi58Graph->SetLineColor(kRed);
+    expNi58Graph->SetLineWidth(4);
+    expNi58Graph->SetLineStyle(1);
     expNi58Graph->SetMarkerColor(kRed);
 
-    expNiGraph->SetLineColor(kRed);
-    expNiGraph->SetMarkerColor(kRed);
+    expNi64Graph->SetLineColor(kRed+3);
+    expNi64Graph->SetLineWidth(4);
+    expNi64Graph->SetLineStyle(1);
+    expNi64Graph->SetMarkerColor(kRed+3);
 
-    expNi64Graph->SetLineColor(kRed);
-    expNi64Graph->SetMarkerColor(kRed);
-
-    relNi58Graph->SetLineColor(kRed-9);
+    relNi58Graph->SetLineColor(kRed);
     relNi58Graph->SetLineWidth(4);
     relNi58Graph->SetLineStyle(0);
-    relNi58Graph->SetMarkerColor(kRed-9);
-
-    relNiGraph->SetLineColor(kRed);
-    relNiGraph->SetLineWidth(4);
-    relNiGraph->SetLineStyle(0);
-    relNiGraph->SetMarkerColor(kRed);
+    relNi58Graph->SetMarkerColor(kRed);
 
     relNi64Graph->SetLineColor(kRed+3);
     relNi64Graph->SetLineWidth(4);
     relNi64Graph->SetLineStyle(0);
     relNi64Graph->SetMarkerColor(kRed+3);
+    relNi64Graph->SetMarkerSize(3);
+    relNi64Graph->SetMarkerStyle(34);
 
     corNi58Graph->SetLineColor(kRed);
     corNi58Graph->SetMarkerColor(kRed);
 
-    corNiGraph->SetLineColor(kRed);
-    corNiGraph->SetMarkerColor(kRed);
+    corNi64Graph->SetLineColor(kRed+3);
+    corNi64Graph->SetMarkerColor(kRed+3);
 
-    corNi64Graph->SetLineColor(kRed);
-    corNi64Graph->SetMarkerColor(kRed);
-
-    relCorNi58Graph->SetLineColor(kRed-9);
+    relCorNi58Graph->SetLineColor(kRed);
     relCorNi58Graph->SetLineWidth(4);
     relCorNi58Graph->SetLineStyle(0);
-    relCorNi58Graph->SetMarkerColor(kRed-9);
-
-    relCorNiGraph->SetLineColor(kRed);
-    relCorNiGraph->SetLineWidth(4);
-    relCorNiGraph->SetLineStyle(0);
-    relCorNiGraph->SetMarkerColor(kRed);
+    relCorNi58Graph->SetMarkerColor(kRed);
 
     relCorNi64Graph->SetLineColor(kRed+3);
     relCorNi64Graph->SetLineWidth(4);
     relCorNi64Graph->SetLineStyle(0);
     relCorNi64Graph->SetMarkerColor(kRed+3);
+    relCorNi64Graph->SetMarkerSize(3);
+    relCorNi64Graph->SetMarkerStyle(34);
 
-    litNiNatGraph->SetLineColor(kBlue);
-    litNiNatGraph->SetLineWidth(4);
-    litNiNatGraph->SetLineStyle(0);
-    litNiNatGraph->SetMarkerColor(kBlue);
+    litNi58Graph->SetLineColor(kBlue);
+    litNi58Graph->SetLineWidth(4);
+    litNi58Graph->SetLineStyle(1);
+    litNi58Graph->SetMarkerColor(kBlue);
+
+    litNi64Graph->SetLineColor(kViolet);
+    litNi64Graph->SetLineWidth(4);
+    litNi64Graph->SetLineStyle(1);
+    litNi64Graph->SetMarkerColor(kViolet);
+    litNi64Graph->SetMarkerSize(3);
+    litNi64Graph->SetMarkerStyle(34);
 
     // first panel
     {
@@ -203,31 +195,35 @@
         expNi58Graph->GetYaxis()->SetNdivisions(5);
         expNi58Graph->GetYaxis()->SetTickLength(0.02);
 
-        expNi58Graph->GetXaxis()->SetRangeUser(2,600);
-        expNi58Graph->GetYaxis()->SetRangeUser(0,9);
+        expNi58Graph->GetXaxis()->SetLimits(2,600);
+        expNi58Graph->GetYaxis()->SetRangeUser(0.5,4.5);
 
         gStyle->SetLineWidth(3);
 
         expNi58Graph->Draw("");
-        litNiNatGraph->Draw("same");
+        litNi58Graph->Draw("same");
+        litNi64Graph->Draw("p");
         expNi58Graph->Draw("same");
-        expNiGraph->Draw("same");
         expNi64Graph->Draw("same");
         
-        TLatex latex;
+        /*TLatex latex;
         latex.SetNDC();
         latex.SetTextSize(0.08);
         latex.SetTextAlign(13); // align at top
-        latex.DrawLatex(0.62,0.57,"^{nat}Pb");
         latex.DrawLatex(0.52,0.33,"^{nat}Ni");
         latex.DrawLatex(0.51,0.13,"^{nat}C");
+        */
 
         // Define legend format and contents
-        TLegend *legend = new TLegend(0.7,0.70,0.9,0.9);
-        legend->SetTextSize(0.08);
+        TLegend *legend = new TLegend(0.45,0.73,0.97,0.95);
+        legend->SetTextSize(0.07);
         legend->SetTextAlign(12);
-        legend->AddEntry(litNiNatGraph,"Analog","l");
-        legend->AddEntry(corNi58Graph,"DSP","l");
+        legend->SetNColumns(2);
+        legend->AddEntry(litNi58Graph,"^{58}Ni (An)","l");
+        legend->AddEntry(litNi64Graph,"^{64}Ni (An)","p");
+        legend->AddEntry(expNi58Graph,"^{58}Ni (DSP)","l");
+        legend->AddEntry(expNi64Graph,"^{64}Ni (DSP)","l");
+
         legend->Draw();
     }
 
@@ -243,29 +239,58 @@
 
         gPad->SetFrameLineWidth(3);
 
-        expNi58Graph->Draw("");
-        litNiNatGraph->Draw("same");
+        corNi58Graph->GetXaxis()->SetLabelOffset(0.01);
+        corNi58Graph->GetXaxis()->SetLabelSize(0.06);
+        corNi58Graph->GetXaxis()->SetLabelFont(2);
+
+        corNi58Graph->GetXaxis()->SetNdivisions(10);
+        corNi58Graph->GetXaxis()->SetTickLength(0.03);
+
+        //corNi58Graph->GetXaxis()->SetLineWidth(3);
+
+        // Y-axis parameters
+        corNi58Graph->GetYaxis()->SetTitle("#sigma_{tot} [b]");
+        corNi58Graph->GetYaxis()->SetTitleSize(0.10);
+        corNi58Graph->GetYaxis()->SetTitleFont(2);
+        corNi58Graph->GetYaxis()->SetTitleOffset(0.7);
+        corNi58Graph->GetYaxis()->CenterTitle();
+
+        corNi58Graph->GetYaxis()->SetLabelOffset(0.01);
+        corNi58Graph->GetYaxis()->SetLabelSize(0.08);
+
+        corNi58Graph->GetYaxis()->SetLabelFont(2);
+        corNi58Graph->GetYaxis()->SetNdivisions(5);
+        corNi58Graph->GetYaxis()->SetTickLength(0.02);
+
+        corNi58Graph->GetXaxis()->SetLimits(2,600);
+        corNi58Graph->GetYaxis()->SetRangeUser(0.5,4.5);
+
+        gStyle->SetLineWidth(3);
+
+        corNi58Graph->Draw("");
+        litNi58Graph->Draw("same");
+        litNi64Graph->Draw("p");
         corNi58Graph->Draw("same");
-        corNiGraph->Draw("same");
         corNi64Graph->Draw("same");
-
-        // Pad dimensions and margins
-        corNi58Graph->GetYaxis()->SetRangeUser(0,9);
-
-        TLatex latex;
+        
+        /*TLatex latex;
         latex.SetNDC();
         latex.SetTextSize(0.08);
         latex.SetTextAlign(13); // align at top
-        latex.DrawLatex(0.515,0.57,"^{nat}Pb");
-        latex.DrawLatex(0.40,0.33,"^{nat}Ni");
-        latex.DrawLatex(0.38,0.13,"^{nat}C");
+        latex.DrawLatex(0.52,0.33,"^{nat}Ni");
+        latex.DrawLatex(0.51,0.13,"^{nat}C");
+        */
 
         // Define legend format and contents
-        TLegend *legend = new TLegend(0.7,0.70,0.9,0.9);
-        legend->SetTextSize(0.08);
+        TLegend *legend = new TLegend(0.39,0.73,0.96,0.95);
+        legend->SetTextSize(0.07);
         legend->SetTextAlign(12);
-        legend->AddEntry(litNiNatGraph,"Analog","l");
-        legend->AddEntry(corNi58Graph,"DSP","l");
+        legend->SetNColumns(2);
+        legend->AddEntry(litNi58Graph,"^{58}Ni (An)","l");
+        legend->AddEntry(litNi64Graph,"^{64}Ni (An)","p");
+        legend->AddEntry(corNi58Graph,"^{58}Ni (DSP)","l");
+        legend->AddEntry(corNi64Graph,"^{64}Ni (DSP)","l");
+
         legend->Draw();
     }
 
@@ -313,11 +338,10 @@
         relNi58Graph->GetYaxis()->SetTickLength(0.02);
 
         relNi58Graph->Draw("");
-        relNiGraph->Draw("same");
-        relNi64Graph->Draw("same");
+        relNi64Graph->Draw("p");
         
-        relNi58Graph->GetXaxis()->SetRangeUser(2,600);
-        relNi58Graph->GetYaxis()->SetRangeUser(-8,8);
+        relNi58Graph->GetXaxis()->SetLimits(2,600);
+        relNi58Graph->GetYaxis()->SetRangeUser(-20,20);
 
         //TLatex latex;
         //latex.SetNDC();
@@ -328,15 +352,19 @@
         //latex.DrawLatex(0.32,0.4,"C (elem.)");
 
         // Define legend format and contents
-        TLegend *legend = new TLegend(0.57,0.81,0.94,0.92);
-        legend->SetNColumns(3);
+        TLegend *legend = new TLegend(0.77,0.67,0.94,0.97);
         legend->SetTextSize(0.065);
         legend->SetTextAlign(12);
-        legend->AddEntry(relNi58Graph,"{}^{nat}C","l");
-        legend->AddEntry(relNiGraph,"{}^{nat}Ni","l");
-        legend->AddEntry(relNi64Graph,"{}^{nat}Pb","l");
+        legend->AddEntry(relNi58Graph," ^{58}Ni","l");
+        legend->AddEntry(relNi64Graph," ^{64}Ni","p");
 
         legend->Draw();
+
+        TLine* zeroLine = new TLine(0, 0, 600, 0);
+        zeroLine->SetLineColor(kBlack);
+        zeroLine->SetLineWidth(3);
+        zeroLine->SetLineStyle(9);
+        zeroLine->Draw();
     }
 
     // fourth panel
@@ -369,10 +397,10 @@
         relCorNi58Graph->GetXaxis()->SetTickLength(0.03);
 
         // Y-axis parameters
-        relCorNi58Graph->GetYaxis()->SetTitle("#left(#frac{#sigma_{exp} - #sigma_{lit}}{#sigma_{exp} + #sigma_{lit}}#right)");
+        relCorNi58Graph->GetYaxis()->SetTitle("#frac{#sigma_{exp} - #sigma_{lit}}{#sigma_{exp} + #sigma_{lit}} [%]");
         relCorNi58Graph->GetYaxis()->SetTitleSize(0.08);
         relCorNi58Graph->GetYaxis()->SetTitleFont(2);
-        relCorNi58Graph->GetYaxis()->SetTitleOffset(1.4);
+        relCorNi58Graph->GetYaxis()->SetTitleOffset(1.05);
         relCorNi58Graph->GetYaxis()->CenterTitle();
 
         relCorNi58Graph->GetYaxis()->SetLabelOffset(0.01);
@@ -383,11 +411,10 @@
         relCorNi58Graph->GetYaxis()->SetTickLength(0.02);
 
         relCorNi58Graph->Draw("");
-        relCorNiGraph->Draw("same");
-        relCorNi64Graph->Draw("same");
-
-        relCorNi58Graph->GetXaxis()->SetRangeUser(2,600);
-        relCorNi58Graph->GetYaxis()->SetRangeUser(-8,8);
+        relCorNi64Graph->Draw("p");
+        
+        relCorNi58Graph->GetXaxis()->SetLimits(2,600);
+        relCorNi58Graph->GetYaxis()->SetRangeUser(-20,20);
 
         //TLatex latex;
         //latex.SetNDC();
@@ -398,20 +425,20 @@
         //latex.DrawLatex(0.32,0.4,"C (elem.)");
 
         // Define legend format and contents
-        TLegend *legend = new TLegend(0.45,0.81,0.85,0.92);
-        legend->SetNColumns(3);
+        TLegend *legend = new TLegend(0.72,0.66,0.92,0.97);
         legend->SetTextSize(0.065);
         legend->SetTextAlign(12);
-        legend->AddEntry(relNi58Graph,"{}^{nat}C","l");
-        legend->AddEntry(relNiGraph,"{}^{nat}Ni","l");
-        legend->AddEntry(relNi64Graph,"{}^{nat}Pb","l");
+        legend->AddEntry(relCorNi58Graph," ^{58}Ni","l");
+        legend->AddEntry(relCorNi64Graph," ^{64}Ni","p");
 
         legend->Draw();
-    }
 
-    //TImage* image = TImage::Create();
-    //image->FromPad(canvas);
-    //image->WriteImage("../plots/crossSections/FourPanelNi.png");
+        TLine* zeroLine = new TLine(0, 0, 600, 0);
+        zeroLine->SetLineColor(kBlack);
+        zeroLine->SetLineWidth(3);
+        zeroLine->SetLineStyle(9);
+        zeroLine->Draw();
+    }
 
     // close it all up
     expFile->Close();

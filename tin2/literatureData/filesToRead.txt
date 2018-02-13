@@ -4,5 +4,7 @@ litNatCTotalXS.dat
 litNatNTotalXS.dat
 litNatOTotalXS.dat
 lit18OTotalXS.dat
+litSn112TotalXS.dat
 litNatSnTotalXS.dat
+litSn124TotalXS.dat
 litNatPbTotalXS.dat

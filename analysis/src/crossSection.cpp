@@ -173,7 +173,6 @@ void CrossSection::createGraph(string name, string title)
                                       &getCrossSectionErrors()[0]);
     t->SetNameTitle(name.c_str(),title.c_str());
     gDirectory->WriteTObject(t);
-    cout << "created graph for " << name << endl;
 }
 
 double CrossSection::calculateRMSError()
@@ -260,8 +259,7 @@ void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& bla
             
         // calculate the statistical error
         double crossSectionError =
-            //pow(1/tDet+1/bDet+1/bMon+1/tMon,0.5)/arealDensity; // in cm^2
-            pow(1/tDet+1/bDet,0.5)/arealDensity; // in cm^2
+            pow((1/tDet+1/bDet+1/bMon+1/tMon),0.5)/arealDensity; // in cm^2
 
         crossSectionError *= pow(10,24); // in barns
 

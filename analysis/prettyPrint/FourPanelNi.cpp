@@ -8,7 +8,7 @@
 
     TCanvas* canvas = new TCanvas("canvas","canvas",1200,900);
     canvas->SetCanvasSize(1100,750);
-    canvas->Divide(2,2,-0.01,-0.01,0);
+    canvas->Divide(2,2,0,0,0);
 
     style->SetOptStat(0);
     style->SetOptTitle(0);    
@@ -54,15 +54,15 @@
     string expNiGraphName = "NiNat";
     string expPbGraphName = "PbNat";
 
-    string relCGraphName = "NatC, expLit, percent";
-    string relNiGraphName = "NatNi, expLit, percent";
-    string relPbGraphName = "NatPb, expLit, percent";
+    string relCGraphName = "CNat, expLit, percent";
+    string relNiGraphName = "NiNat, expLit, percent";
+    string relPbGraphName = "PbNat, expLit, percent";
 
-    string relCorCGraphName = "NatC, expLit, corrected, percent";
-    string relCorNiGraphName = "NatNi, expLit, corrected, percent";
-    string relCorPbGraphName = "NatPb, expLit, corrected, percent";
+    string relCorCGraphName = "CNat, expLit, corrected, percent";
+    string relCorNiGraphName = "NiNat, expLit, corrected, percent";
+    string relCorPbGraphName = "PbNat, expLit, corrected, percent";
 
-    string litCGraphName = "Natural carbon (n,tot)";
+    string litCGraphName = "Natural C (n,tot)";
     string litNiGraphName = "Natural Ni (n,tot)";
     string litPbGraphName = "Natural Pb (n,tot)";
     
@@ -188,20 +188,18 @@
         gPad->SetLeftMargin(0.20);
         gPad->SetRightMargin(0.0);
         gPad->SetTopMargin(0.03);
-        gPad->SetBottomMargin(0.03);
+        gPad->SetBottomMargin(0.005);
         gPad->SetTicky(1);
         gPad->SetLogx(1);
 
         gPad->SetFrameLineWidth(3);
 
         expCGraph->GetXaxis()->SetLabelOffset(0.01);
-        expCGraph->GetXaxis()->SetLabelSize(0.06);
+        expCGraph->GetXaxis()->SetLabelSize(0.0);
         expCGraph->GetXaxis()->SetLabelFont(2);
 
         expCGraph->GetXaxis()->SetNdivisions(10);
         expCGraph->GetXaxis()->SetTickLength(0.03);
-
-        //expCGraph->GetXaxis()->SetLineWidth(3);
 
         // Y-axis parameters
         expCGraph->GetYaxis()->SetTitle("#sigma_{tot} [b]");
@@ -218,7 +216,7 @@
         expCGraph->GetYaxis()->SetTickLength(0.02);
 
         expCGraph->GetXaxis()->SetRangeUser(2,600);
-        expCGraph->GetYaxis()->SetRangeUser(0,9);
+        expCGraph->GetYaxis()->SetRangeUser(0.01,9);
 
         gStyle->SetLineWidth(3);
 
@@ -234,12 +232,12 @@
         latex.SetNDC();
         latex.SetTextSize(0.08);
         latex.SetTextAlign(13); // align at top
-        latex.DrawLatex(0.62,0.57,"^{nat}Pb");
-        latex.DrawLatex(0.52,0.33,"^{nat}Ni");
-        latex.DrawLatex(0.51,0.13,"^{nat}C");
+        latex.DrawLatex(0.59,0.63,"^{nat}Pb");
+        latex.DrawLatex(0.50,0.37,"^{nat}Ni");
+        latex.DrawLatex(0.49,0.13,"^{nat}C");
 
         // Define legend format and contents
-        TLegend *legend = new TLegend(0.7,0.70,0.9,0.9);
+        TLegend *legend = new TLegend(0.7,0.70,0.95,0.9);
         legend->SetTextSize(0.08);
         legend->SetTextAlign(12);
         legend->AddEntry(litCGraph,"Analog","l");
@@ -253,7 +251,7 @@
         gPad->SetLeftMargin(0);
         gPad->SetRightMargin(0.005);
         gPad->SetTopMargin(0.03);
-        gPad->SetBottomMargin(0.03);
+        gPad->SetBottomMargin(0.005);
         gPad->SetTicky(2);
         gPad->SetLogx(1);
 
@@ -268,18 +266,18 @@
         corPbGraph->Draw("same");
 
         // Pad dimensions and margins
-        corCGraph->GetYaxis()->SetRangeUser(0,9);
+        corCGraph->GetYaxis()->SetRangeUser(0.01,9);
 
         TLatex latex;
         latex.SetNDC();
         latex.SetTextSize(0.08);
         latex.SetTextAlign(13); // align at top
-        latex.DrawLatex(0.515,0.57,"^{nat}Pb");
-        latex.DrawLatex(0.40,0.33,"^{nat}Ni");
-        latex.DrawLatex(0.38,0.13,"^{nat}C");
+        latex.DrawLatex(0.49,0.63,"^{nat}Pb");
+        latex.DrawLatex(0.38,0.37,"^{nat}Ni");
+        latex.DrawLatex(0.36,0.13,"^{nat}C");
 
         // Define legend format and contents
-        TLegend *legend = new TLegend(0.7,0.70,0.9,0.9);
+        TLegend *legend = new TLegend(0.62,0.70,0.9,0.9);
         legend->SetTextSize(0.08);
         legend->SetTextAlign(12);
         legend->AddEntry(litCGraph,"Analog","l");
@@ -294,7 +292,7 @@
         // Pad dimensions and margins
         gPad->SetLeftMargin(0.20);
         gPad->SetRightMargin(0.0);
-        gPad->SetTopMargin(0.01);
+        gPad->SetTopMargin(0.005);
         gPad->SetBottomMargin(0.25);
         gPad->SetTicky(2);
         gPad->SetTickx(1);
@@ -335,7 +333,7 @@
         relPbGraph->Draw("same");
         
         relCGraph->GetXaxis()->SetRangeUser(2,600);
-        relCGraph->GetYaxis()->SetRangeUser(-8,8);
+        relCGraph->GetYaxis()->SetRangeUser(-8,7.9);
 
         //TLatex latex;
         //latex.SetNDC();
@@ -346,15 +344,21 @@
         //latex.DrawLatex(0.32,0.4,"C (elem.)");
 
         // Define legend format and contents
-        TLegend *legend = new TLegend(0.57,0.81,0.94,0.92);
-        legend->SetNColumns(3);
-        legend->SetTextSize(0.065);
+        TLegend *legend = new TLegend(0.8,0.67,0.96,0.96);
+        //legend->SetNColumns(3);
+        legend->SetTextSize(0.07);
         legend->SetTextAlign(12);
         legend->AddEntry(relCGraph,"{}^{nat}C","l");
         legend->AddEntry(relNiGraph,"{}^{nat}Ni","l");
         legend->AddEntry(relPbGraph,"{}^{nat}Pb","l");
 
         legend->Draw();
+
+        TLine* zeroLine = new TLine(0, 0, 600, 0);
+        zeroLine->SetLineColor(kBlack);
+        zeroLine->SetLineWidth(3);
+        zeroLine->SetLineStyle(9);
+        zeroLine->Draw();
     }
 
     // fourth panel
@@ -364,7 +368,7 @@
         // Pad dimensions and margins
         gPad->SetLeftMargin(0.0);
         gPad->SetRightMargin(0.005);
-        gPad->SetTopMargin(0.01);
+        gPad->SetTopMargin(0.005);
         gPad->SetBottomMargin(0.25);
         gPad->SetTicky(2);
         gPad->SetTickx(1);
@@ -405,7 +409,7 @@
         relCorPbGraph->Draw("same");
 
         relCorCGraph->GetXaxis()->SetRangeUser(2,600);
-        relCorCGraph->GetYaxis()->SetRangeUser(-8,8);
+        relCorCGraph->GetYaxis()->SetRangeUser(-8,7.9);
 
         //TLatex latex;
         //latex.SetNDC();
@@ -416,15 +420,21 @@
         //latex.DrawLatex(0.32,0.4,"C (elem.)");
 
         // Define legend format and contents
-        TLegend *legend = new TLegend(0.45,0.81,0.85,0.92);
-        legend->SetNColumns(3);
+        TLegend *legend = new TLegend(0.75,0.68,0.91,0.96);
+        //legend->SetNColumns(3);
         legend->SetTextSize(0.065);
         legend->SetTextAlign(12);
-        legend->AddEntry(relCGraph,"{}^{nat}C","l");
-        legend->AddEntry(relNiGraph,"{}^{nat}Ni","l");
-        legend->AddEntry(relPbGraph,"{}^{nat}Pb","l");
+        legend->AddEntry(relCorCGraph,"{}^{nat}C","l");
+        legend->AddEntry(relCorNiGraph,"{}^{nat}Ni","l");
+        legend->AddEntry(relCorPbGraph,"{}^{nat}Pb","l");
 
         legend->Draw();
+
+        TLine* zeroLine = new TLine(0, 0, 600, 0);
+        zeroLine->SetLineColor(kBlack);
+        zeroLine->SetLineWidth(3);
+        zeroLine->SetLineStyle(9);
+        zeroLine->Draw();
     }
 
     //TImage* image = TImage::Create();

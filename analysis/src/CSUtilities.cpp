@@ -12,6 +12,40 @@
 
 using namespace std;
 
+CrossSection mergeCrossSections(CrossSection firstCS, double juncture,
+        CrossSection secondCS)
+{
+    CrossSection outputCS;
+    DataSet outputDS;
+
+    DataSet firstDS = firstCS.getDataSet();
+    DataSet secondDS = secondCS.getDataSet();
+
+    for(int i=0; i<firstDS.getNumberOfPoints(); i++)
+    {
+        if(firstDS.getPoint(i).getXValue()>juncture)
+        {
+            break;
+        }
+
+        outputDS.addPoint(firstDS.getPoint(i));
+    }
+
+    for(int i=0; i<secondDS.getNumberOfPoints(); i++)
+    {
+        if(secondDS.getPoint(i).getXValue()<juncture)
+        {
+            continue;
+        }
+
+        outputDS.addPoint(secondDS.getPoint(i));
+    }
+
+    outputCS.addDataSet(outputDS);
+
+    return outputCS;
+}
+
 int readLitData(string litDirectory, string litOutputName, const Config& config)
 {
     string inFileName = litDirectory + "/filesToRead.txt";
@@ -329,6 +363,7 @@ CrossSection subtractCS(CrossSection rawCS, string subtrahendFileName,
     if(!subtrahendGraph)
     {
         cerr << "Error: failed to find " << subtrahendGraphName << " in " << subtrahendFileName << endl;
+        subtrahendFile->Close();
         exit(1);
     }
 
@@ -351,6 +386,8 @@ CrossSection subtractCS(CrossSection rawCS, string subtrahendFileName,
     differenceCS.addDataSet((rawCSData-subtrahendData*factor)/divisor);
 
     differenceCS.name = rawCS.name;
+
+    subtrahendFile->Close();
     return differenceCS;
 }
 
@@ -581,13 +618,25 @@ CrossSection relativeDiffCS(string firstCSFileName, string firstCSGraphName,
     DataSet firstCSDataRaw = DataSet(firstCSGraph, firstCSGraphName);
     DataSet secondCSDataRaw = DataSet(secondCSGraph, secondCSGraphName);
 
-    // find maximum value of second CS dataset
-    double maxEnergyValue = secondCSDataRaw.getPoint(secondCSDataRaw.getNumberOfPoints()-1).getXValue();
+    // find maximum value of datasets
+    double maxEnergyValue = min(
+            firstCSDataRaw.getPoint(firstCSDataRaw.getNumberOfPoints()-1).getXValue(),
+            secondCSDataRaw.getPoint(secondCSDataRaw.getNumberOfPoints()-1).getXValue());
+
+    // find minimum value of datasets
+    double minEnergyValue = max(
+            firstCSDataRaw.getPoint(0).getXValue(),
+            secondCSDataRaw.getPoint(0).getXValue());
 
     // for each y-value of the first CS graph, read the y-value of the second
     // and the y-error
     for(int i=0; i<firstCSDataRaw.getNumberOfPoints(); i++)
     {
+        if(firstCSDataRaw.getPoint(i).getXValue()<minEnergyValue)
+        {
+            continue;
+        }
+
         if(firstCSDataRaw.getPoint(i).getXValue()>maxEnergyValue)
         {
             break;

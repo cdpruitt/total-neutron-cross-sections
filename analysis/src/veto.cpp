@@ -69,7 +69,7 @@ int vetoEvents(string detectorFileName, string outputFileName, ofstream& logFile
         TTree* tree = new TTree(detTreeName.c_str(),detTreeName.c_str());
         tree->Branch("cycleNumber",&event.cycleNumber, "cycleNumber/I");
         tree->Branch("macroNo",&event.macroNo, "macroNo/I");
-        tree->Branch("macroTime",&event.macroTime, "macroTime/D");
+        tree->Branch("macroTime",&event.macroTime, "macroTime/d");
         tree->Branch("fineTime",&event.fineTime, "fineTime/d");
         tree->Branch("eventNo",&event.eventNo, "eventNo/I");
         tree->Branch("completeTime",&event.completeTime, "completeTime/d");
@@ -83,9 +83,9 @@ int vetoEvents(string detectorFileName, string outputFileName, ofstream& logFile
         TH1D* vetoedEventHisto = new TH1D("vetoed event time diff",
             "vetoed event time diff", 100*VETO_WINDOW, -10*VETO_WINDOW, 10*VETO_WINDOW);
 
-        long detTreeEntries = detTree->GetEntries();
-        long vetoTreeEntries = vetoTree->GetEntries();
-        double numberVetoedEvents = 0;
+        int detTreeEntries = detTree->GetEntries();
+        int vetoTreeEntries = vetoTree->GetEntries();
+        int numberVetoedEvents = 0;
 
         bool endVeto = false;
 
@@ -110,16 +110,16 @@ int vetoEvents(string detectorFileName, string outputFileName, ofstream& logFile
                 else
                 {
                     cout << "Reached end of veto tree - allowing all remaining events." << endl;
-                    int k=i;
-                    while(k<detTreeEntries)
-                    {
-                        detTree->GetEntry(k);
-                        tree->Fill();
-                        k++;
 
-                        if(k%10000==0)
+                    while(i<detTreeEntries)
+                    {
+                        detTree->GetEntry(i);
+                        tree->Fill();
+                        i++;
+
+                        if(i%10000==0)
                         {
-                            cout << "Processed " << k << " events on " << detTreeName << " through veto \r";
+                            cout << "Processed " << i << " events on " << detTreeName << " through veto \r";
                             fflush(stdout);
                         }
                     }
@@ -141,7 +141,7 @@ int vetoEvents(string detectorFileName, string outputFileName, ofstream& logFile
             }
 
             while(veto.cycleNumber == event.cycleNumber &&
-                    (abs(event.completeTime-veto.completeTime)<VETO_WINDOW))
+                    (veto.completeTime+VETO_WINDOW < event.completeTime))
             {
                 j++;
 
@@ -153,16 +153,16 @@ int vetoEvents(string detectorFileName, string outputFileName, ofstream& logFile
                 else
                 {
                     cout << "Reached end of veto tree - allowing all remaining events." << endl;
-                    int k=i;
-                    while(k<detTreeEntries)
-                    {
-                        detTree->GetEntry(k);
-                        tree->Fill();
-                        k++;
 
-                        if(k%10000==0)
+                    while(i<detTreeEntries)
+                    {
+                        detTree->GetEntry(i);
+                        tree->Fill();
+                        i++;
+
+                        if(i%10000==0)
                         {
-                            cout << "Processed " << k << " events on " << detTreeName << " through veto \r";
+                            cout << "Processed " << i << " events on " << detTreeName << " through veto \r";
                             fflush(stdout);
                         }
                     }
@@ -184,14 +184,10 @@ int vetoEvents(string detectorFileName, string outputFileName, ofstream& logFile
             }
 
             // test for coincidence, within VETO_WINDOW
-            if(abs(event.completeTime-veto.completeTime)<10*VETO_WINDOW)
-            {
-                vetoedEventHisto->Fill(event.completeTime-veto.completeTime);
-            }
-
             if(abs(event.completeTime-veto.completeTime)<VETO_WINDOW)
             {
                 // coincidence found - mark event as "vetoed"
+                vetoedEventHisto->Fill(event.completeTime-veto.completeTime);
                 event.vetoed = true;
                 numberVetoedEvents++;
             }

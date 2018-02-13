@@ -6,4 +6,4 @@ Run         Channel
 range       name
 ********************************************************************************
 0-56        highThresholdDet
-57-102      highThresholdDet
+57-102      highThresholdDet lowThresholdDet
