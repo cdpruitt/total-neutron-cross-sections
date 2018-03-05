@@ -42,6 +42,9 @@ class DataSet
 
         std::vector<double> getXValues() const;
         std::vector<double> getXErrors() const;
+        std::vector<double> getXErrorsL() const;
+        std::vector<double> getXErrorsR() const;
+
         std::vector<double> getYValues() const;
         std::vector<double> getYErrors() const;
 

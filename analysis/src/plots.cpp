@@ -99,6 +99,18 @@ double RKEToTOF(double RKE)
     return TOF; // in ns
 }
 
+double calculateEnergyErrorL(double energy, double tofSigma)
+{
+    double tof = RKEToTOF(energy);
+    return tofToRKE(tof)-tofToRKE(tof+tofSigma);
+}
+
+double calculateEnergyErrorR(double energy, double tofSigma)
+{
+    double tof = RKEToTOF(energy);
+    return tofToRKE(tof-tofSigma)-tofToRKE(tof);
+}
+
 TH1D* timeBinsToRKEBins(TH1D* inputHisto, string name)
 {
     if(!inputHisto)

@@ -12,7 +12,18 @@ DataPoint::DataPoint(double x, double xE,
                      double y, double yE)
 {
     xValue = x;
-    xError = xE;
+    xErrorL = xE;
+    xErrorR = xE;
+    yValue = y;
+    yError = yE;
+}
+
+DataPoint::DataPoint(double x, double xEL, double xER,
+                     double y, double yE)
+{
+    xValue = x;
+    xErrorL = xEL;
+    xErrorR = xER;
     yValue = y;
     yError = yE;
 }
@@ -25,7 +36,27 @@ DataPoint::DataPoint(double x, double xE,
                      long tDC)
 {
     xValue = x;
-    xError = xE;
+    xErrorL = xE;
+    xErrorR = xE;
+    yValue = y;
+    yError = yE;
+
+    blankMonitorCounts = bMC;
+    targetMonitorCounts = tMC;
+    blankDetCounts = bDC;
+    targetDetCounts = tDC;
+}
+
+DataPoint::DataPoint(double x, double xEL, double xER,
+                     double y, double yE,
+                     long bMC,
+                     long tMC,
+                     long bDC,
+                     long tDC)
+{
+    xValue = x;
+    xErrorL = xEL;
+    xErrorR = xER;
     yValue = y;
     yError = yE;
 
@@ -42,7 +73,17 @@ double DataPoint::getXValue() const
 
 double DataPoint::getXError() const
 {
-    return xError;
+    return xErrorL;
+}
+
+double DataPoint::getXErrorL() const
+{
+    return xErrorL;
+}
+
+double DataPoint::getXErrorR() const
+{
+    return xErrorR;
 }
 
 double DataPoint::getYValue() const
@@ -102,7 +143,18 @@ void DataPoint::setXValue(double xv)
 
 void DataPoint::setXError(double xe)
 {
-    xError = xe;
+    xErrorL = xe;
+    xErrorR = xe;
+}
+
+void DataPoint::setXErrorL(double xel)
+{
+    xErrorL = xel;
+}
+
+void DataPoint::setXErrorR(double xer)
+{
+    xErrorR = xer;
 }
 
 void DataPoint::setYValue(double yv)
@@ -117,21 +169,30 @@ void DataPoint::setYError(double ye)
 
 DataPoint operator+(const DataPoint& augend, const DataPoint& addend)
 {
-    DataPoint outputDataPoint((augend.getXValue()+addend.getXValue())/2,
-                              pow(
-                                  pow(augend.getXError(),2)+
-                                  pow(addend.getXError(),2),0.5),
-                              augend.getYValue()+addend.getYValue(),
-                              pow(
-                                  pow(augend.getYError(),2)+
-                                  pow(addend.getYError(),2),0.5));
+    DataPoint outputDataPoint(
+            (augend.getXValue()+addend.getXValue())/2, // x-value
+            pow(
+                pow(augend.getXErrorL(),2)+
+                pow(addend.getXErrorL(),2),0.5), // x-error, left
+            pow(
+                pow(augend.getXErrorR(),2)+
+                pow(addend.getXErrorR(),2),0.5), // x-error, right
+            augend.getYValue()+addend.getYValue(), // y-value
+            pow(
+                pow(augend.getYError(),2)+
+                pow(addend.getYError(),2),0.5)); // y-error
     return outputDataPoint;
 }
 
 DataPoint operator-(const DataPoint& minuend, const DataPoint& subtrahend)
 {
-    DataPoint outputDataPoint(minuend.getXValue(),
-                              minuend.getXError(),
+    DataPoint outputDataPoint(minuend.getXValue(), // x-value
+                            pow(
+                              pow(minuend.getXErrorL(),2)+ // x-error, left
+                              pow(subtrahend.getXErrorL(),2),0.5),
+                            pow(
+                              pow(minuend.getXErrorR(),2)+ // x-error, right
+                              pow(subtrahend.getXErrorR(),2),0.5),
                               minuend.getYValue()-subtrahend.getYValue(),
                               pow(
                                   pow(minuend.getYError(),2)/*+
@@ -147,8 +208,10 @@ DataPoint operator-(const DataPoint& minuend, const DataPoint& subtrahend)
 
 DataPoint operator+(const DataPoint& augend, const double addend)
 {
-    return DataPoint(augend.getXValue(), augend.getXError(),
-                     augend.getYValue()+addend, augend.getYError());
+    return DataPoint(augend.getXValue(),
+                     augend.getXError(),
+                     augend.getYValue()+addend,
+                     augend.getYError());
 }
 
 DataPoint operator*(const DataPoint& multiplicand, const double multiplier)

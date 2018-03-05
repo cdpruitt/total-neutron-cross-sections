@@ -444,6 +444,26 @@ vector<double> DataSet::getXErrors() const
     return xErrors;
 }
 
+vector<double> DataSet::getXErrorsL() const
+{
+    vector<double> xErrorsL;
+    for(const DataPoint point : data)
+    {
+        xErrorsL.push_back(point.getXErrorL());
+    }
+    return xErrorsL;
+}
+
+vector<double> DataSet::getXErrorsR() const
+{
+    vector<double> xErrorsR;
+    for(const DataPoint point : data)
+    {
+        xErrorsR.push_back(point.getXErrorR());
+    }
+    return xErrorsR;
+}
+
 vector<double> DataSet::getYErrors() const
 {
     vector<double> yErrors;

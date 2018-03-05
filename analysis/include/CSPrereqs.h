@@ -17,10 +17,11 @@ class CSPrereqs
         CSPrereqs(Target t);
         CSPrereqs(std::string targetDataLocation);
 
-        int readEnergyHisto(TFile* histoFile, std::string directory, std::string targetName);
+        int readTOFHisto(TFile* histoFile, std::string directory, std::string targetName);
         int readMonitorCounts(TFile* histoFile, std::string directory, std::string targetName);
         int readMacroData(TFile* macroFile, std::string directory, std::string targetName);
         int readEventData(TFile* macroFile, std::string directory, std::string targetName);
+        int readUncorrectedTOFHisto(TFile* macroFile, std::string directory, std::string targetName);
 
         void readTargetData(std::string expName, std::string targetName);
         void getAverageRate(TFile* histoFile, std::string averageRateDataName, int targetNumber);
@@ -35,6 +36,8 @@ class CSPrereqs
 
         TH1D* energyHisto = 0; // target-specific energy histo, corrected for deadtime
         TH1D* TOFHisto = 0; // target-specific energy histo, corrected for deadtime
+        TH1D* uncorrectedTOFHisto = 0; // target-specific energy histo, uncorrected for deadtime
+
 };
 
 void extractGraphData(

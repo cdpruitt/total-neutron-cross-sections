@@ -486,16 +486,6 @@ int fillCSHistos(string vetoedInputFileName, string nonVetoInputFileName, bool u
         logFile << "Fraction events outside macropulse: "
             << 100*(double)outsideMacro/totalEntries << "%." << endl;
 
-        // calculate width of gamma peak after gamma correction has been applied
-        TF1* gammaPeakFit = new TF1("gammaPeakFit","gaus",
-                GAMMA_TIME-GAMMA_WINDOW_WIDTH, GAMMA_TIME+GAMMA_WINDOW_WIDTH);
-        TOFHistos[1]->Fit("gammaPeakFit","Q0", "",
-                GAMMA_TIME-GAMMA_WINDOW_WIDTH, GAMMA_TIME+GAMMA_WINDOW_WIDTH);
-        logFile << endl << "Blank target gamma peak FWHM = "
-            << 2.355*gammaPeakFit->GetParameter(2)
-            << " ns (fit range: " << GAMMA_TIME-GAMMA_WINDOW_WIDTH
-            << " - " << GAMMA_TIME+GAMMA_WINDOW_WIDTH << " ns)." << endl;
-
         for(auto& histo : TOFHistos)
         {
             histo->Write();

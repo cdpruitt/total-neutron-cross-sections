@@ -16,26 +16,12 @@ using namespace std;
 
 extern Config config;
 
-int CSPrereqs::readEnergyHisto(TFile* histoFile, string directory, string targetName)
+int CSPrereqs::readTOFHisto(TFile* histoFile, string directory, string targetName)
 {
     // for histos
     histoFile->cd(directory.c_str());
 
-    string energyHistoName = targetName + "Energy";
-    TH1D* energyHistoTemp = (TH1D*)gDirectory->Get(energyHistoName.c_str());
-
-    if(!energyHistoTemp)
-    {
-        cerr << "Error: Failed to open histogram \"" << energyHistoName
-            << "\" in file " << histoFile
-            << " (in getHisto)." << endl;
-        return 1;
-    }
-
-    energyHisto = (TH1D*)energyHistoTemp->Clone();
-    energyHisto->SetDirectory(0);
-
-    string TOFHistoName = targetName + "TOFCorrected";
+    string TOFHistoName = targetName + "TOF";
     TH1D* TOFHistoTemp = (TH1D*)gDirectory->Get(TOFHistoName.c_str());
 
     if(!TOFHistoTemp)
@@ -161,6 +147,33 @@ int CSPrereqs::readEventData(TFile* histoFile, string directoryName, string targ
    return 0;
 }
 
+int CSPrereqs::readUncorrectedTOFHisto(TFile* histoFile, string directoryName, string targetName)
+{
+    string eventDataHistoName = targetName + "TOF";
+
+    TDirectory* dir = (TDirectory*)histoFile->Get(directoryName.c_str());
+    if(!dir)
+    {
+        cerr << "Error: Failed to open directory " << directoryName << " in file " << histoFile->GetName()
+            << " (in readEventData)." << endl;
+        return 1;
+    }
+
+    TH1D* eventDataHistoTemp = (TH1D*)dir->Get(eventDataHistoName.c_str());
+    if(!eventDataHistoTemp)
+    {
+        cerr << "Error: Failed to open histogram \"" << eventDataHistoName
+            << "\" in file " << histoFile->GetName() << " (in readEventData)." << endl;
+        return 1;
+    }
+
+    string clonedHistoName = eventDataHistoName + "uncorrected";
+    uncorrectedTOFHisto = (TH1D*)eventDataHistoTemp->Clone(clonedHistoName.c_str());
+    uncorrectedTOFHisto->SetDirectory(0);
+
+   return 0;
+}
+
 CSPrereqs operator+(CSPrereqs& augend, CSPrereqs& addend)
 {
     if(augend.target.getName() != addend.target.getName())
@@ -169,14 +182,13 @@ CSPrereqs operator+(CSPrereqs& augend, CSPrereqs& addend)
         exit(1);
     }
 
-    if(!addend.energyHisto || !addend.TOFHisto
-            || !addend.monitorCounts || !addend.goodMacroNumber)
+    if(!addend.TOFHisto || !addend.monitorCounts || !addend.goodMacroNumber || !addend.uncorrectedTOFHisto)
     {
         return augend;
     }
 
-    augend.energyHisto->Add(addend.energyHisto);
     augend.TOFHisto->Add(addend.TOFHisto);
+    augend.uncorrectedTOFHisto->Add(addend.uncorrectedTOFHisto);
 
     augend.monitorCounts += addend.monitorCounts;
     augend.goodMacroNumber += addend.goodMacroNumber;
@@ -191,8 +203,9 @@ CSPrereqs::CSPrereqs(Target t)
     target = t;
     TOFHisto = new TH1D("","",config.plot.TOF_BINS,config.plot.TOF_LOWER_BOUND,config.plot.TOF_UPPER_BOUND);
     TOFHisto->SetDirectory(0);
-    energyHisto = timeBinsToRKEBins(TOFHisto,target.getName());
-    energyHisto->SetDirectory(0);
+
+    uncorrectedTOFHisto = new TH1D("","",config.plot.TOF_BINS,config.plot.TOF_LOWER_BOUND,config.plot.TOF_UPPER_BOUND);
+    uncorrectedTOFHisto->SetDirectory(0);
 
     monitorCounts = 0;
     goodMacroNumber = 0;
@@ -201,10 +214,11 @@ CSPrereqs::CSPrereqs(Target t)
 
 CSPrereqs::CSPrereqs(string targetDataLocation) : target(targetDataLocation)
 {
-    TOFHisto = new TH1D("","",config.plot.TOF_BINS,config.plot.TOF_LOWER_BOUND,config.plot.TOF_RANGE),target.getName();
+    TOFHisto = new TH1D("","",config.plot.TOF_BINS,config.plot.TOF_LOWER_BOUND,config.plot.TOF_RANGE);
     TOFHisto->SetDirectory(0);
-    energyHisto = timeBinsToRKEBins(TOFHisto,target.getName());
-    energyHisto->SetDirectory(0);
+
+    uncorrectedTOFHisto = new TH1D("","",config.plot.TOF_BINS,config.plot.TOF_LOWER_BOUND,config.plot.TOF_UPPER_BOUND);
+    uncorrectedTOFHisto->SetDirectory(0);
 
     monitorCounts = 0;
     goodMacroNumber = 0;
@@ -355,22 +369,22 @@ int readSubRun(CSPrereqs& subRunData, string expName, int runNumber, int subRun,
         return 1;
     }
 
-    // open file containing energy histograms
-    stringstream energyFileName;
-    energyFileName << dataLocation << "/" << runNumber << "/"
-        << subRunFormatted.str() << "/energy.root";
-    ifstream g(energyFileName.str());
+    // open file containing deadtime-corrected TOF histograms
+    stringstream TOFFileName;
+    TOFFileName << dataLocation << "/" << runNumber << "/"
+        << subRunFormatted.str() << "/correctedHistos.root";
+    ifstream g(TOFFileName.str());
     if(!g.good())
     {
         // failed to open this sub-run - skip to the next one
-        cerr << "Couldn't open " << energyFileName.str() << "; continuing.\r";
+        cerr << "Couldn't open " << TOFFileName.str() << "; continuing.\r";
         fflush(stdout);
         return 1;
     }
 
     g.close();
 
-    TFile* energyFile = new TFile(energyFileName.str().c_str(),"READ");
+    TFile* TOFFile = new TFile(TOFFileName.str().c_str(),"READ");
 
     // open file containing macropulse number data
     stringstream macroFileName;
@@ -392,22 +406,23 @@ int readSubRun(CSPrereqs& subRunData, string expName, int runNumber, int subRun,
     // pull data needed for CS calculation from subrun 
     string targetName = subRunData.target.getName();
 
-    if(subRunData.readEnergyHisto(energyFile, detectorName, targetName)
+    if(subRunData.readTOFHisto(TOFFile, detectorName, targetName)
             || subRunData.readMonitorCounts(macroFile, "monitor", targetName)
-            || subRunData.readEventData(macroFile, detectorName, targetName))
+            || subRunData.readEventData(macroFile, detectorName, targetName)
+            || subRunData.readUncorrectedTOFHisto(macroFile, detectorName, targetName))
     {
         // error: failed to read one of the essential cross section quantities
         // for this target.
 
         // Close the sub-run input file
-        energyFile->Close();
+        TOFFile->Close();
         macroFile->Close();
 
         return 1;
     }
 
     // successfully read all subrun quantities required for CS calculation
-    energyFile->Close();
+    TOFFile->Close();
     macroFile->Close();
 
     return 0;

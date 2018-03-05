@@ -338,7 +338,8 @@ CrossSection subtractCS(string rawCSFileName, string rawCSGraphName,
     {
         subtrahendData.addPoint(
                 DataPoint(rawCSData.getPoint(i).getXValue(),
-                    rawCSData.getPoint(i).getXError(),
+                    rawCSData.getPoint(i).getXErrorL(),
+                    rawCSData.getPoint(i).getXErrorR(),
                     subtrahendGraph->Eval(rawCSData.getPoint(i).getXValue()),
                     subtrahendGraph->GetErrorY(rawCSData.getPoint(i).getXValue()))); 
     }

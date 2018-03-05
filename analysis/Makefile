@@ -19,13 +19,13 @@ TARGETS = driver text sumAll eachSubrun sumChunk readLitData subtractCS mergeCS 
 all: $(addprefix $(BIN), $(TARGETS))
 
 # Build driver (main data analysis engine)
-DRIVER_SOURCES = dataPoint.cpp dataSet.cpp driver.cpp config.cpp experiment.cpp fillBasicHistos.cpp fillCSHistos.cpp plots.cpp raw.cpp identifyMacropulses.cpp assignEventsToMacropulses.cpp calculateGammaCorrection.cpp correctForDeadtime.cpp produceEnergyHistos.cpp target.cpp veto.cpp softwareCFD.cpp identifyGoodMacros.cpp correctForBackground.cpp
+DRIVER_SOURCES = dataPoint.cpp dataSet.cpp driver.cpp config.cpp experiment.cpp fillBasicHistos.cpp fillCSHistos.cpp plots.cpp raw.cpp identifyMacropulses.cpp assignEventsToMacropulses.cpp calculateGammaCorrection.cpp correctForDeadtime.cpp target.cpp veto.cpp softwareCFD.cpp identifyGoodMacros.cpp
 
 $(BIN)driver: $(addprefix $(SOURCE), $(DRIVER_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)driver $(addprefix $(SOURCE), $(DRIVER_SOURCES)) $(LINKOPTION)
 
 # Build sumAll (for generating cross sections using data from all available runs)
-SUMALL_SOURCES = sumAll.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp config.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp CSUtilities.cpp
+SUMALL_SOURCES = sumAll.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp config.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp CSUtilities.cpp correctForBackground.cpp
 $(BIN)sumAll: $(addprefix $(SOURCE), $(SUMALL_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)sumAll $(addprefix $(SOURCE), $(SUMALL_SOURCES)) $(LINKOPTION)
 
@@ -35,7 +35,7 @@ $(BIN)eachSubrun: $(addprefix $(SOURCE), $(EACHSUBRUN_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)eachSubrun $(addprefix $(SOURCE), $(EACHSUBRUN_SOURCES)) $(LINKOPTION)
 
 # Build sumChunk (for generating cross sections using data from a select set of subruns)
-SUMCHUNK_SOURCES = sumChunk.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp config.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp CSUtilities.cpp
+SUMCHUNK_SOURCES = sumChunk.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp config.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp CSUtilities.cpp correctForBackground.cpp
 $(BIN)sumChunk: $(addprefix $(SOURCE), $(SUMCHUNK_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)sumChunk $(addprefix $(SOURCE), $(SUMCHUNK_SOURCES)) $(LINKOPTION)
 

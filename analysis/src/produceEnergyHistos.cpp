@@ -13,17 +13,9 @@ using namespace std;
 
 extern Config config;
 
-int produceEnergyHistos(string inputFileName, ofstream& log, string outputFileName)
+int produceEnergyHistos(CSPrereqs& csp)
 {
-    ifstream output(outputFileName);
-    if(output.good())
-    {
-        cout << outputFileName << " already exists; skipping energy histogram production." << endl;
-        log << outputFileName << " already exists; skipping energy histogram production." << endl;
-        return 2;
-    }
-
-    cout << endl << "Mapping TOF histograms to energy domain..." << endl;
+    cout << endl << "Mapping " << csp.name << " TOF histogram to energy domain..." << endl;
 
     // open input file
     TFile* inputFile = new TFile(inputFileName.c_str(),"READ");

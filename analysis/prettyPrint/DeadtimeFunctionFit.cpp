@@ -1,5 +1,4 @@
 {
-
     TStyle* style = (TStyle*)gROOT->FindObject("histoStyle");
 
     if(!style)      
@@ -7,7 +6,7 @@
         style = new TStyle("histoStyle","histoStyle");
     }
 
-    TCanvas* c = new TCanvas("c1","",1000,1000);
+    TCanvas* c = new TCanvas("c1","",1000,700);
 
     style->SetOptStat(0);
     style->SetOptTitle(0);    
@@ -34,10 +33,10 @@
 
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
-    gPad->SetLeftMargin(0.15);
-    gPad->SetRightMargin(0.10);
-    gPad->SetTopMargin(0.10);
-    gPad->SetBottomMargin(0.20);
+    gPad->SetLeftMargin(0.1);
+    gPad->SetRightMargin(0.05);
+    gPad->SetTopMargin(0.05);
+    gPad->SetBottomMargin(0.12);
     //gPad->SetTicky(2);
 
     string fileName = "/data2/analysis/66/0000/gatedHistos.root";
@@ -54,6 +53,8 @@
             << fileName << ". Exiting..." << endl;
         exit(1);
     }
+
+
 
     // Set histo point and line characteristics
     histo->SetMarkerColor(kBlack);
@@ -82,43 +83,65 @@
     histo->GetYaxis()->SetLabelSize(0.04);
     histo->GetYaxis()->SetLabelFont(2);
 
-    histo->GetXaxis()->SetRangeUser(200,250);
-    histo->GetYaxis()->SetRangeUser(0,7000);
+    histo->GetXaxis()->SetRangeUser(200,280);
+    histo->GetYaxis()->SetRangeUser(0.1,1300);
 
     histo->Draw("");
 
-    TF1* timeDiffFit = new TF1("logisticFit","(1627.16-1.75548*x)/(1+exp(-[0]*(x-[1])))",
-            200, 250);
-    timeDiffFit->SetParameter(1,200);
-    histo->Fit("logisticFit","", "", 200, 250);
-    timeDiffFit->SetLineWidth(3);
+    TF1* timeDiffFit = new TF1("logisticFit","([0]-[1]*x)/(1+exp(-[2]*(x-[3])))",
+            200, 300);
+    timeDiffFit->SetParameter(0,1625);
+    timeDiffFit->SetParameter(1,2);
+    timeDiffFit->SetParameter(3,220);
+    histo->Fit("logisticFit","", "", 200, 300);
+    timeDiffFit->SetLineWidth(5);
 
-    /*TLatex latex;
+    double deadtimeMean = timeDiffFit->GetParameter(3);
+    double deadtimeLogisticWidth = timeDiffFit->GetParameter(2);
+
+    TLatex latex;
     latex.SetNDC();
-    latex.SetTextSize(0.035);
+    latex.SetTextSize(0.04);
     latex.SetTextAlign(13); // align at top
 
-    latex.SetTextColor(kGray+2);
-    latex.DrawLatex(0.20,0.28,"lim = 0.34 ns");
+    latex.SetTextColor(kBlack);
+    char mean[50];
+    sprintf(mean,"Mean deadtime = %3.1f ns", deadtimeMean);
+    char logisticWidth[50];
+    sprintf(logisticWidth,"Logistic width = %3.3f ns", deadtimeLogisticWidth);
+    latex.SetTextColor(kBlue);
+    latex.DrawLatex(0.50,0.40,mean);
+    //latex.DrawLatex(0.50,0.38,logisticWidth);
 
-    latex.SetTextSize(0.022);
-    latex.DrawLatex(0.20,0.25,"x#rightarrow#infty");
-
-    TArrow *arrow = new TArrow(17, 0.3550, 19, 0.3460, 0.015, "|>");
+    TArrow *arrow = new TArrow(236, 400, 230, 300, 0.025, "|>");
     arrow->SetAngle(30);
     arrow->SetLineWidth(1);
-    arrow->SetLineColor(kGray+2);
-    arrow->SetFillColor(kGray+2);
+    arrow->SetLineColor(kBlue);
+    arrow->SetFillColor(kBlue);
     arrow->Draw();
 
-    //latex.SetTextColor(kBlack);
-    //latex.DrawLatex(0.23,0.78,"300");
-    */
+    latex.SetTextColor(kGray+2);
+    latex.DrawLatex(0.20,0.87,"Linear trend");
+    latex.DrawLatex(0.19,0.83,"(no deadtime)");
 
-    /*TLine *line = new TLine(27.0939, 1.2, 27.0939, 5.0);
-    line->SetLineStyle(7);
-    line->SetLineWidth(2);
-    line->SetLineColor(kBlack);
+    //latex.SetTextSize(0.06);
+    //latex.SetTextColor(kGray+2);
+    //latex.DrawLatex(0.20,0.37,"Dead Zone");
+    //latex.DrawLatex(0.70,0.57,"Live Zone");
+
+    TLine *line = new TLine(deadtimeMean, 0, deadtimeMean, 1300);
+    line->SetLineStyle(1);
+    line->SetLineWidth(3);
+    line->SetLineColor(kBlue);
     line->Draw();
-    */
+
+    double lineStart = timeDiffFit->GetParameter(0) - timeDiffFit->GetParameter(1)*200;
+    double lineStop = timeDiffFit->GetParameter(0) - timeDiffFit->GetParameter(1)*280;
+
+    TLine *line2 = new TLine(200, lineStart, 280, lineStop);
+    line2->SetLineStyle(7);
+    line2->SetLineWidth(4);
+    line2->SetLineColor(kGray+2);
+    line2->Draw();
+
 }

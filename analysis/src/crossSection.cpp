@@ -16,9 +16,11 @@
 #include <stdlib.h>
 #include <utility>
 #include "TH1.h"
+#include "TF1.h"
 #include "TFile.h"
 #include "TAxis.h"
 #include "TGraphErrors.h"
+#include "TGraphAsymmErrors.h"
 
 using namespace std;
 
@@ -80,6 +82,27 @@ vector<double> CrossSection::getEnergyErrors() const
         energyErrors.push_back(dataSet.getPoint(i).getXError());
     }
     return energyErrors;
+}
+
+vector<double> CrossSection::getEnergyErrorsL() const
+{
+    vector<double> energyErrorsL;
+    for(int i=0; i<dataSet.getNumberOfPoints(); i++)
+    {
+        energyErrorsL.push_back(dataSet.getPoint(i).getXErrorL());
+    }
+
+    return energyErrorsL;
+}
+
+vector<double> CrossSection::getEnergyErrorsR() const
+{
+    vector<double> energyErrorsR;
+    for(int i=0; i<dataSet.getNumberOfPoints(); i++)
+    {
+        energyErrorsR.push_back(dataSet.getPoint(i).getXErrorR());
+    }
+    return energyErrorsR;
 }
 
 vector<double> CrossSection::getCrossSectionValues() const
@@ -166,10 +189,12 @@ CrossSection operator*(const CrossSection& cs, double factor)
 
 void CrossSection::createGraph(string name, string title)
 {
-    TGraphErrors* t = new TGraphErrors(getNumberOfPoints(),
+    TGraphAsymmErrors* t = new TGraphAsymmErrors(getNumberOfPoints(),
                                       &getEnergyValues()[0],
                                       &getCrossSectionValues()[0],
-                                      &getEnergyErrors()[0],
+                                      &getEnergyErrorsL()[0],
+                                      &getEnergyErrorsR()[0],
+                                      &getCrossSectionErrors()[0],
                                       &getCrossSectionErrors()[0]);
     t->SetNameTitle(name.c_str(),title.c_str());
     gDirectory->WriteTObject(t);
@@ -198,6 +223,29 @@ double CrossSection::calculateRMSError()
     return RMSError;
 }
 
+double calculateTOFSigma(TH1D* TOFHisto)
+{
+    // define gamma times
+    const double GAMMA_TIME = pow(10,7)*config.facility.FLIGHT_DISTANCE/C;
+    const double GAMMA_WINDOW_WIDTH = config.time.GAMMA_WINDOW_SIZE/2;
+
+    // calculate width of gamma peak
+    TF1* gammaPeakFit = new TF1("gammaPeakFit","gaus",
+            GAMMA_TIME-GAMMA_WINDOW_WIDTH, GAMMA_TIME+GAMMA_WINDOW_WIDTH);
+    TOFHisto->Fit("gammaPeakFit","BQ0", "",
+            GAMMA_TIME-GAMMA_WINDOW_WIDTH, GAMMA_TIME+GAMMA_WINDOW_WIDTH);
+    gammaPeakFit = TOFHisto->GetFunction("gammaPeakFit");
+    double tofSigma = gammaPeakFit->GetParameter(2);
+
+    /*cout << "Target gamma peak FWHM = "
+        << 2.355*tofSigma
+        << " ns (fit range: " << GAMMA_TIME-GAMMA_WINDOW_WIDTH
+        << " - " << GAMMA_TIME+GAMMA_WINDOW_WIDTH << " ns)." << endl;
+        */
+
+    return tofSigma;
+}
+
 void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& blankData)
 {
     // define variables to hold cross section information
@@ -209,6 +257,10 @@ void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& bla
     double bMon = blankData.monitorCounts;
 
     double monitorRatio = tMon/bMon;
+
+    // read data from detector histograms for target and blank
+    TH1D* bEnergyHisto = blankData.energyHisto;
+    TH1D* tEnergyHisto = targetData.energyHisto;
 
     // calculate the ratio of target/blank good macropulse ratio (normalize
     // macropulse number)
@@ -225,30 +277,30 @@ void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& bla
     double arealDensity =
         numberOfAtoms/(pow(targetData.target.getDiameter()/2,2)*M_PI); // area of cylinder end
 
+    double tofSigma = calculateTOFSigma(targetData.TOFHisto);
+
     // loop through each bin in the energy histo, calculating a cross section
     // for each bin
     for(int i=1; i<=numberOfBins; i++) // skip the overflow and underflow bins
     {
-        // read data from detector histograms for target and blank
-        TH1D* bCounts = blankData.energyHisto;
-        TH1D* tCounts = targetData.energyHisto;
+        double energyValue = tEnergyHisto->GetBinCenter(i);
+        double energyErrorL = calculateEnergyErrorL(tEnergyHisto->GetBinCenter(i), tofSigma);
+        double energyErrorR = calculateEnergyErrorR(tEnergyHisto->GetBinCenter(i), tofSigma);
 
-        double energyValue = tCounts->GetBinCenter(i);
-        double energyError = tCounts->GetBinWidth(i)/2;
-
-        double tDet = tCounts->GetBinContent(i);
-        double bDet = bCounts->GetBinContent(i);
+        double tCounts = tEnergyHisto->GetBinContent(i);
+        double bCounts = bEnergyHisto->GetBinContent(i);
 
         // calculate the ratio of target/blank counts in the detector
-        double detectorRatio = tDet/bDet;
+        double detectorRatio = tCounts/bCounts;
 
         // if any essential values are 0, return an empty DataPoint
         if(detectorRatio <=0 || monitorRatio <=0
-                || goodMacroRatio <=0 || arealDensity <=0)
+                || arealDensity <=0)
         {
-            addDataPoint(
-                DataPoint(0, 0, 0, 0,
-                          bMon, tMon, bDet, tDet));
+            //addDataPoint(
+            //    DataPoint(energyValue, energyErrorL, energyErrorR, 0,
+            //              bMon, tMon, bCounts, tCounts));
+            cerr << "Error: tried to produce a cross section point at bin " << i << ", but an cross section prerequisite was 0." << endl;
             continue;
         }
 
@@ -259,13 +311,13 @@ void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& bla
             
         // calculate the statistical error
         double crossSectionError =
-            pow((1/tDet+1/bDet+1/bMon+1/tMon),0.5)/arealDensity; // in cm^2
+            pow((1/tCounts+1/bCounts+1/bMon+1/tMon),0.5)/arealDensity; // in cm^2
 
         crossSectionError *= pow(10,24); // in barns
 
         addDataPoint(
-                DataPoint(energyValue, energyError, crossSectionValue, crossSectionError,
-                    bMon, tMon, bDet, tDet));
+                DataPoint(energyValue, energyErrorL, energyErrorR, crossSectionValue, crossSectionError,
+                    bMon, tMon, bCounts, tCounts));
     }
 
     name = targetData.target.getName();

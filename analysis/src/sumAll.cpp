@@ -18,6 +18,7 @@
 #include "../include/experiment.h"
 #include "../include/plots.h"
 #include "../include/CSUtilities.h"
+#include "../include/correctForBackground.h"
 
 using namespace std;
 
@@ -117,6 +118,13 @@ int main(int, char* argv[])
     CSPrereqs blank;
     for(auto& p : allCSPrereqs)
     {
+        correctForBackground(p);
+
+        string energyHistoName = p.target.getName();
+        energyHistoName = energyHistoName + "Energy";
+
+        p.energyHisto = convertTOFtoEnergy(p.TOFHisto, energyHistoName.c_str());
+
         if(p.target.getName()=="blank" || p.target.getName()=="blankW")
         {
             blank = p;
@@ -125,11 +133,11 @@ int main(int, char* argv[])
         cout << "all CS Prereqs name = " << p.target.getName() << endl;
 
         double totalCounts = 0;
-        int numberOfBins = p.energyHisto->GetNbinsX();
+        int numberOfBins = p.TOFHisto->GetNbinsX();
 
         for(int i=1; i<=numberOfBins; i++)
         {
-            double tempCounts = p.energyHisto->GetBinContent(i);
+            double tempCounts = p.TOFHisto->GetBinContent(i);
             if(tempCounts < 0)
             {
                 continue;
@@ -139,21 +147,22 @@ int main(int, char* argv[])
         }
 
         cout << endl << "Total statistics over all runs: " << endl << endl;
-        cout << p.target.getName() << ": total events in energy histo = "
+        cout << p.target.getName() << ": total events in TOF histo = "
             << totalCounts << ", total monitor events = "
             << p.monitorCounts << ", good macro number = "
             << p.goodMacroNumber << ", total macro number = "
             << p.totalMacroNumber << ", total event number = "
             << p.totalEventNumber << endl;
 
-        p.energyHisto->SetDirectory(outFile);
-        p.energyHisto->Write();
-
         string name = p.target.getName() + "TOF";
         p.TOFHisto->SetNameTitle(name.c_str(),name.c_str());
         p.TOFHisto->SetDirectory(outFile);
-
         p.TOFHisto->Write();
+
+        name = p.target.getName() + "TOFUncorrected";
+        p.uncorrectedTOFHisto->SetNameTitle(name.c_str(),name.c_str());
+        p.uncorrectedTOFHisto->SetDirectory(outFile);
+        p.uncorrectedTOFHisto->Write();
     }
 
     vector<CrossSection> crossSections;

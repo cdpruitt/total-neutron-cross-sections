@@ -5,7 +5,6 @@
 #include "../include/fillBasicHistos.h"
 #include "../include/fillCSHistos.h"
 #include "../include/correctForDeadtime.h"
-#include "../include/correctForBackground.h"
 #include "../include/produceEnergyHistos.h"
 #include "../include/plots.h"
 #include "../include/waveform.h"
@@ -161,14 +160,13 @@ int main(int, char* argv[])
     /*****************************************************/
     string correctedHistoFileName = analysisDirectory + "correctedHistos.root";
     applyDeadtimeCorrection(gatedHistoFileName, deadtimeFileName, histoFileName, gammaCorrectionFileName, log, correctedHistoFileName);
-    correctForBackground(correctedHistoFileName, log);
 
     /*************************************************************************/
     /* Convert TOF histograms into energy in preparation for cross section
      * calculation */
     /*************************************************************************/
-    string energyFileName = analysisDirectory + config.analysis.ENERGY_PLOTS_FILE_NAME;
-    produceEnergyHistos(correctedHistoFileName, log, energyFileName);
+    //string energyFileName = analysisDirectory + config.analysis.ENERGY_PLOTS_FILE_NAME;
+    //produceEnergyHistos(correctedHistoFileName, log, energyFileName);
 
     return 0;
 }

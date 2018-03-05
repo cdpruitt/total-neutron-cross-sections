@@ -10,4 +10,7 @@ bin/*
 !config/
 !config/*
 
+!OMAnimation/
+!OMAnimation/*
+
 *.root

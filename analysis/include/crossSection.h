@@ -23,6 +23,9 @@ class CrossSection
         int getNumberOfPoints() const;
         std::vector<double> getEnergyValues() const;
         std::vector<double> getEnergyErrors() const;
+        std::vector<double> getEnergyErrorsL() const;
+        std::vector<double> getEnergyErrorsR() const;
+
         std::vector<double> getCrossSectionValues() const;
         std::vector<double> getCrossSectionErrors() const;
 

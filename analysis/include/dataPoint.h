@@ -7,7 +7,17 @@ class DataPoint
         DataPoint();
         DataPoint(double xValue, double xError,
                   double yValue, double yError);
+        DataPoint(double xValue, double xErrorL, double xErrorR,
+                  double yValue, double yError);
+
         DataPoint(double xValue, double xError,
+                  double yValue, double yError,
+                  long blankMonitorCounts,
+                  long targetMonitorCounts,
+                  long blankDetCounts,
+                  long targetDetCounts);
+
+        DataPoint(double xValue, double xErrorL, double xErrorR,
                   double yValue, double yError,
                   long blankMonitorCounts,
                   long targetMonitorCounts,
@@ -16,11 +26,17 @@ class DataPoint
 
         double getXValue() const;
         double getXError() const;
+        double getXErrorL() const;
+        double getXErrorR() const;
+
         double getYValue() const;
         double getYError() const;
 
         void setXValue(double xv);
         void setXError(double xe);
+        void setXErrorL(double xe);
+        void setXErrorR(double xe);
+
         void setYValue(double yv);
         void setYError(double ye);
 
@@ -47,7 +63,9 @@ class DataPoint
     private:
         // cross section data
         double xValue;
-        double xError;
+        double xErrorL;
+        double xErrorR;
+
         double yValue;
         double yError;
 

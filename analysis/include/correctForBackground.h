@@ -3,7 +3,8 @@
 
 #include <fstream>
 #include <string>
+#include "CSPrereqs.h"
 
-int correctForBackground(std::string inputFileName, std::ofstream& logFile);
+int correctForBackground(CSPrereqs& p);
 
 #endif /* CORRECT_FOR_BACKGROUND_H */
