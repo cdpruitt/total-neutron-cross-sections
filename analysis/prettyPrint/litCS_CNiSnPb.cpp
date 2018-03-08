@@ -32,9 +32,11 @@
     gROOT->ForceStyle();
 
     string fileName = "/data1/analysis/literatureData.root";
+    string ramsauerFileName = "../../theory/ramsauer.root";
 
     TFile* file = new TFile(fileName.c_str(),"READ");
-    
+    TFile* ramsauerFile = new TFile(ramsauerFileName.c_str(),"READ");
+ 
     string CGraphName = "Natural C (n,tot)";
     string NiGraphName = "Natural Ni (n,tot)";
     string SnGraphName = "Natural Sn (n,tot)";
@@ -45,25 +47,51 @@
     TGraphErrors* SnGraph = (TGraphErrors*)file->Get(SnGraphName.c_str());
     TGraphErrors* PbGraph = (TGraphErrors*)file->Get(PbGraphName.c_str());
 
+    string SACGraphName = "SA_A=12";
+    string SANiGraphName = "SA_A=58.7";
+    string SASnGraphName = "SA_A=118.7";
+    string SAPbGraphName = "SA_A=207.2";
+
+    TGraph* SACGraph = (TGraph*)ramsauerFile->Get(SACGraphName.c_str());
+    TGraph* SANiGraph = (TGraph*)ramsauerFile->Get(SANiGraphName.c_str());
+    TGraph* SASnGraph = (TGraph*)ramsauerFile->Get(SASnGraphName.c_str());
+    TGraph* SAPbGraph = (TGraph*)ramsauerFile->Get(SAPbGraphName.c_str());
+
     // Set graph point and line characteristics
-    CGraph->SetLineWidth(3);
+    CGraph->SetLineWidth(4);
     CGraph->SetLineStyle(0);
+    CGraph->SetLineColor(kRed);
+    SACGraph->SetLineWidth(2);
+    SACGraph->SetLineStyle(9);
+    SACGraph->SetLineColor(kRed);
 
-    NiGraph->SetLineWidth(3);
+    NiGraph->SetLineWidth(4);
     NiGraph->SetLineStyle(0);
+    NiGraph->SetLineColor(kPink-4);
+    SANiGraph->SetLineWidth(2);
+    SANiGraph->SetLineStyle(9);
+    SANiGraph->SetLineColor(kPink-4);
 
-    SnGraph->SetLineWidth(3);
+    SnGraph->SetLineWidth(4);
     SnGraph->SetLineStyle(0);
+    SnGraph->SetLineColor(kViolet-4);
+    SASnGraph->SetLineWidth(2);
+    SASnGraph->SetLineStyle(9);
+    SASnGraph->SetLineColor(kViolet-4);
 
-    PbGraph->SetLineWidth(3);
+    PbGraph->SetLineWidth(4);
     PbGraph->SetLineStyle(0);
+    PbGraph->SetLineColor(kBlue);
+    SAPbGraph->SetLineWidth(2);
+    SAPbGraph->SetLineStyle(9);
+    SAPbGraph->SetLineColor(kBlue);
 
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
-    gPad->SetLeftMargin(0.15);
-    gPad->SetRightMargin(0.10);
-    gPad->SetTopMargin(0.10);
-    gPad->SetBottomMargin(0.2);
+    gPad->SetLeftMargin(0.10);
+    gPad->SetRightMargin(0.02);
+    gPad->SetTopMargin(0.02);
+    gPad->SetBottomMargin(0.15);
     //gPad->SetTicky(2);
 
     // X-axis parameters
@@ -98,30 +126,37 @@
     NiGraph->Draw("same");
     SnGraph->Draw("same");
     PbGraph->Draw("same");
-    
+
+    SACGraph->Draw("same");
+    SANiGraph->Draw("same");
+    SASnGraph->Draw("same");
+    SAPbGraph->Draw("same");
+ 
     gPad->SetLogx(1);
     
     CGraph->GetXaxis()->SetRangeUser(2,500);
-    CGraph->GetYaxis()->SetRangeUser(0,7);
+    CGraph->GetYaxis()->SetRangeUser(0,9);
 
-    TLatex latex;
-    latex.SetNDC();
-    latex.SetTextSize(0.05);
-    latex.SetTextAlign(13); // align at top
-    latex.DrawLatex(0.56,0.7,"Pb");
-    latex.DrawLatex(0.52,0.58,"Sn");
-    latex.DrawLatex(0.47,0.49,"Ni");
-    latex.DrawLatex(0.42,0.40,"C");
+    //TLatex latex;
+    //latex.SetNDC();
+    //latex.SetTextSize(0.05);
+    //latex.SetTextAlign(13); // align at top
+    //latex.DrawLatex(0.56,0.7,"Pb");
+    //latex.DrawLatex(0.52,0.58,"Sn");
+    //latex.DrawLatex(0.47,0.49,"Ni");
+    //latex.DrawLatex(0.42,0.40,"C");
 
     // Define legend format and contents
-    //TLegend *legend = new TLegend(0.25,0.25,0.35,0.45);
+    TLegend *legend = new TLegend(0.83,0.63,0.95,0.95);
     //legend->SetHeader("");
-    //legend->SetTextSize(0.04);
-    //legend->AddEntry(CGraph,"{}^{nat}C","l");
-    //legend->AddEntry(NiGraph,"{}^{nat}Ni","l");
-    //legend->AddEntry(PbGraph,"{}^{nat}Pb","l");
+    legend->SetTextSize(0.05);
+    //legend->SetNColumns(2);
+    legend->AddEntry(PbGraph,"{}^{nat}Pb","l");
+    legend->AddEntry(SnGraph,"{}^{nat}Sn","l");
+    legend->AddEntry(NiGraph,"{}^{nat}Ni","l");
+    legend->AddEntry(CGraph,"{}^{nat}C","l");
 
-    //legend->Draw();
+    legend->Draw();
 
     file->Close();
 }

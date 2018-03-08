@@ -16,10 +16,10 @@ LINKOPTION = $(shell root-config --libs)
 ############################### DEFINE TARGETS #################################
 
 # List all targets
-TARGETS = opticalModel
+TARGETS = ramsauer
 all: $(addprefix $(BIN), $(TARGETS))
 
-ANALYSIS_SOURCES = crossSection.cpp dataSet.cpp dataPoint.cpp CSUtilities.cpp
+ANALYSIS_SOURCES = crossSection.cpp dataSet.cpp dataPoint.cpp CSUtilities.cpp target.cpp
 
 # Build optical model
 OPTICAL_MODEL_SOURCES = opticalModel.cpp calculateCS.cpp scat.cpp reaction.cpp imaginaryForm.cpp expInt.cpp compound.cpp waves.cpp volume.cpp merson.cpp spinOrbit.cpp hartreeFock.cpp potPara.cpp surVolume.cpp OpticalPotential.cpp twoFermi.cpp asy.cpp gaussInteg.cpp disperse.cpp legendre.cpp surfaceTF.cpp surfaceSTD.cpp sphericalB.cpp standard.cpp coul.cpp whit.cpp channel.cpp level.cpp levelD.cpp compoundException.cpp gauss16.cpp Nucleus.cpp
@@ -29,8 +29,8 @@ $(BIN)opticalModel: $(addprefix $(SOURCE), $(OPTICAL_MODEL_SOURCES)) $(addprefix
 
 # Build simple strongly-absorbing model
 RAMSAUER_SOURCES = ramsauer.cpp
-$(BIN)ramsauer: $(addprefix $(SOURCE), $(RAMSAUER_SOURCES)) $(addprefix $(ANALYSIS_SOURCE), $(ANALYSIS_SOURCES))
-	$(COMPILER) $(CFLAGS) -o $(BIN)ramsauer $(addprefix $(SOURCE), $(RAMSAUER_SOURCES)) $(addprefix $(ANALYSIS_SOURCE), $(ANALYSIS_SOURCES)) $(LINKOPTION)
+$(BIN)ramsauer: $(addprefix $(SOURCE), $(RAMSAUER_SOURCES))
+	$(COMPILER) $(CFLAGS) -o $(BIN)ramsauer $(addprefix $(SOURCE), $(RAMSAUER_SOURCES)) $(LINKOPTION)
 
 
 ############################### DEFINE OBJECTS #################################
