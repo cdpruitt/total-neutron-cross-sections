@@ -2,4 +2,4 @@ Name:       NiNat
 Length:     0.7995 cm
 Diameter:   0.8195 cm
 Mass:       3.6898 g
-Molar Mass: 58.693 g/mol
+Molar Mass: 58.6995 g/mol

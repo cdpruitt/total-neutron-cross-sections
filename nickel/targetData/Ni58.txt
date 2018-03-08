@@ -2,4 +2,4 @@ Name:       Ni58
 Length:     0.797 cm
 Diameter:   0.818 cm
 Mass:       3.6438 g
-Molar Mass: 57.935 g/mol
+Molar Mass: 57.9480 g/mol

@@ -7,25 +7,25 @@ from matplotlib import colors
 from matplotlib import animation
 from matplotlib import rc
 
-X_MIN = -40.
-X_MAX = 40.
+X_MIN = -39.9
+X_MAX = 39.9
 X_POINTS = 500
 
-Y_MIN = -20.
-Y_MAX = 25.
+Y_MIN = -19.9
+Y_MAX = 24.5
 
 Y_POINTS = 200
 
 WELL_DEPTH = 42.8 # in MeV
 
 NEUTRON_MASS = 938.5 # in MeV/c^2
-NEUTRON_ENERGY = 25 # in MeV
+NEUTRON_ENERGY = 14 # in MeV
 PLANCK_CONSTANT = 1239.842 # in MeV*(fm/c)
 
 NUMBER_OF_WAVEFRONTS = 10
-INITIAL_DISPLACEMENT = -10
+INITIAL_DISPLACEMENT = -15
 
-NUCLEUS_MASS = 25
+NUCLEUS_MASS = 100
 R_0 = 1.4 # nuclear radius constant, in fm
 
 def wavelength(energy):
@@ -55,7 +55,7 @@ class Wavefront:
         self.init_state = init_state # in fm
 
         self.xValues = np.linspace(init_state, init_state, Y_POINTS)
-        self.yValues = np.linspace(Y_MIN+5,Y_MAX-10,Y_POINTS)
+        self.yValues = np.linspace(Y_MIN+2.5,Y_MAX-7.5,Y_POINTS)
         #self.intensity = 1
 
     def position(self):
@@ -84,17 +84,26 @@ def step(waves, dt):
         wave.xValues = integrate.odeint(wave.dstate_dt, wave.xValues, [0,dt])[1]
 
     time_elapsed += dt
-    phase_difference = waves[0].xValues[len(waves[0].xValues)/2]\
-            - waves[0].xValues[0]
+    phase_difference = (waves[0].xValues[len(waves[0].xValues)/2]\
+            - waves[0].xValues[0])/(wavelength(NEUTRON_ENERGY)/(2*math.pi))
 
 rc('text', usetex=True)
 rc('font', family='serif')
 
 fig = plt.figure(figsize=(8*(X_MAX-X_MIN)/(Y_MAX-Y_MIN),8))
-axes = plt.axes(xlim=(X_MIN,X_MAX), ylim=(Y_MIN,Y_MAX),)
+axes = plt.axes(xlim=(X_MIN,X_MAX), ylim=(Y_MIN,Y_MAX))
+axes.tick_params(width=4, length=10)
+for axis in ['top', 'bottom', 'left', 'right']:
+    axes.spines[axis].set_linewidth(5)
 
 xRange = np.linspace(X_MIN, X_MAX, X_POINTS)
 yRange = np.linspace(Y_MIN, Y_MAX, Y_POINTS)
+
+plt.xticks(fontsize=48, weight='bold')
+plt.yticks(fontsize=48, weight='bold')
+
+plt.xlabel('Distance [fm]', fontsize=48)
+plt.ylabel('Distance [fm]', fontsize=48)
 
 potentialGrid = [[WoodsSaxon(x,y) for x in xRange] for y in
         yRange]
@@ -105,19 +114,21 @@ norm = colors.Normalize(vmax=WELL_DEPTH, vmin=0)
 potential = plt.contourf(xRange, yRange, potentialGrid, 30,
         norm=norm, cmap=cmap)
 
+#plt.colorbar(potential)
+
 waves = []
 lines = []
 
 for i in range(NUMBER_OF_WAVEFRONTS):
     waves.append(Wavefront(INITIAL_DISPLACEMENT-i*wavelength(NEUTRON_ENERGY)))
-    lines.append(axes.plot([], [], "b-", lw=2)[0])
+    lines.append(axes.plot([], [], "b-", lw=4)[0])
 
-time_text = axes.text(0.44, 0.825, '', transform=axes.transAxes)
-phase_text = axes.text(0.42, 0.05, '', transform=axes.transAxes)
+time_text = axes.text(0.05, 0.9, '', transform=axes.transAxes)
+phase_text = axes.text(0.72, 0.9, '', transform=axes.transAxes)
 
-index_text = axes.text(0.13, 0.845, '', transform=axes.transAxes)
-energy_text = axes.text(0.02, 0.925, '', transform=axes.transAxes)
-nucleus_text = axes.text(0.02, 0.85, '', transform=axes.transAxes)
+index_text = axes.text(0.25, 0.76, '', transform=axes.transAxes)
+energy_text = axes.text(0.02, 0.88, '', transform=axes.transAxes)
+nucleus_text = axes.text(0.02, 0.76, '', transform=axes.transAxes)
 
 dt = 0.1/speed(NEUTRON_ENERGY)
 
@@ -126,23 +137,25 @@ def init():
         line.set_data([], [])
 
     time_text.set_text('')
-    time_text.set_fontsize(20)
+    time_text.set_fontsize(36)
 
     phase_text.set_text('')
-    phase_text.set_fontsize(20)
+    phase_text.set_fontsize(36)
 
-    index_text.set_text('$\\textit{n}_{core}$ = %.2f' % (indexOfRefraction(0,0,NEUTRON_ENERGY)))
-    index_text.set_fontsize(20)
+    #index_text.set_text('$\\textit{n}_{core}$ = %.2f' % (indexOfRefraction(0,0,NEUTRON_ENERGY)))
+    #index_text.set_fontsize(36)
 
-    nucleus_text.set_text('A = %.0f' % NUCLEUS_MASS)
-    nucleus_text.set_fontsize(20)
+    #nucleus_text.set_text('A = %.0f' % NUCLEUS_MASS)
+    #nucleus_text.set_fontsize(36)
 
-    energy_text.set_text('$\\textrm{E_{n}}$ = %.1f MeV' % NEUTRON_ENERGY)
-    energy_text.set_fontsize(20)
+    #energy_text.set_text('$\\textrm{E_{n}}$ = %.1f MeV' % NEUTRON_ENERGY)
+    #energy_text.set_fontsize(36)
 
-    initObjects = tuple(lines) + (time_text, index_text, phase_text,\
-            nucleus_text, energy_text)
+    initObjects = tuple(lines) + (time_text, phase_text,)\
+            #index_text, nucleus_text, energy_text)
     return initObjects
+
+frameNumber = 0
 
 def animate(i):
     global waves, dt, frameNumber
@@ -153,11 +166,18 @@ def animate(i):
         #lines[index].set_alpha(wave.intensity)
 
     time_text.set_text('t = %.1f fm/C' % time_elapsed)
-    time_text.set_fontsize(20)
-    phase_text.set_text('$\Delta(\phi)$ = %.2f rad' % phase_difference)
-    phase_text.set_fontsize(20)
+    time_text.set_fontsize(36)
+    phase_text.set_text('$\Delta$ = %.2f rad' % phase_difference)
+    phase_text.set_fontsize(36)
+
+    wave = waves[0]
 
     animateObjects = tuple(lines) + (time_text, phase_text)
+
+    if(frameNumber%50==0):
+        plt.savefig('Frame%d.png' % (frameNumber))#, bbox_inches='tight')
+
+    frameNumber += 1
 
     return animateObjects
 
@@ -167,14 +187,11 @@ animate(0)
 t1 = time()
 interval = 1 * dt - (t1-t0)
 
-
-#init()
-#animate(500)
-#fig.savefig('FrameAt500.png')
+fig.subplots_adjust(left=0.15, bottom=0., right=0.998, top=0.85)
 
 anim = animation.FuncAnimation(fig, animate, init_func=init,
-                               frames=1000, interval=interval, repeat=False, blit=True)
+                               frames=500, interval=interval, repeat=False, blit=True)
 
-#plt.show()
+plt.show()
 
-anim.save('WoodsSaxon.mp4', fps=30, extra_args=['-vcodec', 'libx264'])
+#anim.save('WoodsSaxon.mp4', fps=30, extra_args=['-vcodec', 'libx264'])

@@ -1,5 +1,5 @@
 Name:       Ni64
-Length:     0.8195 cm
-Diameter:   0.796 cm
+Length:     0.796 cm
+Diameter:   0.8195 cm
 Mass:       3.9942 g
-Molar Mass: 63.928 g/mol
+Molar Mass: 63.537 g/mol
