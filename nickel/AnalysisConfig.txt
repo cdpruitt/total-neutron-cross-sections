@@ -27,5 +27,5 @@ Gamma correction tree name           = summedDet
 
 Low threshold, Q ratio               = 0.5
 High threshold, Q ratio              = 0.95
-lgQ_low threshold                    = 50
+lgQ_low threshold                    = 100
 lgQ_high threshold                   = 60000

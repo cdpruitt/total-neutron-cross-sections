@@ -277,6 +277,8 @@ void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& bla
     double arealDensity =
         numberOfAtoms/(pow(targetData.target.getDiameter()/2,2)*M_PI); // area of cylinder end
 
+    cout << "arealDensity for " << targetData.target.getName() << " = " << arealDensity << endl;
+
     double tofSigma = calculateTOFSigma(targetData.TOFHisto);
 
     // loop through each bin in the energy histo, calculating a cross section

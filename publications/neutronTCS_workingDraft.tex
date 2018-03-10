@@ -143,15 +143,15 @@ potential) and inelastic scattering (the imaginary potential).
 \begin{figure}
     \hfill\begin{minipage}{0.5\textwidth}\centering
         \includegraphics[scale=0.2]{figures/phaseShiftStillsFigure.png}
-        \caption{(Color online) Stills taken from an simulation illustrating the nuclear 
+        \caption{(Color online) Frames taken from an simulation illustrating the nuclear 
             Ramsauer effect. A neutron wave train (series of
             blue lines) impinges from the left on a real Woods-Saxon
             potential centered at the origin (diffuse red circle). The potential
             refracts the neutron wave,
             retarding the phase of the wavefront as it passes through the
-            potential. After escaping the potential, a phase shift $\Delta$ between
+            potential. After escaping the potential, a phase difference $\Delta$ between
             the wave component passing \textit{around} and \textit{through the center}
-            of the potential persists, resulting in measurable scattering.
+            of the potential persists, resulting in scattering.
             For the leading wavefront in the wave train, $\Delta$ is indicated in
             the top right-hand corner of each panel. A differential version of equation 
             \ref{phaseShift} is used to
@@ -176,9 +176,9 @@ where $\rho = e^{-\operatorname{Im}(\Delta)}$, and $\delta =
 around and traveling through the nucleus. Thus, the amplitude of the oscillations provides the 
 inelastic phase shift and the period of oscillation provides the elastic phase shift.
 As can be seen from equation 
-\ref{phaseShift}, the magnitude of the oscillations indicates that the
-absorptive term of the potential is responsible for a small fraction of the total
-cross section, in turn implying a much larger mean free path for neutrons through the nucleus 
+\ref{phaseShift}, the large magnitude of the oscillations means that inelastic
+scattering accounts for only a small fraction of the total cross section, in turn implying a 
+much larger mean free path for neutrons through the nucleus 
 than might otherwise be expected (i.e., in the absence of Pauli blocking)
 \cite{Mohr1955}.
 
@@ -256,8 +256,13 @@ closed-shell isotopes of special importance like $^{3,4}$He, $^{64}$Ni, and
 $^{204}$Pb (see Table \ref{IsotopicCrossSectionTable}).
 
 \begin{table}[ht]
-    \caption{Intermediate-energy $\sigma_{tot}$ data at closed shells in Z from
-    EXFOR database}
+    \caption{A selection of results from a literature study of isotopically-
+    resolved \totEs data using the EXFOR database \cite{EXFORDatabase}. For the
+    heaviest and lightest stable nuclides in each closed shell in Z, all
+    datasets falling at least partially within 1-500 MeV are shown. For elements
+    whose natural abundance is $>$90\% of a single isotope (e.g.,
+    96.9\% of $^{\text{nat}}$Ca is $^{40}$Ca), \totEs data on the natural
+    target was includedas as ``isotopic".} \label{tab:title}
     \label{IsotopicCrossSectionTable}
     \begin{center}
         \begin{tabular}{ c c c c }
@@ -423,36 +428,39 @@ neutron beam path.
     \caption{Sample Characteristics}
     \label{SampleTable}
     \begin{center}
-        \begin{tabular}{ c c c c c c }
+        \begin{tabular}{ c c c c c c c }
             \hline
-            Isotope & Nat. Abund. & Sample Purity & Length [mm] & Diameter
-            [mm] & Mass [g] \\
+            Isotope & Nat. Abund. [\%] & Sample Purity [\%] & Length [mm] & Diameter
+            [mm] & Mass [g] & $\rho_{areal}$ [$\frac{mol}{cm^{2}}]$\\
             \hline
 
-            $^{\text{nat}}$C & - & - & 13.66$\pm$0.02 & 8.26$\pm$0.005 & 1.2363 \\
-            $^{\text{nat}}$C & - & - & 27.29$\pm$0.02 & 8.26$\pm$0.005 & 2.4680 \\
+            $^{\text{nat}}$C & - & - & 13.66$\pm$0.02 & 8.26$\pm$0.005 & 1.2363
+            & [insert] \\
+            $^{\text{nat}}$C & - & - & 27.29$\pm$0.02 & 8.26$\pm$0.005 & 2.4680
+            & 0.38345\\
 
-            H$_{2}$$^{\text{nat}}$O & - & - & 20.0 & 10.0 & N/A \\
-            D$_{2}$$^{\text{nat}}$O & - & - & 20.0 & 10.0 & N/A \\
-            H$_{2}$$^{18}$O & 0.20\% & 99\% & 20.0 & 10.0 & N/A \\
+            H$_{2}$$^{\text{nat}}$O & - & - & 20.0 & 10.0 & N/A & [insert]\\
+            D$_{2}$$^{\text{nat}}$O & - & - & 20.0 & 10.0 & N/A & [insert]\\
+            H$_{2}$$^{18}$O & 0.20 & 99 & 20.0 & 10.0 & N/A & [insert]\\
 
-            $^{58}$Ni & 68.077\% & 99.6\% & 7.97$\pm$0.03 & 8.18$\pm$0.02 &
-            3.6438 \\
+            $^{58}$Ni & 68.077 & 99.6 & 7.97$\pm$0.03 & 8.18$\pm$0.02 &
+            3.6438 & 0.11965\\
             $^{\text{nat}}$Ni & - & - & 8.00$\pm$0.03 & 8.20$\pm$0.02 &
-            3.6898 \\
-            $^{64}$Ni & 0.926\% & 92.2\% & 7.96$\pm$0.02 & 8.20$\pm$0.04 &
-            3.9942 \\
+            3.6898 & 0.11917\\
+            $^{64}$Ni & 0.926 & 92.2 & 7.96$\pm$0.02 & 8.20$\pm$0.04 &
+            3.9942 & 0.11918\\
 
-            $^{103}$Rh & 100\% & 99.9\% & ?$\pm$? & ?$\pm$? & 2.8359 \\
+            $^{103}$Rh & 100 & 99.9 & ?$\pm$? & ?$\pm$? & 2.8359 & [insert]\\
 
-            $^{112}$Sn & 0.97\% & 99.9\% & 13.65$\pm$0.03 & 8.245$\pm$0.005 &
-            4.9720 \\
+            $^{112}$Sn & 0.97 & 99.9 & 13.65$\pm$0.03 & 8.245$\pm$0.005 &
+            4.9720 & [insert]\\
             $^{\text{nat}}$Sn & - & - & 13.68$\pm$0.03 & 8.245$\pm$0.005 &
-            5.3263 \\
-            $^{124}$Sn & 5.79\% & 99.9\% & 13.73$\pm$0.03 & 8.245$\pm$0.005 &
-            5.5492 \\
+            5.3263 & [insert]\\
+            $^{124}$Sn & 5.79 & 99.9 & 13.73$\pm$0.03 & 8.245$\pm$0.005 &
+            5.5492 & [insert]\\
 
-            $^{\text{nat}}$Pb & - & - & 10.07$\pm$0.02 & 8.27$\pm$0.01 & 6.130 \\
+            $^{\text{nat}}$Pb & - & - & 10.07$\pm$0.02 & 8.27$\pm$0.01 & 6.130 &
+            0.055077\\
 
             \hline
         \end{tabular}
@@ -504,19 +512,22 @@ or, equivalently,
 \end{equation}
 where $I_{0}$ is the neutron flux entering the sample, $I_{t}$ is the neutron
 flux transmitted through the sample without interaction, $\rho$ is the number
-density of nuclei in the sample, and $\ell$ is the sample length. Thus for thin
+density of nuclei in the sample, and $\ell$ is the sample length. For thin
 or low-density samples, flux attenuation through the sample will be small
 (e.g., $\approx$13\% for our Ni samples at 100 MeV) and a large number
-of counts will be required to determine the cross section with high
+of counts will be required to determine the cross section to high
 precision.
 
-To calculate cross sections from raw event data, a series of corrections are
-required. First, all macropulse start times were identified and each event was
-assigned to the correct macropulse. Time offsets (accounting for cable and
-electronics delay) were applied, roughly synchronizing all detectors with
-facility-provided pulses that indicate the arrival of proton pulses on the
-tungsten target, so-called ``$T_{0}$" pulses. The digitized waveform for each event was passed 
-through an offline software CFD logic, improving the detector-associated timing resolution 
+To identify valid neutron events and precisely determine the TOF start (micropulse start 
+time) and TOF stop time (arrival at TOF detector) for each event, a series of corrections 
+are required.  First, each event was assigned to the correct macropulse.
+Time offsets (accounting for cable and
+electronics delay) were applied, coarsely synchronizing all detectors with
+facility-provided pulses indicating the arrival time of proton micropulses on the
+tungsten target, so-called ``$T_{0}$" pulses.
+To improve the detector- and digitizer-associated timing resolution for each TOF
+event, the digitized waveform for each event was passed 
+through an offline software CFD algorithm, improving the timing resolution 
 for TOF-detector events to 0.52 ns FWHM (see Figs. \ref{LRTimeDifferenceLinear}
 and \ref{DifferenceThresholdsFit}).
 
@@ -543,58 +554,52 @@ and \ref{DifferenceThresholdsFit}).
     \label{DifferenceThresholdsFit}
 \end{figure*}
 
-
-To improve the macropulse start time resolution and test the stability of the
+To improve the micropulse time resolution and test the stability of the
 micropulse period during a macropulse, all $\gamma$ rays for a given macropulse
 were identified and their average TOF calculated. The difference between this
 time and the expected TOF (given the TOF detector distance and speed of light)
 was applied to all events in that macropulse (see Fig.
-\ref{TimingCorrectionStudy}). The final time resolution (i.e., FWHM of the
-$\gamma$-ray peak in the TOF spectra) ranged from 0.60-0.85 ns over the series of
-\tots measurements and is comparable to the resolution from our Ca experiment
-from 2008 \cite{Shane2010}. For a 100-MeV neutron, an uncertainty of 0.80 ns in
-the macropulse start time translates to an energy resolution of $\approx$880
-keV. For neutrons below $\approx$10 MeV, the traversal time through
-the 1-inch thickness of the TOF detector starts to contribute significantly
-to timing uncertainty. However, because the TOF of these neutrons is already at
-least several hundred ns, the energy resolution ($\frac{\Delta E}{E}$) is
-superior at low energies (for a 5 MeV neutron with a 0.82 ns detector-traversal time and
-0.80 ns detector resolution, $\Delta E$ is 13 keV). These energy uncertainties
-have been properly propagated through subsequent analysis and are shown as error bars in our 
-\tots results below.
+\ref{TimingCorrectionStudy}). After these corrections, the total TOF resolution
+(the FWHM of the $\gamma$-ray peak in the TOF spectra) ranged from
+0.60-0.85 ns over the series of \tots measurements and is comparable to the resolution from 
+our digitizer-mediated Ca experiment from 2008 \cite{Shane2010}.
+To contextualize, for a 100-MeV neutron and a TOF detector distance of 27 meters, a TOF 
+uncertainty of 0.80 ns translates to an energy resolution of $\approx$900 keV.
+For neutrons below $\approx$20 MeV, the TOF time resolution worsens as the traversal time 
+through the 1-inch thickness of the TOF detector becomes non-negligible.
+However, because the TOF of these neutrons is already several hundred ns or
+longer, the relative energy resolution ($\frac{\Delta E}{E}$) is
+superior at low energies: for a 5 MeV neutron with a 0.82 ns detector-traversal time and
+an inherent TOF resolution of 0.80 ns, $\Delta E$ is 13 keV. These energy uncertainties
+have been properly propagated through subsequent analysis into our \tots results below.
 
-Determination of the TOF distance was done by comparing our measured \totEs data
+Precise determination of the TOF distance was done by comparing our measured \totEs data
 for $^{\text{nat}}$C with that from literature from 3-15 MeV, the results of which are
-shown in Fig. \ref{DistanceStudy}. The distance was determined as 2709$\pm$1 cm
-for the Ni and Rh measurement and 2554$\pm$1 cm for the Sn and O measurement.
+shown in Fig. \ref{DistanceStudy}. The distance was determined as [insert
+updated value]$\pm$1 cm for the Ni and Rh measurement and [insert updated value]$\pm$1 cm 
+for the Sn and O measurement.
 
 Because events are not processed instantaneously, there is a brief period,
 referred to as the "analytic deadtime", after each event trigger during which
 the digitizer is busy processing that trigger. Any newly-arriving events in this
 period will be ignored, privileging events arriving earlier and thus distorting
-the cross sections.
-
-To remedy this, a deadtime correction for
+the cross sections. To remedy this, a deadtime correction for
 each target must be calculated and applied according to standard techniques
 \cite{Moore1980}. Assuming negligible variation in beam flux between micropulses
-(an assumption investigated), the deadtime correction formulae described by
-Moore
-fraction of time $F[i]$ that the digitizer is dead for a given time bin $i$ can
-be calculated:
-
+(an assumption investigated below), the fraction of time $F[i]$ that the digitizer is dead 
+for a given time bin $i$ can be calculated:
 \begin{equation}
-    F_{i} = \sum^{N-1}_{j=0} R_{i-j\text{ (mod N)}}\times P_{j}
+    F_{i} = \sum^{N-1}_{j=0} R_{(i-j)\text{ mod N}}\times P_{j}
 \end{equation}
-where $N$ is the number of time bins in the micropulse, $R_{x}$ is the number of
-events per micropulse in bin $x$, and $P_{x}$ is the probability that the
-digitizer is still busy from a trigger $x$ bins ago. To model $P_{j}$, we
+where $N$ is the number of time bins in the micropulse, $R_{x}$ is the rate of
+detected events per micropulse in bin $x$, and $P_{j}$ is the probability that the
+digitizer is still busy from a trigger $j$ bins ago. To model $P_{j}$, we
 employed a logistic function and fitted it to the observed spectrum for time
 differences between consecutive events (see Fig.
 \ref{TimeDifferenceBetweenEvents}). For a given bin $i$, the fraction of time that the 
 digitizer is dead, $F_{i}$, is in essence a discrete convolution of the
 \textit{measured} TOF spectrum with $P_{j}$. Note that except for the first and
-last micropulses in a macropulse, micropulses are
-consecutive with no delay between them and thus deadtime effects can
+last micropulses in a macropulse, micropulses are consecutive and thus deadtime effects can
 ``wrap around" from the end of one micropulse to the next. For these wrap-around
 contributions (that is, $j>i$), the (mod N) term ensures that the bin referred
 to by $i-j$ is non-negative and has physical meaning as a time bin from the previous 
@@ -636,36 +641,25 @@ measurement ranged from 150-230 ns, much smaller than the several-$\upmu$s
 deadtime-equivalents in previous analog experiments \cite{Finlay1993,
 Abfalterer2001}.
 
-One the fraction dead was identified for each time bin, the number of events
-\textit{measured} in that bin, $N_{m}[i]$, was corrected to the \textit{true}
-number of events $N_{t}[i]$ that would have been detected in that bin in the absence of
-analytic deadtime effects:
+Once the fraction dead was identified for each time bin, the total number of
+events detected in that bin, $N_{m}[i]$, was corrected to the \textit{true}
+number of events in that bin $N_{t}[i]$ that would have been detected absent an
+analytic deadtime:
 \begin{equation}
     N_{t}[i] = -ln\left(\frac{1-\frac{N_m[i]}{M}}{(1-F_{i})\times M}\right)
 \end{equation}
 where M is the total number of micropulse periods. The difference between
-uncorrected and corrected TOF spectra is shown in Fig.
+uncorrected and analytic-deadtime-corrected TOF spectra is shown in Fig.
 \ref{CorrectionEffectOnTOF}. At large TOFs (low energies) the correction is as low as a
 few percent, but at small TOFs (high energies) when the digitizer is still dead
-from the gamma flash and high-energy neutrons, the correction to TOF is significant
-($approx$20\% for our Ni/Rh runs, and $\approx$40\% for our Sn/O runs). However, these corrections are far lower than the typical
-deadtime correction required using the analog approach \cite{Finlay1993,
-Abfalterer2001} that were as high as 500\%. The propagation of our correction to the final 
+from the gamma flash and high-energy neutrons, the correction is significant
+($\approx$20\% for our Ni/Rh runs, and $\approx$40\% for our Sn/O runs). These 
+corrections are themselves far lower than the typical
+analytic deadtime correction required when using analog approaches \cite{Finlay1993,
+Abfalterer2001} that were as high as 500\%. The effect of this correction on the final 
 cross section results is shown in Fig. \ref{DeadtimeEffectOnCS}.
 
-\begin{figure*}
-    \includegraphics[scale=0.3]{figures/exampleTOFSpectrum.png}
-    \caption{(Color online) The TOF spectrum is shown for the blank sample (in
-        red) and for the $^{\text{nat}}$C sample (in blue) from the Ni/Rh experiment.
-        The $\gamma$-ray peak is visible as a sharp spike at 90 ns, followed by
-        the highest-energy neutrons at $\approx$130ns. At periods of 60 ns,
-        small spikes appear through the spectrum (clearly visible above 1500 ns
-        and below 90 ns); these correspond to a continuous ``drip" of protons
-        onto the tungsten target, caused by mistuning of the proton buncher. The
-        spikes
-    }
-    \label{ExampleTOFSpectrum}
-\end{figure*}
+[insert information about constant rate and discarding first 40 micropulses]
 
 \begin{figure*}
     \includegraphics[scale=0.3]{figures/exampleDeadtimeSpectrum.png}
@@ -674,7 +668,7 @@ cross section results is shown in Fig. \ref{DeadtimeEffectOnCS}.
         sample (in blue). Note the sharp rise at 90 ns corresponding to the
         $\gamma$-ray flash, the gradual increase from 90-245 ns corresponding to
         the arrival of high energy neutrons, and the sharp fall at 245 ns
-        corresponding to the elapse of the $\gamma$ ray deadtime ``shadow". Only high-
+        corresponding to the elapse of the $\gamma$-ray ``shadow". Only high-
         energy neutrons have a probability-dead $>$10\% (cf. the 50-80\%
         probability-dead of \cite{Finlay1993, Abfalterer2001}).
     }
@@ -697,30 +691,13 @@ cross section results is shown in Fig. \ref{DeadtimeEffectOnCS}.
     \label{CorrectionEffectOnTOF}
 \end{figure*}
 
-In addition to per-event deadtime, a "readout deadtime", from digitizer readout 
-to the data acquisition computer (DAQ), must be accounted for. Each pair of
+[edits needed]
+In addition to analytic deadtime, an additional deadtime associated with digitizer readout 
+to the data acquisition computer (DAQ), was identified. In our Each pair of
 digitizer channels shares a common buffer for storing events; upon reaching a
 user-defined threshold, buffer contents are read out to the DAQ as packets.
 During readout, the digitizer is ...something.
 This is likely the largest source of systematic error in our measurement.
-
-After applying deadtime and gamma correction, vetoed events are removed and
-integrated charge gates are applied to remaining TOF events.
-Surviving events are populated into energy spectra. The cross section was
-calculated, bin-wise, as follows:
-
-$$
-\tot = -\frac{1}{\ell\rho}
-ln \left(\frac{I_{0}}{I_{s}}\times\frac{F_{s}}{F_{0}}\right)
-$$
-
-where $\frac{I_{0}}{I_{s}}$ is the ratio of counts in energy spectra between 
-the blank and sample, $\frac{F_{s}}{F_{0}}$ is the ratio of beam flux
-between the sample and blank, $\ell$ is the length of the sample, and $\rho$ is the
-number density of atoms in the sample.
-
-[More here with a comparison between Bec's and Abfalterer/Finlay's approach to
-the same issues].
 
 During analysis, it was noted that occasionally (\~1 in 400 macropulses), one or two 
 adjacent macropulses would have an abnormally small number of flux monitor events or 
@@ -729,36 +706,52 @@ switching between DPP and waveform modes and we suspect it is related to edge
 case behavior right before or after a mode switch. To mitigate this issue,
 any macropulse that had less than 50\% of the average event rate in either the
 flux monitor or TOF detector channel was ignored during cross section calculation.
+[edits needed]
 
-After the above corrections, the charged-particle veto was applied. 
+After applying these corrections, the veto and integrated charge gates are applied to 
+all events and surviving events are populated into TOF spectra (see Fig.
+\ref{ExampleTOFSpectrum}). Next, room background (responsible for 0.1\% to 1\% 
+of event rate, depending on energy) is subtracted and spectra are mapped to the
+energy domain.
 
-[more description here about gamma ray timing precision and a comparison to
-that from Bec's experiment].
+\begin{figure*}
+    \includegraphics[scale=0.3]{figures/exampleTOFSpectrum.png}
+    \caption{(Color online) TOF spectra after analytic deadtime correction and
+        veto and integrated charge gating for the blank sample (in
+        red) and for the $^{\text{nat}}$C sample (in blue), from the Ni/Rh experiment.
+        The $\gamma$-ray peak is visible as a sharp spike at 90 ns, followed by
+        the highest-energy neutrons at $\approx$130ns. Small spikes spaced 60 ns
+        apart occur throughout the spectrum (visible before 90 ns and after 1500
+        ns). These are $\gamma$ rays caused by a continuous ``drip" of protons onto the 
+        tungsten target due to mistuning of the proton buncher; their
+        effect on the calculated cross sections is negligible.
+    }
+    \label{ExampleTOFSpectrum}
+\end{figure*}
 
-[describe veto procedure, charge gating procedure, and conversion of TOF to
-energy bins]
-
-\section{Error Analysis}
-
-[describe error propagation...? Or this more appropriate for analysis section?]
+From these energy spectra, the cross section was calculated, bin-wise, as follows:
+$$
+\tot = -\frac{1}{\ell\rho_{n}}
+\ln \left(\frac{I_{0}}{I_{s}}\times\frac{M_{s}}{M_{0}}\right)
+$$
+where $\frac{I_{0}}{I_{s}}$ is the ratio of counts in the energy spectra between 
+the blank and sample, $\frac{M_{s}}{M_{0}}$ is the ratio of counts in the
+monitor detector between the sample and blank (for flux normalization), $\ell$ is the length 
+of the sample, and $\rho_{n}$ is the number density of atoms in the sample.
 
 \section{Experimental Results}
 
-[all cross section plot results]
+To verify our approach, we first benchmarked our \totEs results on natural samples
+(both lengths of $^{\text{nat}}$C, $^{\text{nat}}$Ni, $^{\text{nat}}$Sn, and
+$^{\text{nat}}$Pb) against the high-precision data sets on natural targets from Finlay
+\cite{Finlay1993} and Abfalterer \cite{Abfalterer2001}, shown in figures
+\ref{LiteratureBenchmarking}.
 
-\section{Discussion}
-
-[Discussion]
-
-\section{DOM Analysis}
-
-[Preliminary DOM Analysis for oxygen]
-
-\section{Conclusion}
-
-[Conclusion]
-
-\section{Acknowledgements}
+\begin{figure*}
+    \includegraphics[scale=0.35]{figures/LiteratureBenchmarking.png}
+    \caption{(Color online) }
+    \label{LiteratureBenchmarking}
+\end{figure*}
 
 \begin{figure*}
     \includegraphics[scale=0.35]{figures/FourPanelO.png}
@@ -826,6 +819,26 @@ energy bins]
     }
 \end{figure*}
 
+
+
+
+
+Cross sections for all targets are shown in Fig. \ref{FourPanelO, FourPanelNi,
+FourPanelRh, FourPanelSn}.
+
+\section{Discussion}
+
+[Discussion]
+
+\section{DOM Analysis}
+
+[Preliminary DOM Analysis for oxygen]
+
+\section{Conclusion}
+
+[Conclusion]
+
+\section{Acknowledgements}
 
 \bibliography{references}
 \begin{thebibliography}{32} \expandafter\ifx\csname
