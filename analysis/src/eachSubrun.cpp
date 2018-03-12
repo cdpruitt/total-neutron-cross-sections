@@ -21,6 +21,7 @@
 #include "../include/experiment.h"
 #include "../include/plots.h"
 #include "../include/CSUtilities.h"
+#include "../include/correctForBackground.h"
 
 using namespace std;
 
@@ -92,6 +93,13 @@ int main(int, char* argv[])
             CSPrereqs blank;
             for(auto& p : subRunCSPrereqs)
             {
+                //correctForBackground(p);
+
+                string energyHistoName = p.target.getName();
+                energyHistoName = energyHistoName + "Energy";
+
+                p.energyHisto = convertTOFtoEnergy(p.TOFHisto, energyHistoName.c_str());
+
                 if(p.target.getName()=="blank" || p.target.getName()=="blankW")
                 {
                     blank = p;

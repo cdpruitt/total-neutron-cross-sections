@@ -28,7 +28,7 @@ TGraph* createSAGraph(double A, string name)
     vector<double> crossSection;
 
     double startingPoint = log(1);
-    double stepSize = (log(500)-log(1))/100;
+    double stepSize = (log(600)-log(1))/100;
 
     for(unsigned int i=0; i<100; i++)
     {
@@ -42,25 +42,48 @@ TGraph* createSAGraph(double A, string name)
     return SAGraph;
 }
 
-/*TGraph* createSARelDiffGraph(double A1, double A2, string name)
+TGraph* createRelDiffGraph(TGraph* graph1, TGraph* graph2, string name)
 {
-    vector<double> energy;
-    vector<double> relDiff;
+    vector<double> energy1;
+    vector<double> energy2;
 
-    double startingPoint = log(1);
-    double stepSize = (log(500)-log(1))/100;
+    vector<double> crossSection1;
+    vector<double> crossSection2;
 
-    for(unsigned int i=0; i<100; i++)
+    for(int i=1; i<graph1->GetN(); i++)
     {
-        double E = exp(i*stepSize+startingPoint);
-        energy.push_back(E);
-        relDiff.push_back(calculateRelDiff_SA(A1, A2, E));
+        double xValue = 0;
+        double yValue = 0;
+
+        graph1->GetPoint(i, xValue, yValue);
+
+        energy1.push_back(xValue);
+        crossSection1.push_back(yValue);
     }
 
-    TGraph* relDiff_SA = new TGraph(energy.size(), &energy[0], &relDiff[0]);
-    relDiff_SA->SetNameTitle(name.c_str(),name.c_str());
-    return relDiff_SA;
-}*/
+    for(int i=1; i<graph2->GetN(); i++)
+    {
+        double xValue = 0;
+        double yValue = 0;
+
+        graph2->GetPoint(i, xValue, yValue);
+
+        energy2.push_back(xValue);
+        crossSection2.push_back(yValue);
+    }
+
+    vector<double> relDiff;
+
+    for(int i=0; i<crossSection1.size(); i++)
+    {
+        double RD = (crossSection1[i]-crossSection2[i])/(crossSection1[i]+crossSection2[i]);
+        relDiff.push_back(100*RD); // in percent
+    }
+
+    TGraph* relDiffGraph = new TGraph(energy1.size(), &energy1[0], &relDiff[0]);
+
+    return relDiffGraph;
+}
 
 int main()
 {
@@ -81,6 +104,18 @@ int main()
     TGraph* PbGraph = createSAGraph(207.2, "lead");
     PbGraph->SetNameTitle("SA_A=207.2", "SA_A=207.2");
     PbGraph->Write();
+
+    TGraph* ORelDiffGraph = createRelDiffGraph(createSAGraph(18, "O18"), createSAGraph(16, "O16"), "ORelDiff");
+    ORelDiffGraph->SetNameTitle("RelDiff18_16", "RelDiff18_16");
+    ORelDiffGraph->Write();
+
+    TGraph* NiRelDiffGraph = createRelDiffGraph(createSAGraph(64, "Ni64"), createSAGraph(58, "Ni58"), "NiRelDiff");
+    NiRelDiffGraph->SetNameTitle("RelDiff64_58", "RelDiff64_58");
+    NiRelDiffGraph->Write();
+
+    TGraph* SnRelDiffGraph = createRelDiffGraph(createSAGraph(124, "Sn124"), createSAGraph(112, "Sn112"), "SnRelDiff");
+    SnRelDiffGraph->SetNameTitle("RelDiff124_112", "RelDiff124_112");
+    SnRelDiffGraph->Write();
 
     file->Close();
     return 0;

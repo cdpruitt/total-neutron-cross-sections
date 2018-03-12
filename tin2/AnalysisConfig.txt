@@ -19,7 +19,7 @@ DPP tree name                        = DPPTree
 Waveform tree name                   = WaveformTree
 Macropulse tree name                 = macroTime
 Monitor tree name                    = monitor
-Gamma correction tree name           = lowThresholdDet
+Gamma correction tree name           = highThresholdDet
 
 ********************************************************************************
                                 Event gates
@@ -27,5 +27,5 @@ Gamma correction tree name           = lowThresholdDet
 
 Low threshold, Q ratio               = 0.93
 High threshold, Q ratio              = 0.98
-lgQ_low threshold                    = 50
+lgQ_low threshold                    = 100
 lgQ_high threshold                   = 60000

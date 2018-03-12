@@ -5,7 +5,7 @@ expCGraphName="CNat"
 expNiNatGraphName="NiNat"
 expPbGraphName="PbNat"
 expNi58GraphName="Ni58"
-expNi64GraphName="Ni64"
+expNi64GraphName="Ni64PurityCorrected"
 
 litFile="/data1/analysis/literatureData.root"
 litPbGraphName="Natural Pb (n,tot)"

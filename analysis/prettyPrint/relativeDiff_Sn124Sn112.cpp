@@ -1,11 +1,15 @@
 {
     string fileName = "/data2/analysis/relative.root";
+    string ramsauerFileName = "../../theory/ramsauer.root";
 
     TFile* file = new TFile(fileName.c_str(),"READ");
+    TFile* ramsauerFile = new TFile(ramsauerFileName.c_str(), "READ");
     
     string relGraphName = "Sn124Sn112, percent";
+    string SARelDiffGraphName = "RelDiff124_112";
         
     TGraphErrors* relGraph = (TGraphErrors*)file->Get(relGraphName.c_str());
+    TGraph* SARelDiffGraph = (TGraph*)ramsauerFile->Get(SARelDiffGraphName.c_str());
 
     TStyle* style = (TStyle*)gROOT->FindObject("graphStyle");
 
@@ -81,7 +85,12 @@
     relGraph->GetYaxis()->SetNdivisions(10);
     relGraph->GetYaxis()->SetTickLength(0.02);
 
-    relGraph->Draw("");
+    SARelDiffGraph->SetLineStyle(9);
+    SARelDiffGraph->SetLineWidth(3);
+    SARelDiffGraph->SetLineColor(kGray);
+
+    relGraph->Draw("AL");
+    SARelDiffGraph->Draw("same");
 
     gPad->SetLogx(1);
     

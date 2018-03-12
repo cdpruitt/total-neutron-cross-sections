@@ -18,6 +18,7 @@
 #include "../include/crossSection.h"
 #include "../include/experiment.h"
 #include "../include/plots.h"
+#include "../include/correctForBackground.h"
 
 using namespace std;
 
@@ -56,16 +57,8 @@ int main(int, char* argv[])
 
             if(readSubRun(subRunData, expName, runNumber, subRun, detectorName, dataLocation))
             {
-                continue;
+                break;
             }
-
-            cout << "Read " << runNumber << "-" << subRun << endl;
-
-            /*if(subRunData.target.getName() == "blank")
-              {
-              cout << "monitor/detector ratio during blank = "
-              << subRunData.monitorCounts/subRunData.totalEventNumber << endl;
-              }*/
 
             // find the correct CSPrereqs to add this target's data to
 
@@ -86,21 +79,18 @@ int main(int, char* argv[])
     CSPrereqs blank;
     for(auto& p : allCSPrereqs)
     {
+        //correctForBackground(p);
+
+        string energyHistoName = p.target.getName();
+        energyHistoName = energyHistoName + "Energy";
+
+        p.energyHisto = convertTOFtoEnergy(p.TOFHisto, energyHistoName.c_str());
+
         if(p.target.getName()=="blank" || p.target.getName()=="blankW")
         {
             blank = p;
-            break;
         }
-    }
 
-    if(blank.target.getName()!="blank")
-    {
-        cerr << "Error: failed to find blank target for cross section calculation." << endl;
-        return 1;
-    }
-
-    for(auto& p : allCSPrereqs)
-    {
         double totalCounts = 0;
         int numberOfBins = p.energyHisto->GetNbinsX();
 

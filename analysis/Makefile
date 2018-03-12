@@ -30,7 +30,7 @@ $(BIN)sumAll: $(addprefix $(SOURCE), $(SUMALL_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)sumAll $(addprefix $(SOURCE), $(SUMALL_SOURCES)) $(LINKOPTION)
 
 # Build eachSubrun (for generating cross sections using data from all available runs)
-EACHSUBRUN_SOURCES = eachSubrun.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp config.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp CSUtilities.cpp
+EACHSUBRUN_SOURCES = eachSubrun.cpp dataSet.cpp dataPoint.cpp CSPrereqs.cpp config.cpp experiment.cpp target.cpp crossSection.cpp plots.cpp CSUtilities.cpp correctForBackground.cpp
 $(BIN)eachSubrun: $(addprefix $(SOURCE), $(EACHSUBRUN_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)eachSubrun $(addprefix $(SOURCE), $(EACHSUBRUN_SOURCES)) $(LINKOPTION)
 

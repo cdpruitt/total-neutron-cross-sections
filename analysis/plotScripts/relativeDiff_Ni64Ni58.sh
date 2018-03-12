@@ -1,7 +1,7 @@
 #!/bin/bash
 
 expFile="/data1/analysis/total.root"
-expGraph1Name="Ni64"
+expGraph1Name="Ni64PurityCorrected"
 expGraph2Name="Ni58"
 
 relGraph1Name="Ni64Ni58"

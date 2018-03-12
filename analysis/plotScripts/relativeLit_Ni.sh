@@ -4,7 +4,7 @@ expFile="/data1/analysis/total.root"
 expCGraphName="CNat"
 expNi58GraphName="Ni58"
 expNiGraphName="NiNat"
-expNi64GraphName="Ni64"
+expNi64GraphName="Ni64PurityCorrected"
 expPbGraphName="PbNat"
 
 litFile="/data1/analysis/literatureData.root"

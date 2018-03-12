@@ -1,11 +1,15 @@
 {
     string fileName = "/data1/analysis/relative.root";
+    string ramsauerFileName = "../../theory/ramsauer.root";
 
     TFile* file = new TFile(fileName.c_str(),"READ");
+    TFile* ramsauerFile = new TFile(ramsauerFileName.c_str(), "READ");
     
     string relGraphName = "Ni64Ni58, percent";
+    string SARelDiffGraphName = "RelDiff64_58";
         
     TGraphErrors* relGraph = (TGraphErrors*)file->Get(relGraphName.c_str());
+    TGraph* SARelDiffGraph = (TGraph*)ramsauerFile->Get(SARelDiffGraphName.c_str());
 
     TStyle* style = (TStyle*)gROOT->FindObject("graphStyle");
 
@@ -81,11 +85,32 @@
     relGraph->GetYaxis()->SetNdivisions(10);
     relGraph->GetYaxis()->SetTickLength(0.02);
 
-    relGraph->Draw("");
+    SARelDiffGraph->SetLineStyle(9);
+    SARelDiffGraph->SetLineWidth(3);
+    SARelDiffGraph->SetLineColor(kGray);
+
+    relGraph->Draw("AL");
+    SARelDiffGraph->Draw("same");
+
+    /*
+    TLine* thirdLine = new TLine(0, 3.334, 600, 3.334);
+    thirdLine->SetLineColor(kBlack);
+    thirdLine->SetLineWidth(3);
+    thirdLine->SetLineStyle(9);
+    thirdLine->Draw();
+
+    TLine* sixthLine = new TLine(0, 1.654, 600, 1.654);
+    sixthLine->SetLineColor(kBlack);
+    sixthLine->SetLineWidth(3);
+    sixthLine->SetLineStyle(9);
+    sixthLine->Draw();
+
+    relGraph->Draw("same");
+    */
 
     gPad->SetLogx(1);
     
-    relGraph->GetYaxis()->SetRangeUser(-3,3);
+    relGraph->GetYaxis()->SetRangeUser(1.01,4.99);
     relGraph->GetXaxis()->SetLimits(5,600);
 
     //TLatex latex;
@@ -102,19 +127,7 @@
 
     //legend->Draw();
 
-    TLine* zeroLine = new TLine(0, 0, 600, 0);
-    zeroLine->SetLineColor(kBlack);
-    zeroLine->SetLineWidth(3);
-    zeroLine->SetLineStyle(9);
-    zeroLine->Draw();
-
-    /*TLine* SixthLine = new TLine(0, 0, 600, 0);
-    zeroLine->SetLineColor(kBlack);
-    zeroLine->SetLineWidth(3);
-    zeroLine->SetLineStyle(9);
-    zeroLine->Draw();
-
-    TLine* ThirdLine = new TLine(0, 0, 600, 0);
+    /*TLine* zeroLine = new TLine(0, 0, 600, 0);
     zeroLine->SetLineColor(kBlack);
     zeroLine->SetLineWidth(3);
     zeroLine->SetLineStyle(9);
