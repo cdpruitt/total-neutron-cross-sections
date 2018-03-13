@@ -7,9 +7,9 @@
     string SnGraphName = "NatSn, expLit";
     string PbGraphName = "NatPb, expLit";
         
-    TGraphErrors* CGraph = (TGraphErrors*)file->Get(CGraphName.c_str());
-    TGraphErrors* SnGraph = (TGraphErrors*)file->Get(SnGraphName.c_str());
-    TGraphErrors* PbGraph = (TGraphErrors*)file->Get(PbGraphName.c_str());
+    TGraphAsymmErrors* CGraph = (TGraphAsymmErrors*)file->Get(CGraphName.c_str());
+    TGraphAsymmErrors* SnGraph = (TGraphAsymmErrors*)file->Get(SnGraphName.c_str());
+    TGraphAsymmErrors* PbGraph = (TGraphAsymmErrors*)file->Get(PbGraphName.c_str());
 
     TStyle* style = (TStyle*)gROOT->FindObject("graphStyle");
 

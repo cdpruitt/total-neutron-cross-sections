@@ -130,6 +130,21 @@ int correctForBlank(CrossSection& rawCS, CSPrereqs& targetData, string expName)
             blankComposition.back().setName(tokens[1]);
         }
 
+        else if((tokens[0]=="Diameter") && (tokens[1] == "uncertainty:"))
+        {
+            blankComposition.back().setDiameterUncertainty(atof(tokens[2].c_str()));
+        }
+
+        else if((tokens[0]=="Mass") && (tokens[1] == "uncertainty:"))
+        {
+            blankComposition.back().setMassUncertainty(atof(tokens[2].c_str()));
+        }
+
+        else if((tokens[0]=="Molar") && (tokens[2] == "uncertainty:"))
+        {
+            blankComposition.back().setMolarMassUncertainty(atof(tokens[3].c_str()));
+        }
+
         else if(tokens[0]=="Length:")
         {
             blankComposition.back().setLength(atof(tokens[1].c_str()));
@@ -313,7 +328,7 @@ CrossSection subtractCS(string rawCSFileName, string rawCSGraphName,
 {
     // get rawCS graph
     TFile* rawCSFile = new TFile(rawCSFileName.c_str(),"UPDATE");
-    TGraphErrors* rawCSGraph = (TGraphErrors*)rawCSFile->Get(rawCSGraphName.c_str());
+    TGraphAsymmErrors* rawCSGraph = (TGraphAsymmErrors*)rawCSFile->Get(rawCSGraphName.c_str());
     if(!rawCSGraph)
     {
         cerr << "Error: failed to find " << rawCSGraphName << " in " << rawCSFileName << endl;
@@ -322,7 +337,7 @@ CrossSection subtractCS(string rawCSFileName, string rawCSGraphName,
 
     // get subtrahend graph
     TFile* subtrahendFile = new TFile(subtrahendFileName.c_str(),"READ");
-    TGraphErrors* subtrahendGraph = (TGraphErrors*)subtrahendFile->Get(subtrahendGraphName.c_str());
+    TGraphAsymmErrors* subtrahendGraph = (TGraphAsymmErrors*)subtrahendFile->Get(subtrahendGraphName.c_str());
     if(!subtrahendGraph)
     {
         cerr << "Error: failed to find " << subtrahendGraphName << " in " << subtrahendFileName << endl;
@@ -341,7 +356,7 @@ CrossSection subtractCS(string rawCSFileName, string rawCSGraphName,
                     rawCSData.getPoint(i).getXErrorL(),
                     rawCSData.getPoint(i).getXErrorR(),
                     subtrahendGraph->Eval(rawCSData.getPoint(i).getXValue()),
-                    subtrahendGraph->GetErrorY(rawCSData.getPoint(i).getXValue()))); 
+                    subtrahendGraph->GetErrorY(i))); 
     }
 
     // perform the subtraction
@@ -360,7 +375,7 @@ CrossSection subtractCS(CrossSection rawCS, string subtrahendFileName,
 {
     // get subtrahend graph
     TFile* subtrahendFile = new TFile(subtrahendFileName.c_str(),"READ");
-    TGraphErrors* subtrahendGraph = (TGraphErrors*)subtrahendFile->Get(subtrahendGraphName.c_str());
+    TGraphAsymmErrors* subtrahendGraph = (TGraphAsymmErrors*)subtrahendFile->Get(subtrahendGraphName.c_str());
     if(!subtrahendGraph)
     {
         cerr << "Error: failed to find " << subtrahendGraphName << " in " << subtrahendFileName << endl;
@@ -379,7 +394,7 @@ CrossSection subtractCS(CrossSection rawCS, string subtrahendFileName,
                 DataPoint(rawCSData.getPoint(i).getXValue(),
                     rawCSData.getPoint(i).getXError(),
                     subtrahendGraph->Eval(rawCSData.getPoint(i).getXValue()),
-                    subtrahendGraph->GetErrorY(rawCSData.getPoint(i).getXValue()))); 
+                    subtrahendGraph->GetErrorY(i))); 
     }
 
     // perform the subtraction
@@ -397,7 +412,7 @@ CrossSection shiftCS(string rawCSFileName, string rawCSGraphName,
 {
     // get rawCS graph
     TFile* rawCSFile = new TFile(rawCSFileName.c_str(),"READ");
-    TGraphErrors* rawCSGraph = (TGraphErrors*)rawCSFile->Get(rawCSGraphName.c_str());
+    TGraphAsymmErrors* rawCSGraph = (TGraphAsymmErrors*)rawCSFile->Get(rawCSGraphName.c_str());
     if(!rawCSGraph)
     {
         cerr << "Error: failed to find " << rawCSGraphName << " in " << rawCSFileName << endl;
@@ -425,7 +440,7 @@ CrossSection multiplyCS(string rawCSFileName, string rawCSGraphName,
 {
     // get rawCS graph
     TFile* rawCSFile = new TFile(rawCSFileName.c_str(),"UPDATE");
-    TGraphErrors* rawCSGraph = (TGraphErrors*)rawCSFile->Get(rawCSGraphName.c_str());
+    TGraphAsymmErrors* rawCSGraph = (TGraphAsymmErrors*)rawCSFile->Get(rawCSGraphName.c_str());
     if(!rawCSGraph)
     {
         cerr << "Error: failed to find " << rawCSGraphName << " in " << rawCSFileName << endl;
@@ -523,7 +538,7 @@ CrossSection relativeCS(string firstCSFileName, string firstCSGraphName,
 {
     // get firstCS graph
     TFile* firstCSFile = new TFile(firstCSFileName.c_str(),"READ");
-    TGraphErrors* firstCSGraph = (TGraphErrors*)firstCSFile->Get(firstCSGraphName.c_str());
+    TGraphAsymmErrors* firstCSGraph = (TGraphAsymmErrors*)firstCSFile->Get(firstCSGraphName.c_str());
     if(!firstCSGraph)
     {
         cerr << "Error: failed to find " << firstCSGraphName << " in " << firstCSFileName << endl;
@@ -532,7 +547,7 @@ CrossSection relativeCS(string firstCSFileName, string firstCSGraphName,
 
     // get second graph
     TFile* secondCSFile = new TFile(secondCSFileName.c_str(),"READ");
-    TGraphErrors* secondCSGraph = (TGraphErrors*)secondCSFile->Get(secondCSGraphName.c_str());
+    TGraphAsymmErrors* secondCSGraph = (TGraphAsymmErrors*)secondCSFile->Get(secondCSGraphName.c_str());
     if(!secondCSGraph)
     {
         cerr << "Error: failed to find " << secondCSGraphName << " in " << secondCSFileName << endl;
@@ -562,8 +577,7 @@ CrossSection relativeCS(string firstCSFileName, string firstCSGraphName,
                 DataPoint(firstCSDataRaw.getPoint(i).getXValue(),
                     firstCSDataRaw.getPoint(i).getXError(),
                     secondCSGraph->Eval(firstCSDataRaw.getPoint(i).getXValue()),
-                    0
-                    /*secondCSGraph->GetErrorY(firstCSDataRaw.getPoint(i).getXValue())*/)); 
+                    secondCSGraph->GetErrorY(i))); 
     }
 
     // perform the division
@@ -597,7 +611,7 @@ CrossSection relativeDiffCS(string firstCSFileName, string firstCSGraphName,
 {
     // get firstCS graph
     TFile* firstCSFile = new TFile(firstCSFileName.c_str(),"READ");
-    TGraphErrors* firstCSGraph = (TGraphErrors*)firstCSFile->Get(firstCSGraphName.c_str());
+    TGraphAsymmErrors* firstCSGraph = (TGraphAsymmErrors*)firstCSFile->Get(firstCSGraphName.c_str());
     if(!firstCSGraph)
     {
         cerr << "Error: failed to find " << firstCSGraphName << " in " << firstCSFileName << endl;
@@ -606,7 +620,7 @@ CrossSection relativeDiffCS(string firstCSFileName, string firstCSGraphName,
 
     // get secondCS graph
     TFile* secondCSFile = new TFile(secondCSFileName.c_str(),"READ");
-    TGraphErrors* secondCSGraph = (TGraphErrors*)secondCSFile->Get(secondCSGraphName.c_str());
+    TGraphAsymmErrors* secondCSGraph = (TGraphAsymmErrors*)secondCSFile->Get(secondCSGraphName.c_str());
     if(!secondCSGraph)
     {
         cerr << "Error: failed to find " << secondCSGraphName << " in " << secondCSFileName << endl;
@@ -649,8 +663,7 @@ CrossSection relativeDiffCS(string firstCSFileName, string firstCSGraphName,
                 DataPoint(firstCSDataRaw.getPoint(i).getXValue(),
                     firstCSDataRaw.getPoint(i).getXError(),
                     secondCSGraph->Eval(firstCSDataRaw.getPoint(i).getXValue()),
-                    0
-                    /*secondCSGraph->GetErrorY(firstCSDataRaw.getPoint(i).getXValue())*/)); 
+                    secondCSGraph->GetErrorY(i))); 
     }
 
     // perform the difference
@@ -690,7 +703,7 @@ void applyCSCorrectionFactor(string CSCorrectionFileName, string CSCorrectionGra
 {
     // get CS correction graph
     TFile* CSCorrectionFile = new TFile(CSCorrectionFileName.c_str(),"READ");
-    TGraphErrors* CSCorrectionGraph = (TGraphErrors*)CSCorrectionFile->Get(CSCorrectionGraphName.c_str());
+    TGraphAsymmErrors* CSCorrectionGraph = (TGraphAsymmErrors*)CSCorrectionFile->Get(CSCorrectionGraphName.c_str());
     if(!CSCorrectionGraph)
     {
         cerr << "Error: failed to find " << CSCorrectionGraphName << " in " << CSCorrectionFileName << endl;
@@ -699,7 +712,7 @@ void applyCSCorrectionFactor(string CSCorrectionFileName, string CSCorrectionGra
 
     // get CSToBeCorrected graph
     TFile* CSToBeCorrectedFile = new TFile(CSToBeCorrectedFileName.c_str(),"READ");
-    TGraphErrors* CSToBeCorrectedGraph = (TGraphErrors*)CSToBeCorrectedFile->Get(CSToBeCorrectedGraphName.c_str());
+    TGraphAsymmErrors* CSToBeCorrectedGraph = (TGraphAsymmErrors*)CSToBeCorrectedFile->Get(CSToBeCorrectedGraphName.c_str());
     if(!CSToBeCorrectedGraph)
     {
         cerr << "Error: failed to find " << CSToBeCorrectedGraphName << " in " << CSToBeCorrectedFileName << endl;
@@ -718,7 +731,7 @@ void applyCSCorrectionFactor(string CSCorrectionFileName, string CSCorrectionGra
                 DataPoint(CSToBeCorrectedData.getPoint(i).getXValue(),
                     CSToBeCorrectedData.getPoint(i).getXError(),
                     CSCorrectionGraph->Eval(CSToBeCorrectedData.getPoint(i).getXValue()),
-                    CSCorrectionGraph->GetErrorY(CSToBeCorrectedData.getPoint(i).getXValue())));
+                    CSCorrectionGraph->GetErrorY(i)));
     }
 
     // perform the correction
@@ -736,7 +749,7 @@ void scaledownCS(string CSToBeCorrectedFileName, string CSToBeCorrectedGraphName
 {
     // get CSToBeCorrected graph
     TFile* CSToBeCorrectedFile = new TFile(CSToBeCorrectedFileName.c_str(),"READ");
-    TGraphErrors* CSToBeCorrectedGraph = (TGraphErrors*)CSToBeCorrectedFile->Get(CSToBeCorrectedGraphName.c_str());
+    TGraphAsymmErrors* CSToBeCorrectedGraph = (TGraphAsymmErrors*)CSToBeCorrectedFile->Get(CSToBeCorrectedGraphName.c_str());
     if(!CSToBeCorrectedGraph)
     {
         cerr << "Error: failed to find " << CSToBeCorrectedGraphName << " in " << CSToBeCorrectedFileName << endl;
@@ -747,6 +760,8 @@ void scaledownCS(string CSToBeCorrectedFileName, string CSToBeCorrectedGraphName
 
     DataSet CSToBeCorrectedData = DataSet(CSToBeCorrectedGraph, CSToBeCorrectedGraphName);
     DataSet CorrectedCSData = DataSet();
+
+    CSToBeCorrectedFile->Close();
 
     double rebinnedXValue = 0;
     double rebinnedYValue = 0;

@@ -46,13 +46,13 @@
     string litNiGraphName = "Natural Ni (n,tot)";
     string litPbGraphName = "Natural Pb (n,tot)";
     
-    TGraphErrors* expCGraph = (TGraphErrors*)expFile->Get(expCGraphName.c_str());
-    TGraphErrors* expNiGraph = (TGraphErrors*)expFile->Get(expNiGraphName.c_str());
-    TGraphErrors* expPbGraph = (TGraphErrors*)expFile->Get(expPbGraphName.c_str());
+    TGraphAsymmErrors* expCGraph = (TGraphAsymmErrors*)expFile->Get(expCGraphName.c_str());
+    TGraphAsymmErrors* expNiGraph = (TGraphAsymmErrors*)expFile->Get(expNiGraphName.c_str());
+    TGraphAsymmErrors* expPbGraph = (TGraphAsymmErrors*)expFile->Get(expPbGraphName.c_str());
 
-    TGraphErrors* litCGraph = (TGraphErrors*)litFile->Get(litCGraphName.c_str());
-    TGraphErrors* litNiGraph = (TGraphErrors*)litFile->Get(litNiGraphName.c_str());
-    TGraphErrors* litPbGraph = (TGraphErrors*)litFile->Get(litPbGraphName.c_str());
+    TGraphAsymmErrors* litCGraph = (TGraphAsymmErrors*)litFile->Get(litCGraphName.c_str());
+    TGraphAsymmErrors* litNiGraph = (TGraphAsymmErrors*)litFile->Get(litNiGraphName.c_str());
+    TGraphAsymmErrors* litPbGraph = (TGraphAsymmErrors*)litFile->Get(litPbGraphName.c_str());
 
     // Set graph point and line characteristics
     expCGraph->SetLineColor(kRed);

@@ -44,11 +44,11 @@
 
     string litNiGraphName = "Natural Ni (n,tot)";
     
-    TGraphErrors* exp58Graph = (TGraphErrors*)expFile->Get(exp58GraphName.c_str());
-    TGraphErrors* expNatGraph = (TGraphErrors*)expFile->Get(expNatGraphName.c_str());
-    TGraphErrors* exp64Graph = (TGraphErrors*)expFile->Get(exp64GraphName.c_str());
+    TGraphAsymmErrors* exp58Graph = (TGraphAsymmErrors*)expFile->Get(exp58GraphName.c_str());
+    TGraphAsymmErrors* expNatGraph = (TGraphAsymmErrors*)expFile->Get(expNatGraphName.c_str());
+    TGraphAsymmErrors* exp64Graph = (TGraphAsymmErrors*)expFile->Get(exp64GraphName.c_str());
 
-    TGraphErrors* litNiGraph = (TGraphErrors*)litFile->Get(litNiGraphName.c_str());
+    TGraphAsymmErrors* litNiGraph = (TGraphAsymmErrors*)litFile->Get(litNiGraphName.c_str());
 
     // Set graph point and line characteristics
     exp58Graph->SetLineColor(kRed);

@@ -12,7 +12,7 @@
 #include "../include/CSUtilities.h"
 
 #include "TFile.h"
-#include "TGraphErrors.h"
+#include "TGraphAsymmErrors.h"
 
 #include <string>
 #include <iostream>
@@ -46,7 +46,7 @@ int main(int, char* argv[])
         return 1;
     }
 
-    TGraphErrors* firstCSGraph = (TGraphErrors*)firstCSFile->Get(firstCSGraphName.c_str());
+    TGraphAsymmErrors* firstCSGraph = (TGraphAsymmErrors*)firstCSFile->Get(firstCSGraphName.c_str());
     if(!firstCSGraph)
     {
         cerr << "Error: couldn't find " << firstCSGraphName << " in " << firstCSFileName << "." << endl;
@@ -55,7 +55,7 @@ int main(int, char* argv[])
         return 1;
     }
 
-    TGraphErrors* secondCSGraph = (TGraphErrors*)secondCSFile->Get(secondCSGraphName.c_str());
+    TGraphAsymmErrors* secondCSGraph = (TGraphAsymmErrors*)secondCSFile->Get(secondCSGraphName.c_str());
     if(!secondCSGraph)
     {
         cerr << "Error: couldn't find " << secondCSGraphName << " in " << secondCSFileName << "." << endl;

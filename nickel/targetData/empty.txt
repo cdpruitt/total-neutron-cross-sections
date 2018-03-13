@@ -1,10 +1,16 @@
 Name: empty
 Length:  1.37 cm
 Diameter: 0.825 cm
-Mass:  0.0001647 g
-Molar mass: 16.00 g/mol
+Diameter uncertainty: 0.001 cm
+Mass: 0.0001647 g
+Mass uncertainty: 0.000001 g
+Molar mass: 31.998 g/mol
+Molar mass uncertainty: 0.0005 g/mol
 Name: empty
 Length:  1.37 cm
 Diameter: 0.825 cm
+Diameter uncertainty: 0.001 cm
 Mass:  0.0005404 g
-Molar mass: 14.01 g/mol
+Mass uncertainty: 0.000001 g
+Molar mass: 28.014 g/mol
+Molar mass uncertainty: 0.0005 g/mol

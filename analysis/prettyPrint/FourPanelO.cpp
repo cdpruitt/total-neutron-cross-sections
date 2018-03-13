@@ -72,8 +72,8 @@
     string relCorOH2OGraphName = "ONat_fromH2O, expLit, corrected, percent";
     string relCorO18GraphName = "O18, expLit, corrected, percent";
 
-    TGraphErrors* expOH2OGraph = (TGraphErrors*)expFile->Get(expOH2OGraphName.c_str());
-    TGraphErrors* expO18Graph = (TGraphErrors*)shiftedFile->Get(expO18GraphName.c_str());
+    TGraphAsymmErrors* expOH2OGraph = (TGraphAsymmErrors*)expFile->Get(expOH2OGraphName.c_str());
+    TGraphAsymmErrors* expO18Graph = (TGraphAsymmErrors*)shiftedFile->Get(expO18GraphName.c_str());
 
     if(!expOH2OGraph || !expO18Graph)
     {
@@ -81,8 +81,8 @@
         exit(1);
     }
 
-    TGraphErrors* litOGraph = (TGraphErrors*)litFile->Get(litOGraphName.c_str());
-    TGraphErrors* litO18Graph = (TGraphErrors*)litFile->Get(litO18GraphName.c_str());
+    TGraphAsymmErrors* litOGraph = (TGraphAsymmErrors*)litFile->Get(litOGraphName.c_str());
+    TGraphAsymmErrors* litO18Graph = (TGraphAsymmErrors*)litFile->Get(litO18GraphName.c_str());
 
     if(!litOGraph || !litO18Graph)
     {
@@ -90,8 +90,8 @@
         exit(1);
     }
 
-    TGraphErrors* relOH2OGraph = (TGraphErrors*)relFile->Get(relOH2OGraphName.c_str());
-    TGraphErrors* relO18Graph = (TGraphErrors*)relFile->Get(relO18GraphName.c_str());
+    TGraphAsymmErrors* relOH2OGraph = (TGraphAsymmErrors*)relFile->Get(relOH2OGraphName.c_str());
+    TGraphAsymmErrors* relO18Graph = (TGraphAsymmErrors*)relFile->Get(relO18GraphName.c_str());
 
     if(!relOH2OGraph || !relO18Graph)
     {
@@ -99,8 +99,8 @@
         exit(1);
     }
 
-    TGraphErrors* corOH2OGraph = (TGraphErrors*)corFile->Get(corOH2OGraphName.c_str());
-    TGraphErrors* corO18Graph = (TGraphErrors*)shiftedFile->Get(corO18GraphName.c_str());
+    TGraphAsymmErrors* corOH2OGraph = (TGraphAsymmErrors*)corFile->Get(corOH2OGraphName.c_str());
+    TGraphAsymmErrors* corO18Graph = (TGraphAsymmErrors*)shiftedFile->Get(corO18GraphName.c_str());
 
     if(!corOH2OGraph || !corO18Graph)
     {
@@ -108,8 +108,8 @@
         exit(1);
     }
 
-    TGraphErrors* relCorOH2OGraph = (TGraphErrors*)relFile->Get(relCorOH2OGraphName.c_str());
-    TGraphErrors* relCorO18Graph = (TGraphErrors*)relFile->Get(relCorO18GraphName.c_str());
+    TGraphAsymmErrors* relCorOH2OGraph = (TGraphAsymmErrors*)relFile->Get(relCorOH2OGraphName.c_str());
+    TGraphAsymmErrors* relCorO18Graph = (TGraphAsymmErrors*)relFile->Get(relCorO18GraphName.c_str());
 
     if(!relCorOH2OGraph || !relCorO18Graph)
     {

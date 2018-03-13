@@ -12,7 +12,7 @@
 #include "../include/CSUtilities.h"
 
 #include "TFile.h"
-#include "TGraphErrors.h"
+#include "TGraphAsymmErrors.h"
 
 #include <string>
 #include <iostream>
@@ -31,7 +31,7 @@ int main(int, char* argv[])
     string outputGraphName = argv[6];
 
     TFile* expCSFile = new TFile(expCSFileName.c_str(),"READ");
-    TGraphErrors* expCSGraph = (TGraphErrors*)expCSFile->Get(expCSGraphName.c_str());
+    TGraphAsymmErrors* expCSGraph = (TGraphAsymmErrors*)expCSFile->Get(expCSGraphName.c_str());
     if(!expCSGraph)
     {
         cerr << "Error: failed to find " << expCSGraphName << " in " << expCSFileName << endl;
@@ -39,7 +39,7 @@ int main(int, char* argv[])
     }
 
     TFile* litCSFile = new TFile(litCSFileName.c_str(),"READ");
-    TGraphErrors* litCSGraph = (TGraphErrors*)litCSFile->Get(litCSGraphName.c_str());
+    TGraphAsymmErrors* litCSGraph = (TGraphAsymmErrors*)litCSFile->Get(litCSGraphName.c_str());
     if(!litCSGraph)
     {
         cerr << "Error: failed to find " << litCSGraphName << " in " << litCSFileName << endl;
@@ -57,8 +57,7 @@ int main(int, char* argv[])
                 DataPoint(expDataSet.getPoint(i).getXValue(),
                     expDataSet.getPoint(i).getXError(),
                     litCSGraph->Eval(expDataSet.getPoint(i).getXValue()),
-                    0
-                    /*litCSGraph->GetErrorY(expDataSet.getPoint(i).getXValue())*/)); 
+                    litCSGraph->GetErrorY(i))); 
     }
 
     expCSFile->Close();

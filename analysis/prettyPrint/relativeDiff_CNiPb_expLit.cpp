@@ -7,9 +7,9 @@
     string NiGraphName = "NatNi, expLit, percent";
     string PbGraphName = "NatPb, expLit, percent";
         
-    TGraphErrors* CGraph = (TGraphErrors*)file->Get(CGraphName.c_str());
-    TGraphErrors* NiGraph = (TGraphErrors*)file->Get(NiGraphName.c_str());
-    TGraphErrors* PbGraph = (TGraphErrors*)file->Get(PbGraphName.c_str());
+    TGraphAsymmErrors* CGraph = (TGraphAsymmErrors*)file->Get(CGraphName.c_str());
+    TGraphAsymmErrors* NiGraph = (TGraphAsymmErrors*)file->Get(NiGraphName.c_str());
+    TGraphAsymmErrors* PbGraph = (TGraphAsymmErrors*)file->Get(PbGraphName.c_str());
 
     TStyle* style = (TStyle*)gROOT->FindObject("graphStyle");
 

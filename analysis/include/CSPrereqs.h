@@ -41,14 +41,14 @@ class CSPrereqs
 };
 
 void extractGraphData(
-        TGraphErrors* graph,
+        TGraphAsymmErrors* graph,
         std::vector<double>* xValues,
         std::vector<double>* xError,
         std::vector<double>* yValues,
         std::vector<double>* yError);
 
 void extractGraphData(
-        TGraphErrors* graph,
+        TGraphAsymmErrors* graph,
         DataSet& dataSet);
 
 double calculateRMS(std::vector<double> graph1Data, std::vector<double> graph2Data);

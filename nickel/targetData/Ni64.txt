@@ -1,5 +1,8 @@
 Name:       Ni64
 Length:     0.796 cm
 Diameter:   0.8195 cm
+Diameter uncertainty: 0.004 cm
 Mass:       3.9942 g
+Mass uncertainty: 0.0001 g
 Molar Mass: 63.537 g/mol
+Molar mass uncertainty: 0.001 g/mol

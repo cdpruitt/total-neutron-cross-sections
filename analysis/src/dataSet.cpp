@@ -166,7 +166,7 @@ DataSet::DataSet(string dataSetLocation, const vector<double>& energyBins)
     dataFile.close();
 }
 
-DataSet::DataSet(TGraphErrors* graph, string ref)
+DataSet::DataSet(TGraphAsymmErrors* graph, string ref)
 {
     if(!graph)
     {
@@ -176,10 +176,10 @@ DataSet::DataSet(TGraphErrors* graph, string ref)
 
     int numberOfPoints = graph->GetN();
 
-    vector<double> x (numberOfPoints);
-    vector<double> y (numberOfPoints);
-    vector<double> xError (numberOfPoints);
-    vector<double> yError (numberOfPoints);
+    vector<double> x (numberOfPoints, 0);
+    vector<double> y (numberOfPoints, 0);
+    vector<double> xError (numberOfPoints, 0);
+    vector<double> yError (numberOfPoints, 0);
 
     for(int i=0; i<numberOfPoints; i++)
     {
@@ -187,7 +187,7 @@ DataSet::DataSet(TGraphErrors* graph, string ref)
         xError[i] = graph->GetErrorX(i);
         yError[i] = graph->GetErrorY(i);
 
-        this->addPoint(DataPoint(x[i],xError[i],y[i],yError[i]));
+        addPoint(DataPoint(x[i],xError[i],y[i],yError[i]));
     }
 
     reference = ref; 
@@ -203,7 +203,7 @@ DataPoint DataSet::getPoint(int i) const
     return data[i];
 }
 
-TGraphErrors* DataSet::getPlot() const
+TGraphAsymmErrors* DataSet::getPlot() const
 {
     return dataPlot;
 }
@@ -474,9 +474,9 @@ vector<double> DataSet::getYErrors() const
     return yErrors;
 }
 
-TGraphErrors* DataSet::createPlot(string name)
+TGraphAsymmErrors* DataSet::createPlot(string name)
 {
-    dataPlot = new TGraphErrors(this->getXValues().size(),&this->getXValues()[0],&this->getYValues()[0],&this->getXErrors()[0],&this->getYErrors()[0]);
+    dataPlot = new TGraphAsymmErrors(this->getXValues().size(),&this->getXValues()[0],&this->getYValues()[0],&this->getXErrors()[0],&this->getYErrors()[0]);
     dataPlot->SetNameTitle(name.c_str(),name.c_str());
     return dataPlot;
 }

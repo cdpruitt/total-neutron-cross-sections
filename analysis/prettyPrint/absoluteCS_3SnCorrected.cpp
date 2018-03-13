@@ -44,11 +44,11 @@
 
     string litSnGraphName = "Natural Sn (n,tot)";
     
-    TGraphErrors* exp112Graph = (TGraphErrors*)expFile->Get(exp112GraphName.c_str());
-    TGraphErrors* expNatGraph = (TGraphErrors*)expFile->Get(expNatGraphName.c_str());
-    TGraphErrors* exp124Graph = (TGraphErrors*)expFile->Get(exp124GraphName.c_str());
+    TGraphAsymmErrors* exp112Graph = (TGraphAsymmErrors*)expFile->Get(exp112GraphName.c_str());
+    TGraphAsymmErrors* expNatGraph = (TGraphAsymmErrors*)expFile->Get(expNatGraphName.c_str());
+    TGraphAsymmErrors* exp124Graph = (TGraphAsymmErrors*)expFile->Get(exp124GraphName.c_str());
 
-    TGraphErrors* litSnGraph = (TGraphErrors*)litFile->Get(litSnGraphName.c_str());
+    TGraphAsymmErrors* litSnGraph = (TGraphAsymmErrors*)litFile->Get(litSnGraphName.c_str());
 
     // Set graph point and line characteristics
     exp112Graph->SetLineColor(kRed);

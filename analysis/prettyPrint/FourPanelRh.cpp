@@ -56,15 +56,15 @@
 
     string litRhNatGraphName = "Natural Rh (n,tot)";
     
-    TGraphErrors* expRhNatGraph = (TGraphErrors*)expFile->Get(expRhNatGraphName.c_str());
+    TGraphAsymmErrors* expRhNatGraph = (TGraphAsymmErrors*)expFile->Get(expRhNatGraphName.c_str());
 
-    TGraphErrors* relRhNatGraph = (TGraphErrors*)relFile->Get(relRhNatGraphName.c_str());
+    TGraphAsymmErrors* relRhNatGraph = (TGraphAsymmErrors*)relFile->Get(relRhNatGraphName.c_str());
 
-    TGraphErrors* corRhNatGraph = (TGraphErrors*)corFile->Get(expRhNatGraphName.c_str());
+    TGraphAsymmErrors* corRhNatGraph = (TGraphAsymmErrors*)corFile->Get(expRhNatGraphName.c_str());
 
-    TGraphErrors* relCorRhNatGraph = (TGraphErrors*)relFile->Get(relCorRhNatGraphName.c_str());
+    TGraphAsymmErrors* relCorRhNatGraph = (TGraphAsymmErrors*)relFile->Get(relCorRhNatGraphName.c_str());
 
-    TGraphErrors* litRhNatGraph = (TGraphErrors*)litFile->Get(litRhNatGraphName.c_str());
+    TGraphAsymmErrors* litRhNatGraph = (TGraphAsymmErrors*)litFile->Get(litRhNatGraphName.c_str());
 
     if(!expRhNatGraph)
     {

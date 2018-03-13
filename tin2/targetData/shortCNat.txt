@@ -1,0 +1,8 @@
+Name:       shortCNat
+Length:     1.366 cm
+Diameter:   0.826 cm
+Diameter uncertainty: 0.0005 cm
+Mass:       1.2363 g
+Mass uncertainty: 0.0001 g
+Molar mass: 12.011 g/mol
+Molar mass uncertainty: 0.0005 g/mol

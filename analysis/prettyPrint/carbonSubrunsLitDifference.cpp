@@ -53,13 +53,13 @@
 
         string CGraphName = "CNatLitDifference";
 
-        TGraphErrors* CGraph = (TGraphErrors*)file->Get(CGraphName.c_str());
+        TGraphAsymmErrors* CGraph = (TGraphAsymmErrors*)file->Get(CGraphName.c_str());
         if(!CGraph)
         {
             continue;
         }
 
-        mg->Add((TGraphErrors*)(CGraph->Clone()), "AP");
+        mg->Add((TGraphAsymmErrors*)(CGraph->Clone()), "AP");
 
         file->Close();
     }

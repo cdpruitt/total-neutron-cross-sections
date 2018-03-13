@@ -60,20 +60,20 @@
     string litSn112GraphName = "Sn112 (n,tot)";
     string litSn124GraphName = "Sn124 (n,tot)";
     
-    TGraphErrors* expSn112Graph = (TGraphErrors*)expFile->Get(expSn112GraphName.c_str());
-    TGraphErrors* expSn124Graph = (TGraphErrors*)expFile->Get(expSn124GraphName.c_str());
+    TGraphAsymmErrors* expSn112Graph = (TGraphAsymmErrors*)expFile->Get(expSn112GraphName.c_str());
+    TGraphAsymmErrors* expSn124Graph = (TGraphAsymmErrors*)expFile->Get(expSn124GraphName.c_str());
 
-    TGraphErrors* relSn112Graph = (TGraphErrors*)relFile->Get(relSn112GraphName.c_str());
-    TGraphErrors* relSn124Graph = (TGraphErrors*)relFile->Get(relSn124GraphName.c_str());
+    TGraphAsymmErrors* relSn112Graph = (TGraphAsymmErrors*)relFile->Get(relSn112GraphName.c_str());
+    TGraphAsymmErrors* relSn124Graph = (TGraphAsymmErrors*)relFile->Get(relSn124GraphName.c_str());
 
-    TGraphErrors* corSn112Graph = (TGraphErrors*)corFile->Get(expSn112GraphName.c_str());
-    TGraphErrors* corSn124Graph = (TGraphErrors*)corFile->Get(expSn124GraphName.c_str());
+    TGraphAsymmErrors* corSn112Graph = (TGraphAsymmErrors*)corFile->Get(expSn112GraphName.c_str());
+    TGraphAsymmErrors* corSn124Graph = (TGraphAsymmErrors*)corFile->Get(expSn124GraphName.c_str());
 
-    TGraphErrors* relCorSn112Graph = (TGraphErrors*)relFile->Get(relCorSn112GraphName.c_str());
-    TGraphErrors* relCorSn124Graph = (TGraphErrors*)relFile->Get(relCorSn124GraphName.c_str());
+    TGraphAsymmErrors* relCorSn112Graph = (TGraphAsymmErrors*)relFile->Get(relCorSn112GraphName.c_str());
+    TGraphAsymmErrors* relCorSn124Graph = (TGraphAsymmErrors*)relFile->Get(relCorSn124GraphName.c_str());
 
-    TGraphErrors* litSn112Graph = (TGraphErrors*)litFile->Get(litSn112GraphName.c_str());
-    TGraphErrors* litSn124Graph = (TGraphErrors*)litFile->Get(litSn124GraphName.c_str());
+    TGraphAsymmErrors* litSn112Graph = (TGraphAsymmErrors*)litFile->Get(litSn112GraphName.c_str());
+    TGraphAsymmErrors* litSn124Graph = (TGraphAsymmErrors*)litFile->Get(litSn124GraphName.c_str());
 
     if(!expSn112Graph || !expSn124Graph)
     {

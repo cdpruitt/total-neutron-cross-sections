@@ -2,7 +2,7 @@
 #define __DATASET_H__
 
 #include "TFile.h"
-#include "TGraphErrors.h"
+#include "TGraphAsymmErrors.h"
 #include <sstream>
 #include "../include/dataPoint.h"
 
@@ -14,9 +14,9 @@ class DataSet
         DataSet(std::string dataSetLocation);
         DataSet(std::string dataSetLocation, const std::vector<double>& energyBins);
         DataSet(std::vector<double> energy, std::vector<double> xsection, std::vector<double> error, std::string reference);
-        DataSet(TGraphErrors* graph, std::string reference);
+        DataSet(TGraphAsymmErrors* graph, std::string reference);
 
-        TGraphErrors* getPlot() const;
+        TGraphAsymmErrors* getPlot() const;
         int getNumberOfPoints() const;
 
         std::string getReference() const;
@@ -48,11 +48,11 @@ class DataSet
         std::vector<double> getYValues() const;
         std::vector<double> getYErrors() const;
 
-        TGraphErrors* createPlot(std::string name);
-        TGraphErrors* createPlot(std::string name, TFile* file);
+        TGraphAsymmErrors* createPlot(std::string name);
+        TGraphAsymmErrors* createPlot(std::string name, TFile* file);
     private:
 
-        TGraphErrors* dataPlot;
+        TGraphAsymmErrors* dataPlot;
 
         std::string reference;
 

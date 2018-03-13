@@ -11,7 +11,7 @@
 #include "TH1.h"
 #include "TH2.h"
 #include "TCanvas.h"
-#include "TGraphErrors.h"
+#include "TGraphAsymmErrors.h"
 #include "TMultiGraph.h"
 #include "TDirectoryFile.h"
 #include "TROOT.h"

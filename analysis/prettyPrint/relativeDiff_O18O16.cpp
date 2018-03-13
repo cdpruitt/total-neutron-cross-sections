@@ -8,7 +8,7 @@
     string relGraphName = "O18O16, percent";
     string SARelDiffGraphName = "RelDiff18_16";
         
-    TGraphErrors* relGraph = (TGraphErrors*)file->Get(relGraphName.c_str());
+    TGraphAsymmErrors* relGraph = (TGraphAsymmErrors*)file->Get(relGraphName.c_str());
     TGraph* SARelDiffGraph = (TGraph*)ramsauerFile->Get(SARelDiffGraphName.c_str());
 
     TStyle* style = (TStyle*)gROOT->FindObject("graphStyle");

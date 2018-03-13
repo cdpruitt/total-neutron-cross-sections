@@ -42,10 +42,10 @@
     string SnGraphName = "Natural Sn (n,tot)";
     string PbGraphName = "Natural Pb (n,tot)";
         
-    TGraphErrors* CGraph = (TGraphErrors*)file->Get(CGraphName.c_str());
-    TGraphErrors* NiGraph = (TGraphErrors*)file->Get(NiGraphName.c_str());
-    TGraphErrors* SnGraph = (TGraphErrors*)file->Get(SnGraphName.c_str());
-    TGraphErrors* PbGraph = (TGraphErrors*)file->Get(PbGraphName.c_str());
+    TGraphAsymmErrors* CGraph = (TGraphAsymmErrors*)file->Get(CGraphName.c_str());
+    TGraphAsymmErrors* NiGraph = (TGraphAsymmErrors*)file->Get(NiGraphName.c_str());
+    TGraphAsymmErrors* SnGraph = (TGraphAsymmErrors*)file->Get(SnGraphName.c_str());
+    TGraphAsymmErrors* PbGraph = (TGraphAsymmErrors*)file->Get(PbGraphName.c_str());
 
     string SACGraphName = "SA_A=12";
     string SANiGraphName = "SA_A=58.7";

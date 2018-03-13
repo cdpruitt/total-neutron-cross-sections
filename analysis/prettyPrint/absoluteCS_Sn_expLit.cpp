@@ -23,10 +23,10 @@ void absoluteCS_Sn_expLit()
     string expSn124GraphName = "Sn124";
     string litSnNatGraphName = "NatSn_sd10";
  
-    TGraphErrors* expSn112Graph = (TGraphErrors*)expFile->Get(expSn112GraphName.c_str());
-    TGraphErrors* expSnNatGraph = (TGraphErrors*)expFile->Get(expSnNatGraphName.c_str());
-    TGraphErrors* expSn124Graph = (TGraphErrors*)expFile->Get(expSn124GraphName.c_str());
-    TGraphErrors* litSnNatGraph = (TGraphErrors*)litFile->Get(litSnNatGraphName.c_str());
+    TGraphAsymmErrors* expSn112Graph = (TGraphAsymmErrors*)expFile->Get(expSn112GraphName.c_str());
+    TGraphAsymmErrors* expSnNatGraph = (TGraphAsymmErrors*)expFile->Get(expSnNatGraphName.c_str());
+    TGraphAsymmErrors* expSn124Graph = (TGraphAsymmErrors*)expFile->Get(expSn124GraphName.c_str());
+    TGraphAsymmErrors* litSnNatGraph = (TGraphAsymmErrors*)litFile->Get(litSnNatGraphName.c_str());
 
     if(!expSn112Graph)
     {

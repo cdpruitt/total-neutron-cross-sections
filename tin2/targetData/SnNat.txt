@@ -1,0 +1,8 @@
+Name:       SnNat
+Length:     1.368 cm
+Diameter:   0.824 cm
+Diameter uncertainty: 0.0005 cm
+Mass:       5.3263 g
+Mass uncertainty: 0.0001 g
+Molar Mass: 118.71 g/mol
+Molar mass uncertainty: 0.005 g/mol

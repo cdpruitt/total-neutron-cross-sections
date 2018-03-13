@@ -1,5 +1,8 @@
 Name:       Ni58
 Length:     0.797 cm
 Diameter:   0.818 cm
+Diameter uncertainty: 0.002 cm
 Mass:       3.6438 g
+Mass uncertainty: 0.0001 g
 Molar Mass: 57.9480 g/mol
+Molar mass uncertainty: 0.0001 g/mol

@@ -7,8 +7,8 @@
  
     string PbGraphName = "relDiff_natPb_expLit_percent";
         
-    TGraphErrors* PbGraph = (TGraphErrors*)file->Get(PbGraphName.c_str());
-    TGraphErrors* PbGraph2 = (TGraphErrors*)file2->Get(PbGraphName.c_str());
+    TGraphAsymmErrors* PbGraph = (TGraphAsymmErrors*)file->Get(PbGraphName.c_str());
+    TGraphAsymmErrors* PbGraph2 = (TGraphAsymmErrors*)file2->Get(PbGraphName.c_str());
 
     TStyle* style = (TStyle*)gROOT->FindObject("graphStyle");
 

@@ -1,5 +1,8 @@
 Name:       Sn124
 Length:     1.373 cm
 Diameter:   0.824 cm
+Diameter uncertainty: 0.0005 cm
 Mass:       5.5492 g
-Molar Mass: 123.9 g/mol
+Mass uncertainty: 0.0001 g
+Molar Mass: 123.90 g/mol
+Molar mass uncertainty: 0.005 g/mol

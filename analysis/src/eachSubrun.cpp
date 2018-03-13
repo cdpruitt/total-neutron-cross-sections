@@ -6,7 +6,7 @@
 
 #include "TFile.h"
 #include "TTree.h"
-#include "TGraphErrors.h"
+#include "TGraphAsymmErrors.h"
 #include "TMultiGraph.h"
 #include "TMath.h"
 #include "TLatex.h"
@@ -157,7 +157,7 @@ int main(int, char* argv[])
         {
             CrossSection cs = crossSections[i];
 
-            TGraphErrors* t = new TGraphErrors(cs.getNumberOfPoints(),
+            TGraphAsymmErrors* t = new TGraphAsymmErrors(cs.getNumberOfPoints(),
                                       &cs.getEnergyValues()[0],
                                       &cs.getCrossSectionValues()[0],
                                       &cs.getEnergyErrors()[0],

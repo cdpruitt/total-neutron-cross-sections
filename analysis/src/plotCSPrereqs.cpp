@@ -6,7 +6,7 @@
 
 #include "TFile.h"
 #include "TTree.h"
-#include "TGraphErrors.h"
+#include "TGraphAsymmErrors.h"
 #include "TMath.h"
 #include "TLatex.h"
 

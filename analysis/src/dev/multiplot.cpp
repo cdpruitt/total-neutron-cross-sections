@@ -65,7 +65,7 @@ Canvas *canvas = new TCanvas("mycan","mycan",1800,900);
     TFile* fileIn;
     stringstream fileName;
 
-    TGraphErrors* histoToAdd;
+    TGraphAsymmErrors* histoToAdd;
     TLatex latex;
     stringstream label;
 

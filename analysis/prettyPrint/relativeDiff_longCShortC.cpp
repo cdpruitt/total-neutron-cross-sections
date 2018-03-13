@@ -5,7 +5,7 @@
     
     string relGraphName = "longCShortC, percent";
         
-    TGraphErrors* relGraph = (TGraphErrors*)file->Get(relGraphName.c_str());
+    TGraphAsymmErrors* relGraph = (TGraphAsymmErrors*)file->Get(relGraphName.c_str());
 
     TStyle* style = (TStyle*)gROOT->FindObject("graphStyle");
 

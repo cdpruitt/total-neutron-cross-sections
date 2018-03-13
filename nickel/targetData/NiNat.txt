@@ -1,5 +1,8 @@
 Name:       NiNat
 Length:     0.7995 cm
 Diameter:   0.8195 cm
+Diameter uncertainty: 0.002 cm
 Mass:       3.6898 g
+Mass uncertainty: 0.0001 g
 Molar Mass: 58.6995 g/mol
+Molar mass uncertainty: 0.0001 g/mol

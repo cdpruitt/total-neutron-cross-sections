@@ -1,0 +1,16 @@
+Name: blankW
+Length:  2.00 cm
+Diameter: 0.825 cm
+Diameter uncertainty: 0.001 cm
+Mass: 0.0002404 g
+Mass uncertainty: 0.000001 g
+Molar mass: 31.998 g/mol
+Molar mass uncertainty: 0.0005 g/mol
+Name: blankW
+Length:  2.00 cm
+Diameter: 0.825 cm
+Diameter uncertainty: 0.001 cm
+Mass:  0.0007889 g
+Mass uncertainty: 0.000001 g
+Molar mass: 28.014 g/mol
+Molar mass uncertainty: 0.0005 g/mol

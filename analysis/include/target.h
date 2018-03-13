@@ -4,7 +4,7 @@
 #include <string>
 
 #include "TH1I.h"
-#include "TGraphErrors.h"
+#include "TGraphAsymmErrors.h"
 
 class Target
 {
@@ -18,11 +18,19 @@ class Target
         double getMass() const;
         double getMolarMass() const;
 
+        double getDiameterUncertainty() const;
+        double getMassUncertainty() const;
+        double getMolarMassUncertainty() const;
+
         void setName(std::string n);
         void setLength(double l);
         void setDiameter(double d);
         void setMass(double m);
         void setMolarMass(double mm);
+
+        void setDiameterUncertainty(double d);
+        void setMassUncertainty(double m);
+        void setMolarMassUncertainty(double mm);
 
     private:
         // physical target parameters
@@ -31,6 +39,10 @@ class Target
         double diameter;
         double mass;
         double molMass;
+
+        double diameterUncertainty;
+        double massUncertainty;
+        double molMassUncertainty;
 };
 
 #endif

@@ -9,5 +9,3 @@ purity=0.922
 impurity=$(bc <<< "1-$purity")
 
 ../bin/subtractCS "$expFile" "$Ni64GraphName" "$expFile" "$NiNatGraphName" "$impurity" "$purity" "Ni64PurityCorrected"
-
-echo "$impurity"

@@ -66,25 +66,25 @@
     string litSnGraphName = "Natural Sn (n,tot)";
     string litPbGraphName = "Natural Pb (n,tot)";
     
-    TGraphErrors* expCGraph = (TGraphErrors*)expFile->Get(expCGraphName.c_str());
-    TGraphErrors* expSnGraph = (TGraphErrors*)expFile->Get(expSnGraphName.c_str());
-    TGraphErrors* expPbGraph = (TGraphErrors*)expFile->Get(expPbGraphName.c_str());
+    TGraphAsymmErrors* expCGraph = (TGraphAsymmErrors*)expFile->Get(expCGraphName.c_str());
+    TGraphAsymmErrors* expSnGraph = (TGraphAsymmErrors*)expFile->Get(expSnGraphName.c_str());
+    TGraphAsymmErrors* expPbGraph = (TGraphAsymmErrors*)expFile->Get(expPbGraphName.c_str());
 
-    TGraphErrors* relCGraph = (TGraphErrors*)relFile->Get(relCGraphName.c_str());
-    TGraphErrors* relSnGraph = (TGraphErrors*)relFile->Get(relSnGraphName.c_str());
-    TGraphErrors* relPbGraph = (TGraphErrors*)relFile->Get(relPbGraphName.c_str());
+    TGraphAsymmErrors* relCGraph = (TGraphAsymmErrors*)relFile->Get(relCGraphName.c_str());
+    TGraphAsymmErrors* relSnGraph = (TGraphAsymmErrors*)relFile->Get(relSnGraphName.c_str());
+    TGraphAsymmErrors* relPbGraph = (TGraphAsymmErrors*)relFile->Get(relPbGraphName.c_str());
 
-    TGraphErrors* corCGraph = (TGraphErrors*)corFile->Get(expCGraphName.c_str());
-    TGraphErrors* corSnGraph = (TGraphErrors*)corFile->Get(expSnGraphName.c_str());
-    TGraphErrors* corPbGraph = (TGraphErrors*)corFile->Get(expPbGraphName.c_str());
+    TGraphAsymmErrors* corCGraph = (TGraphAsymmErrors*)corFile->Get(expCGraphName.c_str());
+    TGraphAsymmErrors* corSnGraph = (TGraphAsymmErrors*)corFile->Get(expSnGraphName.c_str());
+    TGraphAsymmErrors* corPbGraph = (TGraphAsymmErrors*)corFile->Get(expPbGraphName.c_str());
 
-    TGraphErrors* relCorCGraph = (TGraphErrors*)relFile->Get(relCorCGraphName.c_str());
-    TGraphErrors* relCorSnGraph = (TGraphErrors*)relFile->Get(relCorSnGraphName.c_str());
-    TGraphErrors* relCorPbGraph = (TGraphErrors*)relFile->Get(relCorPbGraphName.c_str());
+    TGraphAsymmErrors* relCorCGraph = (TGraphAsymmErrors*)relFile->Get(relCorCGraphName.c_str());
+    TGraphAsymmErrors* relCorSnGraph = (TGraphAsymmErrors*)relFile->Get(relCorSnGraphName.c_str());
+    TGraphAsymmErrors* relCorPbGraph = (TGraphAsymmErrors*)relFile->Get(relCorPbGraphName.c_str());
 
-    TGraphErrors* litCGraph = (TGraphErrors*)litFile->Get(litCGraphName.c_str());
-    TGraphErrors* litSnGraph = (TGraphErrors*)litFile->Get(litSnGraphName.c_str());
-    TGraphErrors* litPbGraph = (TGraphErrors*)litFile->Get(litPbGraphName.c_str());
+    TGraphAsymmErrors* litCGraph = (TGraphAsymmErrors*)litFile->Get(litCGraphName.c_str());
+    TGraphAsymmErrors* litSnGraph = (TGraphAsymmErrors*)litFile->Get(litSnGraphName.c_str());
+    TGraphAsymmErrors* litPbGraph = (TGraphAsymmErrors*)litFile->Get(litPbGraphName.c_str());
 
     if(!expCGraph || !expSnGraph || !expPbGraph)
     {

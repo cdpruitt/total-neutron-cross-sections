@@ -19,7 +19,7 @@
 #include "TF1.h"
 #include "TFile.h"
 #include "TAxis.h"
-#include "TGraphErrors.h"
+#include "TGraphAsymmErrors.h"
 #include "TGraphAsymmErrors.h"
 
 using namespace std;
@@ -277,9 +277,22 @@ void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& bla
     double arealDensity =
         numberOfAtoms/(pow(targetData.target.getDiameter()/2,2)*M_PI); // area of cylinder end
 
-    cout << "arealDensity for " << targetData.target.getName() << " = " << arealDensity << endl;
+    double massError =
+        targetData.target.getMassUncertainty()/targetData.target.getMass();
 
-    double tofSigma = calculateTOFSigma(targetData.TOFHisto);
+    double molarMassError =
+        targetData.target.getMolarMassUncertainty()/targetData.target.getMolarMass();
+
+    double diameterError =
+        targetData.target.getDiameterUncertainty()/targetData.target.getDiameter();
+
+    double arealDensityError =
+        pow(pow(massError,2) + pow(molarMassError,2) + pow(diameterError,2),0.5); // as percent
+
+    cout << "arealDensity for " << targetData.target.getName() << " = " << arealDensity << endl;
+    cout << "arealDensityError for " << targetData.target.getName() << " = " << 100*arealDensityError << "%" << endl;
+
+    double tofSigma = 1; //calculateTOFSigma(targetData.TOFHisto);
 
     // loop through each bin in the energy histo, calculating a cross section
     // for each bin
@@ -313,9 +326,9 @@ void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& bla
             
         // calculate the statistical error
         double crossSectionError =
-            pow((1/tCounts+1/bCounts+1/bMon+1/tMon),0.5)/arealDensity; // in cm^2
+            pow((1/tCounts+1/bCounts+1/bMon+1/tMon+pow(arealDensityError,2)),0.5); // as percent
 
-        crossSectionError *= pow(10,24); // in barns
+        crossSectionError *= crossSectionValue; // in barns
 
         addDataPoint(
                 DataPoint(energyValue, energyErrorL, energyErrorR, crossSectionValue, crossSectionError,
@@ -324,3 +337,95 @@ void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& bla
 
     name = targetData.target.getName();
 }
+
+/*void CrossSection::calculateRelDiffCS(const CSPrereqs& target1Data, const CSPrereqs& target2Data, const CSPrereqs& blankData)
+{
+    // define variables to hold cross section information
+    int numberOfBins = targetData.energyHisto->GetNbinsX();
+
+    // calculate the ratio of target/blank monitor counts (normalize
+    // flux/macropulse)
+    double tMon = targetData.monitorCounts;
+    double bMon = blankData.monitorCounts;
+
+    double monitorRatio = tMon/bMon;
+
+    // read data from detector histograms for target and blank
+    TH1D* bEnergyHisto = blankData.energyHisto;
+    TH1D* tEnergyHisto = targetData.energyHisto;
+
+    // calculate the ratio of target/blank good macropulse ratio (normalize
+    // macropulse number)
+    double goodMacroRatio = targetData.goodMacroNumber/blankData.goodMacroNumber;
+    double totalMacroRatio = targetData.totalMacroNumber/blankData.totalMacroNumber;
+
+    double avgFluxRatio = monitorRatio*goodMacroRatio;
+
+    // calculate number of atoms in this target
+    double numberOfAtoms =
+        (targetData.target.getMass()/targetData.target.getMolarMass())*AVOGADROS_NUMBER;
+
+    // calculate areal density (atoms/cm^2) in target
+    double arealDensity =
+        numberOfAtoms/(pow(targetData.target.getDiameter()/2,2)*M_PI); // area of cylinder end
+
+    double massError =
+        targetData.target.getMassUncertainty()/targetData.target.getMass();
+
+    double molarMassError =
+        targetData.target.getMolarMassUncertainty()/targetData.target.getMolarMass();
+
+    double diameterError =
+        targetData.target.getDiameterUncertainty()/targetData.target.getDiameter();
+
+    double arealDensityError =
+        pow(pow(massError,2) + pow(molarMassError,2) + pow(diameterError,2),0.5); // as percent
+
+    cout << "arealDensity for " << targetData.target.getName() << " = " << arealDensity << endl;
+    cout << "arealDensityError for " << targetData.target.getName() << " = " << 100*arealDensityError << "%" << endl;
+
+    double tofSigma = 1; //calculateTOFSigma(targetData.TOFHisto);
+
+    // loop through each bin in the energy histo, calculating a cross section
+    // for each bin
+    for(int i=1; i<=numberOfBins; i++) // skip the overflow and underflow bins
+    {
+        double energyValue = tEnergyHisto->GetBinCenter(i);
+        double energyErrorL = calculateEnergyErrorL(tEnergyHisto->GetBinCenter(i), tofSigma);
+        double energyErrorR = calculateEnergyErrorR(tEnergyHisto->GetBinCenter(i), tofSigma);
+
+        double tCounts = tEnergyHisto->GetBinContent(i);
+        double bCounts = bEnergyHisto->GetBinContent(i);
+
+        // calculate the ratio of target/blank counts in the detector
+        double detectorRatio = tCounts/bCounts;
+
+        // if any essential values are 0, return an empty DataPoint
+        if(detectorRatio <=0 || monitorRatio <=0
+                || arealDensity <=0)
+        {
+            //addDataPoint(
+            //    DataPoint(energyValue, energyErrorL, energyErrorR, 0,
+            //              bMon, tMon, bCounts, tCounts));
+            cerr << "Error: tried to produce a cross section point at bin " << i << ", but an cross section prerequisite was 0." << endl;
+            continue;
+        }
+
+        double crossSectionValue =
+            -log(detectorRatio/(monitorRatio))/arealDensity; // in cm^2
+
+        crossSectionValue *= pow(10,24); // in barns 
+            
+        // calculate the statistical error
+        double crossSectionError =
+            pow((1/tCounts+1/bCounts+1/bMon+1/tMon+pow(arealDensityError,2)),0.5); // as percent
+
+        crossSectionError *= crossSectionValue; // in barns
+
+        addDataPoint(
+                DataPoint(energyValue, energyErrorL, energyErrorR, crossSectionValue, crossSectionError,
+                    bMon, tMon, bCounts, tCounts));
+    }
+
+    name = targetData.target.getName();
+}*/

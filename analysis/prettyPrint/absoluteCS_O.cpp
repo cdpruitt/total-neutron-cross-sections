@@ -47,11 +47,11 @@
     string litNatGraphName = "NatO(n,tot)";
     string lit18GraphName = "18O(n,tot)+1Barn";
     
-    TGraphErrors* exp18Graph = (TGraphErrors*)shiftedFile->Get(exp18GraphName.c_str());
-    TGraphErrors* expNatGraph = (TGraphErrors*)expFile->Get(expNatGraphName.c_str());
+    TGraphAsymmErrors* exp18Graph = (TGraphAsymmErrors*)shiftedFile->Get(exp18GraphName.c_str());
+    TGraphAsymmErrors* expNatGraph = (TGraphAsymmErrors*)expFile->Get(expNatGraphName.c_str());
 
-    TGraphErrors* litNatGraph = (TGraphErrors*)litFile->Get(litNatGraphName.c_str());
-    TGraphErrors* lit18Graph = (TGraphErrors*)litFile->Get(lit18GraphName.c_str());
+    TGraphAsymmErrors* litNatGraph = (TGraphAsymmErrors*)litFile->Get(litNatGraphName.c_str());
+    TGraphAsymmErrors* lit18Graph = (TGraphAsymmErrors*)litFile->Get(lit18GraphName.c_str());
 
     // Set graph point and line characteristics
     exp18Graph->SetLineColor(kBlue);

@@ -228,7 +228,7 @@ CSPrereqs::CSPrereqs(string targetDataLocation) : target(targetDataLocation)
 // Extract each point from a graph and store their positions in two vectors,
 // xValues and yValues
 void extractGraphData(
-        TGraphErrors* graph,
+        TGraphAsymmErrors* graph,
         vector<double>* xValues,
         vector<double>* xError,
         vector<double>* yValues,
@@ -251,7 +251,7 @@ void extractGraphData(
 
 // Extract each point from a graph and store their positions in a DataSet
 void extractGraphData(
-        TGraphErrors* graph,
+        TGraphAsymmErrors* graph,
         DataSet& dataSet)
 {
     int numPoints = graph->GetN();

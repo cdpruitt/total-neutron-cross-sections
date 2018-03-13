@@ -34,7 +34,22 @@ Target::Target(string targetDataLocation)
                 istream_iterator<string>(),
                 back_inserter(tokens));
 
-        if(tokens[0]=="Name:")
+        if((tokens[0]=="Diameter") && (tokens[1] == "uncertainty:"))
+        {
+            diameterUncertainty = atof(tokens[2].c_str());
+        }
+
+        else if((tokens[0]=="Mass") && (tokens[1] == "uncertainty:"))
+        {
+            massUncertainty = atof(tokens[2].c_str());
+        }
+
+        else if((tokens[0]=="Molar") && (tokens[2] == "uncertainty:"))
+        {
+            molMassUncertainty = atof(tokens[3].c_str());
+        }
+
+        else if(tokens[0]=="Name:")
         {
             name = tokens[1];
         }
@@ -92,6 +107,21 @@ double Target::getMolarMass() const
     return molMass;
 }
 
+double Target::getDiameterUncertainty() const
+{
+    return diameterUncertainty;
+}
+
+double Target::getMassUncertainty() const
+{
+    return massUncertainty;
+}
+
+double Target::getMolarMassUncertainty() const
+{
+    return molMassUncertainty;
+}
+
 void Target::setName(string n)
 {
     name = n;
@@ -115,4 +145,19 @@ void Target::setMass(double m)
 void Target::setMolarMass(double mm)
 {
     molMass = mm;
+}
+
+void Target::setDiameterUncertainty(double d)
+{
+    diameterUncertainty = d;
+}
+
+void Target::setMassUncertainty(double m)
+{
+    massUncertainty = m;
+}
+
+void Target::setMolarMassUncertainty(double mm)
+{
+    molMassUncertainty = mm;
 }

@@ -60,20 +60,20 @@
     string litNi58GraphName = "Ni58 (n,tot)";
     string litNi64GraphName = "Ni64 (n,tot)";
     
-    TGraphErrors* expNi58Graph = (TGraphErrors*)expFile->Get(expNi58GraphName.c_str());
-    TGraphErrors* expNi64Graph = (TGraphErrors*)expFile->Get(expNi64GraphName.c_str());
+    TGraphAsymmErrors* expNi58Graph = (TGraphAsymmErrors*)expFile->Get(expNi58GraphName.c_str());
+    TGraphAsymmErrors* expNi64Graph = (TGraphAsymmErrors*)expFile->Get(expNi64GraphName.c_str());
 
-    TGraphErrors* relNi58Graph = (TGraphErrors*)relFile->Get(relNi58GraphName.c_str());
-    TGraphErrors* relNi64Graph = (TGraphErrors*)relFile->Get(relNi64GraphName.c_str());
+    TGraphAsymmErrors* relNi58Graph = (TGraphAsymmErrors*)relFile->Get(relNi58GraphName.c_str());
+    TGraphAsymmErrors* relNi64Graph = (TGraphAsymmErrors*)relFile->Get(relNi64GraphName.c_str());
 
-    TGraphErrors* corNi58Graph = (TGraphErrors*)corFile->Get(expNi58GraphName.c_str());
-    TGraphErrors* corNi64Graph = (TGraphErrors*)corFile->Get(expNi64GraphName.c_str());
+    TGraphAsymmErrors* corNi58Graph = (TGraphAsymmErrors*)corFile->Get(expNi58GraphName.c_str());
+    TGraphAsymmErrors* corNi64Graph = (TGraphAsymmErrors*)corFile->Get(expNi64GraphName.c_str());
 
-    TGraphErrors* relCorNi58Graph = (TGraphErrors*)relFile->Get(relCorNi58GraphName.c_str());
-    TGraphErrors* relCorNi64Graph = (TGraphErrors*)relFile->Get(relCorNi64GraphName.c_str());
+    TGraphAsymmErrors* relCorNi58Graph = (TGraphAsymmErrors*)relFile->Get(relCorNi58GraphName.c_str());
+    TGraphAsymmErrors* relCorNi64Graph = (TGraphAsymmErrors*)relFile->Get(relCorNi64GraphName.c_str());
 
-    TGraphErrors* litNi58Graph = (TGraphErrors*)litFile->Get(litNi58GraphName.c_str());
-    TGraphErrors* litNi64Graph = (TGraphErrors*)litFile->Get(litNi64GraphName.c_str());
+    TGraphAsymmErrors* litNi58Graph = (TGraphAsymmErrors*)litFile->Get(litNi58GraphName.c_str());
+    TGraphAsymmErrors* litNi64Graph = (TGraphAsymmErrors*)litFile->Get(litNi64GraphName.c_str());
 
     if(!expNi58Graph || !expNi64Graph)
     {
