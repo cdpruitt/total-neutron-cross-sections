@@ -47,8 +47,13 @@ class DataSet
 
         std::vector<double> getYValues() const;
         std::vector<double> getYErrors() const;
+        std::vector<double> getStatErrors() const;
+        std::vector<double> getSysErrors() const;
 
         TGraphAsymmErrors* createPlot(std::string name);
+        TGraphAsymmErrors* createStatErrorsPlot(std::string name);
+        TGraphAsymmErrors* createSysErrorsPlot(std::string name);
+
         TGraphAsymmErrors* createPlot(std::string name, TFile* file);
     private:
 

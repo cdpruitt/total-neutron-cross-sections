@@ -197,131 +197,6 @@ int correctForBlank(CrossSection& rawCS, CSPrereqs& targetData, string expName)
     return 0;
 }
 
-/*int produceTotalCSPlots(string dataLocation, vector<CrossSection>& crossSections)
-{
-    //  Create total cross section plots
-
-    string outFileName = dataLocation + "/total.root";
-    TFile* outFile = new TFile(outFileName.c_str(), "UPDATE");
-
-    outFile->Close();
-
-    return 0;
-}*/
-
-/*int produceRelativeCSPlots(string dataLocation, string string expName,
- * vector<CrossSection>& crossSections)
-  {
-
-    //  Create relative cross section plots
-
-    string relativeFileName = dataLocation + "/relative.root";
-    TFile* relativeFile = new TFile(relativeFileName.c_str(), "UPDATE");
-
-    // read which relative cross section plots to make from the experimental
-    // directory
-    vector<pair<string,string>> relativeTargets = getRelativePlotNames(expName,"relativePlots.txt");
-
-    for(pair<string,string> p : relativeTargets)
-    {
-        CrossSection larger;
-        CrossSection smaller;
-
-        for(auto& cs : crossSections)
-        {
-            if(cs.name==p.first)
-            {
-                larger = cs;
-            }
-            else if(cs.name==p.second)
-            {
-                smaller = cs;
-            }
-        }
-
-        if(larger.name!="" && smaller.name!="")
-        {
-            // found cross section plots for both individual targets
-            cout << "Producing relative cross section plot of " << larger.name << " and " << smaller.name << endl;
-
-            CrossSection relative = calculateRelativeDiff(larger,smaller);
-            string relativeTitle = "#frac{#sigma_{" + larger.name +
-                "}-#sigma_{" + smaller.name +
-                "}}{#sigma_{" + larger.name +
-                "}+#sigma_{" + smaller.name + "}}";
-            string relativeName = "relative" + larger.name + smaller.name;
-            relative.createGraph(relativeName.c_str(), relativeTitle.c_str());
-            cout << "Relative plot " << relative.getDataSet().getReference() <<
-                " RMS error: " << relative.calculateRMSError() << endl;
-        }
-
-        else
-        {
-            cout << "Failed to find cross section plot for either " << larger.name << " or " << smaller.name << endl;
-        }
-    }
-
-    relativeFile->Close();
-
-    return 0;
-}*/
-
-CrossSection calculateRelativeDiff(CrossSection a, CrossSection b)
-{
-    CrossSection relative; 
-
-    DataSet aData = a.getDataSet();
-    DataSet bData = b.getDataSet();
-
-    if(aData.getNumberOfPoints()!=bData.getNumberOfPoints())
-    {
-        cerr << "Error: can't calculate relative cross section from "
-             << "data sets of different sizes. Returning empty cross section."
-             << endl;
-        return relative;
-    }
-
-    DataSet relativeDataSet;
-
-    // for each point, calculate the relative cross section, including error
-    for(int i=0; i<aData.getNumberOfPoints(); i++)
-    {
-        DataPoint aPoint = aData.getPoint(i);
-        DataPoint bPoint = bData.getPoint(i);
-
-        double aXValue = aPoint.getXValue();
-        double bXValue = bPoint.getXValue();
-        
-        if(aXValue != bXValue)
-        {
-            cerr << "Error: can't calculate relative cross section from "
-                 << "data points with different x values. Returning cross section."
-                 << endl;
-            return relative;
-        }
-
-        double aYValue = aPoint.getYValue();
-        double bYValue = bPoint.getYValue();
-
-        double yValue = (aYValue-bYValue)/(aYValue+bYValue);
-
-        // calculate cross section error
-        double aError = getPartialError(aPoint, bPoint, a.getArealDensity());
-        double bError = getPartialError(bPoint, aPoint, b.getArealDensity());
-        double totalError = pow(pow(aError,2)+pow(bError,2),0.5);
-
-        relativeDataSet.addPoint(
-                DataPoint(aXValue, aPoint.getXError(), 100*yValue, 100*totalError, /* convert to % */
-                          aPoint.getBlankMonitorCounts()+bPoint.getBlankMonitorCounts(),
-                          aPoint.getTargetMonitorCounts()+bPoint.getTargetMonitorCounts(),
-                          aPoint.getBlankDetCounts()+bPoint.getBlankDetCounts(),
-                          aPoint.getTargetDetCounts()+bPoint.getTargetDetCounts()));
-    }
-
-    relative.addDataSet(relativeDataSet);
-    return relative;
-}
-
 CrossSection subtractCS(string rawCSFileName, string rawCSGraphName,
         string subtrahendFileName, string subtrahendGraphName,
         double factor, double divisor, string name)
@@ -356,7 +231,7 @@ CrossSection subtractCS(string rawCSFileName, string rawCSGraphName,
                     rawCSData.getPoint(i).getXErrorL(),
                     rawCSData.getPoint(i).getXErrorR(),
                     subtrahendGraph->Eval(rawCSData.getPoint(i).getXValue()),
-                    subtrahendGraph->GetErrorY(i))); 
+                    subtrahendGraph->GetErrorY(i), 0, 0)); // statistical and systematic error are 0 
     }
 
     // perform the subtraction
@@ -394,7 +269,7 @@ CrossSection subtractCS(CrossSection rawCS, string subtrahendFileName,
                 DataPoint(rawCSData.getPoint(i).getXValue(),
                     rawCSData.getPoint(i).getXError(),
                     subtrahendGraph->Eval(rawCSData.getPoint(i).getXValue()),
-                    subtrahendGraph->GetErrorY(i))); 
+                    subtrahendGraph->GetErrorY(i), 0, 0)); 
     }
 
     // perform the subtraction

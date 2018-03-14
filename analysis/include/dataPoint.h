@@ -10,8 +10,24 @@ class DataPoint
         DataPoint(double xValue, double xErrorL, double xErrorR,
                   double yValue, double yError);
 
+        DataPoint(double xValue, double xErrorL, double xErrorR,
+                  double yValue, double yError, double statError,
+                  double sysError);
+
+        DataPoint(double xValue, double xError,
+                  double yValue, double yError, double statError,
+                  double sysError);
+
         DataPoint(double xValue, double xError,
                   double yValue, double yError,
+                  long blankMonitorCounts,
+                  long targetMonitorCounts,
+                  long blankDetCounts,
+                  long targetDetCounts);
+
+        DataPoint(double xValue, double xError,
+                  double yValue, double yError,
+                  double statError, double sysError,
                   long blankMonitorCounts,
                   long targetMonitorCounts,
                   long blankDetCounts,
@@ -24,6 +40,15 @@ class DataPoint
                   long blankDetCounts,
                   long targetDetCounts);
 
+        DataPoint(double xValue, double xErrorL, double xErrorR,
+                  double yValue, double yError, double statError,
+                  double sysError,
+                  long blankMonitorCounts,
+                  long targetMonitorCounts,
+                  long blankDetCounts,
+                  long targetDetCounts);
+
+
         double getXValue() const;
         double getXError() const;
         double getXErrorL() const;
@@ -31,6 +56,8 @@ class DataPoint
 
         double getYValue() const;
         double getYError() const;
+        double getStatError() const;
+        double getSysError() const;
 
         void setXValue(double xv);
         void setXError(double xe);
@@ -39,6 +66,8 @@ class DataPoint
 
         void setYValue(double yv);
         void setYError(double ye);
+        void setStatError(double statE);
+        void setSysError(double sysE);
 
         long getBlankMonitorCounts() const;
         long getTargetMonitorCounts() const;
@@ -68,6 +97,8 @@ class DataPoint
 
         double yValue;
         double yError;
+        double statError;
+        double sysError;
 
         // data for propagating error
         double blankMonitorCounts;

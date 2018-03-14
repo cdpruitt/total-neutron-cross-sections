@@ -19,6 +19,8 @@ class CrossSection
         DataPoint getDataPoint(int i) const;
         DataSet getDataSet();
         void createGraph(std::string name, std::string title);
+        void createStatErrorsGraph(std::string name, std::string title);
+        void createSysErrorsGraph(std::string name, std::string title);
 
         int getNumberOfPoints() const;
         std::vector<double> getEnergyValues() const;
@@ -28,6 +30,8 @@ class CrossSection
 
         std::vector<double> getCrossSectionValues() const;
         std::vector<double> getCrossSectionErrors() const;
+        std::vector<double> getStatErrors() const;
+        std::vector<double> getSysErrors() const;
 
         double getArealDensity() const;
         void setArealDensity(double arealDensity);

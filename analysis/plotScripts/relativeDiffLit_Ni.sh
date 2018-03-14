@@ -7,6 +7,12 @@ expNiGraphName="NiNat"
 expNi64GraphName="Ni64PurityCorrected"
 expPbGraphName="PbNat"
 
+expCGraphSEName="CNatSysErrors"
+expNi58GraphSEName="Ni58SysErrors"
+expNiGraphSEName="NiNatSysErrors"
+expNi64GraphSEName="Ni64PurityCorrectedSysErrors"
+expPbGraphSEName="PbNatSysErrors"
+
 litFile="/data1/analysis/literatureData.root"
 litCGraphName="Natural C (n,tot)"
 litNi58GraphName="Ni58 (n,tot)"
@@ -19,6 +25,12 @@ relNi58GraphName="Ni58, expLit"
 relNiGraphName="NiNat, expLit"
 relNi64GraphName="Ni64, expLit"
 relPbGraphName="PbNat, expLit"
+
+relCGraphSEName="CNat, expLit, SysErrors"
+relNi58GraphSEName="Ni58, expLit, SysErrors"
+relNiGraphSEName="NiNat, expLit, SysErrors"
+relNi64GraphSEName="Ni64, expLit, SysErrors"
+relPbGraphSEName="PbNat, expLit, SysErrors"
 
 outputFile="/data1/analysis/relative.root"
 
@@ -34,3 +46,17 @@ outputFile="/data1/analysis/relative.root"
 ../bin/multiplyCS "$outputFile" "$relNiGraphName" "100" "$relNiGraphName, percent"
 ../bin/multiplyCS "$outputFile" "$relNi64GraphName" "100" "$relNi64GraphName, percent"
 ../bin/multiplyCS "$outputFile" "$relPbGraphName" "100" "$relPbGraphName, percent"
+
+# calculate for systematic errors graphs
+../bin/relativeDiffCS "$expFile" "$expCGraphSEName" "$litFile" "$litCGraphName" "$outputFile" "$relCGraphSEName"
+../bin/relativeDiffCS "$expFile" "$expNi58GraphSEName" "$litFile" "$litNi58GraphName" "$outputFile" "$relNi58GraphSEName"
+../bin/relativeDiffCS "$expFile" "$expNiGraphSEName" "$litFile" "$litNiGraphName" "$outputFile" "$relNiGraphSEName"
+../bin/relativeDiffCS "$expFile" "$expNi64GraphSEName" "$litFile" "$litNi64GraphName" "$outputFile" "$relNi64GraphSEName"
+../bin/relativeDiffCS "$expFile" "$expPbGraphSEName" "$litFile" "$litPbGraphName" "$outputFile" "$relPbGraphSEName"
+
+# scale to percentage
+../bin/multiplyCS "$outputFile" "$relCGraphSEName" "100" "$relCGraphSEName, percent"
+../bin/multiplyCS "$outputFile" "$relNi58GraphSEName" "100" "$relNi58GraphSEName, percent"
+../bin/multiplyCS "$outputFile" "$relNiGraphSEName" "100" "$relNiGraphSEName, percent"
+../bin/multiplyCS "$outputFile" "$relNi64GraphSEName" "100" "$relNi64GraphSEName, percent"
+../bin/multiplyCS "$outputFile" "$relPbGraphSEName" "100" "$relPbGraphSEName, percent"

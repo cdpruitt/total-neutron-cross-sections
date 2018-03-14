@@ -372,13 +372,6 @@ const DataSet operator/(const DataSet& set1, const DataSet& set2)
                   pow(set2.getPoint(i).getYError()/set2.getPoint(i).getYValue(),2)
                   ,0.5));
 
-        /*cout << "yError for diff = "
-            << set1.getPoint(i).getYError()
-            << ", yError for sum = "
-            << set2.getPoint(i).getYError()
-            << ", total yError = " << yError << endl;
-            */
-
         quotientDataSet.addPoint(DataPoint(xValue,xError,yValue,yError));
     }
 
@@ -480,9 +473,43 @@ vector<double> DataSet::getYErrors() const
     return yErrors;
 }
 
+vector<double> DataSet::getStatErrors() const
+{
+    vector<double> statErrors;
+    for(const DataPoint point : data)
+    {
+        statErrors.push_back(point.getStatError());
+    }
+    return statErrors;
+}
+
+vector<double> DataSet::getSysErrors() const
+{
+    vector<double> sysErrors;
+    for(const DataPoint point : data)
+    {
+        sysErrors.push_back(point.getSysError());
+    }
+    return sysErrors;
+}
+
 TGraphAsymmErrors* DataSet::createPlot(string name)
 {
     dataPlot = new TGraphAsymmErrors(this->getXValues().size(),&this->getXValues()[0],&this->getYValues()[0],&this->getXErrors()[0],&this->getYErrors()[0]);
+    dataPlot->SetNameTitle(name.c_str(),name.c_str());
+    return dataPlot;
+}
+
+TGraphAsymmErrors* DataSet::createStatErrorsPlot(string name)
+{
+    dataPlot = new TGraphAsymmErrors(this->getXValues().size(),&this->getXValues()[0],&this->getYValues()[0],&this->getXErrors()[0],&this->getStatErrors()[0]);
+    dataPlot->SetNameTitle(name.c_str(),name.c_str());
+    return dataPlot;
+}
+
+TGraphAsymmErrors* DataSet::createSysErrorsPlot(string name)
+{
+    dataPlot = new TGraphAsymmErrors(this->getXValues().size(),&this->getXValues()[0],&this->getYValues()[0],&this->getXErrors()[0],&this->getSysErrors()[0]);
     dataPlot->SetNameTitle(name.c_str(),name.c_str());
     return dataPlot;
 }

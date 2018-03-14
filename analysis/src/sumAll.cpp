@@ -180,6 +180,12 @@ int main(int, char* argv[])
     for(auto& cs : crossSections)
     {
         cs.createGraph(cs.name, cs.name);
+
+        string statGraphName = cs.name + "StatErrors";
+        cs.createStatErrorsGraph(statGraphName, statGraphName);
+
+        string sysGraphName = cs.name + "SysErrors";
+        cs.createSysErrorsGraph(sysGraphName, sysGraphName);
     }
 
     outFile->Close();

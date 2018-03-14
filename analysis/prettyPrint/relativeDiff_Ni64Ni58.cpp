@@ -6,9 +6,13 @@
     TFile* ramsauerFile = new TFile(ramsauerFileName.c_str(), "READ");
     
     string relGraphName = "Ni64Ni58, percent";
+    string relGraphSEName = "Ni64Ni58SysErrors, percent";
+
     string SARelDiffGraphName = "RelDiff64_58";
         
     TGraphAsymmErrors* relGraph = (TGraphAsymmErrors*)file->Get(relGraphName.c_str());
+    TGraphAsymmErrors* relGraphSE = (TGraphAsymmErrors*)file->Get(relGraphSEName.c_str());
+
     TGraph* SARelDiffGraph = (TGraph*)ramsauerFile->Get(SARelDiffGraphName.c_str());
 
     TStyle* style = (TStyle*)gROOT->FindObject("graphStyle");
@@ -45,9 +49,18 @@
 
     // Set graph point and line characteristics
     relGraph->SetLineColor(kRed);
-    relGraph->SetLineWidth(4);
+    relGraph->SetLineWidth(5);
     relGraph->SetLineStyle(0);
     relGraph->SetMarkerColor(kRed);
+    relGraph->SetFillColor(kRed);
+    relGraph->SetFillStyle(3002);
+
+    SARelDiffGraph->SetLineStyle(9);
+    SARelDiffGraph->SetLineWidth(3);
+    SARelDiffGraph->SetLineColor(kBlack);
+
+    relGraphSE->SetFillColor(kBlue);
+    relGraphSE->SetFillStyle(3002);
 
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
@@ -57,40 +70,44 @@
     gPad->SetBottomMargin(0.2);
     gPad->SetTicky(2);
 
+    TMultiGraph* mg = new TMultiGraph();
+
+    mg->Add(relGraph,"3l");
+    mg->Add(relGraphSE, "3");
+    mg->Add(SARelDiffGraph, "l");
+
+    mg->Draw("al");
+
     // X-axis parameters
-    relGraph->GetXaxis()->SetTitle("Energy (MeV)");
-    relGraph->GetXaxis()->SetTitleSize(0.05);
-    relGraph->GetXaxis()->SetTitleFont(2);
-    relGraph->GetXaxis()->SetTitleOffset(1.4);
-    relGraph->GetXaxis()->CenterTitle();
+    mg->GetXaxis()->SetTitle("Energy (MeV)");
+    mg->GetXaxis()->SetTitleSize(0.05);
+    mg->GetXaxis()->SetTitleFont(2);
+    mg->GetXaxis()->SetTitleOffset(1.4);
+    mg->GetXaxis()->CenterTitle();
 
-    relGraph->GetXaxis()->SetLabelOffset(0.01);
-    relGraph->GetXaxis()->SetLabelSize(0.05);
-    relGraph->GetXaxis()->SetLabelFont(2);
+    mg->GetXaxis()->SetLabelOffset(0.01);
+    mg->GetXaxis()->SetLabelSize(0.05);
+    mg->GetXaxis()->SetLabelFont(2);
 
-    relGraph->GetXaxis()->SetNdivisions(10);
-    relGraph->GetXaxis()->SetTickLength(0.03);
+    mg->GetXaxis()->SetNdivisions(10);
+    mg->GetXaxis()->SetTickLength(0.03);
 
     // Y-axis parameters
-    relGraph->GetYaxis()->SetTitle("(#frac{#sigma_{64} - #sigma_{58}}{#sigma_{64} + #sigma_{58}})");
-    relGraph->GetYaxis()->SetTitleSize(0.06);
-    relGraph->GetYaxis()->SetTitleFont(2);
-    relGraph->GetYaxis()->SetTitleOffset(1.3);
-    relGraph->GetYaxis()->CenterTitle();
+    mg->GetYaxis()->SetTitle("(#frac{#sigma_{64} - #sigma_{58}}{#sigma_{64} + #sigma_{58}})");
+    mg->GetYaxis()->SetTitleSize(0.06);
+    mg->GetYaxis()->SetTitleFont(2);
+    mg->GetYaxis()->SetTitleOffset(1.3);
+    mg->GetYaxis()->CenterTitle();
 
-    relGraph->GetYaxis()->SetLabelOffset(0.01);
-    relGraph->GetYaxis()->SetLabelSize(0.05);
+    mg->GetYaxis()->SetLabelOffset(0.01);
+    mg->GetYaxis()->SetLabelSize(0.05);
 
-    relGraph->GetYaxis()->SetLabelFont(2);
-    relGraph->GetYaxis()->SetNdivisions(10);
-    relGraph->GetYaxis()->SetTickLength(0.02);
+    mg->GetYaxis()->SetLabelFont(2);
+    mg->GetYaxis()->SetNdivisions(10);
+    mg->GetYaxis()->SetTickLength(0.02);
 
-    SARelDiffGraph->SetLineStyle(9);
-    SARelDiffGraph->SetLineWidth(3);
-    SARelDiffGraph->SetLineColor(kGray);
-
-    relGraph->Draw("AL");
-    SARelDiffGraph->Draw("same");
+    mg->GetYaxis()->SetRangeUser(1.01,4.99);
+    mg->GetXaxis()->SetLimits(5,500);
 
     /*
     TLine* thirdLine = new TLine(0, 3.334, 600, 3.334);
@@ -110,10 +127,7 @@
 
     gPad->SetLogx(1);
     
-    relGraph->GetYaxis()->SetRangeUser(1.01,4.99);
-    relGraph->GetXaxis()->SetLimits(5,600);
-
-    //TLatex latex;
+        //TLatex latex;
     //latex.SetNDC();
     //latex.SetTextSize(0.05);
     //latex.SetTextAlign(13); // align at top

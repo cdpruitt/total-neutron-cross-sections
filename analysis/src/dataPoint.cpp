@@ -28,6 +28,33 @@ DataPoint::DataPoint(double x, double xEL, double xER,
     yError = yE;
 }
 
+DataPoint::DataPoint(double x, double xEL, double xER,
+                     double y, double yE, double statE,
+                     double sysE)
+{
+    xValue = x;
+    xErrorL = xEL;
+    xErrorR = xER;
+    yValue = y;
+    yError = yE;
+
+    statError = statE;
+    sysError = sysE;
+}
+
+DataPoint::DataPoint(double x, double xE, double y,
+        double yE, double statE, double sysE)
+{
+    xValue = x;
+    xErrorL = xE;
+    xErrorR = xE;
+    yValue = y;
+    yError = yE;
+
+    statError = statE;
+    sysError = sysE;
+}
+
 DataPoint::DataPoint(double x, double xE,
                      double y, double yE,
                      long bMC,
@@ -47,8 +74,32 @@ DataPoint::DataPoint(double x, double xE,
     targetDetCounts = tDC;
 }
 
-DataPoint::DataPoint(double x, double xEL, double xER,
+DataPoint::DataPoint(double x, double xE,
                      double y, double yE,
+                     double statE, double sysE,
+                     long bMC,
+                     long tMC,
+                     long bDC,
+                     long tDC)
+{
+    xValue = x;
+    xErrorL = xE;
+    xErrorR = xE;
+    yValue = y;
+    yError = yE;
+
+    statError = statE;
+    sysError = sysE;
+
+    blankMonitorCounts = bMC;
+    targetMonitorCounts = tMC;
+    blankDetCounts = bDC;
+    targetDetCounts = tDC;
+}
+
+DataPoint::DataPoint(double x, double xEL, double xER,
+                     double y, double yE, double statE,
+                     double sysE,
                      long bMC,
                      long tMC,
                      long bDC,
@@ -59,6 +110,8 @@ DataPoint::DataPoint(double x, double xEL, double xER,
     xErrorR = xER;
     yValue = y;
     yError = yE;
+    statError = statE;
+    sysError = sysE;
 
     blankMonitorCounts = bMC;
     targetMonitorCounts = tMC;
@@ -94,6 +147,16 @@ double DataPoint::getYValue() const
 double DataPoint::getYError() const
 {
     return yError;
+}
+
+double DataPoint::getStatError() const
+{
+    return statError;
+}
+
+double DataPoint::getSysError() const
+{
+    return sysError;
 }
 
 long DataPoint::getBlankMonitorCounts() const
@@ -167,6 +230,16 @@ void DataPoint::setYError(double ye)
     yError = ye;
 }
 
+void DataPoint::setStatError(double statE)
+{
+    statError = statE;
+}
+
+void DataPoint::setSysError(double sysE)
+{
+    sysError = sysE;
+}
+
 DataPoint operator+(const DataPoint& augend, const DataPoint& addend)
 {
     DataPoint outputDataPoint(
@@ -180,7 +253,14 @@ DataPoint operator+(const DataPoint& augend, const DataPoint& addend)
             augend.getYValue()+addend.getYValue(), // y-value
             pow(
                 pow(augend.getYError(),2)+
-                pow(addend.getYError(),2),0.5)); // y-error
+                pow(addend.getYError(),2),0.5), // y-error
+            pow(
+                pow(augend.getStatError(),2)+
+                pow(addend.getStatError(),2),0.5), // statistical error
+            pow(
+                pow(augend.getSysError(),2)+
+                pow(addend.getSysError(),2),0.5)); // systematic error
+
     return outputDataPoint;
 }
 
@@ -196,7 +276,13 @@ DataPoint operator-(const DataPoint& minuend, const DataPoint& subtrahend)
                               minuend.getYValue()-subtrahend.getYValue(),
                               pow(
                                   pow(minuend.getYError(),2)+
-                                  pow(subtrahend.getYError(),2),0.5));
+                                  pow(subtrahend.getYError(),2),0.5),
+                              pow(
+                                  pow(minuend.getStatError(),2)+
+                                  pow(subtrahend.getStatError(),2),0.5), // statistical error
+                              pow(
+                                  pow(minuend.getSysError(),2)+
+                                  pow(subtrahend.getSysError(),2),0.5)); // systematic error
 
     outputDataPoint.setBlankMonitorCounts(minuend.getBlankMonitorCounts());
     outputDataPoint.setTargetMonitorCounts(minuend.getTargetMonitorCounts());
@@ -211,19 +297,22 @@ DataPoint operator+(const DataPoint& augend, const double addend)
     return DataPoint(augend.getXValue(),
                      augend.getXError(),
                      augend.getYValue()+addend,
-                     augend.getYError());
+                     augend.getYError(), augend.getStatError(),
+                     augend.getSysError());
 }
 
 DataPoint operator*(const DataPoint& multiplicand, const double multiplier)
 {
     return DataPoint(multiplicand.getXValue(), multiplicand.getXError(),
-                     multiplicand.getYValue()*multiplier, multiplicand.getYError()*multiplier);
+                     multiplicand.getYValue()*multiplier, multiplicand.getYError()*multiplier,
+                     multiplicand.getStatError()*multiplier, multiplicand.getSysError()*multiplier);
 }
 
 DataPoint operator/(const DataPoint& dividend, const double divisor)
 {
     return DataPoint(dividend.getXValue(), dividend.getXError(),
-                     dividend.getYValue()/divisor, dividend.getYError()/divisor);
+                     dividend.getYValue()/divisor, dividend.getYError()/divisor,
+                     dividend.getStatError()/divisor, dividend.getSysError()/divisor);
 }
 
 DataPoint operator/(const DataPoint& dividend, const DataPoint& divisor)
@@ -239,6 +328,13 @@ DataPoint operator/(const DataPoint& dividend, const DataPoint& divisor)
                               dividend.getYValue()/divisor.getYValue(),
                               abs((dividend.getYValue()/divisor.getYValue()))
                               *pow(pow(dividend.getYError()/dividend.getYValue(),2)+
-                                   pow(divisor.getYError()/divisor.getYValue(),2),0.5));
+                                   pow(divisor.getYError()/divisor.getYValue(),2),0.5), // y-error
+                              abs((dividend.getYValue()/divisor.getYValue()))
+                              *pow(pow(dividend.getStatError()/dividend.getYValue(),2)+
+                                  pow(divisor.getStatError()/divisor.getYValue(),2),0.5), // statistical error
+                              abs((dividend.getYValue()/divisor.getYValue()))
+                              *pow(pow(dividend.getSysError()/dividend.getYValue(),2)+
+                                  pow(divisor.getSysError()/divisor.getYValue(),2),0.5) // systematic error
+                              );
     return outputDataPoint;
 }

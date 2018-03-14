@@ -125,6 +125,26 @@ vector<double> CrossSection::getCrossSectionErrors() const
     return crossSectionErrors;
 }
 
+vector<double> CrossSection::getStatErrors() const
+{
+    vector<double> statErrors;
+    for(int i=0; i<dataSet.getNumberOfPoints(); i++)
+    {
+        statErrors.push_back(dataSet.getPoint(i).getStatError());
+    }
+    return statErrors;
+}
+
+vector<double> CrossSection::getSysErrors() const
+{
+    vector<double> sysErrors;
+    for(int i=0; i<dataSet.getNumberOfPoints(); i++)
+    {
+        sysErrors.push_back(dataSet.getPoint(i).getSysError());
+    }
+    return sysErrors;
+}
+
 double CrossSection::getArealDensity() const
 {
     return arealDensity;
@@ -196,6 +216,31 @@ void CrossSection::createGraph(string name, string title)
                                       &getEnergyErrorsR()[0],
                                       &getCrossSectionErrors()[0],
                                       &getCrossSectionErrors()[0]);
+    t->SetNameTitle(name.c_str(),title.c_str());
+    gDirectory->WriteTObject(t);
+}
+
+void CrossSection::createStatErrorsGraph(string name, string title)
+{
+    TGraphAsymmErrors* t = new TGraphAsymmErrors(getNumberOfPoints(),
+                                      &getEnergyValues()[0],
+                                      &getCrossSectionValues()[0],
+                                      &getEnergyErrorsL()[0],
+                                      &getEnergyErrorsR()[0],
+                                      &getStatErrors()[0],
+                                      &getStatErrors()[0]);
+    t->SetNameTitle(name.c_str(),title.c_str());
+    gDirectory->WriteTObject(t);
+}
+void CrossSection::createSysErrorsGraph(string name, string title)
+{
+    TGraphAsymmErrors* t = new TGraphAsymmErrors(getNumberOfPoints(),
+                                      &getEnergyValues()[0],
+                                      &getCrossSectionValues()[0],
+                                      &getEnergyErrorsL()[0],
+                                      &getEnergyErrorsR()[0],
+                                      &getSysErrors()[0],
+                                      &getSysErrors()[0]);
     t->SetNameTitle(name.c_str(),title.c_str());
     gDirectory->WriteTObject(t);
 }
@@ -327,7 +372,6 @@ void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& bla
         // calculate the statistical error
         double statisticalError = 
             pow((1/tCounts+1/bCounts+1/bMon+1/tMon),0.5)/(arealDensity/pow(10,24)); // as percent
-        cout << "statistical error for " << targetData.target.getName() << " = " << 100*statisticalError << "%" << endl;
 
         double crossSectionError =
             pow(pow(statisticalError,2)+pow(arealDensityError,2),0.5); // as percent
@@ -336,7 +380,7 @@ void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& bla
 
         addDataPoint(
                 DataPoint(energyValue, energyErrorL, energyErrorR, crossSectionValue, crossSectionError,
-                    bMon, tMon, bCounts, tCounts));
+                    crossSectionValue*statisticalError, crossSectionValue*arealDensityError, bMon, tMon, bCounts, tCounts));
     }
 
     name = targetData.target.getName();
@@ -344,92 +388,72 @@ void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& bla
 
 /*void CrossSection::calculateRelDiffCS(const CSPrereqs& target1Data, const CSPrereqs& target2Data, const CSPrereqs& blankData)
 {
-    // define variables to hold cross section information
-    int numberOfBins = targetData.energyHisto->GetNbinsX();
+    CrossSection target1CS = calculateCS(target1Data, blankData);
+    CrossSection target2CS = calculateCS(target1Data, blankData);
 
-    // calculate the ratio of target/blank monitor counts (normalize
-    // flux/macropulse)
-    double tMon = targetData.monitorCounts;
     double bMon = blankData.monitorCounts;
-
-    double monitorRatio = tMon/bMon;
-
-    // read data from detector histograms for target and blank
     TH1D* bEnergyHisto = blankData.energyHisto;
-    TH1D* tEnergyHisto = targetData.energyHisto;
 
-    // calculate the ratio of target/blank good macropulse ratio (normalize
-    // macropulse number)
-    double goodMacroRatio = targetData.goodMacroNumber/blankData.goodMacroNumber;
-    double totalMacroRatio = targetData.totalMacroNumber/blankData.totalMacroNumber;
+    // calculate number of atoms in target1
+    double set1NumberOfAtoms =
+        (target1Data.target.getMass()/target1Data.target.getMolarMass())*AVOGADROS_NUMBER;
 
-    double avgFluxRatio = monitorRatio*goodMacroRatio;
+    // calculate areal density (atoms/barn) in target 1
+    double set1ArealDensity =
+        set1NumberOfAtoms*pow(10,-24)/(pow(target1Data.target.getDiameter()/2,2)*M_PI); // area of cylinder end
 
-    // calculate number of atoms in this target
-    double numberOfAtoms =
-        (targetData.target.getMass()/targetData.target.getMolarMass())*AVOGADROS_NUMBER;
+    // calculate number of atoms in target2
+    double set2NumberOfAtoms =
+        (target1Data.target.getMass()/target1Data.target.getMolarMass())*AVOGADROS_NUMBER;
 
-    // calculate areal density (atoms/cm^2) in target
-    double arealDensity =
-        numberOfAtoms/(pow(targetData.target.getDiameter()/2,2)*M_PI); // area of cylinder end
+    // calculate areal density (atoms/barn) in target 2
+    double set2ArealDensity =
+        set2NumberOfAtoms*pow(10,-24)/(pow(target1Data.target.getDiameter()/2,2)*M_PI); // area of cylinder end
 
-    double massError =
-        targetData.target.getMassUncertainty()/targetData.target.getMass();
+    double arealDensityCorrectionFactor =
+        1/(set2ArealDensity*set1ArealDensity)
+      - 1/(set1ArealDensity*set1ArealDensity)
+      - 1/(set2ArealDensity*set2ArealDensity);
 
-    double molarMassError =
-        targetData.target.getMolarMassUncertainty()/targetData.target.getMolarMass();
+    // create summed cross section (blank counts and blank monitor counts are
+    // the same for both targets' cross sections, so don't double-count in error
+    // propagation)
+    DataSet summed = target1CS.getDataSet()+target2CS.getDataSet();
 
-    double diameterError =
-        targetData.target.getDiameterUncertainty()/targetData.target.getDiameter();
-
-    double arealDensityError =
-        pow(pow(massError,2) + pow(molarMassError,2) + pow(diameterError,2),0.5); // as percent
-
-    cout << "arealDensity for " << targetData.target.getName() << " = " << arealDensity << endl;
-    cout << "arealDensityError for " << targetData.target.getName() << " = " << 100*arealDensityError << "%" << endl;
-
-    double tofSigma = 1; //calculateTOFSigma(targetData.TOFHisto);
-
-    // loop through each bin in the energy histo, calculating a cross section
-    // for each bin
-    for(int i=1; i<=numberOfBins; i++) // skip the overflow and underflow bins
+    for(int i=0; i<summed.getNumberOfPoints(); i++)
     {
-        double energyValue = tEnergyHisto->GetBinCenter(i);
-        double energyErrorL = calculateEnergyErrorL(tEnergyHisto->GetBinCenter(i), tofSigma);
-        double energyErrorR = calculateEnergyErrorR(tEnergyHisto->GetBinCenter(i), tofSigma);
+        double blankCounts = bEnergyHisto->GetBinContent(i+1);
 
-        double tCounts = tEnergyHisto->GetBinContent(i);
-        double bCounts = bEnergyHisto->GetBinContent(i);
+        summed.getPoint(i).setYError(
+                summed.getPoint(i).getYError(i)
+              + arealDensityCorrectionFactor*(1/blankCounts + 1/blankMonitorCounts));
 
-        // calculate the ratio of target/blank counts in the detector
-        double detectorRatio = tCounts/bCounts;
-
-        // if any essential values are 0, return an empty DataPoint
-        if(detectorRatio <=0 || monitorRatio <=0
-                || arealDensity <=0)
-        {
-            //addDataPoint(
-            //    DataPoint(energyValue, energyErrorL, energyErrorR, 0,
-            //              bMon, tMon, bCounts, tCounts));
-            cerr << "Error: tried to produce a cross section point at bin " << i << ", but an cross section prerequisite was 0." << endl;
-            continue;
-        }
-
-        double crossSectionValue =
-            -log(detectorRatio/(monitorRatio))/arealDensity; // in cm^2
-
-        crossSectionValue *= pow(10,24); // in barns 
-            
-        // calculate the statistical error
-        double crossSectionError =
-            pow((1/tCounts+1/bCounts+1/bMon+1/tMon+pow(arealDensityError,2)),0.5); // as percent
-
-        crossSectionError *= crossSectionValue; // in barns
-
-        addDataPoint(
-                DataPoint(energyValue, energyErrorL, energyErrorR, crossSectionValue, crossSectionError,
-                    bMon, tMon, bCounts, tCounts));
+        cout << "uncorrected Y error for point " << i << " = "
+            << summed.getPoint(i).getYError(i)
+            << " Y error correction is "
+            << arealDensityCorrectionFactor*(1/blankCounts + 1/blankMonitorCounts)
+            << endl;
     }
 
-    name = targetData.target.getName();
+    // calculate first term of difference
+    DataSet firstTermOfD = target1CS.getDataSet()/summed;
+
+    for(int i=0; i<firstTermOfD.getNumberOfPoints(); i++)
+    {
+        double blankCounts = bEnergyHisto->GetBinContent(i+1);
+
+        firstTermOfD.getPoint(i).setYError(
+                firstTermOfD.getPoint(i).getYError(i)
+              + arealDensityCorrectionFactor*(1/blankCounts + 1/blankMonitorCounts));
+
+        cout << "uncorrected Y error for point " << i << " = "
+            << firstTermOfD.getPoint(i).getYError(i)
+            << " Y error correction is "
+            << arealDensityCorrectionFactor*(1/blankCounts + 1/blankMonitorCounts)
+            << endl;
+    }
+
+    addDataSet(difference/summed);
+
+    name = "RelDiff" + target1Data.target.getName() + target2Data.target.getName();
 }*/

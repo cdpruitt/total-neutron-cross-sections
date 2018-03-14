@@ -4,8 +4,10 @@
     TFile* file = new TFile(fileName.c_str(),"READ");
     
     string relGraphName = "longCShortC, percent";
+    string relGraphSEName = "longCShortCSysErrors, percent";
         
     TGraphAsymmErrors* relGraph = (TGraphAsymmErrors*)file->Get(relGraphName.c_str());
+    TGraphAsymmErrors* relGraphSE = (TGraphAsymmErrors*)file->Get(relGraphSEName.c_str());
 
     TStyle* style = (TStyle*)gROOT->FindObject("graphStyle");
 
@@ -41,62 +43,72 @@
 
     // Set graph point and line characteristics
     relGraph->SetLineColor(kRed);
-    relGraph->SetLineWidth(4);
+    relGraph->SetLineWidth(5);
     relGraph->SetLineStyle(0);
     relGraph->SetMarkerColor(kRed);
+    relGraph->SetFillColor(kBlue);
+    relGraph->SetFillStyle(3003);
+
+    relGraphSE->SetFillColor(kRed);
+    relGraphSE->SetFillStyle(3001);
 
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
-    gPad->SetLeftMargin(0.2);
+    gPad->SetLeftMargin(0.15);
     gPad->SetRightMargin(0.01);
     gPad->SetTopMargin(0.03);
-    gPad->SetBottomMargin(0.2);
+    gPad->SetBottomMargin(0.15);
     gPad->SetTicky(2);
 
+    TMultiGraph* mg = new TMultiGraph();
+
+    mg->Add(relGraph,"3l");
+    mg->Add(relGraphSE, "3");
+
+    mg->Draw("al");
+
     // X-axis parameters
-    relGraph->GetXaxis()->SetTitle("Energy [MeV]");
-    relGraph->GetXaxis()->SetTitleSize(0.05);
-    relGraph->GetXaxis()->SetTitleFont(2);
-    relGraph->GetXaxis()->SetTitleOffset(1.4);
-    relGraph->GetXaxis()->CenterTitle();
+    mg->GetXaxis()->SetTitle("Energy [MeV]");
+    mg->GetXaxis()->SetTitleSize(0.05);
+    mg->GetXaxis()->SetTitleFont(2);
+    mg->GetXaxis()->SetTitleOffset(1.4);
+    mg->GetXaxis()->CenterTitle();
 
-    relGraph->GetXaxis()->SetLabelOffset(0.01);
-    relGraph->GetXaxis()->SetLabelSize(0.05);
-    relGraph->GetXaxis()->SetLabelFont(2);
+    mg->GetXaxis()->SetLabelOffset(0.01);
+    mg->GetXaxis()->SetLabelSize(0.05);
+    mg->GetXaxis()->SetLabelFont(2);
 
-    relGraph->GetXaxis()->SetNdivisions(10);
-    relGraph->GetXaxis()->SetTickLength(0.03);
+    mg->GetXaxis()->SetNdivisions(10);
+    mg->GetXaxis()->SetTickLength(0.03);
 
     // Y-axis parameters
-    relGraph->GetYaxis()->SetTitle("(#frac{#sigma_{l} - #sigma_{s}}{#sigma_{l} + #sigma_{s}}) [%]");
-    relGraph->GetYaxis()->SetTitleSize(0.06);
-    relGraph->GetYaxis()->SetTitleFont(2);
-    relGraph->GetYaxis()->SetTitleOffset(1.3);
-    relGraph->GetYaxis()->CenterTitle();
+    mg->GetYaxis()->SetTitle("(#frac{#sigma_{l} - #sigma_{s}}{#sigma_{l} + #sigma_{s}}) [%]");
+    mg->GetYaxis()->SetTitleSize(0.06);
+    mg->GetYaxis()->SetTitleFont(2);
+    mg->GetYaxis()->SetTitleOffset(1.0);
+    mg->GetYaxis()->CenterTitle();
 
-    relGraph->GetYaxis()->SetLabelOffset(0.01);
-    relGraph->GetYaxis()->SetLabelSize(0.05);
+    mg->GetYaxis()->SetLabelOffset(0.01);
+    mg->GetYaxis()->SetLabelSize(0.05);
 
-    relGraph->GetYaxis()->SetLabelFont(2);
-    relGraph->GetYaxis()->SetNdivisions(10);
-    relGraph->GetYaxis()->SetTickLength(0.02);
-
-    relGraph->Draw("AL");
+    mg->GetYaxis()->SetLabelFont(2);
+    mg->GetYaxis()->SetNdivisions(5);
+    mg->GetYaxis()->SetTickLength(0.02);
 
     gPad->SetLogx(1);
     
-    relGraph->GetYaxis()->SetRangeUser(-1.49,1.49);
-    relGraph->GetXaxis()->SetLimits(2,600);
+    mg->GetYaxis()->SetRangeUser(-2.49,2.49);
+    mg->GetXaxis()->SetLimits(3,500);
 
-    TLine* plusOneLine = new TLine(0, 1, 600, 1);
-    plusOneLine->SetLineColor(kGray);
-    plusOneLine->SetLineWidth(2);
+    TLine* plusOneLine = new TLine(3, 1, 500, 1);
+    plusOneLine->SetLineColor(kGray+4);
+    plusOneLine->SetLineWidth(4);
     plusOneLine->SetLineStyle(9);
     plusOneLine->Draw();
 
-    TLine* minusOneLine = new TLine(0, -1, 600, -1);
-    minusOneLine->SetLineColor(kGray);
-    minusOneLine->SetLineWidth(2);
+    TLine* minusOneLine = new TLine(3, -1, 500, -1);
+    minusOneLine->SetLineColor(kGray+4);
+    minusOneLine->SetLineWidth(4);
     minusOneLine->SetLineStyle(9);
     minusOneLine->Draw();
 
