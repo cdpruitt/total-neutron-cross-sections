@@ -666,17 +666,21 @@ CrossSection relativeDiffCS(string firstCSFileName, string firstCSGraphName,
                     secondCSGraph->GetErrorY(i))); 
     }
 
-    // perform the difference
-    CrossSection differenceCS = CrossSection();
-    differenceCS.addDataSet(firstCSData-secondCSData);
-
     // perform the sum
     CrossSection sumCS = CrossSection();
     sumCS.addDataSet(firstCSData+secondCSData);
 
-    // perform the division
+    // calculate first term of the difference
+    CrossSection firstTermCS = CrossSection();
+    firstTermCS.addDataSet(firstCSData/sumCS.getDataSet());
+
+    // calculate second term of the difference
+    CrossSection secondTermCS = CrossSection();
+    secondTermCS.addDataSet(secondCSData/sumCS.getDataSet());
+
+    // perform the difference
     CrossSection relDiffCS = CrossSection();
-    relDiffCS.addDataSet(differenceCS.getDataSet()/sumCS.getDataSet());
+    relDiffCS.addDataSet(firstTermCS.getDataSet()-secondTermCS.getDataSet());
 
     // create graph of relative difference
     TFile* outputFile = new TFile(outputFileName.c_str(), "UPDATE");

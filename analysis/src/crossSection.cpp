@@ -325,8 +325,12 @@ void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& bla
         crossSectionValue *= pow(10,24); // in barns 
             
         // calculate the statistical error
+        double statisticalError = 
+            pow((1/tCounts+1/bCounts+1/bMon+1/tMon),0.5)/(arealDensity/pow(10,24)); // as percent
+        cout << "statistical error for " << targetData.target.getName() << " = " << 100*statisticalError << "%" << endl;
+
         double crossSectionError =
-            pow((1/tCounts+1/bCounts+1/bMon+1/tMon+pow(arealDensityError,2)),0.5); // as percent
+            pow(pow(statisticalError,2)+pow(arealDensityError,2),0.5); // as percent
 
         crossSectionError *= crossSectionValue; // in barns
 

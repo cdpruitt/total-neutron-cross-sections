@@ -237,8 +237,8 @@ DataPoint operator/(const DataPoint& dividend, const DataPoint& divisor)
     DataPoint outputDataPoint(dividend.getXValue(),
                               dividend.getXError(),
                               dividend.getYValue()/divisor.getYValue(),
-                              pow(abs((dividend.getYValue()/divisor.getYValue()))*
-                                  pow(dividend.getYError()/dividend.getYValue(),2)+
-                                  pow(divisor.getYError()/divisor.getYValue(),2),0.5));
+                              abs((dividend.getYValue()/divisor.getYValue()))
+                              *pow(pow(dividend.getYError()/dividend.getYValue(),2)+
+                                   pow(divisor.getYError()/divisor.getYValue(),2),0.5));
     return outputDataPoint;
 }

@@ -25,10 +25,11 @@ int correctForBackground(CSPrereqs& csp)
 
     int numberOfBins = csp.TOFHisto->GetNbinsX();
 
-    // "micropulse contamination" correction
     const double GAMMA_TIME = pow(10,7)*config.facility.FLIGHT_DISTANCE/C;
     const double GAMMA_WINDOW_WIDTH = 0.8;
 
+    // "micropulse contamination" correction
+    /*
     string gammaName = csp.TOFHisto->GetName();
     gammaName = gammaName + "GammaFit";
     TH1D* gammaFitHisto = (TH1D*)csp.TOFHisto->Clone(gammaName.c_str());
@@ -86,11 +87,11 @@ int correctForBackground(CSPrereqs& csp)
     {
         correctedTOF->Add(lobeHisto, -1);
     }
-
+*/
     // "dark current" correction
 
     // calculate background correction
-    /*double backgroundCounts = 0;
+    double backgroundCounts = 0;
     int backgroundBins = 0;
 
     for(int i=1; i<=(GAMMA_TIME-10)*config.plot.TOF_BINS_PER_NS; i++)
@@ -106,7 +107,6 @@ int correctForBackground(CSPrereqs& csp)
         correctedTOF->SetBinContent(
                 i, correctedTOF->GetBinContent(i)-backgroundCounts);
     }
-    */
 
     csp.TOFHisto = correctedTOF;
 

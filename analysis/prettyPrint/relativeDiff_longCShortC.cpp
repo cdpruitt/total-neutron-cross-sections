@@ -54,7 +54,7 @@
     gPad->SetTicky(2);
 
     // X-axis parameters
-    relGraph->GetXaxis()->SetTitle("Energy (MeV)");
+    relGraph->GetXaxis()->SetTitle("Energy [MeV]");
     relGraph->GetXaxis()->SetTitleSize(0.05);
     relGraph->GetXaxis()->SetTitleFont(2);
     relGraph->GetXaxis()->SetTitleOffset(1.4);
@@ -68,7 +68,7 @@
     relGraph->GetXaxis()->SetTickLength(0.03);
 
     // Y-axis parameters
-    relGraph->GetYaxis()->SetTitle("(#frac{#sigma_{l} - #sigma_{s}}{#sigma_{l} + #sigma_{s}})");
+    relGraph->GetYaxis()->SetTitle("(#frac{#sigma_{l} - #sigma_{s}}{#sigma_{l} + #sigma_{s}}) [%]");
     relGraph->GetYaxis()->SetTitleSize(0.06);
     relGraph->GetYaxis()->SetTitleFont(2);
     relGraph->GetYaxis()->SetTitleOffset(1.3);
@@ -81,12 +81,24 @@
     relGraph->GetYaxis()->SetNdivisions(10);
     relGraph->GetYaxis()->SetTickLength(0.02);
 
-    relGraph->Draw("");
+    relGraph->Draw("AL");
 
     gPad->SetLogx(1);
     
-    relGraph->GetYaxis()->SetRangeUser(-3,3);
+    relGraph->GetYaxis()->SetRangeUser(-1.49,1.49);
     relGraph->GetXaxis()->SetLimits(2,600);
+
+    TLine* plusOneLine = new TLine(0, 1, 600, 1);
+    plusOneLine->SetLineColor(kGray);
+    plusOneLine->SetLineWidth(2);
+    plusOneLine->SetLineStyle(9);
+    plusOneLine->Draw();
+
+    TLine* minusOneLine = new TLine(0, -1, 600, -1);
+    minusOneLine->SetLineColor(kGray);
+    minusOneLine->SetLineWidth(2);
+    minusOneLine->SetLineStyle(9);
+    minusOneLine->Draw();
 
     //TLatex latex;
     //latex.SetNDC();

@@ -43,8 +43,6 @@ DataSet::DataSet(string dataSetLocation)
 
     double dum,dum2,dum3;
 
-    //cout << reference;
-
     while(dataFile >> dum >> dum2 >> dum3)
     {
         data.push_back(DataPoint(dum, 0, dum2, dum3));
@@ -369,9 +367,17 @@ const DataSet operator/(const DataSet& set1, const DataSet& set2)
         double xError = set1.getPoint(i).getXError();
         double yValue = set1.getPoint(i).getYValue() /
                         set2.getPoint(i).getYValue();
-        double yError = abs(yValue)*
-                        pow(pow(set1.getPoint(i).getYError()/set1.getPoint(i).getYValue(),2) +
-                            pow(set2.getPoint(i).getYError()/set2.getPoint(i).getYValue(),2),0.5);
+        double yError = abs(yValue)
+            *(pow(pow(set1.getPoint(i).getYError()/set1.getPoint(i).getYValue(),2) +
+                  pow(set2.getPoint(i).getYError()/set2.getPoint(i).getYValue(),2)
+                  ,0.5));
+
+        /*cout << "yError for diff = "
+            << set1.getPoint(i).getYError()
+            << ", yError for sum = "
+            << set2.getPoint(i).getYError()
+            << ", total yError = " << yError << endl;
+            */
 
         quotientDataSet.addPoint(DataPoint(xValue,xError,yValue,yError));
     }

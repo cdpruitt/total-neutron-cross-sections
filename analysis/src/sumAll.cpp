@@ -118,7 +118,7 @@ int main(int, char* argv[])
     CSPrereqs blank;
     for(auto& p : allCSPrereqs)
     {
-        //correctForBackground(p);
+        correctForBackground(p);
 
         string energyHistoName = p.target.getName();
         energyHistoName = energyHistoName + "Energy";
