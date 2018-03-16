@@ -334,8 +334,8 @@ void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& bla
     double arealDensityError =
         pow(pow(massError,2) + pow(molarMassError,2) + pow(diameterError,2),0.5); // as percent
 
-    cout << "arealDensity for " << targetData.target.getName() << " = " << arealDensity << endl;
-    cout << "arealDensityError for " << targetData.target.getName() << " = " << 100*arealDensityError << "%" << endl;
+    //cout << "arealDensity for " << targetData.target.getName() << " = " << arealDensity << endl;
+    //cout << "arealDensityError for " << targetData.target.getName() << " = " << 100*arealDensityError << "%" << endl;
 
     double tofSigma = 1; //calculateTOFSigma(targetData.TOFHisto);
 

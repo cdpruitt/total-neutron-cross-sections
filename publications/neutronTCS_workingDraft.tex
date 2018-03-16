@@ -28,8 +28,8 @@ superscriptaddress, nobalancelastpage]{revtex4}
     \tots measurements we initiated with the case study of $^{40,48}$Ca in 2009.
     The \tots relative differences between isotopes (e.g.,
     $\frac{\sigma_{Ni^{64}}-\sigma_{Ni^{58}}} {\sigma_{Ni^{64}}+
-    \sigma_{Ni^{58}}}$)
-    depart from the isoscalar picture and reveal additional information about
+    \sigma_{Ni^{58}}}$), which are robust against systematic error,
+    are presented, revealing additional information about
     the isovector components needed for an accurate optical model (OM)
     description away from stability. Digitizer-enabled \tot-measurement
     techniques are discussed and a preliminary Dispersive Optical Model (DOM)
@@ -685,8 +685,8 @@ Abfalterer2001} that were as high as 500\%.% The effect of this correction on th
         Note that at 245 ns, there is an
         obvious defect in the uncorrected spectrum is repaired in the corrected
         spectrum. The defect
-        corresponds to the elapse of the deadtime ``shadow" from the $\gamma$
-        ray flash that came 155 ns earlier at $\approx$90 ns (not pictured).
+        corresponds to the elapse of the 155-ns-long deadtime ``shadow" from the $\gamma$-ray
+        flash, which arrived at $\approx$90 ns (not pictured).
     }
     \label{CorrectionEffectOnTOF}
 \end{figure*}
@@ -711,7 +711,7 @@ flux monitor or TOF detector channel was ignored during cross section calculatio
 After applying these corrections, the veto and integrated charge gates are applied to 
 all events and surviving events are populated into TOF spectra (see Fig.
 \ref{ExampleTOFSpectrum}). Next, room background (responsible for 0.1\% to 1\% 
-of event rate, depending on energy) is subtracted and spectra are mapped to the
+of event rate, depending on energy) was subtracted and spectra were mapped to the
 energy domain.
 
 \begin{figure*}
@@ -729,7 +729,7 @@ energy domain.
     \label{ExampleTOFSpectrum}
 \end{figure*}
 
-From these energy spectra, the cross section was calculated, bin-wise, as follows:
+From these energy spectra, the raw cross sections were calculated, bin-wise, as follows:
 $$
 \tot = -\frac{1}{\ell\rho_{n}}
 \ln \left(\frac{I_{0}}{I_{s}}\times\frac{M_{s}}{M_{0}}\right)
@@ -739,25 +739,45 @@ the blank and sample, $\frac{M_{s}}{M_{0}}$ is the ratio of counts in the
 monitor detector between the sample and blank (for flux normalization), $\ell$ is the length 
 of the sample, and $\rho_{n}$ is the number density of atoms in the sample.
 
-\section{Experimental Results}
+A series of small corrections were applied to the raw cross sections to produce
+the final results. First, because the blank sample contains air and not vacuum,
+the cross section of air must be added to each other sample's cross section (scaled by  
+the ratio of areal densities of air in the blank and the sample of interest).
+For the sample with the smallest areal density (Rh), this correction was 2 mb.
+The cross section for $^{64}$Ni was corrected for the isotopic enrichment of our
+sample (92.2\%) using our measured $^{\text{nat}}$Ni cross section. All other isotopes were 
+sufficiently pure such that the impurity correction was negligible.
 
-To verify our approach, we first benchmarked our \totEs measurements of natural samples
+To validate our analysis, we first benchmarked our \totEs measurements of natural samples
 ($^{\text{nat}}$C, $^{\text{nat}}$Ni, $^{\text{nat}}$Sn, and
 $^{\text{nat}}$Pb) against the high-precision data sets on natural samples from Finlay
-\cite{Finlay1993} and Abfalterer \cite{Abfalterer2001}, shown in figures
-\ref{LiteratureBenchmarking}. As an additional diagnostic, we compared both our natural 
-carbon targets against each other (see Fig. \ref{CarbonBenchmarking}).
+\cite{Finlay1993} and Abfalterer \cite{Abfalterer2001}, shown in Fig.
+\ref{LiteratureBenchmarking}. Our results on natural samples are in excellent agreement with 
+these previous from 3-100 MeV and show slight deviation above 100 MeV (a
+relative difference of up to 5\% at 300 MeV), suggesting a small systematic
+error at high energies in one or both approaches when the instantaneous neutron
+flux is highest. As an additional diagnostic, we compared 
+both our natural carbon targets against each other (see Fig.
+\ref{CarbonBenchmarking}) and found excellent agreement: the relative difference
+was within 1\% throughout our energy domain.
 
 \begin{figure*}
-    \includegraphics[scale=0.35]{figures/LiteratureBenchmarking.png}
-    \caption{(Color online) }
+    \includegraphics[scale=0.5]{figures/literatureBenchmarking.png}
+    \caption{(Color online) A comparison of literature data (taken with analog
+    techniques) and our results (signals processed with a digitizer, or "DSP")
+    for natural C, Ni, Sn, and Pb. In panel a), the absolute cross sections are shown from
+    3-500 MeV; in panel b), the relative differences between the literature data and
+    our data are shown in percent. From 3-100 MeV, we are fully consistent with the
+    literature datasets but above 100 MeV, a difference is visible, peaking at
+    $\approx$5\% at 300 MeV.
+b}
     \label{LiteratureBenchmarking}
 \end{figure*}
 
 \begin{figure*}
     \includegraphics[scale=0.30]{figures/relativeDiff_longCarbonShortCarbon.png}
     \caption{(Color online) Relative difference of cross sections (red line) of
-        our two lengths of $^{\text{nat}}$C, (13.7 mm and 27.3 mm), shown from 3-400
+        our two lengths of $^{\text{nat}}$C, (27.3 mm and 13.7 mm), shown from 3-400
         MeV. Total error
         (including statistical and systematic) is indicated by the blue
         dotted region. Systematic error only (due to uncertainty in the areal
@@ -767,28 +787,80 @@ carbon targets against each other (see Fig. \ref{CarbonBenchmarking}).
         Despite the low statistics of this diagnostic run (only 1.5 hours
         beam-on-target for each sample), the high efficiency of the
         digitizer-enabled approach means that the relative difference can be resolved to 
-        $\approx$1\% throughout the entire energy range.
+        $\pm$1\% for most of the energy range.
     }
     \label{CarbonBenchmarking}
 \end{figure*}
 
+\section{Experimental Results}
+
+Absolute \totEs for all isotopic targets are shown  along with isotopic literature
+data (where it exists) in Figs. \ref{TwoPanelO, TwoPanelNi, TwoPanelRh, TwoPanelSn}. 
+Relative differences of our measured \totEs between $^{16,18}$O, $^{58,64}$Ni, and
+$^{112,124}$Sn are shown in Figs. \ref{IsotopicDiffO, IsotopicDiffNi, 
+IsotopicDiffSn}, respectively.
 
 \begin{figure*}
-    \includegraphics[scale=0.35]{figures/FourPanelO.png}
-    \caption{(Color online) Neutron total cross sections for $^{16,18}$O.
-     Panel one shows our measurement (in red) and literature data from
-     Abfalterer (in
-     black), where the $^{18}$O values have been shifted up by 1 barn for
-     readability. Panel two shows the relative difference between our 
-     measurement and the literature data from the first panel. Panels three and
-     four show the corresponding absolute and relative cross sections after a
-     Pb-C correction, derived from literature data and our Sn dataset,
-     are applied.
+    \includegraphics[scale=0.35]{figures/TwoPanelO.png}
+    \caption{(Color online) Neutron total cross sections for $^{58,64}$Ni.
+        Panel a) shows our isotopic results (in shades of red) and
+        corresponding literature data \cite{Perey1993, Dukarevich1967} (in
+        shades of blue). Panel b) shows the relative difference between our data
+        and literature data that are shown in panel a). The reported error in
+        the literature data set for $^{58}$Ni is the major contributor to the
+        large error bars shown in the $^{58}$Ni relative difference. In this
+        energy range, only one data point was available for $^{64}$Ni (indicated
+        by the triangles) from Dukarevich's 1967 study of isotopically-resolved cross
+        sections at 14.2 MeV \cite{Dukarevich1967}.
     }
+    \label{TwoPanelO}
 \end{figure*}
 
 \begin{figure*}
-    \includegraphics[scale=0.35]{figures/FourPanelNi.png}
+    \includegraphics[scale=0.35]{figures/TwoPanelNi.png}
+    \caption{(Color online) Neutron total cross sections for $^{58,64}$Ni.
+        Panel a) shows our isotopic results (in shades of red) and
+        corresponding literature data \cite{Perey1993, Dukarevich1967} (in
+        shades of blue). Panel b) shows the relative difference between our data
+        and literature data that are shown in panel a). The reported error in
+        the literature data set for $^{58}$Ni is the major contributor to the
+        large error bars shown in the $^{58}$Ni relative difference. In this
+        energy range, only one data point was available for $^{64}$Ni (indicated
+        by the triangles) from Dukarevich's 1967 study of isotopically-resolved cross
+        sections at 14.2 MeV \cite{Dukarevich1967}.
+    }
+    \label{TwoPanelNi}
+\end{figure*}
+
+\begin{figure*}
+    \includegraphics[scale=0.35]{figures/TwoPanelRh.png}
+    \caption{(Color online) Neutron total cross sections for $^{58,64}$Ni.
+        Panel a) shows our isotopic results (in shades of red) and
+        corresponding literature data \cite{Perey1993, Dukarevich1967} (in
+        shades of blue). Panel b) shows the relative difference between our data
+        and literature data that are shown in panel a). The reported error in
+        the literature data set for $^{58}$Ni is the major contributor to the
+        large error bars shown in the $^{58}$Ni relative difference. In this
+        energy range, only one data point was available for $^{64}$Ni (indicated
+        by the triangles) from Dukarevich's 1967 study of isotopically-resolved cross
+        sections at 14.2 MeV \cite{Dukarevich1967}.
+    }
+    \label{TwoPanelRh}
+\end{figure*}
+
+\begin{figure*}
+    \includegraphics[scale=0.35]{figures/TwoPanelSn.png}
+    \caption{(Color online) Neutron total cross sections for $^{112,124}$Sn.
+        Panel a) shows our isotopic results (in shades of red) and
+        corresponding literature data \cite{Harper1982, Rapaport1980, Dukarevich1967} (in
+        shades of blue). Panel b) shows the relative difference between our data
+        and literature data that are shown in panel a). The data sets are in
+    excellent agreement where literature data exists (up to $\approx$20 MeV).}
+    \label{TwoPanelSn}
+\end{figure*}
+
+\begin{figure*}
+    \includegraphics[scale=0.35]{figures/relDiff_O18O16.png}
     \caption{(Color online) Neutron total cross sections for $^{58,64}$Ni.
      Panel one shows our measurement (in red) and literature data from
      Abfalterer (in % black).
@@ -798,23 +870,11 @@ carbon targets against each other (see Fig. \ref{CarbonBenchmarking}).
      Pb-C correction, derived from literature data and detailed in the text,
      are applied.
     }
+    \label{IsotopicDifferenceO}
 \end{figure*}
 
 \begin{figure*}
-    \includegraphics[scale=0.35]{figures/FourPanelSn.png}
-    \caption{(Color online) Neutron total cross sections for $^{112,124}$Sn.
-     Panel one shows our measurement (in red) and literature data from
-     Finlay (in % black).
-     Panel two shows the relative difference between our 
-     measurement and the literature data from the first panel. Panels three and
-     four show the corresponding absolute and relative cross sections after a
-     Pb-C correction, derived from literature data and detailed in the text,
-     are applied.
-    }
-\end{figure*}
-
-\begin{figure*}
-    \includegraphics[scale=0.35]{figures/FourPanelNiIsotopes.png}
+    \includegraphics[scale=0.35]{figures/relDiff_Ni64Ni58.png}
     \caption{(Color online) Neutron total cross sections for $^{58,64}$Ni.
      Panel one shows our measurement (in red) and literature data from
      Abfalterer (in % black).
@@ -824,27 +884,23 @@ carbon targets against each other (see Fig. \ref{CarbonBenchmarking}).
      Pb-C correction, derived from literature data and detailed in the text,
      are applied.
     }
+    \label{IsotopicDifferenceNi}
 \end{figure*}
 
 \begin{figure*}
-    \includegraphics[scale=0.35]{figures/FourPanelSnIsotopes.png}
-    \caption{(Color online) Neutron total cross sections for $^{112,124}$Sn.
+    \includegraphics[scale=0.35]{figures/relDiff_Sn124Sn112.png}
+    \caption{(Color online) Neutron total cross sections for $^{58,64}$Ni.
      Panel one shows our measurement (in red) and literature data from
-     Finlay (in % black).
+     Abfalterer (in % black).
      Panel two shows the relative difference between our 
      measurement and the literature data from the first panel. Panels three and
      four show the corresponding absolute and relative cross sections after a
      Pb-C correction, derived from literature data and detailed in the text,
      are applied.
     }
+    \label{IsotopicDifferenceSn}
 \end{figure*}
 
-
-
-
-
-Cross sections for all targets are shown in Fig. \ref{FourPanelO, FourPanelNi,
-FourPanelRh, FourPanelSn}.
 
 \section{Discussion}
 

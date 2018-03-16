@@ -172,6 +172,8 @@ int correctForBlank(CrossSection& rawCS, CSPrereqs& targetData, string expName)
         }
     }
 
+    cout << "CS of first point of " << targetData.target.getName() << " = " << rawCS.getDataPoint(0).getYValue() << endl;
+
     for(Target t : blankComposition)
     {
         double blankNumberDensity = (t.getMass()/t.getMolarMass())*AVOGADROS_NUMBER/(t.getLength()*M_PI*pow((t.getDiameter()/2),2));
@@ -182,7 +184,7 @@ int correctForBlank(CrossSection& rawCS, CSPrereqs& targetData, string expName)
 
         // calculate number density (atoms/cm^3) in target
     double targetNumberDensity =
-        numberTargetAtoms/(targetData.target.getLength()*pow(targetData.target.getDiameter()/2,2)*M_PI); // area of cylinder end
+        numberTargetAtoms/(pow(targetData.target.getDiameter()/2,2)*M_PI); // area of cylinder end
 
         double ratioNumberDensities = blankNumberDensity/targetNumberDensity; // ratio of atoms of this element in blank, compared to target
         ratioNumberDensities *= -1; // the correction should be additive, not subtractive
@@ -192,6 +194,8 @@ int correctForBlank(CrossSection& rawCS, CSPrereqs& targetData, string expName)
 
         string name = rawCS.name + "blankCorrected";
         rawCS = subtractCS(rawCS, graphFileName, blankCSGraphName, ratioNumberDensities, 1, "blankCorrected");
+
+        cout << "CS of first point = " << rawCS.getDataPoint(0).getYValue() << endl;
     }
 
     return 0;
@@ -518,27 +522,55 @@ CrossSection relativeDiffCS(string firstCSFileName, string firstCSGraphName,
             firstCSDataRaw.getPoint(0).getXValue(),
             secondCSDataRaw.getPoint(0).getXValue());
 
-    // for each y-value of the first CS graph, read the y-value of the second
+    // for each y-value of the second CS graph, read the y-value of the first
     // and the y-error
-    for(int i=0; i<firstCSDataRaw.getNumberOfPoints(); i++)
+    for(int i=0; i<secondCSDataRaw.getNumberOfPoints(); i++)
     {
-        if(firstCSDataRaw.getPoint(i).getXValue()<minEnergyValue)
+        if(secondCSDataRaw.getPoint(i).getXValue()<minEnergyValue)
         {
             continue;
         }
 
-        if(firstCSDataRaw.getPoint(i).getXValue()>maxEnergyValue)
+        if(secondCSDataRaw.getPoint(i).getXValue()>maxEnergyValue)
         {
             break;
         }
 
-        firstCSData.addPoint(firstCSDataRaw.getPoint(i));
+        secondCSData.addPoint(secondCSDataRaw.getPoint(i));
 
-        secondCSData.addPoint(
-                DataPoint(firstCSDataRaw.getPoint(i).getXValue(),
-                    firstCSDataRaw.getPoint(i).getXError(),
-                    secondCSGraph->Eval(firstCSDataRaw.getPoint(i).getXValue()),
-                    secondCSGraph->GetErrorY(i))); 
+        if(secondCSDataRaw.getPoint(i).getXValue() == firstCSDataRaw.getPoint(i).getXValue())
+        {
+            // matching energies of both datasets for this point
+            firstCSData.addPoint(
+                    DataPoint(secondCSDataRaw.getPoint(i).getXValue(),
+                        secondCSDataRaw.getPoint(i).getXError(), 0,
+                        firstCSGraph->Eval(secondCSDataRaw.getPoint(i).getXValue()),
+                        firstCSGraph->GetErrorY(i), 0, 0)); 
+        }
+
+        else
+        {
+            // search through first dataset for adjacent points
+            for(int j=1; j<firstCSDataRaw.getNumberOfPoints(); j++)
+            {
+                if(firstCSDataRaw.getPoint(j).getXValue() >= secondCSDataRaw.getPoint(i).getXValue()
+                        && firstCSDataRaw.getPoint(j-1).getXValue() < secondCSDataRaw.getPoint(i).getXValue())
+                {
+                    // found points straddling the energy value in the second
+                    // dataset
+
+                    // average their errors in quadrature and use as error of
+                    // interpolated point
+
+                    firstCSData.addPoint(
+                            DataPoint(secondCSDataRaw.getPoint(i).getXValue(),
+                                secondCSDataRaw.getPoint(i).getXError(), 0,
+                                firstCSGraph->Eval(secondCSDataRaw.getPoint(i).getXValue()),
+                                pow(pow(firstCSDataRaw.getPoint(j).getYError(),2)
+                                   +pow(firstCSDataRaw.getPoint(j-1).getYError(),2),0.5), 0, 0)); 
+                }
+            }
+        }
     }
 
     // perform the sum

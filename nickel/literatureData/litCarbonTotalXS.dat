@@ -1,7 +1,7 @@
 Literature data from W.P.Abfalterer 2001   
 Natural C (n,tot)
-MeV        barns        barns (error)
-0.75        3.032      0.15596 
+MeV        barns        Error(Barns)
+0.75        3.032         0.15596 
 0.75102        2.681      0.13132
 0.75204       2.7842      0.13257
 0.75305       2.8616      0.13082

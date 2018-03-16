@@ -6,9 +6,8 @@
         style = new TStyle("graphStyle","graphStyle");
     }
 
-    TCanvas* canvas = new TCanvas("canvas","canvas",750,850);
-    //canvas->SetCanvasSize(750,750);
-    canvas->Divide(1,2);
+    TCanvas* canvas = new TCanvas("canvas","canvas", 850, 850);
+    canvas->Divide(1,2, 0, 0);
 
     style->SetOptStat(0);
     style->SetOptTitle(0);    
@@ -47,154 +46,152 @@
         cout << "Error: failed to open a required file (check filenames). Exiting..." << endl;
         exit(1);
     }
+
+    string expNi58GraphName = "Ni58";
+    string expNi64GraphName = "Ni64PurityCorrected";
+
+    string relNi58GraphName = "Ni58, expLit, percent";
+    string relNi64GraphName = "Ni64, expLit, percent";
+
+    string litNi58GraphName = "Ni58 (n,tot)";
+    string litNi64GraphName = "Ni64 (n,tot)";
     
-    string expCGraphName = "CNat";
-    string expNiGraphName = "NiNat";
-    string expPbGraphName = "PbNat";
+    TGraphAsymmErrors* expNi58Graph = (TGraphAsymmErrors*)expFile->Get(expNi58GraphName.c_str());
+    TGraphAsymmErrors* expNi64Graph = (TGraphAsymmErrors*)expFile->Get(expNi64GraphName.c_str());
 
-    string relCGraphName = "CNat, expLit, percent";
-    string relNiGraphName = "NiNat, expLit, percent";
-    string relPbGraphName = "PbNat, expLit, percent";
+    TGraphAsymmErrors* relNi58Graph = (TGraphAsymmErrors*)relFile->Get(relNi58GraphName.c_str());
+    TGraphAsymmErrors* relNi64Graph = (TGraphAsymmErrors*)relFile->Get(relNi64GraphName.c_str());
 
-    string litCGraphName = "Natural C (n,tot)";
-    string litNiGraphName = "Natural Ni (n,tot)";
-    string litPbGraphName = "Natural Pb (n,tot)";
-    
-    TGraphAsymmErrors* expCGraph = (TGraphAsymmErrors*)expFile->Get(expCGraphName.c_str());
-    TGraphAsymmErrors* expNiGraph = (TGraphAsymmErrors*)expFile->Get(expNiGraphName.c_str());
-    TGraphAsymmErrors* expPbGraph = (TGraphAsymmErrors*)expFile->Get(expPbGraphName.c_str());
+    TGraphAsymmErrors* litNi58Graph = (TGraphAsymmErrors*)litFile->Get(litNi58GraphName.c_str());
+    TGraphAsymmErrors* litNi64Graph = (TGraphAsymmErrors*)litFile->Get(litNi64GraphName.c_str());
 
-    TGraphAsymmErrors* relCGraph = (TGraphAsymmErrors*)relFile->Get(relCGraphName.c_str());
-    TGraphAsymmErrors* relNiGraph = (TGraphAsymmErrors*)relFile->Get(relNiGraphName.c_str());
-    TGraphAsymmErrors* relPbGraph = (TGraphAsymmErrors*)relFile->Get(relPbGraphName.c_str());
-
-    TGraphAsymmErrors* litCGraph = (TGraphAsymmErrors*)litFile->Get(litCGraphName.c_str());
-    TGraphAsymmErrors* litNiGraph = (TGraphAsymmErrors*)litFile->Get(litNiGraphName.c_str());
-    TGraphAsymmErrors* litPbGraph = (TGraphAsymmErrors*)litFile->Get(litPbGraphName.c_str());
-
-    if(!expCGraph || !expNiGraph || !expPbGraph)
+    if(!expNi58Graph || !expNi64Graph)
     {
         cout << "Error: failed to open an experimental absolute cross section graph." << endl;
         exit(1);
     }
 
-    if(!relCGraph || !relNiGraph || !relPbGraph)
+    if(!relNi58Graph || !relNi64Graph)
     {
         cout << "Error: failed to open an relative diff to lit cross section graph." << endl;
         exit(1);
     }
 
-    if(!litCGraph || !litNiGraph || !litPbGraph)
+    if(!litNi58Graph || !litNi64Graph)
     {
         cout << "Error: failed to open an lit cross section graph." << endl;
         exit(1);
     }
 
     // Set graph point and line characteristics
-    expCGraph->SetLineColor(kRed);
-    expCGraph->SetMarkerColor(kRed);
-    expCGraph->SetLineWidth(4);
-    expCGraph->SetMarkerSize(0.9);
-    expCGraph->SetMarkerStyle(8);
+    expNi58Graph->SetLineColor(kRed);
+    expNi58Graph->SetLineWidth(4);
+    expNi58Graph->SetLineStyle(1);
+    expNi58Graph->SetMarkerColor(kRed);
 
-    expNiGraph->SetLineColor(kRed);
-    expNiGraph->SetMarkerColor(kRed);
-    expNiGraph->SetLineWidth(4);
+    expNi64Graph->SetLineColor(kRed+2);
+    expNi64Graph->SetLineWidth(4);
+    expNi64Graph->SetLineStyle(1);
+    expNi64Graph->SetMarkerColor(kRed+2);
 
-    expPbGraph->SetLineColor(kRed);
-    expPbGraph->SetMarkerColor(kRed);
-    expPbGraph->SetLineWidth(4);
+    relNi58Graph->SetLineColor(kRed);
+    relNi58Graph->SetLineWidth(4);
+    relNi58Graph->SetLineStyle(0);
+    relNi58Graph->SetMarkerColor(kRed);
 
-    relCGraph->SetLineColor(kRed-9);
-    relCGraph->SetLineWidth(4);
-    relCGraph->SetLineStyle(0);
-    relCGraph->SetMarkerColor(kRed-9);
+    relNi64Graph->SetLineColor(kRed+2);
+    relNi64Graph->SetMarkerColor(kRed+2);
+    relNi64Graph->SetMarkerSize(2);
+    relNi64Graph->SetMarkerStyle(22);
 
-    relNiGraph->SetLineColor(kRed);
-    relNiGraph->SetLineWidth(4);
-    relNiGraph->SetLineStyle(0);
-    relNiGraph->SetMarkerColor(kRed);
+    litNi58Graph->SetLineColor(kBlue-7);
+    litNi58Graph->SetLineWidth(4);
+    litNi58Graph->SetLineStyle(1);
+    litNi58Graph->SetMarkerColor(kBlue-7);
 
-    relPbGraph->SetLineColor(kRed+3);
-    relPbGraph->SetLineWidth(4);
-    relPbGraph->SetLineStyle(0);
-    relPbGraph->SetMarkerColor(kRed+3);
-
-    litCGraph->SetLineColor(kBlue);
-    litCGraph->SetLineWidth(4);
-    litCGraph->SetLineStyle(0);
-    litCGraph->SetMarkerColor(kBlue);
-
-    litNiGraph->SetLineColor(kBlue);
-    litNiGraph->SetLineWidth(4);
-    litNiGraph->SetLineStyle(0);
-    litNiGraph->SetMarkerColor(kBlue);
-
-    litPbGraph->SetLineColor(kBlue);
-    litPbGraph->SetLineWidth(4);
-    litPbGraph->SetLineStyle(0);
-    litPbGraph->SetMarkerColor(kBlue);
+    litNi64Graph->SetMarkerColor(kBlue);
+    litNi64Graph->SetMarkerSize(3);
+    litNi64Graph->SetMarkerStyle(22);
 
     // first panel
     {
         canvas->cd(1);
 
         // Pad dimensions and margins
-        gPad->SetLeftMargin(0.20);
+        gPad->SetLeftMargin(0.25);
         gPad->SetRightMargin(0.01);
         gPad->SetTopMargin(0.03);
         gPad->SetBottomMargin(0.005);
         gPad->SetTicky(1);
+        gPad->SetTickx(1);
         gPad->SetLogx(1);
 
         gPad->SetFrameLineWidth(3);
 
-        expCGraph->GetXaxis()->SetLabelOffset(0.01);
-        expCGraph->GetXaxis()->SetLabelSize(0.0);
-        expCGraph->GetXaxis()->SetLabelFont(2);
+        TMultiGraph* mg = new TMultiGraph();
 
-        expCGraph->GetXaxis()->SetNdivisions(10);
-        expCGraph->GetXaxis()->SetTickLength(0.03);
+        mg->Add(litNi58Graph, "l");
+
+        mg->Add(expNi58Graph, "l");
+        mg->Add(expNi64Graph, "l");
+
+        mg->Add(litNi64Graph, "p");
+
+        mg->Draw("al");
+
+        // X-axis parameters
+        mg->GetXaxis()->SetTitle("Energy (MeV)");
+        mg->GetXaxis()->SetTitleSize(0.08);
+        mg->GetXaxis()->SetTitleFont(2);
+        mg->GetXaxis()->SetTitleOffset(1.4);
+        mg->GetXaxis()->CenterTitle();
+
+        mg->GetXaxis()->SetLabelOffset(0.01);
+        mg->GetXaxis()->SetLabelSize(0.08);
+        mg->GetXaxis()->SetLabelFont(2);
+
+        mg->GetXaxis()->SetNdivisions(10);
+        mg->GetXaxis()->SetTickLength(0.03);
 
         // Y-axis parameters
-        expCGraph->GetYaxis()->SetTitle("#sigma_{tot} [b]");
-        expCGraph->GetYaxis()->SetTitleSize(0.10);
-        expCGraph->GetYaxis()->SetTitleFont(2);
-        expCGraph->GetYaxis()->SetTitleOffset(0.7);
-        expCGraph->GetYaxis()->CenterTitle();
+        mg->GetYaxis()->SetTitle("#sigma_{tot} [b]");
+        mg->GetYaxis()->SetTitleSize(0.10);
+        mg->GetYaxis()->SetTitleFont(2);
+        mg->GetYaxis()->SetTitleOffset(0.6);
+        mg->GetYaxis()->CenterTitle();
 
-        expCGraph->GetYaxis()->SetLabelOffset(0.01);
-        expCGraph->GetYaxis()->SetLabelSize(0.10);
+        mg->GetYaxis()->SetLabelOffset(0.01);
+        mg->GetYaxis()->SetLabelSize(0.08);
 
-        expCGraph->GetYaxis()->SetLabelFont(2);
-        expCGraph->GetYaxis()->SetNdivisions(5);
-        expCGraph->GetYaxis()->SetTickLength(0.02);
+        mg->GetYaxis()->SetLabelFont(2);
+        mg->GetYaxis()->SetNdivisions(4);
+        mg->GetYaxis()->SetTickLength(0.02);
 
-        expCGraph->GetXaxis()->SetRangeUser(2,600);
-        expCGraph->GetYaxis()->SetRangeUser(0.01,9);
+        mg->GetYaxis()->SetRangeUser(0.81,4.69);
+        mg->GetXaxis()->SetLimits(3,500);
 
-        expCGraph->Draw("AL");
-        litCGraph->Draw("same");
-        litNiGraph->Draw("same");
-        litPbGraph->Draw("same");
-        expCGraph->Draw("same");
-        expNiGraph->Draw("same");
-        expPbGraph->Draw("same");
-        
         TLatex latex;
         latex.SetNDC();
         latex.SetTextSize(0.08);
         latex.SetTextAlign(13); // align at top
-        latex.DrawLatex(0.59,0.63,"^{nat}Pb");
-        latex.DrawLatex(0.50,0.37,"^{nat}Ni");
-        latex.DrawLatex(0.47,0.11,"^{nat}C");
+        //latex.DrawLatex(0.295,0.735,"Pb");
+        //latex.DrawLatex(0.315,0.54,"Sn");
+        //latex.DrawLatex(0.325,0.367,"Ni");
+        //latex.DrawLatex(0.33,0.235,"C");
+
+        latex.SetTextSize(0.15);
+        latex.DrawLatex(0.02, 1, "a)");
 
         // Define legend format and contents
-        TLegend *legend = new TLegend(0.77,0.70,0.95,0.9);
-        legend->SetTextSize(0.08);
+        TLegend *legend = new TLegend(0.55,0.73,0.97,0.95);
+        legend->SetTextSize(0.07);
         legend->SetTextAlign(12);
-        legend->AddEntry(litCGraph,"Analog","l");
-        legend->AddEntry(expCGraph,"DSP","l");
+        legend->SetNColumns(2);
+        legend->AddEntry(litNi58Graph,"^{58}Ni (An)","l");
+        legend->AddEntry(litNi64Graph,"^{64}Ni (An)","p");
+        legend->AddEntry(expNi58Graph,"^{58}Ni (DSP)","l");
+        legend->AddEntry(expNi64Graph,"^{64}Ni (DSP)","l");
+
         legend->Draw();
     }
 
@@ -203,71 +200,73 @@
         canvas->cd(2);
 
         // Pad dimensions and margins
-        gPad->SetLeftMargin(0.20);
+        gPad->SetLeftMargin(0.25);
         gPad->SetRightMargin(0.01);
         gPad->SetTopMargin(0.);
         gPad->SetBottomMargin(0.25);
         gPad->SetTicky(1);
         gPad->SetTickx(1);
-        gPad->SetLogx(1);
+        gPad->SetLogx();
 
         gPad->SetFrameLineWidth(3);
 
+        TMultiGraph* mg = new TMultiGraph();
+
+        mg->Add(relNi58Graph, "l");
+        mg->Add(relNi64Graph, "p");
+
+        mg->Draw("al");
+
         // X-axis parameters
-        relCGraph->GetXaxis()->SetTitle("Energy (MeV)");
-        relCGraph->GetXaxis()->SetTitleSize(0.08);
-        relCGraph->GetXaxis()->SetTitleFont(2);
-        relCGraph->GetXaxis()->SetTitleOffset(1.4);
-        relCGraph->GetXaxis()->CenterTitle();
+        mg->GetXaxis()->SetTitle("Energy (MeV)");
+        mg->GetXaxis()->SetTitleSize(0.08);
+        mg->GetXaxis()->SetTitleFont(2);
+        mg->GetXaxis()->SetTitleOffset(1.4);
+        mg->GetXaxis()->CenterTitle();
 
-        relCGraph->GetXaxis()->SetLabelOffset(0.01);
-        relCGraph->GetXaxis()->SetLabelSize(0.08);
-        relCGraph->GetXaxis()->SetLabelFont(2);
+        mg->GetXaxis()->SetLabelOffset(0.01);
+        mg->GetXaxis()->SetLabelSize(0.08);
+        mg->GetXaxis()->SetLabelFont(2);
 
-        relCGraph->GetXaxis()->SetNdivisions(10);
-        relCGraph->GetXaxis()->SetTickLength(0.03);
+        mg->GetXaxis()->SetNdivisions(10);
+        mg->GetXaxis()->SetTickLength(0.03);
 
         // Y-axis parameters
-        relCGraph->GetYaxis()->SetTitle("#frac{#sigma_{exp} - #sigma_{lit}}{#sigma_{exp} + #sigma_{lit}} [%]");
-        relCGraph->GetYaxis()->SetTitleSize(0.08);
-        relCGraph->GetYaxis()->SetTitleFont(2);
-        relCGraph->GetYaxis()->SetTitleOffset(1.05);
-        relCGraph->GetYaxis()->CenterTitle();
+        mg->GetYaxis()->SetTitle("#frac{#sigma_{exp} - #sigma_{lit}}{#sigma_{exp} + #sigma_{lit}} [%]");
+        mg->GetYaxis()->SetTitleSize(0.08);
+        mg->GetYaxis()->SetTitleFont(2);
+        mg->GetYaxis()->SetTitleOffset(0.9);
+        mg->GetYaxis()->CenterTitle();
 
-        relCGraph->GetYaxis()->SetLabelOffset(0.01);
-        relCGraph->GetYaxis()->SetLabelSize(0.08);
+        mg->GetYaxis()->SetLabelOffset(0.01);
+        mg->GetYaxis()->SetLabelSize(0.08);
 
-        relCGraph->GetYaxis()->SetLabelFont(2);
-        relCGraph->GetYaxis()->SetNdivisions(10);
-        relCGraph->GetYaxis()->SetTickLength(0.02);
+        mg->GetYaxis()->SetLabelFont(2);
+        mg->GetYaxis()->SetNdivisions(10);
+        mg->GetYaxis()->SetTickLength(0.02);
 
-        relCGraph->Draw("");
-        relNiGraph->Draw("same");
-        relPbGraph->Draw("same");
-        
-        relCGraph->GetXaxis()->SetRangeUser(2,600);
-        relCGraph->GetYaxis()->SetRangeUser(-8,7.9);
+        mg->GetXaxis()->SetLimits(3,500);
+        mg->GetYaxis()->SetRangeUser(-14.9,14.9);
 
-        //TLatex latex;
-        //latex.SetNDC();
-        //latex.SetTextSize(0.035);
-        //latex.SetTextAlign(13); // align at top
-        //latex.DrawLatex(0.65,0.65,"Pb (elem.)");
-        //latex.DrawLatex(0.35,0.52,"Ni (elem.)");
-        //latex.DrawLatex(0.32,0.4,"C (elem.)");
+        TLatex latex;
+        latex.SetNDC();
+        latex.SetTextSize(0.035);
+        latex.SetTextAlign(13); // align at top
+
+        latex.SetTextSize(0.13);
+        latex.DrawLatex(0.02, 1, "b)");
 
         // Define legend format and contents
-        TLegend *legend = new TLegend(0.8,0.67,0.96,0.96);
-        //legend->SetNColumns(3);
+        TLegend *legend = new TLegend(0.84,0.74,0.96,0.96);
+        legend->SetNColumns(1);
         legend->SetTextSize(0.07);
         legend->SetTextAlign(12);
-        legend->AddEntry(relCGraph,"{}^{nat}C","l");
-        legend->AddEntry(relNiGraph,"{}^{nat}Ni","l");
-        legend->AddEntry(relPbGraph,"{}^{nat}Pb","l");
+        legend->AddEntry(relNi58Graph,"{}^{58}Ni","l");
+        legend->AddEntry(relNi64Graph,"{}^{64}Ni","p");
 
         legend->Draw();
 
-        TLine* zeroLine = new TLine(0, 0, 600, 0);
+        TLine* zeroLine = new TLine(3, 0, 500, 0);
         zeroLine->SetLineColor(kBlack);
         zeroLine->SetLineWidth(3);
         zeroLine->SetLineStyle(9);

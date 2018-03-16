@@ -45,7 +45,7 @@ DataSet::DataSet(string dataSetLocation)
 
     while(dataFile >> dum >> dum2 >> dum3)
     {
-        data.push_back(DataPoint(dum, 0, dum2, dum3));
+        data.push_back(DataPoint(dum, 0, dum2, dum3, 0, 0));
     }
 
     createPlot(reference);
@@ -495,21 +495,42 @@ vector<double> DataSet::getSysErrors() const
 
 TGraphAsymmErrors* DataSet::createPlot(string name)
 {
-    dataPlot = new TGraphAsymmErrors(this->getXValues().size(),&this->getXValues()[0],&this->getYValues()[0],&this->getXErrors()[0],&this->getYErrors()[0]);
+    dataPlot = new TGraphAsymmErrors(getXValues().size(),
+            &getXValues()[0],
+            &getYValues()[0],
+            &getXErrors()[0],
+            &getXErrors()[0],
+            &getYErrors()[0],
+            &getYErrors()[0]
+            );
     dataPlot->SetNameTitle(name.c_str(),name.c_str());
     return dataPlot;
 }
 
 TGraphAsymmErrors* DataSet::createStatErrorsPlot(string name)
 {
-    dataPlot = new TGraphAsymmErrors(this->getXValues().size(),&this->getXValues()[0],&this->getYValues()[0],&this->getXErrors()[0],&this->getStatErrors()[0]);
+    dataPlot = new TGraphAsymmErrors(getXValues().size(),
+            &getXValues()[0],
+            &getYValues()[0],
+            &getXErrors()[0],
+            &getXErrors()[0],
+            &getStatErrors()[0],
+            &getStatErrors()[0]
+            );
     dataPlot->SetNameTitle(name.c_str(),name.c_str());
     return dataPlot;
 }
 
 TGraphAsymmErrors* DataSet::createSysErrorsPlot(string name)
 {
-    dataPlot = new TGraphAsymmErrors(this->getXValues().size(),&this->getXValues()[0],&this->getYValues()[0],&this->getXErrors()[0],&this->getSysErrors()[0]);
+    dataPlot = new TGraphAsymmErrors(getXValues().size(),
+            &getXValues()[0],
+            &getYValues()[0],
+            &getXErrors()[0],
+            &getXErrors()[0],
+            &getSysErrors()[0],
+            &getSysErrors()[0]
+            );
     dataPlot->SetNameTitle(name.c_str(),name.c_str());
     return dataPlot;
 }

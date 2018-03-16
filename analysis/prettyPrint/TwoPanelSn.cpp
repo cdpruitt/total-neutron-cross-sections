@@ -6,9 +6,8 @@
         style = new TStyle("graphStyle","graphStyle");
     }
 
-    TCanvas* canvas = new TCanvas("canvas","canvas",750,850);
-    //canvas->SetCanvasSize(750,750);
-    canvas->Divide(1,2);
+    TCanvas* canvas = new TCanvas("canvas","canvas", 850, 850);
+    canvas->Divide(1,2, 0, 0);
 
     style->SetOptStat(0);
     style->SetOptTitle(0);    
@@ -34,9 +33,9 @@
     gROOT->ForceStyle();
 
     // read graphs
-    string expFileName = "/data1/analysis/total.root";
-    string relFileName = "/data1/analysis/relative.root";
-    string litFileName = "/data1/analysis/literatureData.root";
+    string expFileName = "/data2/analysis/total.root";
+    string relFileName = "/data2/analysis/relative.root";
+    string litFileName = "/data2/analysis/literatureData.root";
 
     TFile* expFile = new TFile(expFileName.c_str(),"READ");
     TFile* relFile = new TFile(relFileName.c_str(),"READ");
@@ -47,154 +46,158 @@
         cout << "Error: failed to open a required file (check filenames). Exiting..." << endl;
         exit(1);
     }
+
+    string expSn112GraphName = "Sn112";
+    string expSn124GraphName = "Sn124";
+
+    string relSn112GraphName = "Sn112, expLit, percent";
+    string relSn124GraphName = "Sn124, expLit, percent";
+
+    string litSn112GraphName = "Sn112 (n,tot)";
+    string litSn124GraphName = "Sn124 (n,tot)";
     
-    string expCGraphName = "CNat";
-    string expSnGraphName = "SnNat";
-    string expPbGraphName = "PbNat";
+    TGraphAsymmErrors* expSn112Graph = (TGraphAsymmErrors*)expFile->Get(expSn112GraphName.c_str());
+    TGraphAsymmErrors* expSn124Graph = (TGraphAsymmErrors*)expFile->Get(expSn124GraphName.c_str());
 
-    string relCGraphName = "CNat, expLit, percent";
-    string relSnGraphName = "SnNat, expLit, percent";
-    string relPbGraphName = "PbNat, expLit, percent";
+    TGraphAsymmErrors* relSn112Graph = (TGraphAsymmErrors*)relFile->Get(relSn112GraphName.c_str());
+    TGraphAsymmErrors* relSn124Graph = (TGraphAsymmErrors*)relFile->Get(relSn124GraphName.c_str());
 
-    string litCGraphName = "Natural C (n,tot)";
-    string litSnGraphName = "Natural Sn (n,tot)";
-    string litPbGraphName = "Natural Pb (n,tot)";
-    
-    TGraphAsymmErrors* expCGraph = (TGraphAsymmErrors*)expFile->Get(expCGraphName.c_str());
-    TGraphAsymmErrors* expSnGraph = (TGraphAsymmErrors*)expFile->Get(expSnGraphName.c_str());
-    TGraphAsymmErrors* expPbGraph = (TGraphAsymmErrors*)expFile->Get(expPbGraphName.c_str());
+    TGraphAsymmErrors* litSn112Graph = (TGraphAsymmErrors*)litFile->Get(litSn112GraphName.c_str());
+    TGraphAsymmErrors* litSn124Graph = (TGraphAsymmErrors*)litFile->Get(litSn124GraphName.c_str());
 
-    TGraphAsymmErrors* relCGraph = (TGraphAsymmErrors*)relFile->Get(relCGraphName.c_str());
-    TGraphAsymmErrors* relSnGraph = (TGraphAsymmErrors*)relFile->Get(relSnGraphName.c_str());
-    TGraphAsymmErrors* relPbGraph = (TGraphAsymmErrors*)relFile->Get(relPbGraphName.c_str());
-
-    TGraphAsymmErrors* litCGraph = (TGraphAsymmErrors*)litFile->Get(litCGraphName.c_str());
-    TGraphAsymmErrors* litSnGraph = (TGraphAsymmErrors*)litFile->Get(litSnGraphName.c_str());
-    TGraphAsymmErrors* litPbGraph = (TGraphAsymmErrors*)litFile->Get(litPbGraphName.c_str());
-
-    if(!expCGraph || !expSnGraph || !expPbGraph)
+    if(!expSn112Graph || !expSn124Graph)
     {
         cout << "Error: failed to open an experimental absolute cross section graph." << endl;
         exit(1);
     }
 
-    if(!relCGraph || !relSnGraph || !relPbGraph)
+    if(!relSn112Graph || !relSn124Graph)
     {
         cout << "Error: failed to open an relative diff to lit cross section graph." << endl;
         exit(1);
     }
 
-    if(!litCGraph || !litSnGraph || !litPbGraph)
+    if(!litSn112Graph || !litSn124Graph)
     {
         cout << "Error: failed to open an lit cross section graph." << endl;
         exit(1);
     }
 
     // Set graph point and line characteristics
-    expCGraph->SetLineColor(kRed);
-    expCGraph->SetMarkerColor(kRed);
-    expCGraph->SetLineWidth(4);
-    expCGraph->SetMarkerSize(0.9);
-    expCGraph->SetMarkerStyle(8);
+    expSn112Graph->SetLineColor(kRed);
+    expSn112Graph->SetLineWidth(4);
+    expSn112Graph->SetLineStyle(1);
+    expSn112Graph->SetMarkerColor(kRed);
 
-    expSnGraph->SetLineColor(kRed);
-    expSnGraph->SetMarkerColor(kRed);
-    expSnGraph->SetLineWidth(4);
+    expSn124Graph->SetLineColor(kRed+2);
+    expSn124Graph->SetLineWidth(4);
+    expSn124Graph->SetLineStyle(1);
+    expSn124Graph->SetMarkerColor(kRed+2);
 
-    expPbGraph->SetLineColor(kRed);
-    expPbGraph->SetMarkerColor(kRed);
-    expPbGraph->SetLineWidth(4);
+    relSn112Graph->SetLineColor(kRed);
+    relSn112Graph->SetLineWidth(4);
+    relSn112Graph->SetLineStyle(0);
+    relSn112Graph->SetMarkerColor(kRed);
+    relSn112Graph->SetMarkerSize(2);
+    relSn112Graph->SetMarkerStyle(22);
 
-    relCGraph->SetLineColor(kRed-9);
-    relCGraph->SetLineWidth(4);
-    relCGraph->SetLineStyle(0);
-    relCGraph->SetMarkerColor(kRed-9);
+    relSn124Graph->SetLineColor(kRed+2);
+    relSn124Graph->SetMarkerColor(kRed+2);
+    relSn124Graph->SetMarkerSize(2);
+    relSn124Graph->SetMarkerStyle(22);
 
-    relSnGraph->SetLineColor(kRed);
-    relSnGraph->SetLineWidth(4);
-    relSnGraph->SetLineStyle(0);
-    relSnGraph->SetMarkerColor(kRed);
+    litSn112Graph->SetLineColor(kBlue-7);
+    litSn112Graph->SetLineWidth(4);
+    litSn112Graph->SetLineStyle(1);
+    litSn112Graph->SetMarkerColor(kBlue-7);
+    litSn112Graph->SetMarkerSize(2);
+    litSn112Graph->SetMarkerStyle(22);
 
-    relPbGraph->SetLineColor(kRed+3);
-    relPbGraph->SetLineWidth(4);
-    relPbGraph->SetLineStyle(0);
-    relPbGraph->SetMarkerColor(kRed+3);
-
-    litCGraph->SetLineColor(kBlue);
-    litCGraph->SetLineWidth(4);
-    litCGraph->SetLineStyle(0);
-    litCGraph->SetMarkerColor(kBlue);
-
-    litSnGraph->SetLineColor(kBlue);
-    litSnGraph->SetLineWidth(4);
-    litSnGraph->SetLineStyle(0);
-    litSnGraph->SetMarkerColor(kBlue);
-
-    litPbGraph->SetLineColor(kBlue);
-    litPbGraph->SetLineWidth(4);
-    litPbGraph->SetLineStyle(0);
-    litPbGraph->SetMarkerColor(kBlue);
+    litSn124Graph->SetLineColor(kBlue);
+    litSn124Graph->SetLineWidth(4);
+    litSn124Graph->SetLineStyle(1);
+    litSn124Graph->SetMarkerColor(kBlue);
+    litSn124Graph->SetMarkerSize(2);
+    litSn124Graph->SetMarkerStyle(22);
 
     // first panel
     {
         canvas->cd(1);
 
         // Pad dimensions and margins
-        gPad->SetLeftMargin(0.20);
+        gPad->SetLeftMargin(0.25);
         gPad->SetRightMargin(0.01);
         gPad->SetTopMargin(0.03);
         gPad->SetBottomMargin(0.005);
         gPad->SetTicky(1);
+        gPad->SetTickx(1);
         gPad->SetLogx(1);
 
         gPad->SetFrameLineWidth(3);
 
-        expCGraph->GetXaxis()->SetLabelOffset(0.01);
-        expCGraph->GetXaxis()->SetLabelSize(0.0);
-        expCGraph->GetXaxis()->SetLabelFont(2);
+        TMultiGraph* mg = new TMultiGraph();
 
-        expCGraph->GetXaxis()->SetNdivisions(10);
-        expCGraph->GetXaxis()->SetTickLength(0.03);
+        mg->Add(expSn112Graph, "l");
+        mg->Add(expSn124Graph, "l");
+
+        mg->Add(litSn112Graph, "p");
+        mg->Add(litSn124Graph, "l");
+
+        mg->Draw("al");
+
+        // X-axis parameters
+        mg->GetXaxis()->SetTitle("Energy (MeV)");
+        mg->GetXaxis()->SetTitleSize(0.08);
+        mg->GetXaxis()->SetTitleFont(2);
+        mg->GetXaxis()->SetTitleOffset(1.4);
+        mg->GetXaxis()->CenterTitle();
+
+        mg->GetXaxis()->SetLabelOffset(0.01);
+        mg->GetXaxis()->SetLabelSize(0.08);
+        mg->GetXaxis()->SetLabelFont(2);
+
+        mg->GetXaxis()->SetNdivisions(10);
+        mg->GetXaxis()->SetTickLength(0.03);
 
         // Y-axis parameters
-        expCGraph->GetYaxis()->SetTitle("#sigma_{tot} [b]");
-        expCGraph->GetYaxis()->SetTitleSize(0.10);
-        expCGraph->GetYaxis()->SetTitleFont(2);
-        expCGraph->GetYaxis()->SetTitleOffset(0.7);
-        expCGraph->GetYaxis()->CenterTitle();
+        mg->GetYaxis()->SetTitle("#sigma_{tot} [b]");
+        mg->GetYaxis()->SetTitleSize(0.10);
+        mg->GetYaxis()->SetTitleFont(2);
+        mg->GetYaxis()->SetTitleOffset(0.6);
+        mg->GetYaxis()->CenterTitle();
 
-        expCGraph->GetYaxis()->SetLabelOffset(0.01);
-        expCGraph->GetYaxis()->SetLabelSize(0.10);
+        mg->GetYaxis()->SetLabelOffset(0.01);
+        mg->GetYaxis()->SetLabelSize(0.08);
 
-        expCGraph->GetYaxis()->SetLabelFont(2);
-        expCGraph->GetYaxis()->SetNdivisions(5);
-        expCGraph->GetYaxis()->SetTickLength(0.02);
+        mg->GetYaxis()->SetLabelFont(2);
+        mg->GetYaxis()->SetNdivisions(4);
+        mg->GetYaxis()->SetTickLength(0.02);
 
-        expCGraph->GetXaxis()->SetRangeUser(2,600);
-        expCGraph->GetYaxis()->SetRangeUser(0.01,9);
+        mg->GetYaxis()->SetRangeUser(1.4,5.49);
+        mg->GetXaxis()->SetLimits(3,500);
 
-        expCGraph->Draw("AL");
-        litCGraph->Draw("same");
-        litSnGraph->Draw("same");
-        litPbGraph->Draw("same");
-        expCGraph->Draw("same");
-        expSnGraph->Draw("same");
-        expPbGraph->Draw("same");
-        
         TLatex latex;
         latex.SetNDC();
         latex.SetTextSize(0.08);
         latex.SetTextAlign(13); // align at top
-        latex.DrawLatex(0.59,0.63,"^{nat}Pb");
-        latex.DrawLatex(0.50,0.37,"^{nat}Sn");
-        latex.DrawLatex(0.47,0.11,"^{nat}C");
+        //latex.DrawLatex(0.295,0.735,"Pb");
+        //latex.DrawLatex(0.315,0.54,"Sn");
+        //latex.DrawLatex(0.325,0.367,"Ni");
+        //latex.DrawLatex(0.33,0.235,"C");
+
+        latex.SetTextSize(0.15);
+        latex.DrawLatex(0.02, 1, "a)");
 
         // Define legend format and contents
-        TLegend *legend = new TLegend(0.77,0.70,0.95,0.9);
-        legend->SetTextSize(0.08);
+        TLegend *legend = new TLegend(0.52,0.73,0.97,0.95);
+        legend->SetTextSize(0.07);
         legend->SetTextAlign(12);
-        legend->AddEntry(litCGraph,"Analog","l");
-        legend->AddEntry(expCGraph,"DSP","l");
+        legend->SetNColumns(2);
+        legend->AddEntry(litSn112Graph,"^{112}Sn (An)","p");
+        legend->AddEntry(litSn124Graph,"^{124}Sn (An)","l");
+        legend->AddEntry(expSn112Graph,"^{112}Sn (DSP)","l");
+        legend->AddEntry(expSn124Graph,"^{124}Sn (DSP)","l");
+
         legend->Draw();
     }
 
@@ -203,71 +206,73 @@
         canvas->cd(2);
 
         // Pad dimensions and margins
-        gPad->SetLeftMargin(0.20);
+        gPad->SetLeftMargin(0.25);
         gPad->SetRightMargin(0.01);
         gPad->SetTopMargin(0.);
         gPad->SetBottomMargin(0.25);
         gPad->SetTicky(1);
         gPad->SetTickx(1);
-        gPad->SetLogx(1);
+        gPad->SetLogx();
 
         gPad->SetFrameLineWidth(3);
 
+        TMultiGraph* mg = new TMultiGraph();
+
+        mg->Add(relSn124Graph, "l");
+        mg->Add(relSn112Graph, "p");
+
+        mg->Draw("al");
+
         // X-axis parameters
-        relCGraph->GetXaxis()->SetTitle("Energy (MeV)");
-        relCGraph->GetXaxis()->SetTitleSize(0.08);
-        relCGraph->GetXaxis()->SetTitleFont(2);
-        relCGraph->GetXaxis()->SetTitleOffset(1.4);
-        relCGraph->GetXaxis()->CenterTitle();
+        mg->GetXaxis()->SetTitle("Energy (MeV)");
+        mg->GetXaxis()->SetTitleSize(0.08);
+        mg->GetXaxis()->SetTitleFont(2);
+        mg->GetXaxis()->SetTitleOffset(1.4);
+        mg->GetXaxis()->CenterTitle();
 
-        relCGraph->GetXaxis()->SetLabelOffset(0.01);
-        relCGraph->GetXaxis()->SetLabelSize(0.08);
-        relCGraph->GetXaxis()->SetLabelFont(2);
+        mg->GetXaxis()->SetLabelOffset(0.01);
+        mg->GetXaxis()->SetLabelSize(0.08);
+        mg->GetXaxis()->SetLabelFont(2);
 
-        relCGraph->GetXaxis()->SetNdivisions(10);
-        relCGraph->GetXaxis()->SetTickLength(0.03);
+        mg->GetXaxis()->SetNdivisions(10);
+        mg->GetXaxis()->SetTickLength(0.03);
 
         // Y-axis parameters
-        relCGraph->GetYaxis()->SetTitle("#frac{#sigma_{exp} - #sigma_{lit}}{#sigma_{exp} + #sigma_{lit}} [%]");
-        relCGraph->GetYaxis()->SetTitleSize(0.08);
-        relCGraph->GetYaxis()->SetTitleFont(2);
-        relCGraph->GetYaxis()->SetTitleOffset(1.05);
-        relCGraph->GetYaxis()->CenterTitle();
+        mg->GetYaxis()->SetTitle("#frac{#sigma_{exp} - #sigma_{lit}}{#sigma_{exp} + #sigma_{lit}} [%]");
+        mg->GetYaxis()->SetTitleSize(0.08);
+        mg->GetYaxis()->SetTitleFont(2);
+        mg->GetYaxis()->SetTitleOffset(0.9);
+        mg->GetYaxis()->CenterTitle();
 
-        relCGraph->GetYaxis()->SetLabelOffset(0.01);
-        relCGraph->GetYaxis()->SetLabelSize(0.08);
+        mg->GetYaxis()->SetLabelOffset(0.01);
+        mg->GetYaxis()->SetLabelSize(0.08);
 
-        relCGraph->GetYaxis()->SetLabelFont(2);
-        relCGraph->GetYaxis()->SetNdivisions(10);
-        relCGraph->GetYaxis()->SetTickLength(0.02);
+        mg->GetYaxis()->SetLabelFont(2);
+        mg->GetYaxis()->SetNdivisions(5);
+        mg->GetYaxis()->SetTickLength(0.02);
 
-        relCGraph->Draw("");
-        relSnGraph->Draw("same");
-        relPbGraph->Draw("same");
-        
-        relCGraph->GetXaxis()->SetRangeUser(2,600);
-        relCGraph->GetYaxis()->SetRangeUser(-8,7.9);
+        mg->GetXaxis()->SetLimits(3,500);
+        mg->GetYaxis()->SetRangeUser(-4.9,4.9);
 
-        //TLatex latex;
-        //latex.SetNDC();
-        //latex.SetTextSize(0.035);
-        //latex.SetTextAlign(13); // align at top
-        //latex.DrawLatex(0.65,0.65,"Pb (elem.)");
-        //latex.DrawLatex(0.35,0.52,"Sn (elem.)");
-        //latex.DrawLatex(0.32,0.4,"C (elem.)");
+        TLatex latex;
+        latex.SetNDC();
+        latex.SetTextSize(0.035);
+        latex.SetTextAlign(13); // align at top
+
+        latex.SetTextSize(0.13);
+        latex.DrawLatex(0.02, 1, "b)");
 
         // Define legend format and contents
-        TLegend *legend = new TLegend(0.8,0.67,0.96,0.96);
-        //legend->SetNColumns(3);
+        TLegend *legend = new TLegend(0.83,0.74,0.96,0.96);
+        legend->SetNColumns(1);
         legend->SetTextSize(0.07);
         legend->SetTextAlign(12);
-        legend->AddEntry(relCGraph,"{}^{nat}C","l");
-        legend->AddEntry(relSnGraph,"{}^{nat}Sn","l");
-        legend->AddEntry(relPbGraph,"{}^{nat}Pb","l");
+        legend->AddEntry(relSn112Graph,"{}^{112}Sn","p");
+        legend->AddEntry(relSn124Graph,"{}^{124}Sn","l");
 
         legend->Draw();
 
-        TLine* zeroLine = new TLine(0, 0, 600, 0);
+        TLine* zeroLine = new TLine(3, 0, 500, 0);
         zeroLine->SetLineColor(kBlack);
         zeroLine->SetLineWidth(3);
         zeroLine->SetLineStyle(9);
