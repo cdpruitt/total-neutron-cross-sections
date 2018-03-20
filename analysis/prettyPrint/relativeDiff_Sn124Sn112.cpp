@@ -51,10 +51,10 @@
 
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
-    gPad->SetLeftMargin(0.2);
+    gPad->SetLeftMargin(0.15);
     gPad->SetRightMargin(0.01);
     gPad->SetTopMargin(0.03);
-    gPad->SetBottomMargin(0.2);
+    gPad->SetBottomMargin(0.15);
     gPad->SetTicky(2);
 
     // X-axis parameters
@@ -75,14 +75,14 @@
     relGraph->GetYaxis()->SetTitle("(#frac{#sigma_{124} - #sigma_{112}}{#sigma_{124} + #sigma_{112}})");
     relGraph->GetYaxis()->SetTitleSize(0.06);
     relGraph->GetYaxis()->SetTitleFont(2);
-    relGraph->GetYaxis()->SetTitleOffset(1.3);
+    relGraph->GetYaxis()->SetTitleOffset(1.0);
     relGraph->GetYaxis()->CenterTitle();
 
     relGraph->GetYaxis()->SetLabelOffset(0.01);
     relGraph->GetYaxis()->SetLabelSize(0.05);
 
     relGraph->GetYaxis()->SetLabelFont(2);
-    relGraph->GetYaxis()->SetNdivisions(10);
+    relGraph->GetYaxis()->SetNdivisions(5);
     relGraph->GetYaxis()->SetTickLength(0.02);
 
     SARelDiffGraph->SetLineStyle(9);
@@ -94,7 +94,7 @@
 
     gPad->SetLogx(1);
     
-    relGraph->GetYaxis()->SetRangeUser(0,5);
+    relGraph->GetYaxis()->SetRangeUser(0.2,4);
     relGraph->GetXaxis()->SetLimits(5,600);
 
     //TLatex latex;

@@ -172,8 +172,6 @@ int correctForBlank(CrossSection& rawCS, CSPrereqs& targetData, string expName)
         }
     }
 
-    cout << "CS of first point of " << targetData.target.getName() << " = " << rawCS.getDataPoint(0).getYValue() << endl;
-
     for(Target t : blankComposition)
     {
         double blankNumberDensity = (t.getMass()/t.getMolarMass())*AVOGADROS_NUMBER/(t.getLength()*M_PI*pow((t.getDiameter()/2),2));
@@ -194,8 +192,6 @@ int correctForBlank(CrossSection& rawCS, CSPrereqs& targetData, string expName)
 
         string name = rawCS.name + "blankCorrected";
         rawCS = subtractCS(rawCS, graphFileName, blankCSGraphName, ratioNumberDensities, 1, "blankCorrected");
-
-        cout << "CS of first point = " << rawCS.getDataPoint(0).getYValue() << endl;
     }
 
     return 0;

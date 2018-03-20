@@ -18,7 +18,7 @@ superscriptaddress, nobalancelastpage]{revtex4}
 \begin{document}
 
 \begin{abstract}
-    The neutron total cross sections \tot of $^{16,18}$O,
+    The neutron total cross sections \tots of $^{16,18}$O,
     $^{58,64}$Ni, $^{103}$Rh, and $^{112,124}$Sn have been measured at the Los Alamos
     Neutron Science Center (LANSCE) at intermediate energies (3 $\leq E_{n}
     \leq$ 500 MeV) by
@@ -71,22 +71,22 @@ picture) describes the nucleus as a constant-density sphere that interacts
 strongly with incident neutrons approaching within a nuclear radius
 \cite{Feshbach1949}. In this picture devoid of nuclear structure, \totEs depends
 only on size scaling of the interacting bodies:
-\begin{equation} \label{eq1}
+\begin{equation} \label{SASAbsolute}
     \sigma_{tot}(E) = 2\pi(R + \lambdabar)^{2}
 \end{equation}
 where $R=r_{0}A^{\frac{1}{3}}$ and $\lambdabar$ is the reduced wavelength
 of the incident neutron in the center of mass \cite{Fernbach1949, Satchler1980}. 
 To compare \totEs for two different targets of masses A and A', the relative
 difference \totRDs is useful:
-\begin{equation} \label{eq2}
+\begin{equation} \label{SASRelDiff}
     \begin{split}
         \totRDs & \equiv
     \frac{\sigma_{A}-\sigma_{A'}}{\sigma_{A}+\sigma_{A'}} \\
     & =
-        \frac{r_{0}(A^{\frac{2}{3}}-A'^{\frac{2}{3}}) +
-        2\lambdabar(A^{\frac{1}{3}}-A'^{\frac{1}{3}})}
-        {r_{0}(A^{\frac{2}{3}}+A'^{\frac{2}{3}}) +
-        2\lambdabar(A^{\frac{1}{3}}+A'^{\frac{1}{3}})}
+    \frac{r_{0}^{2}(A^{\frac{2}{3}}-A'^{\frac{2}{3}}) +
+    2\lambdabar r_{0}(A^{\frac{1}{3}}-A'^{\frac{1}{3}})}
+    {r_{0}^{2}(A^{\frac{2}{3}}+A'^{\frac{2}{3}}) +
+    2\lambdabar r_{0}(A^{\frac{1}{3}}+A'^{\frac{1}{3}}) + 2\lambdabar^{2}}
     \end{split}
 \end{equation}
 While on \textit{average}, experimental data comport with this naive
@@ -99,8 +99,8 @@ behavior centered about the average (visible in Fig.
     \caption{(Color online) Experimental \totEs data are shown from 2-500
         MeV for nuclides from A=12 to A=208
         \cite{Finlay1993, Schwartz1974, Poenitz1983, Abfalterer2000, Abfalterer2001}.
-        Predictions for \totEs given by the "strongly-absorbing sphere" (SAS) model (equation 
-        \ref{eq1}) are shown as thin dashed lines for each nucleus.
+        Predictions for \totEs given by the ``strongly-absorbing sphere" (SAS)
+        model, Eq. \ref{SASAbsolute}, are shown as thin dashed lines for each nucleus.
         Regular oscillations about the SAS model are clearly visible
         as is the trend for the oscillation
         maxima/minima to shift to \textit{higher} energies as A is increased. At low energies 
@@ -112,32 +112,18 @@ optical models?].}
     \label{SASphereVsExperiment}
 \end{figure*}
 
-%\begin{equation} \label{eq2}
-%    \sigma_{tot}(E,A) \propto \frac{A^{\frac{2}{3}}}{E}
-%    \times sin\left(\frac{A^{\frac{1}{3}}}{E^{\frac{1}{2}}}\right)
-%\end{equation}
-%that also appears in the relative difference:
-%\begin{equation} \label{eq2}
-%    \frac{\sigma_{A}-\sigma_{A'}}{\sigma_{A}+\sigma_{A'}} =
-%    \frac
-%    {A^{\frac{2}{3}}sin(\frac{A^{\frac{1}{3}}}{E^{\frac{1}{2}}}) -
-%    A'^{\frac{2}{3}}sin(\frac{A'^{\frac{1}{3}}}{E^{\frac{1}{2}}})}
-%    {A^{\frac{2}{3}}sin(\frac{A^{\frac{1}{3}}}{E^{\frac{1}{2}}}) +
-%    A'^{\frac{2}{3}}sin(\frac{A'^{\frac{1}{3}}}{E^{\frac{1}{2}}})}
-%\end{equation}
-
 These oscillations can be explained as the result of a phase shift between 
 neutron waves passing around the nucleus (unshifted) and waves passing
 through the the nucleus, where they experience refraction
-(illustrated in figure \ref{RamsauerPhaseShiftFigure}). This explanation was termed the ``nuclear 
+(illustrated in Fig. \ref{RamsauerPhaseShiftFigure}). This explanation was termed the ``nuclear 
 Ramsauer effect" by Peterson \cite{Peterson1962}, based on the analagous effect seen in 
 electron scattering on noble gases.
 In this picture, the intractable many-body
-problem of the target nucleus are replaced by a smooth potential (hence the
+problem of the target nucleus is replaced by a smooth potential (hence the
 ``optical model" of the nucleus, \cite{Feshbach1958}) from which the refractive
 index is easily calculated. As in the optical case, a complex index of
 refraction can be used to neatly incorporate both elastic scattering (the real
-potential) and inelastic scattering (the imaginary potential).
+potential) and all other scattering removing flux from the elastic channel (the imaginary potential).
 %\cite{McVoy1967}. 
 
 \begin{figure}
@@ -153,33 +139,33 @@ potential) and inelastic scattering (the imaginary potential).
             the wave component passing \textit{around} and \textit{through the center}
             of the potential persists, resulting in scattering.
             For the leading wavefront in the wave train, $\Delta$ is indicated in
-            the top right-hand corner of each panel. A differential version of equation 
-            \ref{phaseShift} is used to
+            the top right-hand corner of each panel. A differential version of
+            Eq. \ref{phaseShift} is used to
             calculate the phase shift for each step. In this figure, the neutron
             energy $E_{n}$ = 14 MeV and nuclear mass $A$ = 25. For the Woods-Saxon potential,
             we used a potential depth $U$ = 42.8 MeV (following Angeli's analysis
             of \tots data at 14 MeV \cite{Angeli1970}), with nuclear radius $R = 
             r_{0}A^{\frac{1}{3}}$, $r_{0}$ = 1.4 fm, and a diffuseness parameter
-        $a$ of 0.5.}
+        $a$ of 0.5 fm.}
         \label{RamsauerPhaseShiftFigure}
     \end{minipage}
 \end{figure}
 
 
 Following Angeli \cite{Angeli1970}, these considerations can be incorporated by
-imbuing the strongly-absorbing sphere relations (equation \ref{eq1}) with an additional sinusoidal term:
-\begin{equation}
+imbuing the strongly-absorbing sphere relations (equation \ref{SASAbsolute}) with an additional sinusoidal term:
+\begin{equation} \label{OscillatoryModel}
     \totE = 2\pi (R+\lambdabar)[1 - \rho \cos(\delta)]
 \end{equation}
 where $\rho = e^{-\operatorname{Im}(\Delta)}$, and $\delta =
 \operatorname{Re}(\Delta)$, with $\Delta$ the phase difference between the wave traveling
 around and traveling through the nucleus. Thus, the amplitude of the oscillations provides the 
 inelastic phase shift and the period of oscillation provides the elastic phase shift.
-As can be seen from equation 
-\ref{phaseShift}, the large magnitude of the oscillations means that inelastic
-scattering accounts for only a small fraction of the total cross section, in turn implying a 
+As can be seen from Eq. 
+\ref{OscillatoryModel}, the large magnitude of the oscillations means that inelastic
+scattering (from $\operatorname{Im}(\Delta)$) accounts for only a small fraction of the total cross section, in turn implying a 
 much larger mean free path for neutrons through the nucleus 
-than might otherwise be expected (i.e., in the absence of Pauli blocking)
+than might otherwise be expected in the absence of Pauli blocking.
 \cite{Mohr1955}.
 
 If we approximate the nucleus with a
@@ -189,20 +175,21 @@ spherical potential of radius $R$ and depth $U$, the total phase shift $\delta$ 
     \frac{\overline{C}\left(\left[{\frac{E+U}{E}}\right]^{\frac{1}{2}}-1\right)}{\lambdabar}
 \end{equation}
 where $\overline{C} = \frac{4}{3}R$ is the average chord length through the
-sphere \cite{Angeli1970}. Plotting $\delta$ as a function of E and A also reveals an important
-relation: to maintain constant phase as A is increased, E must also increase 
-\cite{Satchler1980, Peterson1962}:
+sphere \cite{Angeli1970}. Rearranging Eq. \ref{phaseShift} in terms of A and E and
+discarding leading constants yields:
 \begin{equation}
     \delta \propto A^{\frac{1}{3}}\times\left(\sqrt{E+U}-\sqrt{E}\right)
 \end{equation}
+This form reveals an important relation: as A is increased, to maintain constant 
+phase $\delta$, E must also increase \cite{Satchler1980, Peterson1962}. 
 This is contrary to a typical resonance condition where an integer number of wavelengths
-are fit inside a potential, where to maintain constant phase as A is increased,
+are fit inside a potential; in that case, to maintain constant phase as A is increased,
 E must be decreased. Thus these \tots oscillations have been referred to as
 ``anti-resonances" or ``echoes" \cite{Satchler1980, McVoy1967}.
 
 By including additional surface, spin-orbit, and other terms, optical models (OMs) have been 
 used to successfully reproduce the general features of all manner of single-nucleon scattering 
-data across the chart of nuclides up to several hundred MeV [insert citation].
+data across the chart of nuclides up to several hundred MeV \cite{CH89}. 
 However, despite the excellent agreement with experiment, optical models
 involve the interaction of many partial waves with many sometimes-opaque terms
 in the potential, complicating intuitive understanding of the underlying
@@ -215,7 +202,7 @@ potential terms on nuclear asymmetry, and, using a Dispersive Optical Model
 thicknesses, spectroscopic factors) highly sensitive to asymmetry.
 As one moves further from N=Z, these isovector components of the optical potential
 are increasingly important but also increasingly
-difficult to constrain as they requires both proton and neutron scattering data. Experimental 
+difficult to constrain as they require both proton and neutron scattering data. Experimental 
 challenges inherent to neutron scattering have meant that these data are often 
 limited or missing entirely despite their usefulness, motivating our \totEs
 measurement program.
@@ -237,13 +224,13 @@ nuclides. In contrast, because neutrons themselves must be generated as a
 secondary radioactive beam, neutron-scattering experiments are restricted to
 normal kinematics and \tots measurements are possible only for relatively stable
 nuclides that can be formed into a target. At present, \tots measurements above
-the resonance region on nuclides short half-lives (shorter than the timescale of
+the resonance region on nuclides with short half-lives (shorter than the timescale of
 days) are technically infeasible for this reason, though a handful have been carried out on
 samples with half-lives in the tens to thousands of years \cite{Poenitz1983,
 Phillips1980, Foster1971}.
 
 Traditionally, \tots measurements have relied on analog techniques for recording
-events, techniques that suffer from a large per-event or ``analytic" deadtime of
+events, techniques that suffer from a large per-event deadtime of
 up to several $\upmu$s. Thus for a typical intermediate-energy \totEs measurement
 with dozens or hundreds of energy bins, achieving statistical uncertainty at the
 level of 1\% requires a thick sample to attenuate a sizable fraction of the
@@ -262,12 +249,14 @@ $^{204}$Pb (see Table \ref{IsotopicCrossSectionTable}).
     datasets falling at least partially within 1-500 MeV are shown. For elements
     whose natural abundance is $>$90\% of a single isotope (e.g.,
     96.9\% of $^{\text{nat}}$Ca is $^{40}$Ca), \totEs data on the natural
-    target was includedas as ``isotopic".} \label{tab:title}
+    target was included as ``isotopic".} \label{tab:title}
     \label{IsotopicCrossSectionTable}
     \begin{center}
         \begin{tabular}{ c c c c }
             \hline
-            Isotope & Natural Abundance & Energy Range (MeV) & Reference\\
+            Isotope & Nat. Abund. & Energy Range & Reference\\
+                    & [\%] & [MeV] & \\
+
             \hline
 
             $^{3}$He & $2\times 10^{-4}\%$ & $1.5 - 40$ & \cite{Haesner1983}\\
@@ -309,17 +298,19 @@ $^{204}$Pb (see Table \ref{IsotopicCrossSectionTable}).
 
 Recent developments in waveform digitizer technology, however, have made it
 possible to reduce the per-event deadtime by an order of magnitude or more,
-enabling a corresponding reduction in the necessary sample size. Thus in 2008 we
+enabling a corresponding reduction in the necessary sample size. In 2008, with
+these improvements in mind, we
 embarked on a campaign of \tots measurements on isotopically-enriched samples,
 starting with $^{40,48}$Ca from $15 \leq E_{n} \leq 300$ MeV \cite{Shane2010}.
 The data from that measurement have been incorporated into a comprehensive
 Dispersive Optical Model (DOM) analysis \cite{Mueller2011, Mahzoon2014,
 MahzoonPhDThesis} yielding proton and neutron spectroscopic factors, charge
 radii, and neutron skins \cite{Mahzoon2017} for these nuclei. To continue our
-program, we now preesnt \tots results for the important closed-shell nuclides
-$^{16,18}$O, $^{58,64}$Ni, and $^{112,124}$Sn and the naturally-monoisotopic
-$^{103}$Rh and describe further developments in the digitizer-enabled
-approach.
+program, we now present \tots results for the important closed-shell nuclides
+$^{16,18}$O, $^{58,64}$Ni, and $^{112,124}$Sn. We further describe
+new developments in the digitizer-enabled approach and also present a \tots measurement
+on a very thin sample of naturally-monoisotopic $^{103}$Rh to demonstrate that
+experiments using minute amounts of material are feasible.
 
 \section{Experimental Details}
 All neutron total cross section measurements were carried out at the 15R
@@ -366,7 +357,7 @@ summed before digitization.
         ``Macropulses" of protons (row d) are delivered to
         WNR's tungsten Target 4, where they generate neutrons by spallation.
         Each macropulse consists of
-        $\approx$ 350 proton ``micropulses" (row c). Neutrons
+        $\approx$350 proton ``micropulses" (row c). Neutrons
         from each micropulse (row b) disperse in
         time as they travel along the flight path so that $\gamma$ rays and high-energy 
     neutrons catch up to low-energy ones from the previous pulse (row a).}
@@ -397,7 +388,7 @@ charged-particle production in the samples and in air along the flight path, a
 veto paddle was installed immediately upstream of the TOF detector.
 
 Custom digitizer software was used to run the 
-digitizer in two complementary modes, referred to as "DPP mode" and "Waveform 
+digitizer in two complementary modes, referred to as ``DPP mode" and ``Waveform 
 mode". In DPP mode, triggers were initiated by the digitizer's onboard
 peak-sensing firmware. For each trigger, several quantities were recorded: the trigger 
 timestamp, two charge integrals over the detected peak with different
@@ -425,42 +416,57 @@ changer. This design minimizes the amount of non-target mass proximate to the
 neutron beam path.
 
 \begin{table*}[ht]
-    \caption{Sample Characteristics}
+    \caption{Physical characteristics of all samples used for our \tots
+        measurements. For isotopically-enriched samples, the natural abundance
+        of the enriched isotope and the isotopic fraction of the sample are
+        given. For calculating cross sections, the relevant ``sample thickness" is the areal
+        density of nuclei $\rho_{\text{areal}}$, equivalent to
+        the (volumetric) density times the length of the sample. For
+        comparison, the Ni and Sn targets used in \cite{Abfalterer2001,
+        Finlay1993} had areal densities of 1.515 and 0.5475
+        $\frac{mol}{cm^{2}}$, respectively (12.7 and 6.5 times larger than our
+    samples).}
+    \label{tab:title}
+    \label{SampleCharacteristics}
+
     \label{SampleTable}
     \begin{center}
         \begin{tabular}{ c c c c c c c }
             \hline
-            Isotope & Nat. Abund. [\%] & Sample Purity [\%] & Length [mm] & Diameter
-            [mm] & Mass [g] & $\rho_{areal}$ [$\frac{mol}{cm^{2}}]$\\
+            Isotope & Length & Diameter
+            & Mass & $\rho_{\text{areal}}$ & Nat. Abund. & Sample Purity\\
+                 & [mm] & [mm] & [g] & [$\frac{mol}{cm^{2}}$] & [\%] & [\%]\\
             \hline
 
-            $^{\text{nat}}$C & - & - & 13.66$\pm$0.02 & 8.26$\pm$0.005 & 1.2363
-            & 0.19210 \\
-            $^{\text{nat}}$C & - & - & 27.29$\pm$0.02 & 8.26$\pm$0.005 & 2.4680
-            & 0.38345\\
+            $^{\text{nat}}$C & 13.66(2) & 8.260(5) & 1.2363
+            & 0.19210 & - & -\\
+            $^{\text{nat}}$C & 27.29(2) & 8.260(5) & 2.4680
+            & 0.38345 & - & -\\
 
-            H$_{2}$$^{\text{nat}}$O & - & - & 20.0 & 10.0 & N/A & [insert]\\
-            D$_{2}$$^{\text{nat}}$O & - & - & 20.0 & 10.0 & N/A & [insert]\\
-            H$_{2}$$^{18}$O & 0.20 & 99 & 20.0 & 10.0 & N/A & [insert]\\
+            H$_{2}$$^{\text{nat}}$O & 20.0(1) & 10.0(1) & 1.571 & 0.11103 & - &
+            - \\
+            D$_{2}$$^{\text{nat}}$O & 20.0(1) & 10.0(1) & 1.739 & 0.11103 & - &
+            - \\
+            H$_{2}$$^{18}$O & 20.0(1) & 10.0(1) & 1.738 & 0.11103 & 0.20 & 99\\
 
-            $^{58}$Ni & 68.077 & 99.6 & 7.97$\pm$0.03 & 8.18$\pm$0.02 &
-            3.6438 & 0.11965\\
-            $^{\text{nat}}$Ni & - & - & 8.00$\pm$0.03 & 8.20$\pm$0.02 &
-            3.6898 & 0.11917\\
-            $^{64}$Ni & 0.926 & 92.2 & 7.96$\pm$0.02 & 8.20$\pm$0.04 &
-            3.9942 & 0.11918\\
+            $^{58}$Ni & 7.97(3) & 8.18(2) &
+            3.6438 & 0.11965& 68.077 & 99.6 \\
+            $^{\text{nat}}$Ni & 8.00(3) & 8.20(2) &
+            3.6898 & 0.11917 & - & -\\
+            $^{64}$Ni & 7.96(2) & 8.20(4) &
+            3.9942 & 0.11918 & 0.926 & 92.2\\
 
-            $^{103}$Rh & 100 & 99.9 & 2.03$\pm$0.01 & 10.20$\pm$0.02 & 2.8359 & 0.02426\\
+            $^{103}$Rh & 2.03(1) & 10.20(2) & 2.8359 & 0.02426 & 100 & 99.9\\
 
-            $^{112}$Sn & 0.97 & 99.9 & 13.65$\pm$0.03 & 8.245$\pm$0.005 &
-            4.9720 & 0.083321\\
-            $^{\text{nat}}$Sn & - & - & 13.68$\pm$0.03 & 8.245$\pm$0.005 &
-            5.3263 & 0.084145\\
-            $^{124}$Sn & 5.79 & 99.9 & 13.73$\pm$0.03 & 8.245$\pm$0.005 &
-            5.5492 & 0.083988\\
+            $^{112}$Sn & 13.65(3) & 8.245(5) &
+            4.9720 & 0.083321 & 0.97 & 99.9\\
+            $^{\text{nat}}$Sn & 13.68(3) & 8.245(5) &
+            5.3263 & 0.084145 & - & -\\
+            $^{124}$Sn & 13.73(3) & 8.245(5) &
+            5.5492 & 0.083988 & 5.79 & 99.9\\
 
-            $^{\text{nat}}$Pb & - & - & 10.07$\pm$0.02 & 8.27$\pm$0.01 & 6.130 &
-            0.055077\\
+            $^{\text{nat}}$Pb & 10.07(2) & 8.27(1) & 6.130 &
+            0.055077 & - & -\\
 
             \hline
         \end{tabular}
@@ -474,8 +480,8 @@ beam attenuation in the vessel. Oxygen cross sections were calculated by
 subtracting the well-known hydrogen cross section from the raw H$_{2}$O result
 (we used H \tots data sets from Clement \cite{Clement1972} and Abfalterer 
 \cite{Abfalterer2001}, which together cover the range $0.5 \leq E_n \leq 500$ MeV
-and are in excellent agreement where their energy ranges overlap). Because of
-the additional uncertainty inherent in this kind of subtractive \tots
+and are in excellent agreement where their energy ranges overlap). In light of
+the additional uncertainty inherent to this kind of subtractive \tots
 determination, a D$_{2}^{\text{nat}}$O sample from which the literature \tots for
 D$_{2}$ could be subtracted was prepared as an additional cross-check. Due to its poor 
 machining properties, the rhodium
@@ -514,7 +520,7 @@ where $I_{0}$ is the neutron flux entering the sample, $I_{t}$ is the neutron
 flux transmitted through the sample without interaction, $\rho$ is the number
 density of nuclei in the sample, and $\ell$ is the sample length. For thin
 or low-density samples, flux attenuation through the sample will be small
-(e.g., $\approx$13\% for our Ni samples at 100 MeV) and a large number
+(e.g., 13\% for our Ni samples at 100 MeV) and a large number
 of counts will be required to determine the cross section to high
 precision.
 
@@ -542,14 +548,14 @@ and \ref{DifferenceThresholdsFit}).
 
 \begin{figure*}
     \includegraphics[scale=0.3]{figures/DifferenceThresholdsFit.png}
-    \caption{(Color online) As a follow-up to Fig. \ref{LRTimeDifferenceLinear},
-        all events from a diagnostic run were segregated by neutron energy and the
-        time difference between the left and right PMTs of the TOF detector
-        was calculated. The FWHM of these time differences are plotted (black
-        points) and fitted with a hyperbolic curve (red line). For low-energy
+    \caption{(Color online) The time difference between the left and right PMTs
+        of the TOF detector was calculated for all events in a diagnostic run.
+        The FWHM of these time differences as a function of
+        neutron energy are shown (black points) and fitted with a hyperbolic
+        curve (red line). For low-energy
         events, the time resolution is poorer due to the lower signal amplitude and
-        a larger traversal time for neutrons through the 1 inch detector. As energy
-        increases, the FWHM time resolution approaches its asymptotic minimum at 0.34
+        the larger traversal time for neutrons through the 1-inch detector. As energy
+        increases, the FWHM time resolution approaches an asymptote of 0.34
     ns (grey dashed line).}
     \label{DifferenceThresholdsFit}
 \end{figure*}
@@ -573,6 +579,21 @@ superior at low energies: for a 5 MeV neutron with a 0.82 ns detector-traversal 
 an inherent TOF resolution of 0.80 ns, $\Delta E$ is 13 keV. These energy uncertainties
 have been properly propagated through subsequent analysis into our \tots results below.
 
+\begin{figure}
+    \includegraphics[scale=0.24]{figures/TimingCorrectionStudy.png}
+    \caption{(Color online) The $\gamma$-ray peak from the TOF spectrum for the
+        blank sample is shown before and after each of our timing corrections.
+        The offline software-CFD
+        correction reduces the timing uncertainty of TOF-detector events from [insert
+        value] to [insert value] and the $\gamma$-ray averaging correction
+        reduces the uncertainty of the micropulse start time from [insert value]
+        to [insert value]. The final $\gamma$-ray peak FWHM after both
+        corrections is [insert value].
+        }
+    \label{TimingCorrectionStudy}
+\end{figure}
+
+
 Precise determination of the TOF distance was done by comparing our measured \totEs data
 for $^{\text{nat}}$C with that from literature from 3-15 MeV, the results of which are
 shown in Fig. \ref{DistanceStudy}. The distance was determined as [insert
@@ -580,7 +601,7 @@ updated value]$\pm$1 cm for the Ni and Rh measurement and [insert updated value]
 for the Sn and O measurement.
 
 Because events are not processed instantaneously, there is a brief period,
-referred to as the "analytic deadtime", after each event trigger during which
+referred to as the ``analytic deadtime", after each event trigger during which
 the digitizer is busy processing that trigger. Any newly-arriving events in this
 period will be ignored, privileging events arriving earlier and thus distorting
 the cross sections. To remedy this, a deadtime correction for
@@ -626,25 +647,26 @@ run configurations).}
 are shown. First, a plausible range of flight path distances was selected based
 on rough estimation during the experiment (26.97-27.21 m). For each of several
 distances in this range, the \totEs for natural carbon was calculated in the
-resonance region (3-15 MeV). then the RMS difference between our cross section
+resonance region (3-15 MeV). The RMS difference between our cross section
 (calculated using that distance) and literature data from Abfalterer
 \cite{Abfalterer2000, Abfalterer2001} was calculated (shown as black points in
-the figure). A quartic fit to these RMS data is shown in red. By minimizing the
-RMS difference, we calculate a flight path distance of 2709$\pm$1 cm.}
+the figure). A quartic fit to these RMS data is shown (solid line). By minimizing the
+RMS difference, the flight path distance of 2709$\pm$1 cm was determined.}
     \label{DistanceStudy}
 \end{figure*}
 
-Typical values for $F_{i}$ in our experiment are shown in Fig.
-\ref{ExampleDeadtimeSpectrum}. Because trigger processing is done quickly in
+Because trigger processing is done quickly in
 firmware onboard the digitizer, the per-event deadtimes affecting our
-measurement ranged from 150-230 ns, much smaller than the several-$\upmu$s
-deadtime-equivalents in previous analog experiments \cite{Finlay1993,
+measurement ranged from 150-230 ns. For a 230 ns deadtime, the probability-dead
+$F_{i}$ of our time bins is given in Fig.
+\ref{ExampleDeadtimeSpectrum}, showing that the probability-dead never exceeds
+25\%, much smaller than the 50-80\% of previous analog experiments \cite{Finlay1993,
 Abfalterer2001}.
-
 Once the fraction dead was identified for each time bin, the total number of
 events detected in that bin, $N_{m}[i]$, was corrected to the \textit{true}
-number of events in that bin $N_{t}[i]$ that would have been detected absent an
-analytic deadtime:
+number of events in that bin $N_{t}[i]$ that would have been detected in the
+absence of a
+per-event deadtime:
 \begin{equation}
     N_{t}[i] = -ln\left(\frac{1-\frac{N_m[i]}{M}}{(1-F_{i})\times M}\right)
 \end{equation}
@@ -664,13 +686,12 @@ Abfalterer2001} that were as high as 500\%.% The effect of this correction on th
 \begin{figure*}
     \includegraphics[scale=0.3]{figures/exampleDeadtimeSpectrum.png}
     \caption{(Color online) Using TOF data from a typical run, the probability that a given 
-        TOF bin is ``dead" is shown for the blank sample (in red) and the $^{\text{nat}}$C   
-        sample (in blue). Note the sharp rise at 90 ns corresponding to the
-        $\gamma$-ray flash, the gradual increase from 90-245 ns corresponding to
-        the arrival of high energy neutrons, and the sharp fall at 245 ns
-        corresponding to the elapse of the $\gamma$-ray ``shadow". Only high-
-        energy neutrons have a probability-dead $>$10\% (cf. the 50-80\%
-        probability-dead of \cite{Finlay1993, Abfalterer2001}).
+        TOF bin is ``dead" is shown for the blank sample (dashed line) and the $^{\text{nat}}$C   
+        sample (solid line). The sharp rise at 90 ns is the response to the
+        $\gamma$-ray flash, the gradual increase from 90-245 ns is the response to
+        the arrival of high-energy neutrons, and the sharp fall at 245 ns
+        is the elapse of the $\gamma$-ray ``shadow". Only high-energy neutrons
+        have a probability-dead exceeding 10\%.
     }
     \label{ExampleDeadtimeSpectrum}
 \end{figure*}
@@ -686,22 +707,22 @@ Abfalterer2001} that were as high as 500\%.% The effect of this correction on th
         obvious defect in the uncorrected spectrum is repaired in the corrected
         spectrum. The defect
         corresponds to the elapse of the 155-ns-long deadtime ``shadow" from the $\gamma$-ray
-        flash, which arrived at $\approx$90 ns (not pictured).
+        flash, which arrived at 90 ns (not shown).
     }
     \label{CorrectionEffectOnTOF}
 \end{figure*}
 
 [edits needed]
 In addition to analytic deadtime, an additional deadtime associated with digitizer readout 
-to the data acquisition computer (DAQ), was identified. In our Each pair of
+to the data acquisition computer (DAQ), was identified. Each pair of
 digitizer channels shares a common buffer for storing events; upon reaching a
 user-defined threshold, buffer contents are read out to the DAQ as packets.
 During readout, the digitizer is ...something.
 This is likely the largest source of systematic error in our measurement.
 
-During analysis, it was noted that occasionally (\~1 in 400 macropulses), one or two 
+During analysis, it was noted that occasionally (1 in 400 macropulses), one or two 
 adjacent macropulses would have an abnormally small number of flux monitor events or 
-TOF events. The frequency of these "data dropouts" was similar to the rate of
+TOF events. The frequency of these ``data dropouts" was similar to the rate of
 switching between DPP and waveform modes and we suspect it is related to edge
 case behavior right before or after a mode switch. To mitigate this issue,
 any macropulse that had less than 50\% of the average event rate in either the
@@ -720,11 +741,11 @@ energy domain.
         veto and integrated charge gating for the blank sample (in
         red) and for the $^{\text{nat}}$C sample (in blue), from the Ni/Rh experiment.
         The $\gamma$-ray peak is visible as a sharp spike at 90 ns, followed by
-        the highest-energy neutrons at $\approx$130ns. Small spikes spaced 60 ns
-        apart occur throughout the spectrum (visible before 90 ns and after 1500
-        ns). These are $\gamma$ rays caused by a continuous ``drip" of protons onto the 
-        tungsten target due to mistuning of the proton buncher; their
-        effect on the calculated cross sections is negligible.
+        the highest-energy neutrons at 130 ns. The small spikes spaced 60 ns
+        apart (visible before 90 ns and after 1500
+        ns) are identified as $\gamma$-ray peaks from a low-level, continuous ``drip" 
+        of protons onto the tungsten target caused by mistuning of the proton 
+        buncher; their effect on the calculated cross sections is negligible.
     }
     \label{ExampleTOFSpectrum}
 \end{figure*}
@@ -767,8 +788,8 @@ was within 1\% throughout our energy domain.
     techniques) and our results (signals processed with a digitizer, or "DSP")
     for natural C, Ni, Sn, and Pb. In panel a), the absolute cross sections are shown from
     3-500 MeV; in panel b), the relative differences between the literature data and
-    our data are shown in percent. From 3-100 MeV, we are fully consistent with the
-    literature datasets but above 100 MeV, a difference is visible, peaking at
+    our data are shown in percent. From 3-100 MeV, our data are fully consistent with the
+    literature datasets but above 100 MeV, a difference arises, peaking at
     $\approx$5\% at 300 MeV.
 b}
     \label{LiteratureBenchmarking}
@@ -860,7 +881,7 @@ IsotopicDiffSn}, respectively.
 \end{figure*}
 
 \begin{figure*}
-    \includegraphics[scale=0.35]{figures/relDiff_O18O16.png}
+    \includegraphics[scale=0.35]{figures/relativeDiff_O18O16.png}
     \caption{(Color online) Neutron total cross sections for $^{58,64}$Ni.
      Panel one shows our measurement (in red) and literature data from
      Abfalterer (in % black).
@@ -874,21 +895,20 @@ IsotopicDiffSn}, respectively.
 \end{figure*}
 
 \begin{figure*}
-    \includegraphics[scale=0.35]{figures/relDiff_Ni64Ni58.png}
-    \caption{(Color online) Neutron total cross sections for $^{58,64}$Ni.
-     Panel one shows our measurement (in red) and literature data from
-     Abfalterer (in % black).
-     Panel two shows the relative difference between our 
-     measurement and the literature data from the first panel. Panels three and
-     four show the corresponding absolute and relative cross sections after a
-     Pb-C correction, derived from literature data and detailed in the text,
-     are applied.
+    \includegraphics[scale=0.35]{figures/relativeDiff_Ni64Ni58.png}
+    \caption{(Color online) Relative difference of cross sections (red line) of
+        $^{\text{64}}$Ni and $^{\text{58}}$Ni, shown from 5-400
+        MeV. Total error
+        (including statistical and systematic) is indicated by the red
+        dotted region. Systematic error only (due to uncertainty in the areal
+        density) is shown by the blue dotted region. The SAS prediction (Eq.
+        \ref{SASRelDiff}) is shown by the black dashed line.
     }
     \label{IsotopicDifferenceNi}
 \end{figure*}
 
 \begin{figure*}
-    \includegraphics[scale=0.35]{figures/relDiff_Sn124Sn112.png}
+    \includegraphics[scale=0.35]{figures/relativeDiff_Sn124Sn112.png}
     \caption{(Color online) Neutron total cross sections for $^{58,64}$Ni.
      Panel one shows our measurement (in red) and literature data from
      Abfalterer (in % black).

@@ -64,10 +64,10 @@
 
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
-    gPad->SetLeftMargin(0.2);
+    gPad->SetLeftMargin(0.15);
     gPad->SetRightMargin(0.01);
     gPad->SetTopMargin(0.03);
-    gPad->SetBottomMargin(0.2);
+    gPad->SetBottomMargin(0.15);
     gPad->SetTicky(2);
 
     TMultiGraph* mg = new TMultiGraph();
@@ -96,17 +96,17 @@
     mg->GetYaxis()->SetTitle("(#frac{#sigma_{64} - #sigma_{58}}{#sigma_{64} + #sigma_{58}})");
     mg->GetYaxis()->SetTitleSize(0.06);
     mg->GetYaxis()->SetTitleFont(2);
-    mg->GetYaxis()->SetTitleOffset(1.3);
+    mg->GetYaxis()->SetTitleOffset(1.0);
     mg->GetYaxis()->CenterTitle();
 
     mg->GetYaxis()->SetLabelOffset(0.01);
     mg->GetYaxis()->SetLabelSize(0.05);
 
     mg->GetYaxis()->SetLabelFont(2);
-    mg->GetYaxis()->SetNdivisions(10);
+    mg->GetYaxis()->SetNdivisions(5);
     mg->GetYaxis()->SetTickLength(0.02);
 
-    mg->GetYaxis()->SetRangeUser(1.01,4.99);
+    mg->GetYaxis()->SetRangeUser(0.9,5.1);
     mg->GetXaxis()->SetLimits(5,500);
 
     /*

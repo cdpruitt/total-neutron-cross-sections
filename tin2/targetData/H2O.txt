@@ -1,8 +1,8 @@
 Name:       H2O
-Length:     2.00 cm
+Length:     1.99 cm
 Diameter:   1.00 cm
-Diameter uncertainty: 0.001 cm
-Mass:       1.571 g
+Diameter uncertainty: 0.002 cm
+Mass:       1.563 g
 Mass uncertainty: 0.0005 g
 Molar mass: 18.015 g/mol
 Molar mass uncertainty: 0.0005 g/mol

@@ -1,8 +1,8 @@
 Name:       D2O
 Length:     2.00 cm
 Diameter:   1.00 cm
-Diameter uncertainty: 0.001 cm
-Mass:       1.739 g
+Diameter uncertainty: 0.002 cm
+Mass:       1.730 g
 Mass uncertainty: 0.0005 g
-Molar mass: 20.028 g/mol
+Molar mass: 20.027 g/mol
 Molar mass uncertainty: 0.0005 g/mol

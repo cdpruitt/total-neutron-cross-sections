@@ -16,15 +16,15 @@
 ./relativeDiff_O18O16.sh # calculate relative difference between
                          # experimental NatO/O18 cross sections
 
-./absoluteCS_O_correctedByLitCPb.sh # apply Sn dataset C/Pb correction to O CSs
+#./absoluteCS_O_correctedByLitCPb.sh # apply Sn dataset C/Pb correction to O CSs
 
-./produceOTotalCS_Corrected.sh # using literature H and D data, create exp
+#./produceOTotalCS_Corrected.sh # using literature H and D data, create exp
                                # NatO/O18 CSs
 
-./relativeDiffLit_CorrectedO.sh # calculate relative difference between
+#./relativeDiffLit_CorrectedO.sh # calculate relative difference between
                                 # literature O/exp O cross sections, with C/Pb
                                 # correction applied to experimental data
 
-./relativeDiff_CorrectedO18O16.sh # calculate relative difference between
+#./relativeDiff_CorrectedO18O16.sh # calculate relative difference between
                                      # NatO/O18 cross sections, with C/Pb
                                      # correction applied to experimental data

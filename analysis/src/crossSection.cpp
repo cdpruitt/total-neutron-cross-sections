@@ -331,11 +331,8 @@ void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& bla
     double diameterError =
         targetData.target.getDiameterUncertainty()/targetData.target.getDiameter();
 
-    double arealDensityError =
+    double arealDensityErrorPercent =
         pow(pow(massError,2) + pow(molarMassError,2) + pow(diameterError,2),0.5); // as percent
-
-    //cout << "arealDensity for " << targetData.target.getName() << " = " << arealDensity << endl;
-    //cout << "arealDensityError for " << targetData.target.getName() << " = " << 100*arealDensityError << "%" << endl;
 
     double tofSigma = 1; //calculateTOFSigma(targetData.TOFHisto);
 
@@ -370,17 +367,34 @@ void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& bla
         crossSectionValue *= pow(10,24); // in barns 
             
         // calculate the statistical error
-        double statisticalError = 
-            pow((1/tCounts+1/bCounts+1/bMon+1/tMon),0.5)/(arealDensity/pow(10,24)); // as percent
+        double statisticalErrorPercent = 
+            pow((1/tCounts+1/bCounts+1/bMon+1/tMon),0.5); // as percent
+
+        double statisticalErrorAbsolute =
+            statisticalErrorPercent/(arealDensity/pow(10,24)); // in barns
+
+        // calculate the areal density error
+        double arealDensityErrorAbsolute =
+            arealDensityErrorPercent*crossSectionValue; // in barns
+
+        if(i==10)
+        {
+            cout << "At " << energyValue << " MeV, "
+                << "tCounts = " << tCounts << ", bCounts = " << bCounts
+                << ", bMon = " << bMon << ", tMon = " << tMon << endl;
+
+            cout << "statistical error = " << statisticalErrorAbsolute << endl;
+
+            cout << "arealDensity for " << targetData.target.getName() << " = " << arealDensity << endl;
+            cout << "arealDensityError for " << targetData.target.getName() << " = " << arealDensityErrorAbsolute << endl;
+        }
 
         double crossSectionError =
-            pow(pow(statisticalError,2)+pow(arealDensityError,2),0.5); // as percent
-
-        crossSectionError *= crossSectionValue; // in barns
+            pow(pow(statisticalErrorAbsolute,2)+pow(arealDensityErrorAbsolute,2),0.5); // as percent
 
         addDataPoint(
                 DataPoint(energyValue, energyErrorL, energyErrorR, crossSectionValue, crossSectionError,
-                    crossSectionValue*statisticalError, crossSectionValue*arealDensityError, bMon, tMon, bCounts, tCounts));
+                    statisticalErrorAbsolute, arealDensityErrorAbsolute, bMon, tMon, bCounts, tCounts));
     }
 
     name = targetData.target.getName();
