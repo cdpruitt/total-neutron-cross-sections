@@ -35,9 +35,9 @@
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
     gPad->SetLeftMargin(0.15);
-    gPad->SetRightMargin(0.10);
-    gPad->SetTopMargin(0.10);
-    gPad->SetBottomMargin(0.20);
+    gPad->SetRightMargin(0.05);
+    gPad->SetTopMargin(0.05);
+    gPad->SetBottomMargin(0.15);
     //gPad->SetTicky(2);
 
     double x[5] = {5, 10, 20, 40, 80};
@@ -48,8 +48,8 @@
     LRTimeDifferenceFitGraph->SetMarkerColor(kBlack);
 
     // X-axis parameters
-    LRTimeDifferenceFitGraph->GetXaxis()->SetTitle("Energy of Event (MeV)");
-    LRTimeDifferenceFitGraph->GetXaxis()->SetTitleSize(0.04);
+    LRTimeDifferenceFitGraph->GetXaxis()->SetTitle("Energy of Event [MeV]");
+    LRTimeDifferenceFitGraph->GetXaxis()->SetTitleSize(0.05);
     LRTimeDifferenceFitGraph->GetXaxis()->SetTitleFont(2);
     LRTimeDifferenceFitGraph->GetXaxis()->SetTitleOffset(1.5);
     LRTimeDifferenceFitGraph->GetXaxis()->CenterTitle();
@@ -61,15 +61,16 @@
     LRTimeDifferenceFitGraph->GetXaxis()->SetNdivisions(5);
 
     // Y-axis parameters
-    LRTimeDifferenceFitGraph->GetYaxis()->SetTitle("Time Difference FWHM (ns)");
-    LRTimeDifferenceFitGraph->GetYaxis()->SetTitleSize(0.04);
+    LRTimeDifferenceFitGraph->GetYaxis()->SetTitle("Time Difference FWHM [ns]");
+    LRTimeDifferenceFitGraph->GetYaxis()->SetTitleSize(0.05);
     LRTimeDifferenceFitGraph->GetYaxis()->SetTitleFont(2);
-    LRTimeDifferenceFitGraph->GetYaxis()->SetTitleOffset(1.7);
+    LRTimeDifferenceFitGraph->GetYaxis()->SetTitleOffset(1.3);
     LRTimeDifferenceFitGraph->GetYaxis()->CenterTitle();
 
     LRTimeDifferenceFitGraph->GetYaxis()->SetLabelOffset(0.01);
     LRTimeDifferenceFitGraph->GetYaxis()->SetLabelSize(0.04);
     LRTimeDifferenceFitGraph->GetYaxis()->SetLabelFont(2);
+    LRTimeDifferenceFitGraph->GetYaxis()->SetNdivisions(5);
 
     LRTimeDifferenceFitGraph->GetXaxis()->SetRangeUser(0,85);
     LRTimeDifferenceFitGraph->GetYaxis()->SetRangeUser(0.33,0.70);
@@ -82,18 +83,18 @@
 
     TLatex latex;
     latex.SetNDC();
-    latex.SetTextSize(0.035);
+    latex.SetTextSize(0.043);
     latex.SetTextAlign(13); // align at top
 
     latex.SetTextColor(kGray+2);
-    latex.DrawLatex(0.20,0.28,"lim = 0.34 ns");
+    latex.DrawLatex(0.20,0.27,"lim = 0.34 ns");
 
-    latex.SetTextSize(0.022);
-    latex.DrawLatex(0.20,0.25,"x#rightarrow#infty");
+    latex.SetTextSize(0.030);
+    latex.DrawLatex(0.198,0.232,"x#rightarrow#infty");
 
-    TArrow *arrow = new TArrow(17, 0.3550, 19, 0.3460, 0.015, "|>");
+    TArrow *arrow = new TArrow(15.5, 0.3650, 17.5, 0.348, 0.015, "|>");
     arrow->SetAngle(30);
-    arrow->SetLineWidth(1);
+    arrow->SetLineWidth(3);
     arrow->SetLineColor(kGray+2);
     arrow->SetFillColor(kGray+2);
     arrow->Draw();

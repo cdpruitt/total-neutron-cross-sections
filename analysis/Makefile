@@ -15,7 +15,7 @@ LINKOPTION = $(shell root-config --libs)
 ############################### DEFINE TARGETS #################################
 
 # List all targets
-TARGETS = driver text sumAll eachSubrun sumChunk readLitData subtractCS mergeCS shiftCS multiplyCS relativeDiffCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck rateHisto #plotCSPrereqs
+TARGETS = driver text sumAll eachSubrun sumChunk readLitData readGraphToText subtractCS mergeCS shiftCS multiplyCS relativeDiffCS relativeCS applyCSCorrectionFactor scaledownCS produceRunningRMS detTimeCheck rateHisto #plotCSPrereqs
 all: $(addprefix $(BIN), $(TARGETS))
 
 # Build driver (main data analysis engine)
@@ -48,6 +48,11 @@ $(BIN)plotCSPrereqs: $(addprefix $(SOURCE), $(PLOTCSPREREQS_SOURCES))
 READLITDATA_SOURCES = readLitData.cpp dataSet.cpp dataPoint.cpp 
 $(BIN)readLitData: $(addprefix $(SOURCE), $(READLITDATA_SOURCES))
 	$(COMPILER) $(CFLAGS) -o $(BIN)readLitData $(addprefix $(SOURCE), $(READLITDATA_SOURCES)) $(LINKOPTION)
+
+# Build readGraphToText (for reading pre-formatted literature data into ROOT Graphs)
+READGRAPHTOTEXT_SOURCES = readGraphToText.cpp dataSet.cpp dataPoint.cpp 
+$(BIN)readGraphToText: $(addprefix $(SOURCE), $(READGRAPHTOTEXT_SOURCES))
+	$(COMPILER) $(CFLAGS) -o $(BIN)readGraphToText $(addprefix $(SOURCE), $(READGRAPHTOTEXT_SOURCES)) $(LINKOPTION)
 
 # Build text (for producing human-readable dump of raw event file data)
 TEXT_SOURCES = text.cpp raw.cpp softwareCFD.cpp

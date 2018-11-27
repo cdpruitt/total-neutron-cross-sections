@@ -375,6 +375,7 @@ int readRawData(string inFileName, string outFileName, ofstream& logFile)
                     case 2:
                     case 3:
                     case 7:
+                        rawEvent.fineTime = 0;
                         break;
 
                     case 4:

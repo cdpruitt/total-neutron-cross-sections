@@ -14,11 +14,31 @@ using namespace std;
 // incident neutrons, calculate cross sections of a nucleus (mass numbers A) at neutron energy E
 double calculateCS_SA(unsigned int A, double E)
 {
-    double reducedWavelength = (REDUCED_PLANCK_CONSTANT*((A+1)/A))/pow(2*E*NEUTRON_MASS, 0.5); // in meters
+    double relativisticP = pow(pow(E/C,2) + 2*E*NEUTRON_MASS, 0.5); // in MeV/C
+    double reducedWavelength = (REDUCED_PLANCK_CONSTANT*((A+1)/A))/relativisticP; // in meters
     reducedWavelength *= pow(10,15)*C; // convert from units of C*s to fermi
     double nuclearRadius = NUCLEAR_RADIUS_CONSTANT*pow(A,1/(double)3); // in fermi
 
     double crossSection = TAU*pow(nuclearRadius+reducedWavelength, 2); // in fermi^2
+    return crossSection*FM2_TO_BARNS; // in barns
+}
+
+double calculateCS_OM(unsigned int A, double E)
+{
+    double reducedWavelength = (REDUCED_PLANCK_CONSTANT*((A+1)/A))/pow(2*E*NEUTRON_MASS, 0.5); // in meters
+    reducedWavelength *= pow(10,15)*C; // convert from units of C*s to fermi
+
+    double nuclearRadius = NUCLEAR_RADIUS_CONSTANT*pow(A,1/(double)3); // in fermi
+
+    const double U = 200; // in MeV
+    double phaseShift = (4*nuclearRadius/3.)*(pow((E+U)/E,0.5)-1)/reducedWavelength; // unitless
+
+    double phaseOffset = -0.4;
+
+    const double rho = 0.15; // imaginary component
+
+    double crossSection = TAU*pow(nuclearRadius+reducedWavelength,2)
+        *(1-rho*cos(phaseShift+phaseOffset));
     return crossSection*FM2_TO_BARNS; // in barns
 }
 
@@ -40,6 +60,26 @@ TGraph* createSAGraph(double A, string name)
     TGraph* SAGraph = new TGraph(energy.size(), &energy[0], &crossSection[0]);
     SAGraph->SetNameTitle(name.c_str(),name.c_str());
     return SAGraph;
+}
+
+TGraph* createOMGraph(double A, string name)
+{
+    vector<double> energy;
+    vector<double> crossSection;
+
+    double startingPoint = log(1);
+    double stepSize = (log(600)-log(1))/100;
+
+    for(unsigned int i=0; i<100; i++)
+    {
+        double E = exp(i*stepSize+startingPoint);
+        energy.push_back(E);
+        crossSection.push_back(calculateCS_OM(A, E));
+    }
+
+    TGraph* OMGraph = new TGraph(energy.size(), &energy[0], &crossSection[0]);
+    OMGraph->SetNameTitle(name.c_str(),name.c_str());
+    return OMGraph;
 }
 
 TGraph* createRelDiffGraph(TGraph* graph1, TGraph* graph2, string name)
@@ -100,6 +140,10 @@ int main()
     TGraph* SnGraph = createSAGraph(118.7, "tin");
     SnGraph->SetNameTitle("SA_A=118.7", "SA_A=118.7");
     SnGraph->Write();
+
+    TGraph* SnGraphOM = createOMGraph(118.7, "tin, OM");
+    SnGraphOM->SetNameTitle("OM_A=118.7", "OM_A=118.7");
+    SnGraphOM->Write();
 
     TGraph* PbGraph = createSAGraph(207.2, "lead");
     PbGraph->SetNameTitle("SA_A=207.2", "SA_A=207.2");

@@ -385,8 +385,8 @@ void CrossSection::calculateCS(const CSPrereqs& targetData, const CSPrereqs& bla
 
             cout << "statistical error = " << statisticalErrorAbsolute << endl;
 
-            cout << "arealDensity for " << targetData.target.getName() << " = " << arealDensity << endl;
-            cout << "arealDensityError for " << targetData.target.getName() << " = " << arealDensityErrorAbsolute << endl;
+            cout << "arealDensity for " << targetData.target.getName() << " = " << arealDensity/AVOGADROS_NUMBER << " in mol/cm^2" << endl;
+            cout << "arealDensityError for " << targetData.target.getName() << " = " << arealDensityErrorPercent*arealDensity/AVOGADROS_NUMBER << " in mol/cm^2" << endl;
         }
 
         double crossSectionError =

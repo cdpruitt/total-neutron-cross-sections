@@ -10,8 +10,11 @@
 ./relativeDiffLit_O.sh # calculate relative difference between literature O/exp
                        # O cross sections
 
-./relativeDiff_D2OH2O.sh # calculate relative difference between raw experimental
-                         # D2O/H2O cross sections
+./relativeDiff_D2OH2O.sh # calculate relative difference between O16 cross
+                         # sections, measured as D2O and H2O
+
+./relativeDiff_DtoH.sh # calculate relative difference between D and H, from
+                       # D2O and H2O cross sections
 
 ./relativeDiff_O18O16.sh # calculate relative difference between
                          # experimental NatO/O18 cross sections

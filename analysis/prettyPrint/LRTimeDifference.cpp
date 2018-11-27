@@ -52,7 +52,7 @@
 
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
-    gPad->SetLeftMargin(0.15);
+    gPad->SetLeftMargin(0.17);
     gPad->SetRightMargin(0.05);
     gPad->SetTopMargin(0.05);
     gPad->SetBottomMargin(0.15);
@@ -60,10 +60,10 @@
 
     // Set histo point and line characteristics
     LRTimeDifferenceHisto->SetLineColor(kBlack);
-    LRTimeDifferenceHisto->SetLineWidth(2);
+    LRTimeDifferenceHisto->SetLineWidth(3);
 
     // X-axis parameters
-    LRTimeDifferenceHisto->GetXaxis()->SetTitle("Time difference, left - right (ns)");
+    LRTimeDifferenceHisto->GetXaxis()->SetTitle("L-R Time Difference [ns]");
     LRTimeDifferenceHisto->GetXaxis()->SetTitleSize(0.05);
     LRTimeDifferenceHisto->GetXaxis()->SetTitleFont(2);
     LRTimeDifferenceHisto->GetXaxis()->SetTitleOffset(1.5);
@@ -77,11 +77,11 @@
     //LRTimeDifferenceHisto->GetXaxis()->SetTickLength(0.03);
 
     // Y-axis parameters
-    //LRTimeDifferenceHisto->GetYaxis()->SetTitle("ns)");
-    //LRTimeDifferenceHisto->GetYaxis()->SetTitleSize(0.05);
-    //LRTimeDifferenceHisto->GetYaxis()->SetTitleFont(2);
-    //LRTimeDifferenceHisto->GetYaxis()->SetTitleOffset(1.5);
-    //LRTimeDifferenceHisto->GetYaxis()->CenterTitle();
+    LRTimeDifferenceHisto->GetYaxis()->SetTitle("Counts");
+    LRTimeDifferenceHisto->GetYaxis()->SetTitleSize(0.05);
+    LRTimeDifferenceHisto->GetYaxis()->SetTitleFont(2);
+    LRTimeDifferenceHisto->GetYaxis()->SetTitleOffset(1.7);
+    LRTimeDifferenceHisto->GetYaxis()->CenterTitle();
 
     LRTimeDifferenceHisto->GetYaxis()->SetLabelOffset(0.01);
     LRTimeDifferenceHisto->GetYaxis()->SetLabelSize(0.05);
@@ -90,26 +90,34 @@
     //LRTimeDifferenceHisto->GetYaxis()->SetNdivisions(10);
     //LRTimeDifferenceHisto->GetYaxis()->SetTickLength(0.02);
 
-    LRTimeDifferenceHisto->GetXaxis()->SetRangeUser(-3,3);
+    LRTimeDifferenceHisto->GetXaxis()->SetRangeUser(-1.09,1.09);
     //LRTimeDifferenceHisto->GetYaxis()->SetRangeUser(35,55);
 
     LRTimeDifferenceHisto->Draw();
 
-    gPad->SetLogy();
-
-    LRTimeDifferenceHisto->Fit("gaus","","",-2,2);
+    TF1* fit = new TF1("fit","gaus",-2,2);
+    fit->SetLineWidth(4);
+    LRTimeDifferenceHisto->Fit("fit");
 
     TLatex latex;
     latex.SetNDC();
-    latex.SetTextSize(0.035);
+    latex.SetTextSize(0.045);
     latex.SetTextAlign(33); // align at top
-    latex.SetTextColor(kRed);
-    latex.DrawLatex(0.94,0.52,"#mu_{fit} = -0.0929 ns");
-    latex.DrawLatex(0.94,0.44,"FWHM_{fit} = 0.520 ns");
 
-    TLine *meanLine = new TLine(-0.0929, 0, -0.0929, 11000);
+    latex.SetTextColor(kBlack);
+    char FWHM [50];
+    sprintf(FWHM, "%.3f", 2.355*fit->GetParameter(2));
+    string text = "FWHM = " + string(FWHM) + " ns";
+    latex.DrawLatex(0.92,0.49,text.c_str());
+
+    char mean [50];
+    sprintf(mean, "%.3f", fit->GetParameter(1));
+    string muText = "Mean = " + string(mean) + " ns";
+    latex.DrawLatex(0.92,0.42,muText.c_str());
+
+    TLine *meanLine = new TLine(fit->GetParameter(1), 0, fit->GetParameter(1), fit->GetParameter(0));
     meanLine->SetLineStyle(7);
-    meanLine->SetLineWidth(2);
+    meanLine->SetLineWidth(3);
     meanLine->SetLineColor(kGray+1);
     meanLine->Draw();
 

@@ -32,7 +32,7 @@
     gROOT->ForceStyle();
 
     string fileName = "/data1/analysis/literatureData.root";
-    string ramsauerFileName = "../../theory/ramsauer.root";
+    string ramsauerFileName = "~/neutronTCS/theory/ramsauer.root";
 
     TFile* file = new TFile(fileName.c_str(),"READ");
     TFile* ramsauerFile = new TFile(ramsauerFileName.c_str(),"READ");
@@ -57,6 +57,9 @@
     TGraph* SASnGraph = (TGraph*)ramsauerFile->Get(SASnGraphName.c_str());
     TGraph* SAPbGraph = (TGraph*)ramsauerFile->Get(SAPbGraphName.c_str());
 
+    string OMSnGraphName = "OM_A=118.7";
+    TGraph* OMSnGraph = (TGraph*)ramsauerFile->Get(OMSnGraphName.c_str());
+
     // Set graph point and line characteristics
     CGraph->SetLineWidth(4);
     CGraph->SetLineStyle(0);
@@ -78,6 +81,10 @@
     SASnGraph->SetLineWidth(2);
     SASnGraph->SetLineStyle(9);
     SASnGraph->SetLineColor(kViolet-4);
+
+    OMSnGraph->SetLineWidth(3);
+    OMSnGraph->SetLineStyle(2);
+    OMSnGraph->SetLineColor(kViolet-4);
 
     PbGraph->SetLineWidth(4);
     PbGraph->SetLineStyle(0);
@@ -130,6 +137,7 @@
     SACGraph->Draw("same");
     SANiGraph->Draw("same");
     SASnGraph->Draw("same");
+    OMSnGraph->Draw("same");
     SAPbGraph->Draw("same");
  
     gPad->SetLogx(1);

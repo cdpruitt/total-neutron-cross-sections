@@ -54,28 +54,30 @@
     DistanceStudyFitGraph->SetMarkerColor(kBlack);
 
     // X-axis parameters
-    DistanceStudyFitGraph->GetXaxis()->SetTitle("Main Detector Distance (m)");
+    DistanceStudyFitGraph->GetXaxis()->SetTitle("TOF Detector Distance [m]");
     DistanceStudyFitGraph->GetXaxis()->SetTitleSize(0.04);
     DistanceStudyFitGraph->GetXaxis()->SetTitleFont(2);
     DistanceStudyFitGraph->GetXaxis()->SetTitleOffset(1.5);
     DistanceStudyFitGraph->GetXaxis()->CenterTitle();
 
     DistanceStudyFitGraph->GetXaxis()->SetLabelOffset(0.01);
-    DistanceStudyFitGraph->GetXaxis()->SetLabelSize(0.04);
+    DistanceStudyFitGraph->GetXaxis()->SetLabelSize(0.05);
     DistanceStudyFitGraph->GetXaxis()->SetLabelFont(2);
 
     DistanceStudyFitGraph->GetXaxis()->SetNdivisions(6);
 
     // Y-axis parameters
-    DistanceStudyFitGraph->GetYaxis()->SetTitle("#sigma_{exp}-#sigma_{lit} (RMS, in %)");
+    DistanceStudyFitGraph->GetYaxis()->SetTitle("#sigma_{exp}-#sigma_{lit} RMS [%]");
     DistanceStudyFitGraph->GetYaxis()->SetTitleSize(0.05);
     DistanceStudyFitGraph->GetYaxis()->SetTitleFont(2);
     DistanceStudyFitGraph->GetYaxis()->SetTitleOffset(1.2);
     DistanceStudyFitGraph->GetYaxis()->CenterTitle();
 
     DistanceStudyFitGraph->GetYaxis()->SetLabelOffset(0.01);
-    DistanceStudyFitGraph->GetYaxis()->SetLabelSize(0.04);
+    DistanceStudyFitGraph->GetYaxis()->SetLabelSize(0.05);
     DistanceStudyFitGraph->GetYaxis()->SetLabelFont(2);
+
+    DistanceStudyFitGraph->GetYaxis()->SetNdivisions(4);
 
     DistanceStudyFitGraph->GetXaxis()->SetRangeUser(26.94, 27.24);
     DistanceStudyFitGraph->GetYaxis()->SetRangeUser(1.2,5.0);

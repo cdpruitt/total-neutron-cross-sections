@@ -72,10 +72,11 @@
 
     // Set blankHisto point and line characteristics
     blankHisto->SetMarkerColor(kBlack);
-    blankHisto->SetLineWidth(4);
+    blankHisto->SetLineWidth(3);
     blankHisto->SetLineColor(kRed);
+    blankHisto->SetLineStyle(1);
 
-    CNatHisto->SetLineWidth(4);
+    CNatHisto->SetLineWidth(5);
 
     // X-axis parameters
     blankHisto->GetXaxis()->SetTitle("TOF (ns)");
@@ -88,7 +89,7 @@
     blankHisto->GetXaxis()->SetLabelSize(0.05);
     blankHisto->GetXaxis()->SetLabelFont(2);
 
-    //blankHisto->GetXaxis()->SetNdivisions(10);
+    //blankHisto->GetXaxis()->SetNdivisions(6);
     //blankHisto->GetXaxis()->SetTickLength(0.03);
 
     // Y-axis parameters
@@ -102,7 +103,7 @@
     blankHisto->GetYaxis()->SetLabelSize(0.05);
     blankHisto->GetYaxis()->SetLabelFont(2);
 
-    //blankHisto->GetYaxis()->SetNdivisions(10);
+    blankHisto->GetYaxis()->SetNdivisions(6);
     //blankHisto->GetYaxis()->SetTickLength(0.02);
 
     //blankHisto->GetXaxis()->SetRangeUser(-1,1);

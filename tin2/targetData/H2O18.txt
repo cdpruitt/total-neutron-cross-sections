@@ -1,8 +1,8 @@
 Name:       H2O18
 Length:     2.00 cm
-Diameter:   1.00 cm
-Diameter uncertainty: 0.001 cm
-Mass:       1.729 g
+Diameter:   0.892 cm
+Diameter uncertainty: 0.002 cm
+Mass:       1.3844 g
 Mass uncertainty: 0.0005 g
 Molar mass: 20.015 g/mol
 Molar mass uncertainty: 0.0005 g/mol

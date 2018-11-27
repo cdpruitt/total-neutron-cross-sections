@@ -8,28 +8,31 @@ superscriptaddress, nobalancelastpage]{revtex4}
 \setlength{\belowcaptionskip}{6pt}
 \usepackage{amsmath} \usepackage{braket} \usepackage{epsfig}
 \usepackage{upgreek}
+\usepackage{textcomp}
 
 \newcommand{\tot}{\ensuremath{\sigma_{tot}}}
 \newcommand{\tots}{\ensuremath{\sigma_{tot}}\,\,}
 \newcommand{\totE}{\ensuremath{\sigma_{tot}}(E)}
 \newcommand{\totEs}{\ensuremath{\sigma_{tot}}(E)\,\,}
 \newcommand{\totRDs}{\ensuremath{\sigma_{A,A'}}(E)\,}
+\newcommand{\reactE}{\ensuremath{\sigma_{react}}(E)}
+\newcommand{\reactEs}{\ensuremath{\sigma_{react}}(E)\,\,}
+\newcommand{\elast}{\ensuremath{\sigma_{el}}}
+\newcommand{\elasts}{\ensuremath{\sigma_{el}}\,\,}
 
 \begin{document}
 
 \begin{abstract}
     The neutron total cross sections \tots of $^{16,18}$O,
-    $^{58,64}$Ni, $^{103}$Rh, and $^{112,124}$Sn have been measured at the Los Alamos
+    $^{58,nat,64}$Ni, $^{103}$Rh, and $^{112,nat,124}$Sn have been measured at the Los Alamos
     Neutron Science Center (LANSCE) at intermediate energies (3 $\leq E_{n}
     \leq$ 500 MeV) by
     leveraging waveform digitizer technology. The results are in good agreement
-    with previous measurements that used analog techniques on natural targets,
+    with previous measurements that used analog techniques,
     excepting small deviations at high energies, and continue the campaign of
     \tots measurements we initiated with the case study of $^{40,48}$Ca in 2009.
-    The \tots relative differences between isotopes (e.g.,
-    $\frac{\sigma_{Ni^{64}}-\sigma_{Ni^{58}}} {\sigma_{Ni^{64}}+
-    \sigma_{Ni^{58}}}$), which are robust against systematic error,
-    are presented, revealing additional information about
+    The \tots relative differences between isotopes are presented,
+    revealing additional information about
     the isovector components needed for an accurate optical model (OM)
     description away from stability. Digitizer-enabled \tot-measurement
     techniques are discussed and a preliminary Dispersive Optical Model (DOM)
@@ -63,8 +66,8 @@ nuclear size and the ratio of elastic-to-inelastic components of nucleon
 scattering. Additionally, \tots data are sensitive to a variey of nuclear
 properties of great interest including the neutron skin of neutron-rich nuclei
 \cite{Mahzoon2017} and thus the density dependence of the symmetry energy $L$,
-essential for an accurate neutron star equation-of-state (EOS)
-\cite{Fattoyev2012, Vinas2014, Brown2000}.
+essential for an accurate equation-of-state (EOS) input to neutron star
+structure calculations \cite{Fattoyev2012, Vinas2014, Brown2000}.
 
 The earliest model for neutron scattering (a ``strongly-absorbing sphere"
 picture) describes the nucleus as a constant-density sphere that interacts
@@ -89,10 +92,10 @@ difference \totRDs is useful:
     2\lambdabar r_{0}(A^{\frac{1}{3}}+A'^{\frac{1}{3}}) + 2\lambdabar^{2}}
     \end{split}
 \end{equation}
-While on \textit{average}, experimental data comport with this naive
-model, the key feature of \totEs data is the obvious oscillatory
-behavior centered about the average (visible in Fig.
-\ref{SASphereVsExperiment}).
+While on \textit{average}, experimental \totEs data comport with this naive
+model, the most prominent feature of \totEs data is the obvious oscillatory
+behavior visible in Fig. \ref{SASphereVsExperiment} that is centered about
+the average behavior of eq. \ref{SASAbsolute}.
 
 \begin{figure*}
     \includegraphics[scale=0.3]{../analysis/plots/theory/SASphereVsExperiment.png}
@@ -114,10 +117,11 @@ optical models?].}
 
 These oscillations can be explained as the result of a phase shift between 
 neutron waves passing around the nucleus (unshifted) and waves passing
-through the the nucleus, where they experience refraction
-(illustrated in Fig. \ref{RamsauerPhaseShiftFigure}). This explanation was termed the ``nuclear 
-Ramsauer effect" by Peterson \cite{Peterson1962}, based on the analagous effect seen in 
-electron scattering on noble gases.
+through the the nucleus where they experience refraction
+(illustrated in Fig. \ref{RamsauerPhaseShiftFigure}). This explanation was termed the 
+``nuclear Ramsauer effect" by Carpenter and Wilson \cite{Carpenter59}, based on the
+analagous effect seen in electron scattering on noble gases, and further advanced by
+Peterson in a paper with that name \cite{Peterson1962}.
 In this picture, the intractable many-body
 problem of the target nucleus is replaced by a smooth potential (hence the
 ``optical model" of the nucleus, \cite{Feshbach1958}) from which the refractive
@@ -143,8 +147,8 @@ potential) and all other scattering removing flux from the elastic channel (the 
             Eq. \ref{phaseShift} is used to
             calculate the phase shift for each step. In this figure, the neutron
             energy $E_{n}$ = 14 MeV and nuclear mass $A$ = 25. For the Woods-Saxon potential,
-            we used a potential depth $U$ = 42.8 MeV (following Angeli's analysis
-            of \tots data at 14 MeV \cite{Angeli1970}), with nuclear radius $R = 
+            we used a potential depth $U$ = 42.8 MeV (following Angeli and
+            Csikai's analysis of \tots data at 14 MeV \cite{Angeli1970}), with nuclear radius $R = 
             r_{0}A^{\frac{1}{3}}$, $r_{0}$ = 1.4 fm, and a diffuseness parameter
         $a$ of 0.5 fm.}
         \label{RamsauerPhaseShiftFigure}
@@ -152,24 +156,24 @@ potential) and all other scattering removing flux from the elastic channel (the 
 \end{figure}
 
 
-Following Angeli \cite{Angeli1970}, these considerations can be incorporated by
-imbuing the strongly-absorbing sphere relations (equation \ref{SASAbsolute}) with an additional sinusoidal term:
+Following Angeli and Csikai \cite{Angeli1970}, these considerations can be incorporated by
+imbuing the strongly-absorbing sphere relations (Eq. \ref{SASAbsolute}) with an additional sinusoidal term:
 \begin{equation} \label{OscillatoryModel}
-    \totE = 2\pi (R+\lambdabar)[1 - \rho \cos(\delta)]
+    \totE = 2\pi (R+\lambdabar)^{2}(1 - \rho \cos(\delta))
 \end{equation}
-where $\rho = e^{-\operatorname{Im}(\Delta)}$, and $\delta =
-\operatorname{Re}(\Delta)$, with $\Delta$ the phase difference between the wave traveling
-around and traveling through the nucleus. Thus, the amplitude of the oscillations provides the 
-inelastic phase shift and the period of oscillation provides the elastic phase shift.
-As can be seen from Eq. 
-\ref{OscillatoryModel}, the large magnitude of the oscillations means that inelastic
-scattering (from $\operatorname{Im}(\Delta)$) accounts for only a small fraction of the total cross section, in turn implying a 
+where $\rho = e^{-\operatorname{Im}(\Delta)}$ and $\delta =
+\operatorname{Re}(\Delta)$, $\Delta$ being the phase difference between the wave traveling
+around and traveling through the nucleus. The large amplitude of the
+oscillations ($\rho$) suggests that inelastic scattering accounts for only a small fraction of the total cross section, in turn implying a 
 much larger mean free path for neutrons through the nucleus 
-than might otherwise be expected in the absence of Pauli blocking.
-\cite{Mohr1955}.
-
-If we approximate the nucleus with a
-spherical potential of radius $R$ and depth $U$, the total phase shift $\delta$ is:
+than might otherwise be expected in the absence of Pauli blocking
+\cite{Mohr1955}. It must be noted that other authors \cite{Ahmad1973} have
+exposed weaknesses in Angeli and Csikai's interpretation of
+eq. \label{OscillatoryModel} and have provided a more general semi-empirical
+equation for the total cross section. However, for the purposes of illustration
+of the physics involved, the simplicity of eq. \ref{OscillatoryModel} is valuable.
+Continuing, if we approximate the nucleus with a
+real spherical potential of radius $R$ and depth $U$, the total phase shift $\delta$ is:
 \begin{equation} \label{phaseShift}
     \delta =
     \frac{\overline{C}\left(\left[{\frac{E+U}{E}}\right]^{\frac{1}{2}}-1\right)}{\lambdabar}
@@ -189,11 +193,11 @@ E must be decreased. Thus these \tots oscillations have been referred to as
 
 By including additional surface, spin-orbit, and other terms, optical models (OMs) have been 
 used to successfully reproduce the general features of all manner of single-nucleon scattering 
-data across the chart of nuclides up to several hundred MeV \cite{CH89}. 
+data across the chart of nuclides up to several hundred MeV \cite{Perey76, CH89}. 
 However, despite the excellent agreement with experiment, optical models
 involve the interaction of many partial waves with many sometimes-opaque terms
 in the potential, complicating intuitive understanding of the underlying
-physics at work.
+physics at play.
 
 With these considerations in mind, our goal is twofold: to demonstrate the
 value of isotopically-resolved \totEs data for identifying the dependence of optical 
@@ -202,10 +206,10 @@ potential terms on nuclear asymmetry, and, using a Dispersive Optical Model
 thicknesses, spectroscopic factors) highly sensitive to asymmetry.
 As one moves further from N=Z, these isovector components of the optical potential
 are increasingly important but also increasingly
-difficult to constrain as they require both proton and neutron scattering data. Experimental 
+difficult to constrain as they depend on both proton and neutron scattering
+data. Despite their usefulness for informing theory, the experimental 
 challenges inherent to neutron scattering have meant that these data are often 
-limited or missing entirely despite their usefulness, motivating our \totEs
-measurement program.
+limited or missing entirely, motivating our \totEs measurement program.
 
 %from  Anderson and Grimes were the first to define an isospin-isospin cross section
 %$\sigma_{is}$:
@@ -243,7 +247,7 @@ closed-shell isotopes of special importance like $^{3,4}$He, $^{64}$Ni, and
 $^{204}$Pb (see Table \ref{IsotopicCrossSectionTable}).
 
 \begin{table}[ht]
-    \caption{A selection of results from a literature study of isotopically-
+    \caption{A selection of results from a literature survey of isotopically-
     resolved \totEs data using the EXFOR database \cite{EXFORDatabase}. For the
     heaviest and lightest stable nuclides in each closed shell in Z, all
     datasets falling at least partially within 1-500 MeV are shown. For elements
@@ -333,8 +337,8 @@ time-of-flight (TOF) detector approximately 25 meters from the neutron source.
 All detectors consisted of BC-400 fast scintillating plastic mated with 
 photomultiplier tubes (PMTs) and encased in a plastic or
 aluminium structural housing. The flux monitor and veto detector each had
-plastic thicknesses of $\frac{1}{4}$ inch and the TOF detector had a plastic
-thickness of 1 inch. Signals from all detectors and
+scintillator thicknesses of $\frac{1}{4}$ inch and the TOF detector had a
+scintillator thickness of 1 inch. Signals from all detectors and
 the target changer were relayed to a 500-MHz CAEN DT-5730 waveform digitizer
 running custom software. To improve time resolution, the TOF detector used two
 PMTs (one left, one right) mated to the plastic scintillator and the PMTs' signals were 
@@ -373,7 +377,7 @@ arrives at the tungsten target that generates gamma rays and neutrons within a t
 temporal-spatial range. As neutrons from this micropulse travel along the beam path, 
 high energy neutrons separate in time from lower-energy neutrons so that neutron
 energy can be determined by standard TOF techniques (see \cite{Moore1980} for details).
-Because the $\gamma$-rays and high-energy neutrons from later micropulses can
+Because the $\gamma$ rays and high-energy neutrons from later micropulses can
 overtake slower neutrons from an earlier micropulse, the distance of the TOF
 detector from the neutron source determines both the minimum neutron energy that can be 
 unambiguously resolved and the maximum instantaneous neutron flux, critical to correcting
@@ -416,16 +420,22 @@ changer. This design minimizes the amount of non-target mass proximate to the
 neutron beam path.
 
 \begin{table*}[ht]
-    \caption{Physical characteristics of all samples used for our \tots
+    \caption{
+        Physical characteristics of all samples used for our \tots
         measurements. For isotopically-enriched samples, the natural abundance
         of the enriched isotope and the isotopic fraction of the sample are
-        given. For calculating cross sections, the relevant ``sample thickness" is the areal
+        given. To calculate cross sections, the relevant ``sample thickness" is the areal
         density of nuclei $\rho_{\text{areal}}$, equivalent to
-        the (volumetric) density times the length of the sample. For
-        comparison, the Ni and Sn targets used in \cite{Abfalterer2001,
+        the (volumetric) density times the length of the sample. For liquid
+        samples H$_{2}^{\text{nat}}$O, D$_{2}^{\text{nat}}$O, and H$_{2}^{18}$O,
+        the length and diameter listed are for the interior of the vessels
+        used to hold the samples and the masses given are calculated based on 
+        literature values for the density of each sample at 25\textdegree{}C.
+        Our samples are generally much smaller than those used in previous
+        measurements; for comparison, the Ni and Sn samples used in \cite{Abfalterer2001,
         Finlay1993} had areal densities of 1.515 and 0.5475
         $\frac{mol}{cm^{2}}$, respectively (12.7 and 6.5 times larger than our
-    samples).}
+    Ni and Sn samples).}
     \label{tab:title}
     \label{SampleCharacteristics}
 
@@ -434,39 +444,39 @@ neutron beam path.
         \begin{tabular}{ c c c c c c c }
             \hline
             Isotope & Length & Diameter
-            & Mass & $\rho_{\text{areal}}$ & Nat. Abund. & Sample Purity\\
+            & Mass & $\rho_{\text{areal}}$ & Nat. Abund. & Isotopic Purity\\
                  & [mm] & [mm] & [g] & [$\frac{mol}{cm^{2}}$] & [\%] & [\%]\\
             \hline
 
             $^{\text{nat}}$C & 13.66(2) & 8.260(5) & 1.2363
-            & 0.19210 & - & -\\
+            & 0.1921(1) & - & -\\
             $^{\text{nat}}$C & 27.29(2) & 8.260(5) & 2.4680
-            & 0.38345 & - & -\\
+            & 0.3835(2) & - & -\\
 
-            H$_{2}$$^{\text{nat}}$O & 20.0(1) & 10.0(1) & 1.571 & 0.11103 & - &
+            H$_{2}$$^{\text{nat}}$O & 20.00(1) & 8.92(1) & 1.2461 & 0.1107(3) & - &
             - \\
-            D$_{2}$$^{\text{nat}}$O & 20.0(1) & 10.0(1) & 1.739 & 0.11103 & - &
-            - \\
-            H$_{2}$$^{18}$O & 20.0(1) & 10.0(1) & 1.738 & 0.11103 & 0.20 & 99\\
+            D$_{2}$$^{\text{nat}}$O & 20.00(1) & 8.92(1) & 1.3852 & 0.1107(3) & - &
+            99.9 \\
+            H$_{2}$$^{18}$O & 20.00(1) & 8.92(1) & 1.3844 & 0.1107(3) & 0.20 & 99\\
 
-            $^{58}$Ni & 7.97(3) & 8.18(2) &
-            3.6438 & 0.11965& 68.077 & 99.6 \\
+            $^{58}$Ni & 7.97(3)& 8.18(2) &
+            3.6438 & 0.1197(3)& 68.1 & 99.6 \\
             $^{\text{nat}}$Ni & 8.00(3) & 8.20(2) &
-            3.6898 & 0.11917 & - & -\\
+            3.6898 & 0.1192(3)& - & -\\
             $^{64}$Ni & 7.96(2) & 8.20(4) &
-            3.9942 & 0.11918 & 0.926 & 92.2\\
+            3.9942 & 0.1192(6) & 0.93 & 92.2\\
 
-            $^{103}$Rh & 2.03(1) & 10.20(2) & 2.8359 & 0.02426 & 100 & 99.9\\
+            $^{103}$Rh & 2.03(1) & 10.20(2) & 2.8359 & 0.02426(4) & 100 & 99.9\\
 
             $^{112}$Sn & 13.65(3) & 8.245(5) &
-            4.9720 & 0.083321 & 0.97 & 99.9\\
+            4.9720 & 0.08332(5) & 0.97 & 99.9\\
             $^{\text{nat}}$Sn & 13.68(3) & 8.245(5) &
-            5.3263 & 0.084145 & - & -\\
+            5.3263 & 0.08414(5) & - & -\\
             $^{124}$Sn & 13.73(3) & 8.245(5) &
-            5.5492 & 0.083988 & 5.79 & 99.9\\
+            5.5492 & 0.08399(5) & 5.79 & 99.9\\
 
             $^{\text{nat}}$Pb & 10.07(2) & 8.27(1) & 6.130 &
-            0.055077 & - & -\\
+            0.05508(6) & - & -\\
 
             \hline
         \end{tabular}
@@ -478,8 +488,8 @@ of atoms and for ease of handling. Each water sample was contained by a
 cylindrical brass vessel with very thin (0.002 inch) brass endcaps, minimizing
 beam attenuation in the vessel. Oxygen cross sections were calculated by
 subtracting the well-known hydrogen cross section from the raw H$_{2}$O result
-(we used H \tots data sets from Clement \cite{Clement1972} and Abfalterer 
-\cite{Abfalterer2001}, which together cover the range $0.5 \leq E_n \leq 500$ MeV
+(we used H \tots data sets from Clement et al \cite{Clement1972} and Abfalterer
+et al \cite{Abfalterer2001}, which together cover the range $0.5 \leq E_n \leq 500$ MeV
 and are in excellent agreement where their energy ranges overlap). In light of
 the additional uncertainty inherent to this kind of subtractive \tots
 determination, a D$_{2}^{\text{nat}}$O sample from which the literature \tots for
@@ -539,10 +549,10 @@ and \ref{DifferenceThresholdsFit}).
 
 \begin{figure*}
     \includegraphics[scale=0.3]{figures/Difference_Linear.png}
-    \caption{(Color online) For all events in a diagnostic data run, the timing difference   
-        between the left and right PMTs of the TOF detector is shown.
-        A gaussian fit (in red) to these events reveals a 93-ps delay of the right PMT with 
-    respect to the left PMT and a left-right time difference FWHM of 0.52 ns.}
+    \caption{(Color online) For all events in a diagnostic data run, the time difference   
+        between the left and right PMTs of the TOF detector is plotted.
+        A Gaussian fit (in red) to these events reveals an 85-ps delay of the right PMT with 
+    respect to the left PMT and a left-right time difference FWHM of 355 ps.}
     \label{LRTimeDifferenceLinear}
 \end{figure*}
 
@@ -577,18 +587,19 @@ However, because the TOF of these neutrons is already several hundred ns or
 longer, the relative energy resolution ($\frac{\Delta E}{E}$) is
 superior at low energies: for a 5 MeV neutron with a 0.82 ns detector-traversal time and
 an inherent TOF resolution of 0.80 ns, $\Delta E$ is 13 keV. These energy uncertainties
-have been properly propagated through subsequent analysis into our \tots results below.
+have been propagated through subsequent analysis into our \tots results below.
 
 \begin{figure}
-    \includegraphics[scale=0.24]{figures/TimingCorrectionStudy.png}
-    \caption{(Color online) The $\gamma$-ray peak from the TOF spectrum for the
-        blank sample is shown before and after each of our timing corrections.
-        The offline software-CFD
-        correction reduces the timing uncertainty of TOF-detector events from [insert
-        value] to [insert value] and the $\gamma$-ray averaging correction
-        reduces the uncertainty of the micropulse start time from [insert value]
-        to [insert value]. The final $\gamma$-ray peak FWHM after both
-        corrections is [insert value].
+    \includegraphics[scale=0.24]{figures/TimeCorrections.png}
+    \caption{(Color online) The effects of timing corrections on the $\gamma$-ray
+        peak of a typical run are shown. The uncorrected spectrum is shown in black,
+        the spectrum after correction with our software CFD is shown in blue,
+        and the spectrum after correction with both our software CFD and
+        $\gamma$-averaging is 
+        shown in pink. For this run, the final $\gamma$-ray peak 
+        FWHM after both corrections is 0.866 ns, comparable to the precision we
+        achieved in our Ca study \cite{Shane2010}, which also employed $\gamma$-
+        averaging.
         }
     \label{TimingCorrectionStudy}
 \end{figure}
@@ -600,12 +611,13 @@ shown in Fig. \ref{DistanceStudy}. The distance was determined as [insert
 updated value]$\pm$1 cm for the Ni and Rh measurement and [insert updated value]$\pm$1 cm 
 for the Sn and O measurement.
 
-Because events are not processed instantaneously, there is a brief period,
-referred to as the ``analytic deadtime", after each event trigger during which
-the digitizer is busy processing that trigger. Any newly-arriving events in this
-period will be ignored, privileging events arriving earlier and thus distorting
-the cross sections. To remedy this, a deadtime correction for
-each target must be calculated and applied according to standard techniques
+Because events are not processed instantaneously, there is a brief period
+after each trigger during which the digitizer is busy processing that trigger.
+Any newly-arriving events in this period will be ignored,
+privileging events arriving earlier and thus distorting
+TOF spectra and resulting cross sections. This busy period is referred to as the
+``analytic" or ``per-event" deadtime and can be corrected for according to standard 
+techniques
 \cite{Moore1980}. Assuming negligible variation in beam flux between micropulses
 (an assumption investigated below), the fraction of time $F[i]$ that the digitizer is dead 
 for a given time bin $i$ can be calculated:
@@ -641,14 +653,14 @@ run configurations).}
 \end{figure}
 
 \begin{figure*}
-    \includegraphics[scale=0.3]{figures/distanceStudy.png}
+    \includegraphics[scale=0.3]{figures/DistanceStudyNi.png}
     \caption{(Color online) Results of a study to determine the distance between
     the neutron source and the TOF detector for the Ni/Rh running configuration
-are shown. First, a plausible range of flight path distances was selected based
-on rough estimation during the experiment (26.97-27.21 m). For each of several
-distances in this range, the \totEs for natural carbon was calculated in the
-resonance region (3-15 MeV). The RMS difference between our cross section
-(calculated using that distance) and literature data from Abfalterer
+are shown. First, a plausible range of flight path distances (26.97-27.21 m) was
+selected based on rough estimation during the experiment. Using each
+distance in this range, the \totEs for natural carbon was calculated in the
+resonance region (3-15 MeV). The RMS difference between the cross section
+generated using that distance and literature data from Abfalterer
 \cite{Abfalterer2000, Abfalterer2001} was calculated (shown as black points in
 the figure). A quartic fit to these RMS data is shown (solid line). By minimizing the
 RMS difference, the flight path distance of 2709$\pm$1 cm was determined.}
@@ -674,7 +686,7 @@ where M is the total number of micropulse periods. The difference between
 uncorrected and analytic-deadtime-corrected TOF spectra is shown in Fig.
 \ref{CorrectionEffectOnTOF}. At large TOFs (low energies) the correction is as low as a
 few percent, but at small TOFs (high energies) when the digitizer is still dead
-from the gamma flash and high-energy neutrons, the correction is significant
+from the $\gamma$-ray flash and high-energy neutrons, the correction is significant
 ($\approx$20\% for our Ni/Rh runs, and $\approx$40\% for our Sn/O runs). These 
 corrections are themselves far lower than the typical
 analytic deadtime correction required when using analog approaches \cite{Finlay1993,
@@ -731,9 +743,8 @@ flux monitor or TOF detector channel was ignored during cross section calculatio
 
 After applying these corrections, the veto and integrated charge gates are applied to 
 all events and surviving events are populated into TOF spectra (see Fig.
-\ref{ExampleTOFSpectrum}). Next, room background (responsible for 0.1\% to 1\% 
-of event rate, depending on energy) was subtracted and spectra were mapped to the
-energy domain.
+\ref{ExampleTOFSpectrum}). Next, room background was subtracted (responsible for 0.1\% to 
+1\% of event rate, depending on energy) and spectra were mapped to the energy domain.
 
 \begin{figure*}
     \includegraphics[scale=0.3]{figures/exampleTOFSpectrum.png}
@@ -815,18 +826,26 @@ b}
 
 \section{Experimental Results}
 
-Absolute \totEs for all isotopic targets are shown  along with isotopic literature
-data (where it exists) in Figs. \ref{TwoPanelO, TwoPanelNi, TwoPanelRh, TwoPanelSn}. 
+Our absolute \totEs results for all isotopic targets are shown in Figs.
+\ref{TwoPanelO, TwoPanelNi, TwoPanelRh, TwoPanelSn}. All previous isotopic \totEs
+measurements (where they exist) are shown alongside our results for comparison.
+To compare the results, relative differences between our data and literature
+data are also plotted below. The literature
+data sets shown have been modified to have the same bins as our data via a simple
+linear interpolation of the original data's bins. This rebinning
+washes out the fine structure of the cross section data where the density of states
+for a given sample is low and individual resonances are visible
+(e.g., $^{\text{nat}}$C below 10 MeV).
+
 Relative differences of our measured \totEs between $^{16,18}$O, $^{58,64}$Ni, and
 $^{112,124}$Sn are shown in Figs. \ref{IsotopicDiffO, IsotopicDiffNi, 
-IsotopicDiffSn}, respectively.
-
+IsotopicDiffSn}, respectively. 
 \begin{figure*}
     \includegraphics[scale=0.35]{figures/TwoPanelO.png}
     \caption{(Color online) Neutron total cross sections for $^{58,64}$Ni.
-        Panel a) shows our isotopic results (in shades of red) and
+        (a) shows our isotopic results (in shades of red) and
         corresponding literature data \cite{Perey1993, Dukarevich1967} (in
-        shades of blue). Panel b) shows the relative difference between our data
+        shades of blue). (b) shows the relative difference between our data
         and literature data that are shown in panel a). The reported error in
         the literature data set for $^{58}$Ni is the major contributor to the
         large error bars shown in the $^{58}$Ni relative difference. In this
@@ -840,9 +859,9 @@ IsotopicDiffSn}, respectively.
 \begin{figure*}
     \includegraphics[scale=0.35]{figures/TwoPanelNi.png}
     \caption{(Color online) Neutron total cross sections for $^{58,64}$Ni.
-        Panel a) shows our isotopic results (in shades of red) and
+        (a) shows our isotopic results (in shades of red) and
         corresponding literature data \cite{Perey1993, Dukarevich1967} (in
-        shades of blue). Panel b) shows the relative difference between our data
+        shades of blue). (b) shows the relative difference between our data
         and literature data that are shown in panel a). The reported error in
         the literature data set for $^{58}$Ni is the major contributor to the
         large error bars shown in the $^{58}$Ni relative difference. In this
@@ -856,9 +875,9 @@ IsotopicDiffSn}, respectively.
 \begin{figure*}
     \includegraphics[scale=0.35]{figures/TwoPanelRh.png}
     \caption{(Color online) Neutron total cross sections for $^{58,64}$Ni.
-        Panel a) shows our isotopic results (in shades of red) and
+        (a) shows our isotopic results (in shades of red) and
         corresponding literature data \cite{Perey1993, Dukarevich1967} (in
-        shades of blue). Panel b) shows the relative difference between our data
+        shades of blue). (b) shows the relative difference between our data
         and literature data that are shown in panel a). The reported error in
         the literature data set for $^{58}$Ni is the major contributor to the
         large error bars shown in the $^{58}$Ni relative difference. In this
@@ -872,9 +891,9 @@ IsotopicDiffSn}, respectively.
 \begin{figure*}
     \includegraphics[scale=0.35]{figures/TwoPanelSn.png}
     \caption{(Color online) Neutron total cross sections for $^{112,124}$Sn.
-        Panel a) shows our isotopic results (in shades of red) and
+        (a) shows our isotopic results (in shades of red) and
         corresponding literature data \cite{Harper1982, Rapaport1980, Dukarevich1967} (in
-        shades of blue). Panel b) shows the relative difference between our data
+        shades of blue). (b) shows the relative difference between our data
         and literature data that are shown in panel a). The data sets are in
     excellent agreement where literature data exists (up to $\approx$20 MeV).}
     \label{TwoPanelSn}
@@ -882,14 +901,7 @@ IsotopicDiffSn}, respectively.
 
 \begin{figure*}
     \includegraphics[scale=0.35]{figures/relativeDiff_O18O16.png}
-    \caption{(Color online) Neutron total cross sections for $^{58,64}$Ni.
-     Panel one shows our measurement (in red) and literature data from
-     Abfalterer (in % black).
-     Panel two shows the relative difference between our 
-     measurement and the literature data from the first panel. Panels three and
-     four show the corresponding absolute and relative cross sections after a
-     Pb-C correction, derived from literature data and detailed in the text,
-     are applied.
+    \caption{(Color online) 
     }
     \label{IsotopicDifferenceO}
 \end{figure*}
@@ -928,7 +940,98 @@ IsotopicDiffSn}, respectively.
 
 \section{DOM Analysis}
 
-[Preliminary DOM Analysis for oxygen]
+The Dispersive Optical Model (DOM) is a phenomenological framework enabling
+a simultaneous and self-consistent analysis of nuclear structure and reaction
+data. In the DOM, the microscopic many-body problem of a given nucleus is
+approximated by a non-local, complex potential (formally identified as the
+self-energy) that is fitted to experimental data. An essential feature of the
+DOM is the enforcement of a dispersion
+relation between the complex components of the self-energy across the entire
+energy spectrum, allowing data from below the Fermi energy (charge densities,
+bound levels) to constrain the potential above, and data from above the Fermi
+energy (elastic, reaction, and total cross sections) to constrain the potential
+below. Details on the DOM formalism and results of DOM analyses are available in
+\cite{Mahaux} and our previous work on Ca isotopes
+\cite{Mahzoon}. The analysis presented here on O isotopes uses an updated version
+of the DOM code that has been generalized for use with any doubly-even nucleus
+and introduces a simple pairing parameter \Delta to accommodate the partial filling
+of open shells. Details of the DOM parametrization and the parameter values
+recovered from the fitting are provided in appendix A.
+
+In a previous DOM analysis \cite{}, the neutron skin thickness of $^{48}$Ca was
+found to be highly sensitive to the $^{40,48}$Ca \totEs data used to constrain
+the potential. [we find XYZ about O16/O18 differences in the total cross section
+and how it affects the neutron skin]
+
+\begin{figure*}
+    \includegraphics[scale=0.35]{figures/O16_TCS_DOMFit.png}
+    \caption{(Color online) DOM calculation of the neutron $^{16}$O \totEs and
+        \reactEs compared to our experimental $^{16}$O \totEs results and the
+        experimental \reacts measurement at 14 MeV of \cite{Dukarevich1967}.
+    }
+    \label{O16_TCS_DOMFit}
+\end{figure*}
+
+\begin{figure*}
+    \includegraphics[scale=0.35]{figures/O16_pRCS_DOMFit.png}
+    \caption{(Color online) DOM calculation of the proton $^{16}$O \reactEs compared to
+        literature data \cite{Carlson}.
+    }
+    \label{O16_RCS_DOMFit}
+\end{figure*}
+
+\begin{figure*}
+    \includegraphics[scale=0.35]{figures/O16_pECS_DOMFit.png}
+    \caption{(Color online) DOM calculation of proton \elasts and analyzing
+        powers on $^{16}$O compared to literature data retrieved from the EXFOR
+        database \cite{Exfor}.
+    }
+    \label{O16_pECS_DOMFit}
+\end{figure*}
+
+\begin{figure*}
+    \includegraphics[scale=0.35]{figures/O16_nECS_DOMFit.png}
+    \caption{(Color online) DOM calculation of neutron \elasts and analyzing
+        powers on $^{16}$O compared to literature data retrieved from the EXFOR
+        database \cite{Exfor}.
+    }
+    \label{O16_nECS_DOMFit}
+\end{figure*}
+
+\begin{figure*}
+    \includegraphics[scale=0.35]{figures/O16_QDens_DOMFit.png}
+    \caption{(Color online) DOM calculation of charge density profile of $^{16}$O compared to
+        charge density profile extracted from elastic electron scattering
+        experiments at NIKHEF \cite{DeVries}.
+    }
+    \label{O16_QDens_DOMFit}
+\end{figure*}
+
+\begin{figure*}
+    \includegraphics[scale=0.35]{figures/O16_SPLevels_DOMFit.png}
+    \caption{(Color online) DOM calculation of proton and neutron single-particle
+        levels of $^{16}$O compared to
+        single-particle levels determined from atomic mass differences in the
+        AME 2016 compilation \cite{AME2016}.
+    }
+    \label{O16_SPLevels_DOMFit}
+\end{figure*}
+
+\begin{figure*}
+    \includegraphics[scale=0.35]{figures/O16_SpectralFunctions_DOMFit.png}
+    \caption{(Color online) DOM calculation of spectral functions for relevant
+    single-particle levels in $^{16}$O.
+}
+    \label{O16_SpectralFunctions_DOMFit}
+\end{figure*}
+
+\begin{figure*}
+    \includegraphics[scale=0.35]{figures/O16_MatterDensity_DOMFit.png}
+    \caption{(Color online) DOM calculation of proton and neutron matter density
+        distributions in $^{16}$O.
+    }
+    \label{O16_MatterDensity_DOMFit}
+\end{figure*}
 
 \section{Conclusion}
 

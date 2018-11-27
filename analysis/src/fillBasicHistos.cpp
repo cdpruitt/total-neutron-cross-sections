@@ -17,6 +17,8 @@
 #include "../include/config.h"
 #include "../include/GammaCorrection.h"
 
+#include "TRandom3.h"
+
 using namespace std;
 
 extern Config config;
@@ -119,9 +121,11 @@ int fillBasicHistos(string inputFileName, ofstream& log, string outputFileName)
 
         int totalEntries = tree->GetEntries();
 
-        double timeDiff;
-        double microTime;
-        int microNo;
+        double timeDiff = 0;
+        double microTime = 0;
+        int microNo = 0;
+
+        TRandom3* rng = new TRandom3();
 
         // fill basic histos
         for(int i=0; i<totalEntries; i++)
@@ -153,7 +157,8 @@ int fillBasicHistos(string inputFileName, ofstream& log, string outputFileName)
                 if(channel.second==detectorName)
                 {
                     // fill uncorrected TOF histos
-                    timeDiff = event.completeTime-event.macroTime;
+                    timeDiff = event.completeTime-event.macroTime+config.digitizer.SAMPLE_PERIOD*(rng->Uniform(0, 1)-0.5);
+                    //cout << "timeDiff = " << timeDiff << ", rng = " << rng->Uniform(0,1) << endl;
                     microNo = floor(timeDiff/config.facility.MICRO_LENGTH);
                     microTime = fmod(timeDiff,config.facility.MICRO_LENGTH);
 
