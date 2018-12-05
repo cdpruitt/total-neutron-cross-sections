@@ -15,6 +15,8 @@ superscriptaddress, nobalancelastpage]{revtex4}
 \newcommand{\totE}{\ensuremath{\sigma_{tot}}(E)}
 \newcommand{\totEs}{\ensuremath{\sigma_{tot}}(E)\,\,}
 \newcommand{\totRDs}{\ensuremath{\sigma_{A,A'}}(E)\,}
+\newcommand{\react}{\ensuremath{\sigma_{react}}}
+\newcommand{\reacts}{\ensuremath{\sigma_{react}}\,\,}
 \newcommand{\reactE}{\ensuremath{\sigma_{react}}(E)}
 \newcommand{\reactEs}{\ensuremath{\sigma_{react}}(E)\,\,}
 \newcommand{\elast}{\ensuremath{\sigma_{el}}}
@@ -61,24 +63,24 @@ Astronomy, Michigan State University, East Lansing, MI 48824, USA}}
 
 Neutron scattering is a direct, Coulomb-insensitive tool for probing the nuclear
 environment. The simplest measurement of neutron interaction with a nucleus,
-the neutron total cross section \totE, provides fundamental information about
+the neutron total cross section \tot, provides fundamental information about
 nuclear size and the ratio of elastic-to-inelastic components of nucleon 
 scattering. Additionally, \tots data are sensitive to a variey of nuclear
 properties of great interest including the neutron skin of neutron-rich nuclei
 \cite{Mahzoon2017} and thus the density dependence of the symmetry energy $L$,
-essential for an accurate equation-of-state (EOS) input to neutron star
+an essential equation-of-state (EOS) input for neutron star
 structure calculations \cite{Fattoyev2012, Vinas2014, Brown2000}.
 
-The earliest model for neutron scattering (a ``strongly-absorbing sphere"
-picture) describes the nucleus as a constant-density sphere that interacts
+The simplest and earliest description of neutron scattering models the nucleus as a constant-density sphere that interacts
 strongly with incident neutrons approaching within a nuclear radius
-\cite{Feshbach1949}. In this picture devoid of nuclear structure, \totEs depends
+\cite{Feshbach1949}. In this ``strongly-absorbing sphere"
+picture devoid of nuclear structure effects, \totEs depends
 only on size scaling of the interacting bodies:
 \begin{equation} \label{SASAbsolute}
     \sigma_{tot}(E) = 2\pi(R + \lambdabar)^{2}
 \end{equation}
 where $R=r_{0}A^{\frac{1}{3}}$ and $\lambdabar$ is the reduced wavelength
-of the incident neutron in the center of mass \cite{Fernbach1949, Satchler1980}. 
+of the incident neutron with energy $E$ in the center of mass \cite{Fernbach1949, Satchler1980}. 
 To compare \totEs for two different targets of masses A and A', the relative
 difference \totRDs is useful:
 \begin{equation} \label{SASRelDiff}
@@ -93,9 +95,9 @@ difference \totRDs is useful:
     \end{split}
 \end{equation}
 While on \textit{average}, experimental \totEs data comport with this naive
-model, the most prominent feature of \totEs data is the obvious oscillatory
-behavior visible in Fig. \ref{SASphereVsExperiment} that is centered about
-the average behavior of eq. \ref{SASAbsolute}.
+model, the most prominent feature of experimental \totEs data is the obvious oscillatory
+behavior centered about the average of eq. \ref{SASAbsolute}, visible in Fig.
+\ref{SASphereVsExperiment}.
 
 \begin{figure*}
     \includegraphics[scale=0.3]{../analysis/plots/theory/SASphereVsExperiment.png}
@@ -116,15 +118,15 @@ optical models?].}
 \end{figure*}
 
 These oscillations can be explained as the result of a phase shift between 
-neutron waves passing around the nucleus (unshifted) and waves passing
+neutron waves passing around the nucleus (which remain unshifted) and waves passing
 through the the nucleus where they experience refraction
 (illustrated in Fig. \ref{RamsauerPhaseShiftFigure}). This explanation was termed the 
-``nuclear Ramsauer effect" by Carpenter and Wilson \cite{Carpenter59}, based on the
-analagous effect seen in electron scattering on noble gases, and further advanced by
-Peterson in a paper with that name \cite{Peterson1962}.
+``nuclear Ramsauer effect" by Carpenter and Wilson \cite{Carpenter1959}, based on the
+analagous effect seen in electron scattering on noble gases, and formalized by
+Peterson shortly thereafter \cite{Peterson1962}.
 In this picture, the intractable many-body
-problem of the target nucleus is replaced by a smooth potential (hence the
-``optical model" of the nucleus, \cite{Feshbach1958}) from which the refractive
+problem of the target nucleus is replaced by a smooth potential (a typical 
+``optical model" of the nucleus \cite{Feshbach1958}) from which the refractive
 index is easily calculated. As in the optical case, a complex index of
 refraction can be used to neatly incorporate both elastic scattering (the real
 potential) and all other scattering removing flux from the elastic channel (the imaginary potential).
@@ -169,7 +171,7 @@ much larger mean free path for neutrons through the nucleus
 than might otherwise be expected in the absence of Pauli blocking
 \cite{Mohr1955}. It must be noted that other authors \cite{Ahmad1973} have
 exposed weaknesses in Angeli and Csikai's interpretation of
-eq. \label{OscillatoryModel} and have provided a more general semi-empirical
+eq. \ref{OscillatoryModel} and have provided a more general semi-empirical
 equation for the total cross section. However, for the purposes of illustration
 of the physics involved, the simplicity of eq. \ref{OscillatoryModel} is valuable.
 Continuing, if we approximate the nucleus with a
@@ -193,7 +195,7 @@ E must be decreased. Thus these \tots oscillations have been referred to as
 
 By including additional surface, spin-orbit, and other terms, optical models (OMs) have been 
 used to successfully reproduce the general features of all manner of single-nucleon scattering 
-data across the chart of nuclides up to several hundred MeV \cite{Perey76, CH89}. 
+data across the chart of nuclides up to several hundred MeV \cite{Perey1976, CH89}. 
 However, despite the excellent agreement with experiment, optical models
 involve the interaction of many partial waves with many sometimes-opaque terms
 in the potential, complicating intuitive understanding of the underlying
@@ -253,7 +255,7 @@ $^{204}$Pb (see Table \ref{IsotopicCrossSectionTable}).
     datasets falling at least partially within 1-500 MeV are shown. For elements
     whose natural abundance is $>$90\% of a single isotope (e.g.,
     96.9\% of $^{\text{nat}}$Ca is $^{40}$Ca), \totEs data on the natural
-    target was included as ``isotopic".} \label{tab:title}
+    target was included as ``isotopic".}
     \label{IsotopicCrossSectionTable}
     \begin{center}
         \begin{tabular}{ c c c c }
@@ -436,9 +438,6 @@ neutron beam path.
         Finlay1993} had areal densities of 1.515 and 0.5475
         $\frac{mol}{cm^{2}}$, respectively (12.7 and 6.5 times larger than our
     Ni and Sn samples).}
-    \label{tab:title}
-    \label{SampleCharacteristics}
-
     \label{SampleTable}
     \begin{center}
         \begin{tabular}{ c c c c c c c }
@@ -790,8 +789,8 @@ relative difference of up to 5\% at 300 MeV), suggesting a small systematic
 error at high energies in one or both approaches when the instantaneous neutron
 flux is highest. As an additional diagnostic, we compared 
 both our natural carbon targets against each other (see Fig.
-\ref{CarbonBenchmarking}) and found excellent agreement: the relative difference
-was within 1\% throughout our energy domain.
+\ref{CarbonBenchmarking}) and found agreement within 1\% throughout the measured
+energy domain.
 
 \begin{figure*}
     \includegraphics[scale=0.5]{figures/literatureBenchmarking.png}
@@ -824,10 +823,19 @@ b}
     \label{CarbonBenchmarking}
 \end{figure*}
 
+\begin{figure*}
+    \includegraphics[scale=0.30]{figures/relativeDiff_DtoH.png}
+    \caption{(Color online) Relative difference of cross sections of
+        deuterium to hydrogen, as calculated by subtraction of our O \tot from
+        D$_{2}$O and H$_{2}$O. Our results are shown in red; the measurement of
+        Abfalterer et al \cite{Abfalterer1998} is shown in black.}
+    \label{DtoH}
+\end{figure*}
+
 \section{Experimental Results}
 
 Our absolute \totEs results for all isotopic targets are shown in Figs.
-\ref{TwoPanelO, TwoPanelNi, TwoPanelRh, TwoPanelSn}. All previous isotopic \totEs
+\ref{TwoPanelO},\ref{TwoPanelNi},\ref{TwoPanelRh},\ref{TwoPanelSn}. All previous isotopic \totEs
 measurements (where they exist) are shown alongside our results for comparison.
 To compare the results, relative differences between our data and literature
 data are also plotted below. The literature
@@ -933,12 +941,7 @@ IsotopicDiffSn}, respectively.
     \label{IsotopicDifferenceSn}
 \end{figure*}
 
-
-\section{Discussion}
-
-[Discussion]
-
-\section{DOM Analysis}
+\section{DOM Analysis of $^{16,18}$O}
 
 The Dispersive Optical Model (DOM) is a phenomenological framework enabling
 a simultaneous and self-consistent analysis of nuclear structure and reaction
@@ -951,20 +954,66 @@ energy spectrum, allowing data from below the Fermi energy (charge densities,
 bound levels) to constrain the potential above, and data from above the Fermi
 energy (elastic, reaction, and total cross sections) to constrain the potential
 below. Details on the DOM formalism and results of DOM analyses are available in
-\cite{Mahaux} and our previous work on Ca isotopes
-\cite{Mahzoon}. The analysis presented here on O isotopes uses an updated version
+\cite{Mahaux1991, Dickhoff2018} and our previous work on Ca isotopes
+\cite{MahzoonPhDThesis}. The analysis presented here on O isotopes uses an updated version
 of the DOM code that has been generalized for use with any doubly-even nucleus
-and introduces a simple pairing parameter \Delta to accommodate the partial filling
-of open shells. Details of the DOM parametrization and the parameter values
+and introduces a simple pairing parameter $\Delta$ to accommodate the partial filling
+of open shells \cite{FetterAndWalecka}. Details of the DOM parametrization and the parameter values
 recovered from the fitting are provided in appendix A.
 
-In a previous DOM analysis \cite{}, the neutron skin thickness of $^{48}$Ca was
-found to be highly sensitive to the $^{40,48}$Ca \totEs data used to constrain
-the potential. [we find XYZ about O16/O18 differences in the total cross section
-and how it affects the neutron skin]
+\subsection{Experimental data used to constrain $^{16}$O potential}
+
+Elastic scattering data (including differential cross sections and analyzing
+powers) and reaction cross sections were retrieved from the
+EXFOR database \cite{EXFOR}. Twenty-eight proton elastic differential cross
+sections data sets, twenty proton analyzing power data sets,
+and three proton reaction cross section data sets were
+incorporated. The proton energy of the elastic differential cross section
+data sets, analyzing power data sets, and reaction cross section data sets
+ranged from 8 MeV to 200 MeV, 10 to 200 MeV, and 20 MeV to 65
+MeV, respectively. In addition, ten neutron elastic differential cross section
+data sets, ranging from a neutron energy of 10 MeV to 95 MeV, and a single
+neutron reaction cross section data point, at 14 MeV, were included. 
+A subset of our \totE results for $^{16}$O presented above
+were the sole neutron total cross section data used.
+
+To constrain the potential in the negative energy domain, the 
+neutron (proton) 0p$_{\frac{1}{2}}$ and 0d$_{\frac{5}{2}}$ energies were
+assigned according to the mass differences between the $^{15,16}$O and
+$^{16,17}$O isotopes ($^{15}$N, $^{16}$O; $^{16}$O, $^{17}$F isotopes) \cite{AME2016}.
+The charge density profile and RMS charge radius used were extracted/compiled by
+De Vries et al from elastic electron scattering data
+\cite{DeVries1987}. Lastly, to further constrain the strength of the imaginary
+potential below the Fermi energy, the locations and widths of the spectral peaks
+of the proton bound states (0s$_\frac{1}{2}$, 0p$_\frac{3}{2}$, and
+0p$_\frac{1}{2}$) were fitted to the separation energies and hole widths determined
+from quasi-free (e,e'p) and (p,2p) scattering \cite{Mougey80, Jacob66, Jacob73}.
+
+\subsection{Experimental data used to constrain $^{18}$O potential}
+
+As with $^{16}$O, a large corpus of proton elastic scattering data was
+available in the EXFOR database. Twenty-eight proton elastic differential cross
+sections were include, with an energy range from 8-200 MeV in the lab frame.
+No proton reaction cross sections were available. On the neutron side, three
+elastic differential cross section data sets were used, at 8.5, 14, and 24 MeV.
+Only one data point for the neutron reaction cross section was available (14.1
+MeV) and was included. Our \totE results for $^{18}$O were the
+sole neutron total cross section data used in the fit. The energies of the
+neutron (proton) 0p$_{\frac{1}{2}}$ and 0d$_{\frac{5}{2}}$ orbitals were
+assigned according to the mass differences between the $^{15,16}$O and
+$^{16,17}$O isotopes ($^{15}$N, $^{16}$O; $^{16}$O, $^{17}$F isotopes) \cite{AME2016}.
+The charge density profile and RMS charge radius were assigned according to
+those extracted by DeVries et al from elastic electron scattering data
+\cite{DeVries}. Lastly, to further constrain the strength of the imaginary
+component of the potential below the Fermi energy, the spectral peak location and
+width of each of the bound states (0s$_\frac{1}{2}$, 0p$_\frac{3}{2}$, and
+0p$_\frac{1}{2}$) were fitted to the separation energy and hole widths determined
+from (e,e'p) and (p,2p) quasi-free scattering \cite{Mougey80, Jacob66, Jacob73}.
+
+\subsection{Fit results on $^{16}$O}
 
 \begin{figure*}
-    \includegraphics[scale=0.35]{figures/O16_TCS_DOMFit.png}
+    \includegraphics[scale=0.35]{figures/o16_neutronInelastic.png}
     \caption{(Color online) DOM calculation of the neutron $^{16}$O \totEs and
         \reactEs compared to our experimental $^{16}$O \totEs results and the
         experimental \reacts measurement at 14 MeV of \cite{Dukarevich1967}.
@@ -973,7 +1022,7 @@ and how it affects the neutron skin]
 \end{figure*}
 
 \begin{figure*}
-    \includegraphics[scale=0.35]{figures/O16_pRCS_DOMFit.png}
+    \includegraphics[scale=0.35]{figures/o16_protonInelastic.png}
     \caption{(Color online) DOM calculation of the proton $^{16}$O \reactEs compared to
         literature data \cite{Carlson}.
     }
@@ -981,25 +1030,25 @@ and how it affects the neutron skin]
 \end{figure*}
 
 \begin{figure*}
-    \includegraphics[scale=0.35]{figures/O16_pECS_DOMFit.png}
+    \includegraphics[scale=0.35]{figures/o16_protonElastic.png}
     \caption{(Color online) DOM calculation of proton \elasts and analyzing
         powers on $^{16}$O compared to literature data retrieved from the EXFOR
-        database \cite{Exfor}.
+        database \cite{EXFOR}.
     }
     \label{O16_pECS_DOMFit}
 \end{figure*}
 
 \begin{figure*}
-    \includegraphics[scale=0.35]{figures/O16_nECS_DOMFit.png}
+    \includegraphics[scale=0.35]{figures/o16_neutronElastic.png}
     \caption{(Color online) DOM calculation of neutron \elasts and analyzing
         powers on $^{16}$O compared to literature data retrieved from the EXFOR
-        database \cite{Exfor}.
+        database \cite{EXFOR}.
     }
     \label{O16_nECS_DOMFit}
 \end{figure*}
 
 \begin{figure*}
-    \includegraphics[scale=0.35]{figures/O16_QDens_DOMFit.png}
+    \includegraphics[scale=0.35]{figures/o16_chargeDensity.png}
     \caption{(Color online) DOM calculation of charge density profile of $^{16}$O compared to
         charge density profile extracted from elastic electron scattering
         experiments at NIKHEF \cite{DeVries}.
@@ -1008,7 +1057,7 @@ and how it affects the neutron skin]
 \end{figure*}
 
 \begin{figure*}
-    \includegraphics[scale=0.35]{figures/O16_SPLevels_DOMFit.png}
+    \includegraphics[scale=0.35]{figures/o16_SPLevels.png}
     \caption{(Color online) DOM calculation of proton and neutron single-particle
         levels of $^{16}$O compared to
         single-particle levels determined from atomic mass differences in the
@@ -1018,7 +1067,7 @@ and how it affects the neutron skin]
 \end{figure*}
 
 \begin{figure*}
-    \includegraphics[scale=0.35]{figures/O16_SpectralFunctions_DOMFit.png}
+    \includegraphics[scale=0.35]{figures/o16_protonSpectralFunctions.png}
     \caption{(Color online) DOM calculation of spectral functions for relevant
     single-particle levels in $^{16}$O.
 }
@@ -1026,16 +1075,30 @@ and how it affects the neutron skin]
 \end{figure*}
 
 \begin{figure*}
-    \includegraphics[scale=0.35]{figures/O16_MatterDensity_DOMFit.png}
+    \includegraphics[scale=0.35]{figures/o16_matterDensity.png}
     \caption{(Color online) DOM calculation of proton and neutron matter density
         distributions in $^{16}$O.
     }
     \label{O16_MatterDensity_DOMFit}
 \end{figure*}
 
-\section{Conclusion}
 
-[Conclusion]
+\subsection{Fit results on $^{18}$O}
+
+\subsection{Discussion of fit results}
+
+In a previous DOM analysis \cite{}, the neutron skin thickness of $^{48}$Ca was
+found to be highly sensitive to the $^{40,48}$Ca \totEs data used to constrain
+the potential. 
+
+\section{Conclusion}
+Isotopically-resolved neutron total cross sections are a valuable probe of the
+isovector component of optical potentials. By adopting a digitizer-driven
+approach, we have measured \totE on the important closed-shell nuclides
+$^{16,18}$O, $^{58,64}$Ni, and $^{112,124}$Sn across more than two orders of
+magnitude in energy (3-450 MeV). Except at the highest energies, our results
+on natural targets in are good agreement with previous analog measurements
+that required 10-20 times more target material. 
 
 \section{Acknowledgements}
 
