@@ -195,7 +195,7 @@ E must be decreased. Thus these \tots oscillations have been referred to as
 
 By including additional surface, spin-orbit, and other terms, optical models (OMs) have been 
 used to successfully reproduce the general features of all manner of single-nucleon scattering 
-data across the chart of nuclides up to several hundred MeV \cite{Perey1976, CH89}. 
+data across the chart of nuclides up to several hundred MeV \cite{Perey1976,  CH89}. 
 However, despite the excellent agreement with experiment, optical models
 involve the interaction of many partial waves with many sometimes-opaque terms
 in the potential, complicating intuitive understanding of the underlying
@@ -205,11 +205,12 @@ With these considerations in mind, our goal is twofold: to demonstrate the
 value of isotopically-resolved \totEs data for identifying the dependence of optical 
 potential terms on nuclear asymmetry, and, using a Dispersive Optical Model
 (DOM) analysis of these \totEs data, to extract important quantities (neutron skin
-thicknesses, spectroscopic factors) highly sensitive to asymmetry.
+thicknesses, spectroscopic factors) closely correlated with the neutron total
+cross section.
 As one moves further from N=Z, these isovector components of the optical potential
 are increasingly important but also increasingly
 difficult to constrain as they depend on both proton and neutron scattering
-data. Despite their usefulness for informing theory, the experimental 
+data. Despite their value for informing theory, the experimental 
 challenges inherent to neutron scattering have meant that these data are often 
 limited or missing entirely, motivating our \totEs measurement program.
 
@@ -250,7 +251,7 @@ $^{204}$Pb (see Table \ref{IsotopicCrossSectionTable}).
 
 \begin{table}[ht]
     \caption{A selection of results from a literature survey of isotopically-
-    resolved \totEs data using the EXFOR database \cite{EXFORDatabase}. For the
+    resolved \totEs data using the EXFOR database \cite{EXFOR}. For the
     heaviest and lightest stable nuclides in each closed shell in Z, all
     datasets falling at least partially within 1-500 MeV are shown. For elements
     whose natural abundance is $>$90\% of a single isotope (e.g.,
@@ -456,7 +457,8 @@ neutron beam path.
             - \\
             D$_{2}$$^{\text{nat}}$O & 20.00(1) & 8.92(1) & 1.3852 & 0.1107(3) & - &
             99.9 \\
-            H$_{2}$$^{18}$O & 20.00(1) & 8.92(1) & 1.3844 & 0.1107(3) & 0.20 & 99\\
+            H$_{2}$$^{18}$O & 20.00(1) & 8.92(1) & 1.3844 & 0.1107(3) & 0.20 &
+            99.0\\
 
             $^{58}$Ni & 7.97(3)& 8.18(2) &
             3.6438 & 0.1197(3)& 68.1 & 99.6 \\
@@ -617,15 +619,27 @@ privileging events arriving earlier and thus distorting
 TOF spectra and resulting cross sections. This busy period is referred to as the
 ``analytic" or ``per-event" deadtime and can be corrected for according to standard 
 techniques
-\cite{Moore1980}. Assuming negligible variation in beam flux between micropulses
-(an assumption investigated below), the fraction of time $F[i]$ that the digitizer is dead 
-for a given time bin $i$ can be calculated:
+\cite{Moore1980}. An additional complication is the possibility of flux
+variation between micropulses. If there is no variation, the fraction of time
+that the digitizer is dead for a given time bin $i$ can be calculated with a
+simple formula, per Moore's analysis of rate-dependence of counting losses
+\cite{Moore1980}:
 \begin{equation}
     F_{i} = \sum^{N-1}_{j=0} R_{(i-j)\text{ mod N}}\times P_{j}
+    \label{DeadtimeEquation}
 \end{equation}
 where $N$ is the number of time bins in the micropulse, $R_{x}$ is the rate of
 detected events per micropulse in bin $x$, and $P_{j}$ is the probability that the
-digitizer is still busy from a trigger $j$ bins ago. To model $P_{j}$, we
+digitizer is still busy from a trigger $j$ bins ago.
+Moore also provides a more advanced formula to generate the appropriate
+dead-time correction in cases where the variation in beam flux 
+is significant. However, an examination of our flux-per-micropulse data showed
+almost no flux variance except during the first 10\%
+of each macropulse. In subsequent analysis, we have discarded the first 40 micropulses of each 
+macropulse and used the simpler Eq. \ref{DeadtimeEquation} to calculate the dead
+time fraction.
+
+To model the experimentally-observed $P_{j}$, we
 employed a logistic function and fitted it to the observed spectrum for time
 differences between consecutive events (see Fig.
 \ref{TimeDifferenceBetweenEvents}). For a given bin $i$, the fraction of time that the 
@@ -723,13 +737,21 @@ Abfalterer2001} that were as high as 500\%.% The effect of this correction on th
     \label{CorrectionEffectOnTOF}
 \end{figure*}
 
-[edits needed]
-In addition to analytic deadtime, an additional deadtime associated with digitizer readout 
-to the data acquisition computer (DAQ), was identified. Each pair of
-digitizer channels shares a common buffer for storing events; upon reaching a
-user-defined threshold, buffer contents are read out to the DAQ as packets.
-During readout, the digitizer is ...something.
-This is likely the largest source of systematic error in our measurement.
+In addition to analytic deadtime, there is an additional deadtime factor associated with 
+digitizer readout to the data acquisition computer (DAQ). During data
+collection, each pair of digitizer channels shares a common buffer for storing events.
+After several seconds of acquisition, the digitizer tally of total events would
+reach reaching a user-defined threshold to begin readout, at which time the
+acquitision was paused and buffer contents passed out to the DAQ. However,
+because each buffer was independently read out to the DAQ, it is possible that buffers
+could be emptied and readied for new acquisition at slightly different times
+(10-40 ms apart). Such run-time interactions between the firmware and USB
+traffic of the DAQ were difficult to characterize, but we estimate that they might cause a 
+systematic error of a few tenths of one
+percent in the number of macropulses seen by differing channels, depending on the user-defined 
+threshold and the buffer size, which could contribute to the discrepancy at the
+highest energies (>100 MeV) between our results and past analog-enabled
+measurements. 
 
 During analysis, it was noted that occasionally (1 in 400 macropulses), one or two 
 adjacent macropulses would have an abnormally small number of flux monitor events or 
@@ -738,7 +760,6 @@ switching between DPP and waveform modes and we suspect it is related to edge
 case behavior right before or after a mode switch. To mitigate this issue,
 any macropulse that had less than 50\% of the average event rate in either the
 flux monitor or TOF detector channel was ignored during cross section calculation.
-[edits needed]
 
 After applying these corrections, the veto and integrated charge gates are applied to 
 all events and surviving events are populated into TOF spectra (see Fig.
