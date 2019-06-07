@@ -33,7 +33,7 @@
 
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
-    gPad->SetLeftMargin(0.1);
+    gPad->SetLeftMargin(0.13);
     gPad->SetRightMargin(0.05);
     gPad->SetTopMargin(0.05);
     gPad->SetBottomMargin(0.12);
@@ -73,7 +73,7 @@
     histo->GetXaxis()->SetNdivisions(6);
 
     // Y-axis parameters
-    //histo->GetYaxis()->SetTitle("#sigma_{exp}-#sigma_{lit} (RMS, in %)");
+    histo->GetYaxis()->SetTitle("Adjacent events");
     histo->GetYaxis()->SetTitleSize(0.05);
     histo->GetYaxis()->SetTitleFont(2);
     histo->GetYaxis()->SetTitleOffset(1.2);
@@ -84,7 +84,7 @@
     histo->GetYaxis()->SetLabelFont(2);
 
     histo->GetXaxis()->SetRangeUser(200,280);
-    histo->GetYaxis()->SetRangeUser(0.1,1300);
+    histo->GetYaxis()->SetRangeUser(0.1,1325);
 
     histo->Draw("");
 
@@ -129,7 +129,7 @@
     //latex.DrawLatex(0.20,0.37,"Dead Zone");
     //latex.DrawLatex(0.70,0.57,"Live Zone");
 
-    TLine *line = new TLine(deadtimeMean, 0, deadtimeMean, 1300);
+    TLine *line = new TLine(deadtimeMean, 0, deadtimeMean, 1325);
     line->SetLineStyle(1);
     line->SetLineWidth(3);
     line->SetLineColor(kBlue);

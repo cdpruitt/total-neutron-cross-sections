@@ -45,7 +45,7 @@
     expGraph->SetLineWidth(4);
     expGraph->SetLineStyle(0);
     expGraph->SetMarkerColor(kRed);
-    expGraph->SetMarkerStyle(20);
+    expGraph->SetMarkerStyle(21);
     expGraph->SetMarkerSize(2);
 
     litGraph->SetLineColor(kBlack);
@@ -56,7 +56,7 @@
     litGraph->SetMarkerSize(2);
 
     // Pad dimensions and margins
-    gPad->SetPad(0.005, 0.995, 0.995, 0.005);
+    gPad->SetPad(0.005, 0.995, 0.895, 0.005);
     gPad->SetLeftMargin(0.2);
     gPad->SetRightMargin(0.01);
     gPad->SetTopMargin(0.03);

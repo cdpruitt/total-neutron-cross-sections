@@ -6,10 +6,45 @@
     TFile* ramsauerFile = new TFile(ramsauerFileName.c_str(), "READ");
     
     string relGraphName = "Sn124Sn112, percent";
-    string SARelDiffGraphName = "RelDiff124_112";
-        
+    string relGraphSEName = "Sn124Sn112SysErrors, percent";
+
+    string SARelDiffGraphThirdName = "RelDiff124_112Third";
+    string SARelDiffGraphSixthName = "RelDiff124_112Sixth";
+
+    string RamsauerRelDiffGraphName = "RelDiffRamsauer124_112";
+    string RamsauerRelDiffGraphSixthName = "RelDiffRamsauerSixth124_112";
+       
     TGraphAsymmErrors* relGraph = (TGraphAsymmErrors*)file->Get(relGraphName.c_str());
-    TGraph* SARelDiffGraph = (TGraph*)ramsauerFile->Get(SARelDiffGraphName.c_str());
+    TGraphAsymmErrors* relGraphSE = (TGraphAsymmErrors*)file->Get(relGraphSEName.c_str());
+
+    TGraph* SARelDiffGraphThird = (TGraph*)ramsauerFile->Get(SARelDiffGraphThirdName.c_str());
+    TGraph* SARelDiffGraphSixth = (TGraph*)ramsauerFile->Get(SARelDiffGraphSixthName.c_str());
+    TGraph* RamsauerRelDiffGraph = (TGraph*)ramsauerFile->Get(RamsauerRelDiffGraphName.c_str());
+    TGraph* RamsauerRelDiffGraphSixth = (TGraph*)ramsauerFile->Get(RamsauerRelDiffGraphSixthName.c_str());
+
+    if(!ramsauerFile)
+    {
+        cerr << "Error: couldn't open " << ramsauerFileName << endl;
+        exit(1);
+    }
+
+    if(!relGraph)
+    {
+        cerr << "Error: failed to find " << relGraphName << endl;
+        exit(1);
+    }
+
+    if(!SARelDiffGraphThird || !SARelDiffGraphSixth)
+    {
+        cerr << "Error: failed to find " << SARelDiffGraphThirdName << endl;
+        exit(1);
+    }
+
+    if(!RamsauerRelDiffGraph)
+    {
+        cerr << "Error: failed to find " << RamsauerRelDiffGraphName << endl;
+        exit(1);
+    }
 
     TStyle* style = (TStyle*)gROOT->FindObject("graphStyle");
 
@@ -45,9 +80,30 @@
 
     // Set graph point and line characteristics
     relGraph->SetLineColor(kRed);
-    relGraph->SetLineWidth(4);
+    relGraph->SetLineWidth(3);
     relGraph->SetLineStyle(0);
     relGraph->SetMarkerColor(kRed);
+    relGraph->SetFillColor(kRed);
+    relGraph->SetFillStyle(3002);
+
+    SARelDiffGraphThird->SetLineStyle(9);
+    SARelDiffGraphThird->SetLineWidth(3);
+    SARelDiffGraphThird->SetLineColor(kBlack);
+
+    SARelDiffGraphSixth->SetLineStyle(7);
+    SARelDiffGraphSixth->SetLineWidth(3);
+    SARelDiffGraphSixth->SetLineColor(kGray+2);
+
+    RamsauerRelDiffGraph->SetLineStyle(7);
+    RamsauerRelDiffGraph->SetLineWidth(3);
+    RamsauerRelDiffGraph->SetLineColor(kGray+2);
+
+    RamsauerRelDiffGraphSixth->SetLineStyle(7);
+    RamsauerRelDiffGraphSixth->SetLineWidth(3);
+    RamsauerRelDiffGraphSixth->SetLineColor(kGray+2);
+
+    relGraphSE->SetFillColor(kBlue);
+    relGraphSE->SetFillStyle(3002);
 
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
@@ -57,52 +113,66 @@
     gPad->SetBottomMargin(0.15);
     gPad->SetTicky(2);
 
+    TMultiGraph* mg = new TMultiGraph();
+
+    mg->Add(relGraph,"3l");
+    mg->Add(relGraphSE, "3");
+    mg->Add(SARelDiffGraphThird, "l");
+    mg->Add(SARelDiffGraphSixth, "l");
+    //mg->Add(RamsauerRelDiffGraph, "l");
+    //mg->Add(RamsauerRelDiffGraphSixth, "l");
+
+    mg->Draw("al");
+
     // X-axis parameters
-    relGraph->GetXaxis()->SetTitle("Energy (MeV)");
-    relGraph->GetXaxis()->SetTitleSize(0.05);
-    relGraph->GetXaxis()->SetTitleFont(2);
-    relGraph->GetXaxis()->SetTitleOffset(1.4);
-    relGraph->GetXaxis()->CenterTitle();
+    mg->GetXaxis()->SetTitle("Energy (MeV)");
+    mg->GetXaxis()->SetTitleSize(0.05);
+    mg->GetXaxis()->SetTitleFont(2);
+    mg->GetXaxis()->SetTitleOffset(1.4);
+    mg->GetXaxis()->CenterTitle();
 
-    relGraph->GetXaxis()->SetLabelOffset(0.01);
-    relGraph->GetXaxis()->SetLabelSize(0.05);
-    relGraph->GetXaxis()->SetLabelFont(2);
+    mg->GetXaxis()->SetLabelOffset(0.01);
+    mg->GetXaxis()->SetLabelSize(0.05);
+    mg->GetXaxis()->SetLabelFont(2);
 
-    relGraph->GetXaxis()->SetNdivisions(10);
-    relGraph->GetXaxis()->SetTickLength(0.03);
+    mg->GetXaxis()->SetNdivisions(10);
+    mg->GetXaxis()->SetTickLength(0.03);
 
     // Y-axis parameters
-    relGraph->GetYaxis()->SetTitle("(#frac{#sigma_{124} - #sigma_{112}}{#sigma_{124} + #sigma_{112}})");
-    relGraph->GetYaxis()->SetTitleSize(0.06);
-    relGraph->GetYaxis()->SetTitleFont(2);
-    relGraph->GetYaxis()->SetTitleOffset(1.0);
-    relGraph->GetYaxis()->CenterTitle();
+    mg->GetYaxis()->SetTitle("(#frac{#sigma_{124} - #sigma_{112}}{#sigma_{124} + #sigma_{112}})");
+    mg->GetYaxis()->SetTitleSize(0.06);
+    mg->GetYaxis()->SetTitleFont(2);
+    mg->GetYaxis()->SetTitleOffset(1.0);
+    mg->GetYaxis()->CenterTitle();
 
-    relGraph->GetYaxis()->SetLabelOffset(0.01);
-    relGraph->GetYaxis()->SetLabelSize(0.05);
+    mg->GetYaxis()->SetLabelOffset(0.01);
+    mg->GetYaxis()->SetLabelSize(0.05);
 
-    relGraph->GetYaxis()->SetLabelFont(2);
-    relGraph->GetYaxis()->SetNdivisions(5);
-    relGraph->GetYaxis()->SetTickLength(0.02);
-
-    SARelDiffGraph->SetLineStyle(9);
-    SARelDiffGraph->SetLineWidth(3);
-    SARelDiffGraph->SetLineColor(kGray);
-
-    relGraph->Draw("AL");
-    SARelDiffGraph->Draw("same");
+    mg->GetYaxis()->SetLabelFont(2);
+    mg->GetYaxis()->SetNdivisions(5);
+    mg->GetYaxis()->SetTickLength(0.02);
 
     gPad->SetLogx(1);
     
-    relGraph->GetYaxis()->SetRangeUser(0.2,4);
-    relGraph->GetXaxis()->SetLimits(5,600);
+    mg->GetYaxis()->SetRangeUser(0.0,4.1);
+    mg->GetXaxis()->SetLimits(5,600);
+
+    // Define legend format and contents
+    TLegend *legend = new TLegend(0.15, 0.83, 0.45, 0.95);
+    legend->SetNColumns(2);
+    legend->AddEntry(relGraph,"Exp data, sys + stat   ","f");
+    legend->AddEntry(SARelDiffGraphThird,"SAS, r #alpha A^{1/3} ","l");
+    legend->AddEntry(relGraphSE,"Exp data, sys only   ","f");
+    legend->AddEntry(SARelDiffGraphSixth,"SAS, r #alpha A^{1/6} ","l");
+    //legend->AddEntry(RamsauerRelDiffGraph,"Ramsauer","l");
+    legend->Draw();
 
     //TLatex latex;
     //latex.SetNDC();
     //latex.SetTextSize(0.05);
     //latex.SetTextAlign(13); // align at top
-    //latex.DrawLatex(0.47,0.52,"Ni");
-    //latex.DrawLatex(0.32,0.4,"C");
+    //latex.DrawLatex(0.19,0.82,"A^{#frac{1}{3}}");
+    //latex.DrawLatex(0.77,0.40,"A^{#frac{1}{6}}");
 
     file->Close();
 }

@@ -72,6 +72,8 @@ then
         continue
     fi
 
+    echo "$analysisDirectoryName" "$experiment" "$detectorName"
+
     if [ "$eachSubrun" = true ]
     then
         ./bin/eachSubrun "$analysisDirectoryName" "$experiment" "$detectorName"

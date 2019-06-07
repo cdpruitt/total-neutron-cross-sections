@@ -106,7 +106,7 @@
     relO18Graph->SetLineColor(kRed+2);
     relO18Graph->SetMarkerColor(kRed+2);
     relO18Graph->SetMarkerSize(2);
-    relO18Graph->SetMarkerStyle(22);
+    relO18Graph->SetMarkerStyle(23);
 
     litO16Graph->SetLineColor(kBlue-7);
     litO16Graph->SetLineWidth(4);

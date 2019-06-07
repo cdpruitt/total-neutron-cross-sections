@@ -1,6 +1,6 @@
 {
 
-    string fileName = "/data1/analysis/44/0000/detTimeCheck_noGates.root";
+    string fileName = "/data1/analysis/44/0000/detTimeCheck.root";
 
     TFile* file = new TFile(fileName.c_str(),"READ");
 
@@ -62,7 +62,7 @@
     LRCorrelationHisto->SetMarkerColor(kBlack);
 
     // X-axis parameters
-    LRCorrelationHisto->GetXaxis()->SetTitle("Left detector fine time (ns)");
+    LRCorrelationHisto->GetXaxis()->SetTitle("Left PMT fine time (ns)");
     LRCorrelationHisto->GetXaxis()->SetTitleSize(0.05);
     LRCorrelationHisto->GetXaxis()->SetTitleFont(2);
     LRCorrelationHisto->GetXaxis()->SetTitleOffset(1.5);
@@ -76,7 +76,7 @@
     //LRCorrelationHisto->GetXaxis()->SetTickLength(0.03);
 
     // Y-axis parameters
-    LRCorrelationHisto->GetYaxis()->SetTitle("Right detector fine time (ns)");
+    LRCorrelationHisto->GetYaxis()->SetTitle("Right PMT fine time (ns)");
     LRCorrelationHisto->GetYaxis()->SetTitleSize(0.05);
     LRCorrelationHisto->GetYaxis()->SetTitleFont(2);
     LRCorrelationHisto->GetYaxis()->SetTitleOffset(1.5);

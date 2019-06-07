@@ -27,7 +27,7 @@
     style->SetTitleSize(0.08,"xyz");
     style->SetTitleFillColor(10);
     style->SetTitleTextColor(kBlack);
-    style->SetEndErrorSize(0);
+    //style->SetEndErrorSize(0);
 
     gROOT->SetStyle("graphStyle");
     gROOT->ForceStyle();
@@ -88,37 +88,39 @@
     expSn112Graph->SetLineWidth(4);
     expSn112Graph->SetLineStyle(1);
     expSn112Graph->SetMarkerColor(kRed);
+    expSn112Graph->SetMarkerSize(2.5);
 
     expSn124Graph->SetLineColor(kRed+2);
     expSn124Graph->SetLineWidth(4);
     expSn124Graph->SetLineStyle(1);
     expSn124Graph->SetMarkerColor(kRed+2);
+    expSn124Graph->SetMarkerSize(2.5);
 
     relSn112Graph->SetLineColor(kRed);
     relSn112Graph->SetLineWidth(4);
     relSn112Graph->SetLineStyle(0);
     relSn112Graph->SetMarkerColor(kRed);
-    relSn112Graph->SetMarkerSize(2);
+    relSn112Graph->SetMarkerSize(2.5);
     relSn112Graph->SetMarkerStyle(22);
 
     relSn124Graph->SetLineColor(kRed+2);
     relSn124Graph->SetMarkerColor(kRed+2);
-    relSn124Graph->SetMarkerSize(2);
-    relSn124Graph->SetMarkerStyle(22);
+    relSn124Graph->SetMarkerSize(2.5);
+    relSn124Graph->SetMarkerStyle(23);
 
     litSn112Graph->SetLineColor(kBlue-7);
     litSn112Graph->SetLineWidth(4);
     litSn112Graph->SetLineStyle(1);
     litSn112Graph->SetMarkerColor(kBlue-7);
-    litSn112Graph->SetMarkerSize(2);
+    litSn112Graph->SetMarkerSize(2.5);
     litSn112Graph->SetMarkerStyle(22);
 
     litSn124Graph->SetLineColor(kBlue);
     litSn124Graph->SetLineWidth(4);
     litSn124Graph->SetLineStyle(1);
     litSn124Graph->SetMarkerColor(kBlue);
-    litSn124Graph->SetMarkerSize(2);
-    litSn124Graph->SetMarkerStyle(22);
+    litSn124Graph->SetMarkerSize(2.5);
+    litSn124Graph->SetMarkerStyle(23);
 
     // first panel
     {
@@ -218,7 +220,7 @@
 
         TMultiGraph* mg = new TMultiGraph();
 
-        mg->Add(relSn124Graph, "l");
+        mg->Add(relSn124Graph, "lp");
         mg->Add(relSn112Graph, "p");
 
         mg->Draw("al");
@@ -262,21 +264,22 @@
         latex.SetTextSize(0.13);
         latex.DrawLatex(0.02, 1, "b)");
 
+        TLine* zeroLine = new TLine(3, 0, 500, 0);
+        zeroLine->SetLineColor(kBlack);
+        zeroLine->SetLineWidth(3);
+        zeroLine->SetLineStyle(9);
+        zeroLine->Draw();
+
         // Define legend format and contents
         TLegend *legend = new TLegend(0.83,0.74,0.96,0.96);
         legend->SetNColumns(1);
         legend->SetTextSize(0.07);
         legend->SetTextAlign(12);
         legend->AddEntry(relSn112Graph,"{}^{112}Sn","p");
-        legend->AddEntry(relSn124Graph,"{}^{124}Sn","l");
+        legend->AddEntry(relSn124Graph,"{}^{124}Sn","pl");
 
         legend->Draw();
 
-        TLine* zeroLine = new TLine(3, 0, 500, 0);
-        zeroLine->SetLineColor(kBlack);
-        zeroLine->SetLineWidth(3);
-        zeroLine->SetLineStyle(9);
-        zeroLine->Draw();
     }
 
     // close it all up

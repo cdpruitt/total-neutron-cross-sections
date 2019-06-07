@@ -57,6 +57,16 @@
     TGraph* SASnGraph = (TGraph*)ramsauerFile->Get(SASnGraphName.c_str());
     TGraph* SAPbGraph = (TGraph*)ramsauerFile->Get(SAPbGraphName.c_str());
 
+    string RamsauerCGraphName = "Ramsauer_A=12";
+    string RamsauerNiGraphName = "Ramsauer_A=58.7";
+    string RamsauerSnGraphName = "Ramsauer_A=118.7";
+    string RamsauerPbGraphName = "Ramsauer_A=207.2";
+
+    TGraph* RamsauerCGraph = (TGraph*)ramsauerFile->Get(RamsauerCGraphName.c_str());
+    TGraph* RamsauerNiGraph = (TGraph*)ramsauerFile->Get(RamsauerNiGraphName.c_str());
+    TGraph* RamsauerSnGraph = (TGraph*)ramsauerFile->Get(RamsauerSnGraphName.c_str());
+    TGraph* RamsauerPbGraph = (TGraph*)ramsauerFile->Get(RamsauerPbGraphName.c_str());
+
     string OMSnGraphName = "OM_A=118.7";
     TGraph* OMSnGraph = (TGraph*)ramsauerFile->Get(OMSnGraphName.c_str());
 
@@ -139,6 +149,11 @@
     SASnGraph->Draw("same");
     OMSnGraph->Draw("same");
     SAPbGraph->Draw("same");
+
+    //RamsauerCGraph->Draw("same");
+    //RamsauerNiGraph->Draw("same");
+    //RamsauerSnGraph->Draw("same");
+    //RamsauerPbGraph->Draw("same");
  
     gPad->SetLogx(1);
     

@@ -9,9 +9,11 @@
     string relGraphSEName = "Ni64Ni58SysErrors, percent";
 
     string SARelDiffGraphName = "RelDiff64_58";
+    string RamsauerRelDiffGraphName = "RelDiffRamsauer64_58";
         
     TGraphAsymmErrors* relGraph = (TGraphAsymmErrors*)file->Get(relGraphName.c_str());
     TGraphAsymmErrors* relGraphSE = (TGraphAsymmErrors*)file->Get(relGraphSEName.c_str());
+    TGraph* RamsauerRelDiffGraph = (TGraph*)ramsauerFile->Get(RamsauerRelDiffGraphName.c_str());
 
     TGraph* SARelDiffGraph = (TGraph*)ramsauerFile->Get(SARelDiffGraphName.c_str());
 
@@ -59,6 +61,10 @@
     SARelDiffGraph->SetLineWidth(3);
     SARelDiffGraph->SetLineColor(kBlack);
 
+    RamsauerRelDiffGraph->SetLineStyle(7);
+    RamsauerRelDiffGraph->SetLineWidth(3);
+    RamsauerRelDiffGraph->SetLineColor(kGray+2);
+
     relGraphSE->SetFillColor(kBlue);
     relGraphSE->SetFillStyle(3002);
 
@@ -75,6 +81,7 @@
     mg->Add(relGraph,"3l");
     mg->Add(relGraphSE, "3");
     mg->Add(SARelDiffGraph, "l");
+    //mg->Add(RamsauerRelDiffGraph, "l");
 
     mg->Draw("al");
 
@@ -135,9 +142,13 @@
     //latex.DrawLatex(0.32,0.4,"C");
 
     // Define legend format and contents
-    //TLegend *legend = new TLegend(0.5,0.67,0.96,0.96);
-    //legend->SetTextSize(0.07);
-    //legend->SetTextAlign(12);
+    TLegend *legend = new TLegend(0.15, 0.83, 0.45, 0.95);
+    legend->SetNColumns(2);
+    legend->AddEntry(relGraph,"Exp data, sys + stat   ","f");
+    legend->AddEntry(SARelDiffGraph,"SAS, r #alpha A^{1/3} ","l");
+    legend->AddEntry(relGraphSE,"Exp data, sys only   ","f");
+    //legend->AddEntry(RamsauerRelDiffGraph,"Ramsauer","l");
+    legend->Draw();
 
     //legend->Draw();
 

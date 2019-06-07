@@ -112,12 +112,11 @@
     minusOneLine->SetLineStyle(9);
     minusOneLine->Draw();
 
-    //TLatex latex;
-    //latex.SetNDC();
-    //latex.SetTextSize(0.05);
-    //latex.SetTextAlign(13); // align at top
-    //latex.DrawLatex(0.47,0.52,"Ni");
-    //latex.DrawLatex(0.32,0.4,"C");
+    TLatex latex;
+    latex.SetNDC();
+    latex.SetTextSize(0.05);
+    latex.SetTextAlign(13); // align at top
+    latex.DrawLatex(0.47,0.52,"{}^{nat}C");
 
     file->Close();
 }

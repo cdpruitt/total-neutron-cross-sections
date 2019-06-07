@@ -230,9 +230,9 @@
         legend->SetNColumns(1);
         legend->SetTextSize(0.07);
         legend->SetTextAlign(12);
-        legend->AddEntry(relRhNatGraph,"{}^{Nat}Rh","l");
+        legend->AddEntry(relRhNatGraph,"{}^{103}Rh","l");
 
-        //legend->Draw();
+        legend->Draw();
 
         TLine* zeroLine = new TLine(3, 0, 500, 0);
         zeroLine->SetLineColor(kBlack);

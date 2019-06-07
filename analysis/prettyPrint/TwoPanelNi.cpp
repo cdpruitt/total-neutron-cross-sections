@@ -98,11 +98,13 @@
     relNi58Graph->SetLineWidth(4);
     relNi58Graph->SetLineStyle(0);
     relNi58Graph->SetMarkerColor(kRed);
+    relNi58Graph->SetMarkerStyle(22);
+    relNi58Graph->SetMarkerSize(2.5);
 
     relNi64Graph->SetLineColor(kRed+2);
     relNi64Graph->SetMarkerColor(kRed+2);
-    relNi64Graph->SetMarkerSize(2);
-    relNi64Graph->SetMarkerStyle(22);
+    relNi64Graph->SetMarkerSize(2.5);
+    relNi64Graph->SetMarkerStyle(23);
 
     litNi58Graph->SetLineColor(kBlue-7);
     litNi58Graph->SetLineWidth(4);
@@ -212,7 +214,7 @@
 
         TMultiGraph* mg = new TMultiGraph();
 
-        mg->Add(relNi58Graph, "l");
+        mg->Add(relNi58Graph, "lp");
         mg->Add(relNi64Graph, "p");
 
         mg->Draw("al");
@@ -261,7 +263,7 @@
         legend->SetNColumns(1);
         legend->SetTextSize(0.07);
         legend->SetTextAlign(12);
-        legend->AddEntry(relNi58Graph,"{}^{58}Ni","l");
+        legend->AddEntry(relNi58Graph,"{}^{58}Ni","lp");
         legend->AddEntry(relNi64Graph,"{}^{64}Ni","p");
 
         legend->Draw();

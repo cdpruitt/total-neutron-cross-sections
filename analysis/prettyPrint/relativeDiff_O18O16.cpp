@@ -6,10 +6,15 @@
     TFile* ramsauerFile = new TFile(ramsauerFileName.c_str(), "READ");
     
     string relGraphName = "O18O16, percent";
+    string relGraphSEName = "O18O16SysErrors, percent";
+
     string SARelDiffGraphName = "RelDiff18_16";
+    string RamsauerRelDiffGraphName = "RelDiffRamsauer18_16";
         
     TGraphAsymmErrors* relGraph = (TGraphAsymmErrors*)file->Get(relGraphName.c_str());
+    TGraphAsymmErrors* relGraphSE = (TGraphAsymmErrors*)file->Get(relGraphSEName.c_str());
     TGraph* SARelDiffGraph = (TGraph*)ramsauerFile->Get(SARelDiffGraphName.c_str());
+    TGraph* RamsauerRelDiffGraph = (TGraph*)ramsauerFile->Get(RamsauerRelDiffGraphName.c_str());
 
     TStyle* style = (TStyle*)gROOT->FindObject("graphStyle");
 
@@ -45,9 +50,11 @@
 
     // Set graph point and line characteristics
     relGraph->SetLineColor(kRed);
-    relGraph->SetLineWidth(4);
+    relGraph->SetLineWidth(5);
     relGraph->SetLineStyle(0);
     relGraph->SetMarkerColor(kRed);
+    relGraph->SetFillColor(kRed);
+    relGraph->SetFillStyle(3002);
 
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
@@ -57,45 +64,66 @@
     gPad->SetBottomMargin(0.2);
     gPad->SetTicky(2);
 
-    // X-axis parameters
-    relGraph->GetXaxis()->SetTitle("Energy (MeV)");
-    relGraph->GetXaxis()->SetTitleSize(0.05);
-    relGraph->GetXaxis()->SetTitleFont(2);
-    relGraph->GetXaxis()->SetTitleOffset(1.4);
-    relGraph->GetXaxis()->CenterTitle();
-
-    relGraph->GetXaxis()->SetLabelOffset(0.01);
-    relGraph->GetXaxis()->SetLabelSize(0.05);
-    relGraph->GetXaxis()->SetLabelFont(2);
-
-    relGraph->GetXaxis()->SetNdivisions(10);
-    relGraph->GetXaxis()->SetTickLength(0.03);
-
-    // Y-axis parameters
-    relGraph->GetYaxis()->SetTitle("(#frac{#sigma_{18} - #sigma_{16}}{#sigma_{18} + #sigma_{16}}) [%]");
-    relGraph->GetYaxis()->SetTitleSize(0.06);
-    relGraph->GetYaxis()->SetTitleFont(2);
-    relGraph->GetYaxis()->SetTitleOffset(1.3);
-    relGraph->GetYaxis()->CenterTitle();
-
-    relGraph->GetYaxis()->SetLabelOffset(0.01);
-    relGraph->GetYaxis()->SetLabelSize(0.05);
-
-    relGraph->GetYaxis()->SetLabelFont(2);
-    relGraph->GetYaxis()->SetNdivisions(10);
-    relGraph->GetYaxis()->SetTickLength(0.02);
-
     SARelDiffGraph->SetLineStyle(9);
     SARelDiffGraph->SetLineWidth(3);
-    SARelDiffGraph->SetLineColor(kGray);
+    SARelDiffGraph->SetLineColor(kBlack);
 
-    relGraph->Draw("AL");
-    SARelDiffGraph->Draw("same");
+    RamsauerRelDiffGraph->SetLineStyle(7);
+    RamsauerRelDiffGraph->SetLineWidth(5);
+    RamsauerRelDiffGraph->SetLineColor(kGray+2);
+
+    relGraphSE->SetFillColor(kBlue);
+    relGraphSE->SetFillStyle(3002);
+
+    // Pad dimensions and margins
+    gPad->SetPad(0.005, 0.995, 0.995, 0.005);
+    gPad->SetLeftMargin(0.15);
+    gPad->SetRightMargin(0.01);
+    gPad->SetTopMargin(0.03);
+    gPad->SetBottomMargin(0.15);
+    gPad->SetTicky(2);
+
+    TMultiGraph* mg = new TMultiGraph();
+
+    mg->Add(relGraph,"3l");
+    mg->Add(relGraphSE, "3");
+    mg->Add(SARelDiffGraph, "l");
+    //mg->Add(RamsauerRelDiffGraph, "l");
+
+    mg->Draw("al");
+
+    // X-axis parameters
+    mg->GetXaxis()->SetTitle("Energy (MeV)");
+    mg->GetXaxis()->SetTitleSize(0.05);
+    mg->GetXaxis()->SetTitleFont(2);
+    mg->GetXaxis()->SetTitleOffset(1.4);
+    mg->GetXaxis()->CenterTitle();
+
+    mg->GetXaxis()->SetLabelOffset(0.01);
+    mg->GetXaxis()->SetLabelSize(0.05);
+    mg->GetXaxis()->SetLabelFont(2);
+
+    mg->GetXaxis()->SetNdivisions(10);
+    mg->GetXaxis()->SetTickLength(0.03);
+
+    // Y-axis parameters
+    mg->GetYaxis()->SetTitle("(#frac{#sigma_{18} - #sigma_{16}}{#sigma_{18} + #sigma_{16}}) [%]");
+    mg->GetYaxis()->SetTitleSize(0.06);
+    mg->GetYaxis()->SetTitleFont(2);
+    mg->GetYaxis()->SetTitleOffset(1.0);
+    mg->GetYaxis()->CenterTitle();
+
+    mg->GetYaxis()->SetLabelOffset(0.01);
+    mg->GetYaxis()->SetLabelSize(0.05);
+
+    mg->GetYaxis()->SetLabelFont(2);
+    mg->GetYaxis()->SetNdivisions(10);
+    mg->GetYaxis()->SetTickLength(0.02);
+
+    mg->GetYaxis()->SetRangeUser(-5,7.5);
+    mg->GetXaxis()->SetLimits(8,600);
 
     gPad->SetLogx(1);
-    
-    relGraph->GetYaxis()->SetRangeUser(-5,20);
-    relGraph->GetXaxis()->SetLimits(8,600);
 
     //TLatex latex;
     //latex.SetNDC();
@@ -105,17 +133,19 @@
     //latex.DrawLatex(0.32,0.4,"C");
 
     // Define legend format and contents
-    //TLegend *legend = new TLegend(0.5,0.67,0.96,0.96);
-    //legend->SetTextSize(0.07);
-    //legend->SetTextAlign(12);
+    TLegend *legend = new TLegend(0.15, 0.83, 0.45, 0.95);
+    legend->SetNColumns(2);
+    legend->AddEntry(relGraph,"Exp data, sys + stat   ","f");
+    legend->AddEntry(SARelDiffGraph,"SAS, r #alpha A^{1/3} ","l");
+    legend->AddEntry(relGraphSE,"Exp data, sys only   ","f");
+    //legend->AddEntry(RamsauerRelDiffGraph,"Ramsauer","l");
+    legend->Draw();
 
-    //legend->Draw();
-
-    TLine* zeroLine = new TLine(0, 0, 600, 0);
-    zeroLine->SetLineColor(kBlack);
-    zeroLine->SetLineWidth(3);
-    zeroLine->SetLineStyle(9);
-    zeroLine->Draw();
+    //TLine* zeroLine = new TLine(0, 0, 600, 0);
+    //zeroLine->SetLineColor(kBlack);
+    //zeroLine->SetLineWidth(3);
+    //zeroLine->SetLineStyle(9);
+    //zeroLine->Draw();
 
     /*TLine* SixthLine = new TLine(0, 0, 600, 0);
     zeroLine->SetLineColor(kBlack);
