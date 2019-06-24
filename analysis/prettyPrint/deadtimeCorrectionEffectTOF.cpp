@@ -60,11 +60,12 @@
 
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
-    gPad->SetLeftMargin(0.1);
-    gPad->SetRightMargin(0.05);
-    gPad->SetTopMargin(0.05);
-    gPad->SetBottomMargin(0.15);
-    //gPad->SetTicky(2);
+    gPad->SetLeftMargin(0.10);
+    gPad->SetRightMargin(0.005);
+    gPad->SetTopMargin(0.002);
+    gPad->SetBottomMargin(0.14);
+    gPad->SetTickx(2);
+    gPad->SetTicky(2);
 
     // Set TOFHisto point and line characteristics
     TOFHisto->SetMarkerColor(kBlack);
@@ -101,8 +102,8 @@
     //TOFHisto->GetYaxis()->SetNdivisions(10);
     //TOFHisto->GetYaxis()->SetTickLength(0.02);
 
-    TOFHisto->GetXaxis()->SetRangeUser(100, 500);
-    TOFHisto->GetYaxis()->SetRangeUser(10000, 200000);
+    TOFHisto->GetXaxis()->SetRangeUser(100, 499);
+    TOFHisto->GetYaxis()->SetRangeUser(3000, 110000);
 
     TOFHisto->Draw();
     uncorrectedTOFHisto->Draw("same");
@@ -113,8 +114,8 @@
     latex.SetTextAlign(13); // align at top
     latex.SetTextColor(kBlack);
     latex.DrawLatex(0.15, 0.82, "300 MeV");
-    latex.DrawLatex(0.23, 0.66, "150 MeV");
-    latex.DrawLatex(0.37, 0.56, "71 MeV");
+    latex.DrawLatex(0.24, 0.66, "150 MeV");
+    latex.DrawLatex(0.40, 0.56, "71 MeV");
 
     gPad->SetLogy(1);
 
@@ -128,21 +129,21 @@
 
     legend->Draw();
 
-    TArrow *arrow = new TArrow(245, 40000, 245, 29000, 0.015, "|>");
+    TArrow *arrow = new TArrow(245, 15500, 245, 10500, 0.015, "|>");
     arrow->SetAngle(30);
     arrow->SetLineWidth(1);
     arrow->SetLineColor(kBlack);
     arrow->SetFillColor(kBlack);
     arrow->Draw();
 
-    TArrow *arrow2 = new TArrow(139, 105000, 139, 76000, 0.015, "|>");
+    TArrow *arrow2 = new TArrow(139, 45000, 139, 29000, 0.015, "|>");
     arrow2->SetAngle(30);
     arrow2->SetLineWidth(1);
     arrow2->SetLineColor(kBlack);
     arrow2->SetFillColor(kBlack);
     arrow2->Draw();
 
-    TArrow *arrow3 = new TArrow(178.5, 58000, 178.5, 43000, 0.015, "|>");
+    TArrow *arrow3 = new TArrow(178.5, 23000, 178.5, 16000, 0.015, "|>");
     arrow3->SetAngle(30);
     arrow3->SetLineWidth(1);
     arrow3->SetLineColor(kBlack);

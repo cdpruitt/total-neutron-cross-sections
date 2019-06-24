@@ -106,10 +106,11 @@
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
     gPad->SetLeftMargin(0.10);
-    gPad->SetRightMargin(0.02);
-    gPad->SetTopMargin(0.02);
+    gPad->SetRightMargin(0.005);
+    gPad->SetTopMargin(0.002);
     gPad->SetBottomMargin(0.15);
-    //gPad->SetTicky(2);
+    gPad->SetTickx(2);
+    gPad->SetTicky(2);
 
     // X-axis parameters
     CGraph->GetXaxis()->SetTitle("Energy (MeV)");
@@ -147,7 +148,7 @@
     SACGraph->Draw("same");
     SANiGraph->Draw("same");
     SASnGraph->Draw("same");
-    OMSnGraph->Draw("same");
+    //OMSnGraph->Draw("same");
     SAPbGraph->Draw("same");
 
     //RamsauerCGraph->Draw("same");
@@ -158,7 +159,7 @@
     gPad->SetLogx(1);
     
     CGraph->GetXaxis()->SetRangeUser(2,500);
-    CGraph->GetYaxis()->SetRangeUser(0,9);
+    CGraph->GetYaxis()->SetRangeUser(0,8.99);
 
     //TLatex latex;
     //latex.SetNDC();

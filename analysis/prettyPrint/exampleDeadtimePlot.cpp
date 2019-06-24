@@ -6,7 +6,7 @@
         style = new TStyle("blankHistoStyle","blankHistoStyle");
     }
 
-    TCanvas* c = new TCanvas("c1","",1300,900);
+    TCanvas* c = new TCanvas("c1","",900,600);
 
     style->SetOptStat(0);
     style->SetOptTitle(0);    
@@ -64,11 +64,12 @@
 
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
-    gPad->SetLeftMargin(0.15);
-    gPad->SetRightMargin(0.15);
-    gPad->SetTopMargin(0.05);
-    gPad->SetBottomMargin(0.20);
-    //gPad->SetTicky(2);
+    gPad->SetLeftMargin(0.12);
+    gPad->SetRightMargin(0.005);
+    gPad->SetTopMargin(0.002);
+    gPad->SetBottomMargin(0.12);
+    gPad->SetTickx(2);
+    gPad->SetTicky(2);
 
     // Set blankHisto point and line characteristics
     blankHisto->SetMarkerColor(kBlack);
@@ -82,7 +83,7 @@
     blankHisto->GetXaxis()->SetTitle("TOF (ns)");
     blankHisto->GetXaxis()->SetTitleSize(0.05);
     blankHisto->GetXaxis()->SetTitleFont(2);
-    blankHisto->GetXaxis()->SetTitleOffset(1.5);
+    blankHisto->GetXaxis()->SetTitleOffset(1.2);
     blankHisto->GetXaxis()->CenterTitle();
 
     blankHisto->GetXaxis()->SetLabelOffset(0.01);
@@ -96,7 +97,7 @@
     blankHisto->GetYaxis()->SetTitle("Fraction Dead");
     blankHisto->GetYaxis()->SetTitleSize(0.05);
     blankHisto->GetYaxis()->SetTitleFont(2);
-    blankHisto->GetYaxis()->SetTitleOffset(1.5);
+    blankHisto->GetYaxis()->SetTitleOffset(1.2);
     blankHisto->GetYaxis()->CenterTitle();
 
     blankHisto->GetYaxis()->SetLabelOffset(0.01);

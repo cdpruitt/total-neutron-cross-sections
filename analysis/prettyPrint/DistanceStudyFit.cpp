@@ -34,11 +34,12 @@
 
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
-    gPad->SetLeftMargin(0.15);
-    gPad->SetRightMargin(0.10);
-    gPad->SetTopMargin(0.10);
-    gPad->SetBottomMargin(0.20);
-    //gPad->SetTicky(2);
+    gPad->SetLeftMargin(0.12);
+    gPad->SetRightMargin(0.005);
+    gPad->SetTopMargin(0.002);
+    gPad->SetBottomMargin(0.12);
+    gPad->SetTickx(2);
+    gPad->SetTicky(2);
 
     double x[9] =
        {26.97, 27.00, 27.03, 27.06, 27.09,
@@ -80,10 +81,10 @@
     DistanceStudyFitGraph->GetYaxis()->SetNdivisions(4);
 
     DistanceStudyFitGraph->GetXaxis()->SetRangeUser(26.94, 27.24);
-    DistanceStudyFitGraph->GetYaxis()->SetRangeUser(1.2,5.0);
+    DistanceStudyFitGraph->GetYaxis()->SetRangeUser(1.2,4.99);
 
     DistanceStudyFitGraph->Draw("AP");
-    gPad->SetGrid(1,0);
+    //gPad->SetGrid(1,0);
 
     //DistanceStudyFitGraph->GetXaxis()->ChangeLabel(0,-1,-1,-1,-1,-1,"27.00");
 

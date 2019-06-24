@@ -56,11 +56,12 @@
     litGraph->SetMarkerSize(2);
 
     // Pad dimensions and margins
-    gPad->SetPad(0.005, 0.995, 0.895, 0.005);
+    gPad->SetPad(0.005, 0.995, 0.995, 0.005);
     gPad->SetLeftMargin(0.2);
-    gPad->SetRightMargin(0.01);
-    gPad->SetTopMargin(0.03);
-    gPad->SetBottomMargin(0.2);
+    gPad->SetRightMargin(0.005);
+    gPad->SetTopMargin(0.002);
+    gPad->SetBottomMargin(0.14);
+    gPad->SetTickx(2);
     gPad->SetTicky(2);
 
     TMultiGraph* mg = new TMultiGraph();
@@ -114,7 +115,7 @@
     TLegend *legend = new TLegend(0.55,0.25,0.95,0.4);
     legend->SetTextSize(0.03);
     legend->SetTextAlign(12);
-    legend->AddEntry(expGraph,"Our measurement (D_{2}O, H_{2}O)","lp");
+    legend->AddEntry(expGraph,"Present work (D_{2}O, H_{2}O)","lp");
     legend->AddEntry(litGraph,"Abfalterer, 2001 (CH_{2}, C_{8}H_{18}, D_{2}O)","lp");
     legend->Draw();
 
