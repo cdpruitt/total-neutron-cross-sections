@@ -146,10 +146,11 @@
         canvas->cd(1);
 
         // Pad dimensions and margins
-        gPad->SetLeftMargin(0.25);
+        gPad->SetLeftMargin(0.17);
         gPad->SetRightMargin(0.01);
-        gPad->SetTopMargin(0.03);
-        gPad->SetBottomMargin(0.005);
+        gPad->SetTopMargin(0.005);
+        gPad->SetBottomMargin(0.0);
+        gPad->SetTickx(1);
         gPad->SetTicky(1);
         gPad->SetLogx(1);
 
@@ -205,12 +206,12 @@
         latex.SetTextSize(0.08);
         latex.SetTextAlign(13); // align at top
         latex.DrawLatex(0.295,0.735,"Pb");
-        latex.DrawLatex(0.315,0.54,"Sn");
-        latex.DrawLatex(0.325,0.367,"Ni");
+        latex.DrawLatex(0.295,0.55,"Sn");
+        latex.DrawLatex(0.315,0.347,"Ni");
         latex.DrawLatex(0.33,0.235,"C");
 
-        latex.SetTextSize(0.15);
-        latex.DrawLatex(0.02, 1, "a)");
+        latex.SetTextSize(0.10);
+        latex.DrawLatex(0.20, 0.14, "a)");
 
         // Define legend format and contents
         TLegend *legend = new TLegend(0.76,0.70,0.94,0.9);
@@ -226,9 +227,9 @@
         canvas->cd(2);
 
         // Pad dimensions and margins
-        gPad->SetLeftMargin(0.25);
+        gPad->SetLeftMargin(0.17);
         gPad->SetRightMargin(0.01);
-        gPad->SetTopMargin(0.);
+        gPad->SetTopMargin(0.0);
         gPad->SetBottomMargin(0.25);
         gPad->SetTicky(1);
         gPad->SetTickx(1);
@@ -281,8 +282,8 @@
         latex.SetTextSize(0.035);
         latex.SetTextAlign(13); // align at top
 
-        latex.SetTextSize(0.13);
-        latex.DrawLatex(0.02, 1, "b)");
+        latex.SetTextSize(0.09);
+        latex.DrawLatex(0.20, 0.35, "b)");
 
         // Define legend format and contents
         TLegend *legend = new TLegend(0.70,0.74,0.96,0.96);
