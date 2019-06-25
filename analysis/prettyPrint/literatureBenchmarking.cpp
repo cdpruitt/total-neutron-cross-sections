@@ -211,7 +211,7 @@
         latex.DrawLatex(0.33,0.235,"C");
 
         latex.SetTextSize(0.10);
-        latex.DrawLatex(0.20, 0.14, "a)");
+        latex.DrawLatex(0.20, 0.13, "(a)");
 
         // Define legend format and contents
         TLegend *legend = new TLegend(0.76,0.70,0.94,0.9);
@@ -283,7 +283,7 @@
         latex.SetTextAlign(13); // align at top
 
         latex.SetTextSize(0.09);
-        latex.DrawLatex(0.20, 0.35, "b)");
+        latex.DrawLatex(0.20, 0.35, "(b)");
 
         // Define legend format and contents
         TLegend *legend = new TLegend(0.70,0.74,0.96,0.96);

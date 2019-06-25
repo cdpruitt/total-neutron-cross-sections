@@ -17,9 +17,9 @@ void ThreePanelRelDiff() {
     int yPads = 1;
 
     double lMargin = 0.07;
-    double rMargin = 0.0;
-    double bMargin = 0.11;
-    double tMargin = 0.0;
+    double rMargin = 0.01;
+    double bMargin = 0.20;
+    double tMargin = 0.01;
 
     CanvasPartition(canvas, xPads, yPads, lMargin, rMargin, bMargin, tMargin);
 
@@ -57,12 +57,16 @@ void ThreePanelRelDiff() {
         string relGraphName = "O18O16, percent";
         string relGraphSEName = "O18O16SysErrors, percent";
 
-        string SARelDiffGraphName = "RelDiff18_16";
+        string SARelDiffGraphThirdName = "RelDiff124_112Third";
+        string SARelDiffGraphSixthName = "RelDiff124_112Sixth";
+
         string RamsauerRelDiffGraphName = "RelDiffRamsauer18_16";
 
         TGraphAsymmErrors* relGraph = (TGraphAsymmErrors*)file->Get(relGraphName.c_str());
         TGraphAsymmErrors* relGraphSE = (TGraphAsymmErrors*)file->Get(relGraphSEName.c_str());
-        TGraph* SARelDiffGraph = (TGraph*)ramsauerFile->Get(SARelDiffGraphName.c_str());
+
+        TGraph* SARelDiffGraphThird = (TGraph*)ramsauerFile->Get(SARelDiffGraphThirdName.c_str());
+        TGraph* SARelDiffGraphSixth = (TGraph*)ramsauerFile->Get(SARelDiffGraphSixthName.c_str());
         TGraph* RamsauerRelDiffGraph = (TGraph*)ramsauerFile->Get(RamsauerRelDiffGraphName.c_str());
 
         // Set graph point and line characteristics
@@ -73,16 +77,20 @@ void ThreePanelRelDiff() {
         relGraph->SetFillColor(kRed);
         relGraph->SetFillStyle(3002);
 
-        SARelDiffGraph->SetLineStyle(9);
-        SARelDiffGraph->SetLineWidth(3);
-        SARelDiffGraph->SetLineColor(kBlack);
+        SARelDiffGraphThird->SetLineStyle(9);
+        SARelDiffGraphThird->SetLineWidth(3);
+        SARelDiffGraphThird->SetLineColor(kBlack);
+
+        SARelDiffGraphSixth->SetLineStyle(7);
+        SARelDiffGraphSixth->SetLineWidth(3);
+        SARelDiffGraphSixth->SetLineColor(kGray+2);
 
         RamsauerRelDiffGraph->SetLineStyle(7);
         RamsauerRelDiffGraph->SetLineWidth(5);
         RamsauerRelDiffGraph->SetLineColor(kGray+2);
 
         relGraphSE->SetFillColor(kBlue);
-        relGraphSE->SetFillStyle(3002);
+        relGraphSE->SetFillStyle(3001);
 
         // first panel
         {
@@ -98,28 +106,29 @@ void ThreePanelRelDiff() {
 
             TMultiGraph* mg = new TMultiGraph();
 
+            mg->Add(SARelDiffGraphThird, "l");
+            mg->Add(SARelDiffGraphSixth, "l");
             mg->Add(relGraph,"3l");
             mg->Add(relGraphSE, "3");
-            mg->Add(SARelDiffGraph, "l");
 
             mg->Draw("al");
 
             // X-axis parameters
-            mg->GetXaxis()->SetTitle("Energy (MeV)");
-            mg->GetXaxis()->SetTitleSize(0.08);
+            mg->GetXaxis()->SetTitle("Energy [MeV]");
+            mg->GetXaxis()->SetTitleSize(0.07);
             mg->GetXaxis()->SetTitleFont(2);
             mg->GetXaxis()->SetTitleOffset(1.4);
             mg->GetXaxis()->CenterTitle();
 
-            mg->GetXaxis()->SetLabelOffset(0.01);
-            mg->GetXaxis()->SetLabelSize(0.08);
+            //mg->GetXaxis()->SetLabelOffset(0.01);
+            mg->GetXaxis()->SetLabelSize(0.07);
             mg->GetXaxis()->SetLabelFont(2);
 
             mg->GetXaxis()->SetNdivisions(10);
             mg->GetXaxis()->SetTickLength(0.03);
 
             // Y-axis parameters
-            mg->GetYaxis()->SetTitle("#frac{#sigma_{exp} - #sigma_{lit}}{#sigma_{exp} + #sigma_{lit}} [%]");
+            mg->GetYaxis()->SetTitle("#frac{#sigma_{H} - #sigma_{L}}{#sigma_{H} + #sigma_{L}} [%]");
             mg->GetYaxis()->SetTitleSize(0.07);
             mg->GetYaxis()->SetTitleFont(2);
             mg->GetYaxis()->SetTitleOffset(1.1);
@@ -142,7 +151,10 @@ void ThreePanelRelDiff() {
             latex.SetTextSize(0.10);
             latex.SetTextAlign(13); // align at top
 
-            latex.DrawLatex(0.40, 0.28, "^{16,18}O");
+            latex.DrawLatex(0.40, 0.35, "^{16,18}O");
+
+            latex.SetTextSize(0.10);
+            latex.DrawLatex(0.90, 0.33, "(a)");
 
             // Define legend format and contents
             TLegend *legend = new TLegend(0.32, 0.15, 0.57, 0.37);
@@ -166,12 +178,15 @@ void ThreePanelRelDiff() {
         string relGraphName = "Ni64Ni58, percent";
         string relGraphSEName = "Ni64Ni58SysErrors, percent";
 
-        string SARelDiffGraphName = "RelDiff64_58";
+        string SARelDiffGraphThirdName = "RelDiff124_112Third";
+        string SARelDiffGraphSixthName = "RelDiff124_112Sixth";
+
         string RamsauerRelDiffGraphName = "RelDiffRamsauer64_58";
 
         TGraphAsymmErrors* relGraph = (TGraphAsymmErrors*)file->Get(relGraphName.c_str());
         TGraphAsymmErrors* relGraphSE = (TGraphAsymmErrors*)file->Get(relGraphSEName.c_str());
-        TGraph* SARelDiffGraph = (TGraph*)ramsauerFile->Get(SARelDiffGraphName.c_str());
+        TGraph* SARelDiffGraphThird = (TGraph*)ramsauerFile->Get(SARelDiffGraphThirdName.c_str());
+        TGraph* SARelDiffGraphSixth = (TGraph*)ramsauerFile->Get(SARelDiffGraphSixthName.c_str());
         TGraph* RamsauerRelDiffGraph = (TGraph*)ramsauerFile->Get(RamsauerRelDiffGraphName.c_str());
 
         // Set graph point and line characteristics
@@ -182,16 +197,20 @@ void ThreePanelRelDiff() {
         relGraph->SetFillColor(kRed);
         relGraph->SetFillStyle(3002);
 
-        SARelDiffGraph->SetLineStyle(9);
-        SARelDiffGraph->SetLineWidth(3);
-        SARelDiffGraph->SetLineColor(kBlack);
+        SARelDiffGraphThird->SetLineStyle(9);
+        SARelDiffGraphThird->SetLineWidth(3);
+        SARelDiffGraphThird->SetLineColor(kBlack);
+
+        SARelDiffGraphSixth->SetLineStyle(7);
+        SARelDiffGraphSixth->SetLineWidth(3);
+        SARelDiffGraphSixth->SetLineColor(kGray+2);
 
         RamsauerRelDiffGraph->SetLineStyle(7);
         RamsauerRelDiffGraph->SetLineWidth(5);
         RamsauerRelDiffGraph->SetLineColor(kGray+2);
 
         relGraphSE->SetFillColor(kBlue);
-        relGraphSE->SetFillStyle(3002);
+        relGraphSE->SetFillStyle(3001);
 
         // second panel
         {
@@ -207,28 +226,29 @@ void ThreePanelRelDiff() {
 
             TMultiGraph* mg = new TMultiGraph();
 
+            mg->Add(SARelDiffGraphThird, "l");
+            mg->Add(SARelDiffGraphSixth, "l");
             mg->Add(relGraph,"3l");
             mg->Add(relGraphSE, "3");
-            mg->Add(SARelDiffGraph, "l");
 
             mg->Draw("al");
 
             // X-axis parameters
-            mg->GetXaxis()->SetTitle("Energy (MeV)");
-            mg->GetXaxis()->SetTitleSize(0.08);
+            mg->GetXaxis()->SetTitle("Energy [MeV]");
+            mg->GetXaxis()->SetTitleSize(0.07);
             mg->GetXaxis()->SetTitleFont(2);
             mg->GetXaxis()->SetTitleOffset(1.4);
             mg->GetXaxis()->CenterTitle();
 
             mg->GetXaxis()->SetLabelOffset(0.01);
-            mg->GetXaxis()->SetLabelSize(0.08);
+            mg->GetXaxis()->SetLabelSize(0.07);
             mg->GetXaxis()->SetLabelFont(2);
 
             mg->GetXaxis()->SetNdivisions(10);
             mg->GetXaxis()->SetTickLength(0.03);
 
             // Y-axis parameters
-            mg->GetYaxis()->SetTitle("#frac{#sigma_{exp} - #sigma_{lit}}{#sigma_{exp} + #sigma_{lit}} [%]");
+            mg->GetYaxis()->SetTitle("#frac{#sigma_{H} - #sigma_{L}}{#sigma_{H} + #sigma_{L}} [%]");
             mg->GetYaxis()->SetTitleSize(0.07);
             mg->GetYaxis()->SetTitleFont(2);
             mg->GetYaxis()->SetTitleOffset(1.1);
@@ -252,6 +272,9 @@ void ThreePanelRelDiff() {
             latex.SetTextAlign(13); // align at top
 
             latex.DrawLatex(0.20, 0.88, "^{58,64}Ni");
+
+            latex.SetTextSize(0.10);
+            latex.DrawLatex(0.88, 0.33, "(b)");
 
             // Define legend format and contents
             TLegend *legend = new TLegend(0.22, 0.15, 0.47, 0.33);
@@ -314,7 +337,7 @@ void ThreePanelRelDiff() {
         RamsauerRelDiffGraphSixth->SetLineColor(kGray+2);
 
         relGraphSE->SetFillColor(kBlue);
-        relGraphSE->SetFillStyle(3002);
+        relGraphSE->SetFillStyle(3001);
 
         // second panel
         {
@@ -330,29 +353,29 @@ void ThreePanelRelDiff() {
 
             TMultiGraph* mg = new TMultiGraph();
 
-            mg->Add(relGraph,"3l");
-            mg->Add(relGraphSE, "3");
             mg->Add(SARelDiffGraphThird, "l");
             mg->Add(SARelDiffGraphSixth, "l");
+            mg->Add(relGraph,"3l");
+            mg->Add(relGraphSE, "3");
 
             mg->Draw("al");
 
             // X-axis parameters
-            mg->GetXaxis()->SetTitle("Energy (MeV)");
-            mg->GetXaxis()->SetTitleSize(0.08);
+            mg->GetXaxis()->SetTitle("Energy [MeV]");
+            mg->GetXaxis()->SetTitleSize(0.07);
             mg->GetXaxis()->SetTitleFont(2);
             mg->GetXaxis()->SetTitleOffset(1.4);
             mg->GetXaxis()->CenterTitle();
 
             mg->GetXaxis()->SetLabelOffset(0.01);
-            mg->GetXaxis()->SetLabelSize(0.08);
+            mg->GetXaxis()->SetLabelSize(0.07);
             mg->GetXaxis()->SetLabelFont(2);
 
             mg->GetXaxis()->SetNdivisions(10);
             mg->GetXaxis()->SetTickLength(0.03);
 
             // Y-axis parameters
-            mg->GetYaxis()->SetTitle("#frac{#sigma_{exp} - #sigma_{lit}}{#sigma_{exp} + #sigma_{lit}} [%]");
+            mg->GetYaxis()->SetTitle("#frac{#sigma_{H} - #sigma_{L}}{#sigma_{H} + #sigma_{L}} [%]");
             mg->GetYaxis()->SetTitleSize(0.07);
             mg->GetYaxis()->SetTitleFont(2);
             mg->GetYaxis()->SetTitleOffset(1.1);
@@ -376,6 +399,9 @@ void ThreePanelRelDiff() {
             latex.SetTextAlign(13); // align at top
 
             latex.DrawLatex(0.13, 0.88, "^{112,124}Sn");
+
+            latex.SetTextSize(0.10);
+            latex.DrawLatex(0.87, 0.33, "(c)");
 
             // Define legend format and contents
             TLegend *legend = new TLegend(0.22, 0.15, 0.47, 0.33);

@@ -174,7 +174,7 @@ nucleus (thus undergoing no phase shift) and waves passing
 \textit{through} the nuclear potential, where they are refracted and exhibit a 
 retardation of phase (an illustration is available in \cite{Satchler1980}).
 This explanation was termed the 
-``nuclear Ramsauer effect" by Carpenter and Wilson \cite{Carpenter1959} based on 
+``nuclear Ramsauer effect'' by Carpenter and Wilson \cite{Carpenter1959} based on 
 the analogous effect seen in electron scattering on noble gases.
 
 Following Angeli and Csikai \cite{Angeli1970}, this explanation can be
@@ -209,7 +209,7 @@ phase $\delta$, E must also increase \cite{Satchler1980, Peterson1962}.
 This is contrary to a typical resonance condition where an integer number of wavelengths
 are fit inside a potential; in that case, to maintain constant phase as A is increased,
 E must be decreased. Thus these \tot\ oscillations have been referred to as
-``anti-resonances" or ``echoes" \cite{Satchler1980, McVoy1967}.
+``anti-resonances'' or ``echoes'' \cite{Satchler1980, McVoy1967}.
 Other authors \cite{Ahmad1973} have
 exposed weaknesses in Angeli and Csikai's interpretation of
 Eq. \ref{OscillatoryModel} and have provided a more general semi-empirical
@@ -386,10 +386,10 @@ summed before digitization.
 \begin{figure}
     \includegraphics[width=0.5\textwidth]{figures/beamStructure.png}
     \caption{(Color online) Neutron beam structure at WNR facility.
-        ``Macropulses" of protons (row d) are delivered to
+        ``Macropulses'' of protons (row d) are delivered to
         WNR's tungsten Target 4, where they generate neutrons by spallation.
         Each macropulse consists of
-        $\approx$350 proton ``micropulses" (row c). Neutrons
+        $\approx$350 proton ``micropulses'' (row c). Neutrons
         from each micropulse (row b) disperse in
         time as they travel along the flight path so that $\gamma$ rays and high-energy 
     neutrons catch up to low-energy ones from the previous pulse (row a).}
@@ -398,8 +398,9 @@ summed before digitization.
 
 The particular neutron beam structure at WNR dictates the energy range
 achievable for \tot\ measurements (see Fig. \ref{BeamStructure}).
-Proton pulse trains, called ``macropulses", are delivered to the tungsten target at 120 Hz.
-Each macropulse consists of ~350 individual proton pulses, called ``micropulses", spaced 1.8 
+Proton pulse trains, called ``macropulses'', are delivered to the tungsten target at 120 Hz.
+Each macropulse consists of ~350 individual proton pulses, called
+``micropulses'', spaced 1.8 
 $\mu$s apart. Each micropulse consists of a single proton packet $<$1 ns wide when it 
 arrives at the tungsten target that generates $\gamma$ rays and neutrons within a tight
 temporal-spatial range. As neutrons from this micropulse travel along the beam path, 
@@ -420,12 +421,12 @@ macropulses. The veto detector suppressed events from charged-particle productio
 in the samples and in air along the flight path.
 
 Custom digitizer software was used to run the 
-digitizer in two complementary modes, referred to as ``DPP mode" and ``Waveform 
-mode". In DPP mode, triggers were initiated by the digitizer's onboard
+digitizer in two complementary modes, referred to as ``DPP mode'' and ``Waveform 
+mode''. In DPP mode, triggers were initiated by the digitizer's onboard
 peak-sensing firmware. For each trigger, several quantities were recorded: the trigger 
 timestamp, two charge integrals over the detected peak with different
 integration ranges (32 ns for the short integral, 100 ns for the long integral),
-and a 96-ns portion of the raw digitized waveform, referred to as a ``wavelet".
+and a 96-ns portion of the raw digitized waveform, referred to as a ``wavelet''.
 DPP mode was used for the vast majority of the 
 experiment and accounts for $\approx$99\% of the total data volume. In waveform mode, 
 the digitizer performs no peak-sensing and was externally triggered. Upon 
@@ -594,7 +595,7 @@ by a cylindrical plastic case with open ends.
 The sample configuration for each run varied, but generally all six positions on
 the sample changer were used. For the solid targets, a typical configuration was
 to place an empty styrofoam sample sleeve in the first sample-changer cradle as
-the ``blank", the $^{\text{nat}}$C and $^{\text{nat}}$Pb samples in the second and third
+the ``blank'', the $^{\text{nat}}$C and $^{\text{nat}}$Pb samples in the second and third
 cradles, and the samples of interest (e.g., $^{58}$Ni, $^{\text{nat}}$Ni, $^{64}$Ni) in
 the fourth, fifth, and sixth cradles. For water samples, an empty brass vessel
 was placed in the first cradle to serve as the blank.
@@ -632,7 +633,7 @@ are required.  First, each event was assigned to the correct macropulse.
 Time offsets accounting for cable and
 electronics delay were applied, coarsely synchronizing all detectors with
 facility-provided pulses indicating the arrival time of proton micropulses on the
-tungsten target, so-called ``\tZero" pulses.
+tungsten target, so-called ``\tZero'' pulses.
 To improve the time resolution for each TOF
 event, the digitized waveform for each event was passed 
 through an offline software constant-fraction discriminator (CFD) algorithm
@@ -683,7 +684,7 @@ after each trigger during which the digitizer is busy processing that trigger.
 Any newly-arriving events in this period will be ignored,
 privileging events arriving earlier and thus distorting
 TOF spectra and resulting cross sections. This busy period is referred to as the
-``analytic" or ``per-event" deadtime and can be corrected for according to standard 
+``analytic'' or ``per-event'' deadtime and can be corrected for according to standard 
 techniques
 \cite{Moore1980}. An additional complication is the possibility of flux
 variation between micropulses. If there is no variation, the fraction of time
@@ -713,7 +714,7 @@ differences between consecutive events (see Fig.
 digitizer is dead, $F_{i}$, is in essence a discrete convolution of the
 \textit{measured} TOF spectrum with $P_{j}$. Note that except for the first and
 last micropulses in a macropulse, micropulses are consecutive and thus deadtime effects can
-``wrap around" from the end of one micropulse to the next. For these wrap-around
+``wrap around'' from the end of one micropulse to the next. For these wrap-around
 contributions (that is, $j>i$), the (mod N) term ensures that the bin referred
 to by $i-j$ is non-negative and has physical meaning as a time bin from the 
 previous micropulse.
@@ -722,7 +723,7 @@ previous micropulse.
     \includegraphics[width=0.5\textwidth]{figures/TimeDifferenceBetweenEvents.png}
     \caption{(Color online) The time difference between adjacent TOF-detector
     events for a single run is plotted (black histogram). Below a certain
-minimum time difference (the ``deadtime"), no events are recorded. A logistic
+minimum time difference (the ``deadtime''), no events are recorded. A logistic
 fit (red) models the detector's deadtime response and is used to generate a
 deadtime correction. The underlying linearly-decreasing count rate (gray dashed
 line) in incorporated into the logistic model. From the fit, a mean deadtime of
@@ -775,7 +776,7 @@ measurements.
 
 During analysis, it was noted that occasionally (1 in 400 macropulses), one or two 
 adjacent macropulses would have an abnormally small number of flux monitor events or 
-TOF events. The frequency of these ``data dropouts" was similar to the rate of
+TOF events. The frequency of these ``data dropouts'' was similar to the rate of
 switching between DPP and waveform modes and we suspect it is related to edge
 case behavior right before or after a mode switch. To mitigate this issue,
 any macropulse that had less than 50\% of the average event rate in either the
@@ -794,7 +795,8 @@ all events and surviving events are populated into TOF spectra (see Fig.
         The $\gamma$-ray peak is visible as a sharp spike at 90 ns, followed by
         the highest-energy neutrons at 130 ns. The small spikes spaced 60 ns
         apart (visible before 90 ns and after 1500
-        ns) are identified as $\gamma$-ray peaks from a low-level, continuous ``drip" 
+        ns) are identified as $\gamma$-ray peaks from a low-level, continuous
+        ``drip'' 
         of protons onto the tungsten target caused by mistuning of the proton 
         buncher; their effect on the calculated cross sections is negligible.
     }
@@ -837,7 +839,7 @@ energy domain.
 \begin{figure}
     \includegraphics[width=0.5\textwidth]{figures/literatureBenchmarking.png}
     \caption{(Color online) A comparison of literature data (taken with analog
-    techniques) and our results (signals processed with a digitizer, or "DSP")
+    techniques) and our results (signals processed with a digitizer, or ``DSP'')
     for natural C, Ni, Sn, and Pb. In panel a), the absolute cross sections are shown from
     3-500 MeV; in panel b), the relative differences between the literature data and
     our data are shown in percent. From 3-100 MeV, our data are fully consistent with the
@@ -850,21 +852,25 @@ b}
 \section{Experimental Results}
 
 Our absolute \tot\ results for O, Ni, and Sn isotopic targets are shown in Fig.
-\ref{SixPanel}. All previous
+\ref{SixPanel} and our absolute \tot\ results for Rh are shown separately, in the 
+supplemental materials. All previous
 isotopic \tot\ measurements
 (where they exist) are shown alongside our results for comparison.
-To compare the results, relative differences between our data and literature
-data are also plotted. The literature
-data sets shown have been modified to have the same bins as our data via a simple
-linear interpolation of the original data's bins. This rebinning
-washes out the fine structure of the cross section data where the density of states
-for a given sample is low and individual resonances are visible
-(e.g., $^{\text{nat}}$C below 10 MeV).
+Residuals between our data and any existing literature data are also shown.
+In each figure, the literature data sets have rebinned to match the bin
+structure of our data to facilitate comparison. In regions with a low density of
+states where individual resonances are visible (e.g., $^{\text{nat}}$C
+below 10 MeV), this rebinning washes out the fine structure of the
+cross section data.
+
+Except for the already well-measured \oSix, our measurement extends the known
+energy range for the neutron \tot\ by a factor of several or more. In the case
+of the rare isotopes \niFour\ and \snTwelve, only one datum at 14.1 MeV was 
+available in the literature \cite{Dukarevich1967}; our new results on these
+isotopes are in excellent agreement, within 2-3\%, of these data.
 
 Relative differences of our measured \tot\ between $^{16,18}$O, $^{58,64}$Ni, and
-$^{112,124}$Sn are shown in Figs. \ref{IsotopicDifferenceO},
-\ref{IsotopicDifferenceNi}, and 
-\ref{IsotopicDifferenceSn}, respectively. 
+$^{112,124}$Sn are shown in Fig. \ref{ThreePanelRelDiff}.
 
 \begin{figure*}[tb]
     \centering
@@ -883,63 +889,6 @@ $^{112,124}$Sn are shown in Figs. \ref{IsotopicDifferenceO},
     }
     \label{SixPanels}
 \end{figure*}
-
-%\begin{figure}[tb]
-%    \centering
-%    \includegraphics[width=0.5\textwidth]{figures/TwoPanelO.png}
-%    \caption[Neutron \tot\ for \oSixEight: our results and literature data]
-%    {Neutron \tot\ for \oSixEight: our results and literature data.
-%        (a) shows our digitizer-measured isotopic results (in shades of red) and
-%        corresponding analog-measured literature data \cite{Finlay1993, Perey1972, Vaughn1965,
-%        Salisbury1965} (in shades of blue). The data for \oEight\ have been
-%        shifted up by 1 barn for visibility.
-%        (b) shows the relative difference between our data
-%        and literature data that are shown in panel (a).
-%    }
-%    \label{TwoPanelO}
-%\end{figure}
-%
-%\begin{figure}[tb]
-%    \centering
-%    \includegraphics[width=0.5\textwidth]{figures/TwoPanelNi.png}
-%    \caption[Neutron \tot\ for \niEightFour: our results and literature data]
-%    {
-%        Neutron \tot\ for \niEightFour: our results and literature data.
-%        (a) shows our digitizer-measured isotopic results (in shades of red) and
-%        corresponding analog-measured literature data \cite{Perey1993,
-%        Dukarevich1967} (in shades of blue). (b) shows the relative difference
-%        between our data and literature data that are shown in panel a).
-%    }
-%    \label{TwoPanelNi}
-%\end{figure}
-%\begin{figure}[tb]
-%    \centering
-%    \includegraphics[width=0.5\textwidth]{figures/TwoPanelRh.png}
-%    \caption[Neutron \tot\ for \rhThree: our results and literature data]
-%    {
-%        Neutron \tot\ for \rhThree: our results and literature data.
-%        (a) shows our digitizer-measured isotopic results (in red) and
-%        corresponding analog-measured literature data \cite{Poenitz1983} (in blue).
-%        (b) shows the relative difference
-%        between our data and literature data that are shown in panel (a).
-%    }
-%    \label{TwoPanelRh}
-%\end{figure}
-%\begin{figure}[tb]
-%    \centering
-%    \includegraphics[width=0.5\textwidth]{figures/TwoPanelSn.png}
-%    \caption[Neutron \tot\ for \snTwelveFour: our results and literature data]
-%    {
-%        Neutron \tot\ for \snTwelveFour: our results and literature data.
-%        (a) shows our digitizer-measured isotopic results (in red) and
-%        corresponding analog-measured literature data \cite{Harper1982, Timokhov1989, 
-%        Rapaport1980, Dukarevich1967} (in shades of blue).
-%        (b) shows the relative difference between our data
-%        and literature data that are shown in panel (a). The data sets are in
-%        excellent agreement where literature data exist, up to 20 \mega\electronvolt.
-%    }
-%    \label{TwoPanelSn}
-%\end{figure}
 
 \begin{figure*}[tb]
     \centering
@@ -962,56 +911,6 @@ $^{112,124}$Sn are shown in Figs. \ref{IsotopicDifferenceO},
     }
     \label{ThreePanelRelDiff}
 \end{figure*}
-
-%\begin{figure}[tb]
-%    \centering
-%    \includegraphics[width=0.5\textwidth]{figures/relativeDiff_O18O16.png}
-%    \caption[\oSixEight\ neutron \tot\ relative difference]
-%    {\oSixEight\ neutron \tot\ relative difference, from our newly-measured
-%        data sets (in red). Assuming a simple A$^{\frac{1}{3}}$ size scaling for the
-%        nuclear radius of \oEight\ from \oSix, the strongly-absorbing-sphere model 
-%        Eq. \ref{SASAbsolute} prediction for the \oSixEight\ neutron \tot\ relative
-%        difference is shown (black dashed line). From 10-100 \mega\electronvolt, the SAS
-%        model is surprisingly successful at reproducing the relative difference,
-%        though it fails above 100 \mega\electronvolt\ as the \oEight\ neutron \tot\ drops below
-%    that of \oSix.}
-%    \label{IsotopicDifferenceO}
-%\end{figure}
-%
-%\begin{figure}[tb]
-%    \centering
-%    \includegraphics[width=0.5\textwidth]{figures/relativeDiff_Ni64Ni58.png}
-%    \caption[\niEightFour\ neutron \tot\ relative difference]
-%    {
-%        \niEightFour\ neutron \tot\ relative difference, from our newly-measured
-%        data sets (in red). Total error (including statistical and systematic)
-%        is indicated by the red shaded region. Systematic error only (due to
-%        uncertainty in the sample areal density) is shown by the blue shaded region.   
-%        Assuming a simple A$^{\frac{1}{3}}$ size scaling for the
-%        nuclear radius of \niFour\ from \niEight, the simple
-%        strongly-absorbing-sphere model Eq. \ref{SASAbsolute} prediction
-%        for the \niEightFour\ neutron \tot\ relative
-%        difference is shown (black dashed line).
-%    }
-%    \label{IsotopicDifferenceNi}
-%\end{figure}
-%
-%\begin{figure}[tb]
-%    \centering
-%    \includegraphics[width=0.5\textwidth]{figures/relativeDiff_Sn124Sn112.png}
-%    \caption[\snTwelveFour\ neutron \tot\ relative difference]
-%    {
-%        \snTwelveFour\ neutron \tot\ relative difference, from our newly-measured
-%        data sets (in red). Total error (including statistical and systematic)
-%        is indicated by the red shaded region. Systematic error only (due to
-%        uncertainty in the sample areal density) is shown by the blue shaded region.   
-%        The predictions of the simple strongly-absorbing-sphere model of
-%        Eq. \ref{SASAbsolute} for the \snTwelveFour\ neutron \tot\ relative
-%        difference are shown for two possible nuclear radius size scalings: $r \alpha A^{\frac{1}{3}}$
-%        (black dashed line) and $r \alpha A^{\frac{1}{6}}$ (gray dashed line).
-%    }
-%    \label{IsotopicDifferenceSn}
-%\end{figure}
 
 \section{DOM Analysis}
 

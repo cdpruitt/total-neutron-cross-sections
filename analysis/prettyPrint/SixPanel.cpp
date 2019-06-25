@@ -100,38 +100,39 @@ void SixPanel() {
     }
 
     // Set graph point and line characteristics
-    expO16Graph->SetLineColor(kRed);
-    expO16Graph->SetLineWidth(4);
+    expO16Graph->SetLineColor(kRed-4);
+    expO16Graph->SetLineWidth(3);
     expO16Graph->SetLineStyle(1);
-    expO16Graph->SetMarkerColor(kRed);
+    expO16Graph->SetMarkerColor(kRed-4);
 
-    expO18Graph->SetLineColor(kRed+2);
-    expO18Graph->SetLineWidth(4);
+    expO18Graph->SetLineColor(kRed+3);
+    expO18Graph->SetLineWidth(6);
     expO18Graph->SetLineStyle(1);
-    expO18Graph->SetMarkerColor(kRed+2);
+    expO18Graph->SetMarkerColor(kRed+3);
 
-    relO16Graph->SetLineColor(kRed);
-    relO16Graph->SetLineWidth(4);
+    relO16Graph->SetLineColor(kRed-4);
+    relO16Graph->SetLineWidth(6);
     relO16Graph->SetLineStyle(0);
-    relO16Graph->SetMarkerColor(kRed);
+    relO16Graph->SetMarkerColor(kRed-4);
     relO16Graph->SetMarkerSize(2);
     relO16Graph->SetMarkerStyle(22);
 
-    relO18Graph->SetLineColor(kRed+2);
-    relO18Graph->SetMarkerColor(kRed+2);
+    relO18Graph->SetLineColor(kRed+3);
+    relO16Graph->SetLineWidth(3);
+    relO18Graph->SetMarkerColor(kRed+3);
     relO18Graph->SetMarkerSize(2);
     relO18Graph->SetMarkerStyle(20);
 
     litO16Graph->SetLineColor(kBlue-7);
-    litO16Graph->SetLineWidth(4);
-    litO16Graph->SetLineStyle(1);
+    litO16Graph->SetLineWidth(3);
+    litO16Graph->SetLineStyle(7);
     litO16Graph->SetMarkerColor(kBlue-7);
     litO16Graph->SetMarkerSize(2);
     litO16Graph->SetMarkerStyle(22);
 
     litO18Graph->SetLineColor(kBlue);
-    litO18Graph->SetLineWidth(4);
-    litO18Graph->SetLineStyle(1);
+    litO18Graph->SetLineWidth(6);
+    litO18Graph->SetLineStyle(7);
     litO18Graph->SetMarkerColor(kBlue);
     litO18Graph->SetMarkerSize(2);
     litO18Graph->SetMarkerStyle(22);
@@ -187,35 +188,38 @@ void SixPanel() {
     }
 
     // Set graph point and line characteristics
-    expNi58Graph->SetLineColor(kRed);
-    expNi58Graph->SetLineWidth(4);
+    expNi58Graph->SetLineColor(kRed-4);
+    expNi58Graph->SetLineWidth(3);
     expNi58Graph->SetLineStyle(1);
-    expNi58Graph->SetMarkerColor(kRed);
+    expNi58Graph->SetMarkerColor(kRed-4);
 
-    expNi64Graph->SetLineColor(kRed+2);
-    expNi64Graph->SetLineWidth(4);
+    expNi64Graph->SetLineColor(kRed+3);
+    expNi64Graph->SetLineWidth(6);
     expNi64Graph->SetLineStyle(1);
-    expNi64Graph->SetMarkerColor(kRed+2);
+    expNi64Graph->SetMarkerColor(kRed+3);
 
-    relNi58Graph->SetLineColor(kRed);
-    relNi58Graph->SetLineWidth(4);
+    relNi58Graph->SetLineColor(kRed-4);
+    relNi58Graph->SetLineWidth(3);
     relNi58Graph->SetLineStyle(0);
-    relNi58Graph->SetMarkerColor(kRed);
-    relNi58Graph->SetMarkerStyle(22);
+    relNi58Graph->SetMarkerColor(kRed-4);
     relNi58Graph->SetMarkerSize(2.5);
+    relNi58Graph->SetMarkerStyle(22);
 
-    relNi64Graph->SetLineColor(kRed+2);
-    relNi64Graph->SetMarkerColor(kRed+2);
+    relNi64Graph->SetLineColor(kRed+3);
+    relNi64Graph->SetMarkerColor(kRed+3);
     relNi64Graph->SetMarkerSize(2.5);
     relNi64Graph->SetMarkerStyle(20);
 
     litNi58Graph->SetLineColor(kBlue-7);
-    litNi58Graph->SetLineWidth(4);
-    litNi58Graph->SetLineStyle(1);
+    litNi58Graph->SetLineWidth(3);
+    litNi58Graph->SetLineStyle(7);
     litNi58Graph->SetMarkerColor(kBlue-7);
 
+    litNi64Graph->SetLineColor(kBlue);
+    litNi64Graph->SetLineWidth(6);
+    litNi64Graph->SetLineStyle(7);
     litNi64Graph->SetMarkerColor(kBlue);
-    litNi64Graph->SetMarkerSize(3);
+    litNi64Graph->SetMarkerSize(2);
     litNi64Graph->SetMarkerStyle(22);
 
     string expSn112GraphName = "Sn112";
@@ -255,40 +259,42 @@ void SixPanel() {
     }
 
     // Set graph point and line characteristics
-    expSn112Graph->SetLineColor(kRed);
-    expSn112Graph->SetLineWidth(4);
+    expSn112Graph->SetLineColor(kRed-4);
+    expSn112Graph->SetLineWidth(3);
     expSn112Graph->SetLineStyle(1);
-    expSn112Graph->SetMarkerColor(kRed);
+    expSn112Graph->SetMarkerColor(kRed-4);
     expSn112Graph->SetMarkerSize(2.5);
 
-    expSn124Graph->SetLineColor(kRed+2);
-    expSn124Graph->SetLineWidth(4);
+    expSn124Graph->SetLineColor(kRed+3);
+    expSn124Graph->SetLineWidth(6);
     expSn124Graph->SetLineStyle(1);
-    expSn124Graph->SetMarkerColor(kRed+2);
+    expSn124Graph->SetMarkerColor(kRed+3);
     expSn124Graph->SetMarkerSize(2.5);
 
-    relSn112Graph->SetLineColor(kRed);
-    relSn112Graph->SetLineWidth(4);
+    relSn112Graph->SetLineColor(kRed-4);
+    relSn112Graph->SetLineWidth(6);
     relSn112Graph->SetLineStyle(0);
-    relSn112Graph->SetMarkerColor(kRed);
+    relSn112Graph->SetMarkerColor(kRed-4);
     relSn112Graph->SetMarkerSize(2.5);
     relSn112Graph->SetMarkerStyle(22);
 
-    relSn124Graph->SetLineColor(kRed+2);
-    relSn124Graph->SetMarkerColor(kRed+2);
+    relSn112Graph->SetLineWidth(3);
+    relSn112Graph->SetLineStyle(0);
+    relSn124Graph->SetLineColor(kRed+3);
+    relSn124Graph->SetMarkerColor(kRed+3);
     relSn124Graph->SetMarkerSize(2.5);
     relSn124Graph->SetMarkerStyle(20);
 
     litSn112Graph->SetLineColor(kBlue-7);
-    litSn112Graph->SetLineWidth(4);
-    litSn112Graph->SetLineStyle(1);
+    litSn112Graph->SetLineWidth(3);
+    litSn112Graph->SetLineStyle(7);
     litSn112Graph->SetMarkerColor(kBlue-7);
     litSn112Graph->SetMarkerSize(2.5);
     litSn112Graph->SetMarkerStyle(22);
 
     litSn124Graph->SetLineColor(kBlue);
-    litSn124Graph->SetLineWidth(4);
-    litSn124Graph->SetLineStyle(1);
+    litSn124Graph->SetLineWidth(6);
+    litSn124Graph->SetLineStyle(7);
     litSn124Graph->SetMarkerColor(kBlue);
     litSn124Graph->SetMarkerSize(2.5);
     litSn124Graph->SetMarkerStyle(20);
@@ -360,7 +366,7 @@ void SixPanel() {
         latex.DrawLatex(0.35, 0.68, "+1 barn");
 
         latex.SetTextSize(0.08);
-        latex.DrawLatex(0.21, 0.93, "a)");
+        latex.DrawLatex(0.21, 0.93, "(a)");
 
         // Define legend format and contents
         TLegend *legend = new TLegend(0.55,0.70,0.97,0.92);
@@ -446,7 +452,7 @@ void SixPanel() {
         latex.SetTextAlign(13); // align at top
 
         latex.SetTextSize(0.07);
-        latex.DrawLatex(0.21, 0.93, "b)");
+        latex.DrawLatex(0.21, 0.94, "(b)");
 
         // Define legend format and contents
         TLegend *legend = new TLegend(0.83,0.74,0.96,0.96);
@@ -530,7 +536,7 @@ void SixPanel() {
         //latex.DrawLatex(0.33,0.235,"C");
 
         latex.SetTextSize(0.08);
-        latex.DrawLatex(0.03, 0.93, "c)");
+        latex.DrawLatex(0.04, 0.93, "(c)");
 
         // Define legend format and contents
         TLegend *legend = new TLegend(0.45,0.70,0.97,0.92);
@@ -616,7 +622,7 @@ void SixPanel() {
         latex.SetTextAlign(13); // align at top
 
         latex.SetTextSize(0.07);
-        latex.DrawLatex(0.03, 0.93, "d)");
+        latex.DrawLatex(0.04, 0.94, "(d)");
 
         // Define legend format and contents
         TLegend *legend = new TLegend(0.78,0.74,0.96,0.96);
@@ -700,7 +706,7 @@ void SixPanel() {
         //latex.DrawLatex(0.33,0.235,"C");
 
         latex.SetTextSize(0.08);
-        latex.DrawLatex(0.03, 0.93, "e)");
+        latex.DrawLatex(0.04, 0.93, "(e)");
 
         // Define legend format and contents
         TLegend *legend = new TLegend(0.03,0.07,0.64,0.27);
@@ -786,7 +792,7 @@ void SixPanel() {
         latex.SetTextAlign(13); // align at top
 
         latex.SetTextSize(0.07);
-        latex.DrawLatex(0.03, 0.93, "f)");
+        latex.DrawLatex(0.04, 0.94, "(f)");
 
         // Define legend format and contents
         TLegend *legend = new TLegend(0.75,0.74,0.94,0.96);
