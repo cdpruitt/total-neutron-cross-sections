@@ -58,11 +58,13 @@
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
     gPad->SetLeftMargin(0.2);
-    gPad->SetRightMargin(0.005);
-    gPad->SetTopMargin(0.002);
+    gPad->SetRightMargin(0.01);
+    gPad->SetTopMargin(0.01);
     gPad->SetBottomMargin(0.14);
-    gPad->SetTickx(2);
-    gPad->SetTicky(2);
+    gPad->SetTickx(1);
+    gPad->SetTicky(1);
+
+    gPad->SetFrameLineWidth(3);
 
     TMultiGraph* mg = new TMultiGraph();
 
@@ -86,7 +88,7 @@
     mg->GetXaxis()->SetTickLength(0.03);
 
     // Y-axis parameters
-    mg->GetYaxis()->SetTitle("(#frac{#sigma_{D} - #sigma_{H}}{#sigma_{D} + #sigma_{H}}) [%]");
+    mg->GetYaxis()->SetTitle("(#frac{#sigma_{D} - #sigma_{H}}{#sigma_{D} + #sigma_{H}}) (%)");
     mg->GetYaxis()->SetTitleSize(0.06);
     mg->GetYaxis()->SetTitleFont(2);
     mg->GetYaxis()->SetTitleOffset(1.3);
@@ -112,7 +114,7 @@
     //latex.DrawLatex(0.32,0.4,"C");
 
     // Define legend format and contents
-    TLegend *legend = new TLegend(0.55,0.25,0.95,0.4);
+    TLegend *legend = new TLegend(0.55,0.20,0.95,0.35);
     legend->SetTextSize(0.03);
     legend->SetTextAlign(12);
     legend->AddEntry(expGraph,"Present work (D_{2}O, H_{2}O)","lp");

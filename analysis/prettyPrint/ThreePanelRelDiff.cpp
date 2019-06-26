@@ -114,7 +114,7 @@ void ThreePanelRelDiff() {
             mg->Draw("al");
 
             // X-axis parameters
-            mg->GetXaxis()->SetTitle("Energy [MeV]");
+            mg->GetXaxis()->SetTitle("Energy (MeV)");
             mg->GetXaxis()->SetTitleSize(0.07);
             mg->GetXaxis()->SetTitleFont(2);
             mg->GetXaxis()->SetTitleOffset(1.4);
@@ -128,7 +128,7 @@ void ThreePanelRelDiff() {
             mg->GetXaxis()->SetTickLength(0.03);
 
             // Y-axis parameters
-            mg->GetYaxis()->SetTitle("#frac{#sigma_{H} - #sigma_{L}}{#sigma_{H} + #sigma_{L}} [%]");
+            mg->GetYaxis()->SetTitle("#frac{#sigma_{H} - #sigma_{L}}{#sigma_{H} + #sigma_{L}} (%)");
             mg->GetYaxis()->SetTitleSize(0.07);
             mg->GetYaxis()->SetTitleFont(2);
             mg->GetYaxis()->SetTitleOffset(1.1);
@@ -234,7 +234,7 @@ void ThreePanelRelDiff() {
             mg->Draw("al");
 
             // X-axis parameters
-            mg->GetXaxis()->SetTitle("Energy [MeV]");
+            mg->GetXaxis()->SetTitle("Energy (MeV)");
             mg->GetXaxis()->SetTitleSize(0.07);
             mg->GetXaxis()->SetTitleFont(2);
             mg->GetXaxis()->SetTitleOffset(1.4);
@@ -248,7 +248,7 @@ void ThreePanelRelDiff() {
             mg->GetXaxis()->SetTickLength(0.03);
 
             // Y-axis parameters
-            mg->GetYaxis()->SetTitle("#frac{#sigma_{H} - #sigma_{L}}{#sigma_{H} + #sigma_{L}} [%]");
+            mg->GetYaxis()->SetTitle("#frac{#sigma_{H} - #sigma_{L}}{#sigma_{H} + #sigma_{L}} (%)");
             mg->GetYaxis()->SetTitleSize(0.07);
             mg->GetYaxis()->SetTitleFont(2);
             mg->GetYaxis()->SetTitleOffset(1.1);
@@ -361,7 +361,7 @@ void ThreePanelRelDiff() {
             mg->Draw("al");
 
             // X-axis parameters
-            mg->GetXaxis()->SetTitle("Energy [MeV]");
+            mg->GetXaxis()->SetTitle("Energy (MeV)");
             mg->GetXaxis()->SetTitleSize(0.07);
             mg->GetXaxis()->SetTitleFont(2);
             mg->GetXaxis()->SetTitleOffset(1.4);
@@ -375,7 +375,7 @@ void ThreePanelRelDiff() {
             mg->GetXaxis()->SetTickLength(0.03);
 
             // Y-axis parameters
-            mg->GetYaxis()->SetTitle("#frac{#sigma_{H} - #sigma_{L}}{#sigma_{H} + #sigma_{L}} [%]");
+            mg->GetYaxis()->SetTitle("#frac{#sigma_{H} - #sigma_{L}}{#sigma_{H} + #sigma_{L}} (%)");
             mg->GetYaxis()->SetTitleSize(0.07);
             mg->GetYaxis()->SetTitleFont(2);
             mg->GetYaxis()->SetTitleOffset(1.1);

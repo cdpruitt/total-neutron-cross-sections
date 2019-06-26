@@ -342,7 +342,7 @@ void SixPanel() {
         mg->GetXaxis()->SetTickLength(0.03);
 
         // Y-axis parameters
-        mg->GetYaxis()->SetTitle("#sigma_{tot} [b]");
+        mg->GetYaxis()->SetTitle("#sigma_{tot} (b)");
         mg->GetYaxis()->SetTitleSize(0.10);
         mg->GetYaxis()->SetTitleFont(2);
         mg->GetYaxis()->SetTitleOffset(0.6);
@@ -430,7 +430,7 @@ void SixPanel() {
         mg->GetXaxis()->SetTickLength(0.03);
 
         // Y-axis parameters
-        mg->GetYaxis()->SetTitle("#frac{#sigma_{exp} - #sigma_{lit}}{#sigma_{exp} + #sigma_{lit}} [%]");
+        mg->GetYaxis()->SetTitle("#frac{#sigma_{exp} - #sigma_{lit}}{#sigma_{exp} + #sigma_{lit}} (%)");
         mg->GetYaxis()->SetTitleSize(0.07);
         mg->GetYaxis()->SetTitleFont(2);
         mg->GetYaxis()->SetTitleOffset(1.1);

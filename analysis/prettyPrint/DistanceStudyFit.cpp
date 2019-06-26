@@ -35,11 +35,13 @@
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
     gPad->SetLeftMargin(0.12);
-    gPad->SetRightMargin(0.005);
-    gPad->SetTopMargin(0.002);
+    gPad->SetRightMargin(0.01);
+    gPad->SetTopMargin(0.01);
     gPad->SetBottomMargin(0.12);
-    gPad->SetTickx(2);
-    gPad->SetTicky(2);
+    gPad->SetTickx(1);
+    gPad->SetTicky(1);
+
+    gPad->SetFrameLineWidth(3);
 
     double x[9] =
        {26.97, 27.00, 27.03, 27.06, 27.09,
@@ -55,7 +57,7 @@
     DistanceStudyFitGraph->SetMarkerColor(kBlack);
 
     // X-axis parameters
-    DistanceStudyFitGraph->GetXaxis()->SetTitle("TOF Detector Distance [m]");
+    DistanceStudyFitGraph->GetXaxis()->SetTitle("TOF Detector Distance (m)");
     DistanceStudyFitGraph->GetXaxis()->SetTitleSize(0.04);
     DistanceStudyFitGraph->GetXaxis()->SetTitleFont(2);
     DistanceStudyFitGraph->GetXaxis()->SetTitleOffset(1.5);
@@ -68,7 +70,7 @@
     DistanceStudyFitGraph->GetXaxis()->SetNdivisions(6);
 
     // Y-axis parameters
-    DistanceStudyFitGraph->GetYaxis()->SetTitle("#sigma_{exp}-#sigma_{lit} RMS [%]");
+    DistanceStudyFitGraph->GetYaxis()->SetTitle("#sigma_{exp}-#sigma_{lit} RMS (%)");
     DistanceStudyFitGraph->GetYaxis()->SetTitleSize(0.05);
     DistanceStudyFitGraph->GetYaxis()->SetTitleFont(2);
     DistanceStudyFitGraph->GetYaxis()->SetTitleOffset(1.2);

@@ -106,11 +106,14 @@
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
     gPad->SetLeftMargin(0.10);
-    gPad->SetRightMargin(0.005);
-    gPad->SetTopMargin(0.002);
+    gPad->SetRightMargin(0.01);
+    gPad->SetTopMargin(0.01);
     gPad->SetBottomMargin(0.15);
-    gPad->SetTickx(2);
-    gPad->SetTicky(2);
+
+    gPad->SetFrameLineWidth(3);
+
+    gPad->SetTickx(1);
+    gPad->SetTicky(1);
 
     // X-axis parameters
     CGraph->GetXaxis()->SetTitle("Energy (MeV)");
@@ -127,7 +130,7 @@
     CGraph->GetXaxis()->SetTickLength(0.03);
 
     // Y-axis parameters
-    CGraph->GetYaxis()->SetTitle("#sigma_{tot} (Barns)");
+    CGraph->GetYaxis()->SetTitle("#sigma_{tot} (b)");
     CGraph->GetYaxis()->SetTitleSize(0.06);
     CGraph->GetYaxis()->SetTitleFont(2);
     CGraph->GetYaxis()->SetTitleOffset(0.8);
@@ -171,10 +174,10 @@
     //latex.DrawLatex(0.42,0.40,"C");
 
     // Define legend format and contents
-    TLegend *legend = new TLegend(0.83,0.63,0.95,0.95);
+    TLegend *legend = new TLegend(0.68,0.78,0.95,0.95);
     //legend->SetHeader("");
     legend->SetTextSize(0.05);
-    //legend->SetNColumns(2);
+    legend->SetNColumns(2);
     legend->AddEntry(PbGraph,"{}^{nat}Pb","l");
     legend->AddEntry(SnGraph,"{}^{nat}Sn","l");
     legend->AddEntry(NiGraph,"{}^{nat}Ni","l");

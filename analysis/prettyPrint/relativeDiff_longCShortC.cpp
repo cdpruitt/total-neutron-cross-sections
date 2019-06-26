@@ -46,20 +46,22 @@
     relGraph->SetLineWidth(5);
     relGraph->SetLineStyle(0);
     relGraph->SetMarkerColor(kRed);
-    relGraph->SetFillColor(kBlue);
-    relGraph->SetFillStyle(3003);
+    relGraph->SetFillColor(kRed);
+    relGraph->SetFillStyle(3002);
 
-    relGraphSE->SetFillColor(kRed);
+    relGraphSE->SetFillColor(kBlue);
     relGraphSE->SetFillStyle(3001);
 
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
     gPad->SetLeftMargin(0.15);
-    gPad->SetRightMargin(0.005);
-    gPad->SetTopMargin(0.002);
+    gPad->SetRightMargin(0.01);
+    gPad->SetTopMargin(0.01);
     gPad->SetBottomMargin(0.15);
-    gPad->SetTickx(2);
-    gPad->SetTicky(2);
+    gPad->SetTickx(1);
+    gPad->SetTicky(1);
+
+    gPad->SetFrameLineWidth(3);
 
     TMultiGraph* mg = new TMultiGraph();
 
@@ -69,7 +71,7 @@
     mg->Draw("al");
 
     // X-axis parameters
-    mg->GetXaxis()->SetTitle("Energy [MeV]");
+    mg->GetXaxis()->SetTitle("Energy (MeV)");
     mg->GetXaxis()->SetTitleSize(0.05);
     mg->GetXaxis()->SetTitleFont(2);
     mg->GetXaxis()->SetTitleOffset(1.4);
@@ -83,7 +85,7 @@
     mg->GetXaxis()->SetTickLength(0.03);
 
     // Y-axis parameters
-    mg->GetYaxis()->SetTitle("(#frac{#sigma_{l} - #sigma_{s}}{#sigma_{l} + #sigma_{s}}) [%]");
+    mg->GetYaxis()->SetTitle("(#frac{#sigma_{l} - #sigma_{s}}{#sigma_{l} + #sigma_{s}}) (%)");
     mg->GetYaxis()->SetTitleSize(0.06);
     mg->GetYaxis()->SetTitleFont(2);
     mg->GetYaxis()->SetTitleOffset(1.0);

@@ -60,12 +60,14 @@
 
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
-    gPad->SetLeftMargin(0.07);
-    gPad->SetRightMargin(0.005);
-    gPad->SetTopMargin(0.002);
+    gPad->SetLeftMargin(0.12);
+    gPad->SetRightMargin(0.01);
+    gPad->SetTopMargin(0.01);
     gPad->SetBottomMargin(0.15);
-    gPad->SetTickx(2);
-    gPad->SetTicky(2);
+    gPad->SetTickx(1);
+    gPad->SetTicky(1);
+
+    gPad->SetFrameLineWidth(3);
 
     // Set blankHisto point and line characteristics
     blankHisto->SetMarkerColor(kBlack);
@@ -89,9 +91,10 @@
     //blankHisto->GetXaxis()->SetTickLength(0.03);
 
     // Y-axis parameters
+    blankHisto->GetYaxis()->SetTitle("Counts");
     blankHisto->GetYaxis()->SetTitleSize(0.05);
     blankHisto->GetYaxis()->SetTitleFont(2);
-    blankHisto->GetYaxis()->SetTitleOffset(1.5);
+    blankHisto->GetYaxis()->SetTitleOffset(1.1);
     blankHisto->GetYaxis()->CenterTitle();
 
     blankHisto->GetYaxis()->SetLabelOffset(0.01);

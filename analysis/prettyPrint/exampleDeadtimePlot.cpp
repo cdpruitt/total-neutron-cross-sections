@@ -65,11 +65,13 @@
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
     gPad->SetLeftMargin(0.12);
-    gPad->SetRightMargin(0.005);
-    gPad->SetTopMargin(0.002);
+    gPad->SetRightMargin(0.01);
+    gPad->SetTopMargin(0.01);
     gPad->SetBottomMargin(0.12);
-    gPad->SetTickx(2);
-    gPad->SetTicky(2);
+    gPad->SetTickx(1);
+    gPad->SetTicky(1);
+
+    gPad->SetFrameLineWidth(3);
 
     // Set blankHisto point and line characteristics
     blankHisto->SetMarkerColor(kBlack);

@@ -38,7 +38,10 @@
     gPad->SetRightMargin(0.05);
     gPad->SetTopMargin(0.05);
     gPad->SetBottomMargin(0.20);
-    //gPad->SetTicky(2);
+    gPad->SetTickx(0);
+    gPad->SetTicky(0);
+
+    gPad->SetFrameLineWidth(3);
 
     string uncorrectedFileName  = "/data1/analysis/diagnostics/timingCorrections/noSoftwareCFD.root";
     string CFDCorrectedFileName = "/data1/analysis/diagnostics/timingCorrections/withSoftwareCFDNoGammaC.root";

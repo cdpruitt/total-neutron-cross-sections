@@ -162,7 +162,7 @@ behavior centered about the average of Eq. \ref{SASAbsolute}, visible in Fig.
         \cite{Finlay1993, Schwartz1974, Poenitz1983, Abfalterer2000, Abfalterer2001}.
         Predictions for \tot\ given by the ``strongly-absorbing sphere'' (SAS)
         model, Eq. \ref{SASAbsolute}, are shown as thin dashed lines for each nucleus.
-        Regular oscillations about the SAS model are clearly visible,
+        Regular oscillations about the SAS model are visible
         as is the trend for the oscillation
         maxima and minima to shift to \textit{higher} energies as A is increased.
     }
@@ -440,7 +440,7 @@ possible (10-40 ms, depending on run configuration).
 
 Except for the oxygen and rhodium samples, all samples were prepared as right
 cylinders 8.25 mm in diameter and ranging from 10-27 mm in length (see
-Table \ref{SampleTable} for sample characteristics and Fig. \ref{SamplesImage}
+Table \ref{SampleCharacteristics} for sample characteristics and Fig. \ref{SamplesImage}
 for sample images). For each element under study, a natural-abundance sample
 was also prepared as were two natural carbon
 samples and a natural lead sample, useful for benchmarking against
@@ -658,9 +658,9 @@ Calculating the neutron energy requires knowledge of the flight path
 distance to high precision. We determined this distance by calculating 
 putative \tot\ data for $^{\text{nat}}$C from 3-15 MeV from our measurement and 
 comparing the resonance peaks in this region with high-precision literature data
-sets. The results of this analysis are shown in Fig. \ref{DistanceStudy};
-the TOF distance was determined as 2709 $\pm$1 cm for the Ni and Rh
-run configuration and 2554 $\pm$1 cm for the Sn and O run configuration.
+sets. From this study, the TOF distance was determined as 2709 $\pm$1
+\centi\meter\ for the Ni and Rh run configuration and 2554
+$\pm$1 \centi\meter\ for the Sn and O run configuration.
 
 \begin{figure}
     \includegraphics[width=0.5\textwidth]{figures/TimeCorrections.png}
@@ -735,23 +735,21 @@ run configurations).}
 
 Because trigger processing is done in firmware onboard the digitizer,
 the per-event deadtimes affecting our
-measurement ranged from 150-230 ns. For a 230 ns deadtime, the probability-dead
-$F_{i}$ of our time bins is given in Fig.
-\ref{ExampleDeadtimeSpectrum}.
-Once the fraction dead was identified for each time bin, the total number of
+measurement were reduced to between 150-230 \nano\second.
+Once the average probability-dead was calculated for each time bin,
+the total number of
 events detected in that bin, $N_{d}[i]$, was corrected to the \textit{true}
 number of events in that bin $N_{t}[i]$ that would have been detected in the
-absence of a
-per-event deadtime:
+absence of a per-event deadtime:
 \begin{equation}
     N_{t}[i] = -ln\left[1-\frac{\frac{N_{d}[i]}{M}}{(1-F_{i})}\right]\times M
 \end{equation}
-where M is the total number of micropulse periods. The difference between
-uncorrected and analytic-deadtime-corrected TOF spectra is shown in Fig.
-\ref{CorrectionEffectOnTOF}. At large TOFs (low energies) the correction is as low as a
-few percent, but at small TOFs (high energies) when the digitizer is still dead
-from the $\gamma$-ray flash and high-energy neutrons, the correction is significant
-($\approx$20\% for our Ni/Rh runs, and $\approx$40\% for our Sn/O runs). These 
+where M is the total number of micropulse periods. At large TOFs (low energies) 
+the correction is as low as a few percent,
+but at small TOFs (high energies) when the digitizer is still dead
+from the $\gamma$-ray flash and high-energy neutrons, the correction is 
+significant ($\approx$20\% for our Ni/Rh runs, and $\approx$40\% for
+our Sn/O runs). These 
 corrections are themselves far lower than the typical
 analytic deadtime correction required with the deadtime mitigation scheme of
 previous analog measurements \cite{Finlay1993,
@@ -832,9 +830,8 @@ these previous results from 3-100 MeV and show slight deviation above 100 MeV (a
 relative difference of up to 5\% at 300 MeV), suggesting a small systematic
 error at high energies in one or both approaches when the instantaneous neutron
 flux is highest. As an additional diagnostic, we compared 
-both our natural carbon targets against each other (see Fig.
-\ref{CarbonBenchmarking}) and found agreement within 1\% throughout the measured
-energy domain.
+\tot\ results from our long and short natural carbon targets and
+found agreement within 1\% throughout the measured energy domain.
 
 \begin{figure}
     \includegraphics[width=0.5\textwidth]{figures/literatureBenchmarking.png}
@@ -852,9 +849,8 @@ b}
 \section{Experimental Results}
 
 Our absolute \tot\ results for O, Ni, and Sn isotopic targets are shown in Fig.
-\ref{SixPanel} and our absolute \tot\ results for Rh are shown separately, in the 
-supplemental materials. All previous
-isotopic \tot\ measurements
+\ref{SixPanel} (results for Rh are shown in the supplemental materials).
+Literature isotopic \tot\ measurements
 (where they exist) are shown alongside our results for comparison.
 Residuals between our data and any existing literature data are also shown.
 In each figure, the literature data sets have rebinned to match the bin
@@ -863,20 +859,39 @@ states where individual resonances are visible (e.g., $^{\text{nat}}$C
 below 10 MeV), this rebinning washes out the fine structure of the
 cross section data.
 
-Except for the already well-measured \oSix, our measurement extends the known
-energy range for the neutron \tot\ by a factor of several or more. In the case
-of the rare isotopes \niFour\ and \snTwelve, only one datum at 14.1 MeV was 
-available in the literature \cite{Dukarevich1967}; our new results on these
-isotopes are in excellent agreement, within 2-3\%, of these data.
+Except for the already well-measured \oSix, our new data significantly
+extend knowledge of the neutron \tot\ for each sample. In the case of \oEight,
+\niEight, \rhThree, and \snFour, almost all previous data was collected at less 
+than 20 MeV. Our new data are in reasonable agreement with the previous
+measurements when experimental error of these measurements is taken into
+account. In the cases of the rare isotopes \niFour\ and \snTwelve,
+only one datum (at 14.1 MeV) was 
+available in the literature \cite{Dukarevich1967}. Our measurements on these
+rare isotopes are in excellent agreement, within 2-3\%, of these data from more
+than fifty years ago.
 
-Relative differences of our measured \tot\ between $^{16,18}$O, $^{58,64}$Ni, and
-$^{112,124}$Sn are shown in Fig. \ref{ThreePanelRelDiff}.
+Our results for relative differences between isotopic pairs \oSixEight,
+\niEightFour, and \snTwelveFour\ are shown in Fig. \ref{ThreePanelRelDiff}. In
+\oSixEight, the purely-isoscalar SAS model grossly reproduces the relative
+difference below 100 MeV, but fails completely above 100 MeV. Near 200
+MeV, the \oEight\ \tot\ drops below that of \oSix\ resulting in a negative
+relative difference, in keeping with the Ramsauer-logic expectation (Eq.
+\ref{OscillatoryModel}) that \tot\ oscillation minima shift to higher
+energies as A is increased. In the relative difference subfigures for 
+\niEightFour\ and \snTwelveFour, the average \tot\ values are below the
+SAS model trend ($r \propto A^{\frac{1}{3}}$), shown by the black dashed lines. 
+The well-known $r \propto A^{\frac{1}{6}}$ trend in Sn isotope shift data 
+\cite{Anselment1986} are also shown for reference (grad dotted lines) and
+underpredict the relative differences. As was noted by Dietrich et al. in
+their study of \tot\ relative differences in W isotopes, a full optical
+model analysis that includes isovector terms is likely required to
+reproduce the oscillatory behavior seen in the relative differences.
 
 \begin{figure*}[tb]
     \centering
     \includegraphics[width=\textwidth]{figures/SixPanel.png}
     \caption[Neutron \tot\ for \oSixEight, \niEightFour, and \snTwelveFour: our results and literature data]
-    {Neutron \tot\ for \oSixEight, \niEightFour, and \snTwelveFour: our results 
+    {(Color online) Neutron \tot\ for \oSixEight, \niEightFour, and \snTwelveFour: our results 
         and literature data.  In the upper three panels, our digitizer-measured
         isotopic results are shown in red and
         corresponding analog-measured literature data \cite{Finlay1993, 
@@ -887,7 +902,7 @@ $^{112,124}$Sn are shown in Fig. \ref{ThreePanelRelDiff}.
         The lower three panels show residuals between our data and the
         literature data shown in the upper three panels.
     }
-    \label{SixPanels}
+    \label{SixPanel}
 \end{figure*}
 
 \begin{figure*}[tb]
@@ -895,16 +910,14 @@ $^{112,124}$Sn are shown in Fig. \ref{ThreePanelRelDiff}.
     \includegraphics[width=\textwidth]{figures/ThreePanelRelDiff.png}
     \caption[\oSixEight, \niEightFour, \snTwelveFour\ neutron \tot\ relative difference]
     {
-        \oSixEight, \niEightFour, \snTwelveFour\ neutron \tot\ relative differences
+        (Color online) \oSixEight, \niEightFour, \snTwelveFour\ neutron \tot\ relative differences
         from our measurement. In each figure, the black dashed line shows the 
-        prediction for the \tot relative difference per the strongly-absorbing 
+        prediction for the \tot\ relative difference per the strongly-absorbing 
         sphere (SAS) model (Eq. \ref{SASAbsolute}), which assumes a simple 
         A$^{\frac{1}{3}}$ size scaling for the nuclear radius.
-        In the third panel, an additional gray dotted line shows the
+        The gray dotted line shows the
         SAS model prediction but with an
-        A$^{\frac{1}{6}}$ size scaling observed in Sn
-        isotope shift data \cite{Anselment1986}).
-        The blue band in each panel indicates
+        A$^{\frac{1}{6}}$ size scaling. The blue band in each panel indicates
         uncertainty due to target thickness imprecision;
         the red band in each panel
         indicates uncertainty from both target thickness and statistics.

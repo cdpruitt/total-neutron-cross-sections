@@ -93,33 +93,37 @@
     TGraphAsymmErrors* relPbGraph = (TGraphAsymmErrors*)relFile->Get(relPbGraphName.c_str());
 
     // Set graph point and line characteristics
-    CGraph->SetLineWidth(4);
-    CGraph->SetLineStyle(0);
+    CGraph->SetLineWidth(6);
+    CGraph->SetLineStyle(7);
     CGraph->SetLineColor(kBlue);
+
     expCGraph->SetLineWidth(4);
     expCGraph->SetLineStyle(0);
-    expCGraph->SetLineColor(kRed);
+    expCGraph->SetLineColor(kRed-4);
     
-    NiGraph->SetLineWidth(4);
-    NiGraph->SetLineStyle(0);
+    NiGraph->SetLineWidth(6);
+    NiGraph->SetLineStyle(7);
     NiGraph->SetLineColor(kBlue);
+
     expNiGraph->SetLineWidth(4);
     expNiGraph->SetLineStyle(0);
-    expNiGraph->SetLineColor(kRed);
+    expNiGraph->SetLineColor(kRed-4);
 
-    SnGraph->SetLineWidth(4);
-    SnGraph->SetLineStyle(0);
+    SnGraph->SetLineWidth(6);
+    SnGraph->SetLineStyle(7);
     SnGraph->SetLineColor(kBlue);
+
     expSnGraph->SetLineWidth(4);
     expSnGraph->SetLineStyle(0);
-    expSnGraph->SetLineColor(kRed);
+    expSnGraph->SetLineColor(kRed-4);
 
-    PbGraph->SetLineWidth(4);
-    PbGraph->SetLineStyle(0);
+    PbGraph->SetLineWidth(6);
+    PbGraph->SetLineStyle(7);
     PbGraph->SetLineColor(kBlue);
+
     expPbGraph->SetLineWidth(4);
     expPbGraph->SetLineStyle(0);
-    expPbGraph->SetLineColor(kRed);
+    expPbGraph->SetLineColor(kRed-4);
 
     relCGraph->SetLineColor(kRed-9);
     relCGraph->SetLineWidth(4);
@@ -185,7 +189,7 @@
         mg->GetXaxis()->SetTickLength(0.03);
 
         // Y-axis parameters
-        mg->GetYaxis()->SetTitle("#sigma_{tot} [b]");
+        mg->GetYaxis()->SetTitle("#sigma_{tot} (b)");
         mg->GetYaxis()->SetTitleSize(0.10);
         mg->GetYaxis()->SetTitleFont(2);
         mg->GetYaxis()->SetTitleOffset(0.6);
@@ -205,7 +209,7 @@
         latex.SetNDC();
         latex.SetTextSize(0.08);
         latex.SetTextAlign(13); // align at top
-        latex.DrawLatex(0.295,0.735,"Pb");
+        latex.DrawLatex(0.305,0.735,"Pb");
         latex.DrawLatex(0.295,0.55,"Sn");
         latex.DrawLatex(0.315,0.347,"Ni");
         latex.DrawLatex(0.33,0.235,"C");
@@ -261,7 +265,7 @@
         mg->GetXaxis()->SetTickLength(0.03);
 
         // Y-axis parameters
-        mg->GetYaxis()->SetTitle("#frac{#sigma_{exp} - #sigma_{lit}}{#sigma_{exp} + #sigma_{lit}} [%]");
+        mg->GetYaxis()->SetTitle("#frac{#sigma_{exp} - #sigma_{lit}}{#sigma_{exp} + #sigma_{lit}} (%)");
         mg->GetYaxis()->SetTitleSize(0.08);
         mg->GetYaxis()->SetTitleFont(2);
         mg->GetYaxis()->SetTitleOffset(0.9);

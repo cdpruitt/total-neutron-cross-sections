@@ -61,52 +61,54 @@
     // Pad dimensions and margins
     gPad->SetPad(0.005, 0.995, 0.995, 0.005);
     gPad->SetLeftMargin(0.10);
-    gPad->SetRightMargin(0.005);
-    gPad->SetTopMargin(0.002);
+    gPad->SetRightMargin(0.01);
+    gPad->SetTopMargin(0.01);
     gPad->SetBottomMargin(0.14);
-    gPad->SetTickx(2);
-    gPad->SetTicky(2);
+    gPad->SetTickx(1);
+    gPad->SetTicky(1);
+
+    gPad->SetFrameLineWidth(3);
 
     // Set TOFHisto point and line characteristics
     TOFHisto->SetMarkerColor(kBlack);
     TOFHisto->SetLineWidth(4);
     TOFHisto->SetLineColor(kRed);
 
-    uncorrectedTOFHisto->SetLineWidth(4);
+    uncorrectedTOFHisto->SetLineWidth(6);
 
     // X-axis parameters
-    TOFHisto->GetXaxis()->SetTitle("TOF (ns)");
-    TOFHisto->GetXaxis()->SetTitleSize(0.05);
-    TOFHisto->GetXaxis()->SetTitleFont(2);
-    TOFHisto->GetXaxis()->SetTitleOffset(1.5);
-    TOFHisto->GetXaxis()->CenterTitle();
+    uncorrectedTOFHisto->GetXaxis()->SetTitle("TOF (ns)");
+    uncorrectedTOFHisto->GetXaxis()->SetTitleSize(0.05);
+    uncorrectedTOFHisto->GetXaxis()->SetTitleFont(2);
+    uncorrectedTOFHisto->GetXaxis()->SetTitleOffset(1.5);
+    uncorrectedTOFHisto->GetXaxis()->CenterTitle();
 
-    TOFHisto->GetXaxis()->SetLabelOffset(0.01);
-    TOFHisto->GetXaxis()->SetLabelSize(0.05);
-    TOFHisto->GetXaxis()->SetLabelFont(2);
+    uncorrectedTOFHisto->GetXaxis()->SetLabelOffset(0.01);
+    uncorrectedTOFHisto->GetXaxis()->SetLabelSize(0.05);
+    uncorrectedTOFHisto->GetXaxis()->SetLabelFont(2);
 
-    //TOFHisto->GetXaxis()->SetNdivisions(10);
-    //TOFHisto->GetXaxis()->SetTickLength(0.03);
+    //uncorrectedTOFHisto->GetXaxis()->SetNdivisions(10);
+    //uncorrectedTOFHisto->GetXaxis()->SetTickLength(0.03);
 
     // Y-axis parameters
-    TOFHisto->GetYaxis()->SetTitle("Counts");
-    TOFHisto->GetYaxis()->SetTitleSize(0.05);
-    TOFHisto->GetYaxis()->SetTitleFont(2);
-    TOFHisto->GetYaxis()->SetTitleOffset(1.);
-    TOFHisto->GetYaxis()->CenterTitle();
+    uncorrectedTOFHisto->GetYaxis()->SetTitle("Counts");
+    uncorrectedTOFHisto->GetYaxis()->SetTitleSize(0.05);
+    uncorrectedTOFHisto->GetYaxis()->SetTitleFont(2);
+    uncorrectedTOFHisto->GetYaxis()->SetTitleOffset(1.);
+    uncorrectedTOFHisto->GetYaxis()->CenterTitle();
 
-    TOFHisto->GetYaxis()->SetLabelOffset(0.01);
-    TOFHisto->GetYaxis()->SetLabelSize(0.05);
-    TOFHisto->GetYaxis()->SetLabelFont(2);
+    uncorrectedTOFHisto->GetYaxis()->SetLabelOffset(0.01);
+    uncorrectedTOFHisto->GetYaxis()->SetLabelSize(0.05);
+    uncorrectedTOFHisto->GetYaxis()->SetLabelFont(2);
 
-    //TOFHisto->GetYaxis()->SetNdivisions(10);
-    //TOFHisto->GetYaxis()->SetTickLength(0.02);
+    //uncorrectedTOFHisto->GetYaxis()->SetNdivisions(10);
+    //uncorrectedTOFHisto->GetYaxis()->SetTickLength(0.02);
 
-    TOFHisto->GetXaxis()->SetRangeUser(100, 499);
-    TOFHisto->GetYaxis()->SetRangeUser(3000, 110000);
+    uncorrectedTOFHisto->GetXaxis()->SetRangeUser(100, 499);
+    uncorrectedTOFHisto->GetYaxis()->SetRangeUser(3000, 110000);
 
-    TOFHisto->Draw();
-    uncorrectedTOFHisto->Draw("same");
+    uncorrectedTOFHisto->Draw();
+    TOFHisto->Draw("same");
 
     TLatex latex;
     latex.SetNDC();
