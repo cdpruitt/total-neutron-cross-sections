@@ -831,14 +831,30 @@ relative difference of up to 5\% at 300 MeV), suggesting a small systematic
 error at high energies in one or both approaches when the instantaneous neutron
 flux is highest. As an additional diagnostic, we compared 
 \tot\ results from our long and short natural carbon targets and
-found agreement within 1\% throughout the measured energy domain.
+found excellent agreement, within 1\% throughout the measured energy domain.
+
+Extracting the \oSixEight\ neutron \tot\ required subtraction of the
+well-measured hydrogen neutron \tot. To better understand
+the additional systematic uncertainty
+associated with this subtractive analysis, we subtracted our final
+\oSix\ neutron \tot\ results from our raw D$_{2}$O and H$_{2}$O data and 
+calculated the deuterium-to-hydrogen neutron \tot\ relative difference. A
+comparison of our D-to-H relative difference with that of
+\cite{Abfalterer1998} is shown in the supplemental materials. Our results differ
+systematically from the previous (analog) measurement by 2-3\% throughout the
+energy range, comparable to the 2\% systematic difference between our final
+\oSix\ neutron \tot\ results and those of \cite{Abfalterer2001}. The size and
+uniformity of these systematic differences is consistent with
+a combination of slight ($\approx$ 1\%) normalization errors
+in some or all of the H, D, O, and C neutron \tot\ results,
+both in our measurement and in the literature.
 
 \begin{figure}
     \includegraphics[width=0.5\textwidth]{figures/literatureBenchmarking.png}
     \caption{(Color online) A comparison of literature data (taken with analog
     techniques) and our results (signals processed with a digitizer, or ``DSP'')
-    for natural C, Ni, Sn, and Pb. In panel a), the absolute cross sections are shown from
-    3-500 MeV; in panel b), the relative differences between the literature data and
+    for natural C, Ni, Sn, and Pb. In panel (a), the absolute cross sections are shown from
+    3-500 MeV; in panel (b), the relative differences between the literature data and
     our data are shown in percent. From 3-100 MeV, our data are fully consistent with the
     literature datasets but above 100 MeV, a difference arises, peaking at
     $\approx$5\% at 300 MeV.
@@ -929,16 +945,19 @@ reproduce the oscillatory behavior seen in the relative differences.
 
 The Dispersive Optical Model (DOM) is a phenomenological Green's-function
 framework enabling a simultaneous and self-consistent analysis of nuclear
-structure and reaction
-data. An essential feature of the DOM is the enforcement of a dispersion
+structure and reaction data.
+An essential feature of the DOM is the enforcement of a dispersion
 relation between the complex components of the self-energy across the entire
-energy spectrum, allowing data from below the Fermi energy (charge densities,
-bound levels) to constrain the potential above, and data from above the Fermi
-energy (elastic, reaction, and total cross sections) to constrain the potential
-below. Details on the DOM formalism and results of many related DOM analyses are available in
-\cite{Mahaux1991, Dickhoff2018, PruittPhDThesis, AtkinsonPhDThesis,
-MahzoonPhDThesis}. In this section we present pertinent findings from fits on \oSixEight,
-\niEightFour, and \snTwelveFour. The analyses of \oSixEight\ are presented in
+energy domain, allowing structural data from below the Fermi energy
+(e.g., charge densities, bound levels) to constrain the potential above,
+and data from above the Fermi energy (e.g., elastic, reaction, and total
+cross sections) to constrain the potential
+below. Details on the DOM formalism and results of many related DOM analyses are
+available in \cite{Mahaux1991, Dickhoff2018, PruittPhDThesis, AtkinsonPhDThesis, MahzoonPhDThesis}.
+
+In this section we present pertinent findings from Markov-Chain Monte Carlo
+(MCMC)-driven analyses on
+\oSixEight, \caAughtEight, \niEightFour, and \snTwelveFour. The analyses of \oSixEight\ are presented in
 greater detail to illustrate our approach, which uses an updated version
 of the DOM code that has been generalized for use with any doubly-even nucleus.
 This version is the first to extend beyond doubly-closed-shell nuclei and
@@ -1002,6 +1021,88 @@ width of each of the bound states (0s$_\frac{1}{2}$, 0p$_\frac{3}{2}$, and
 0p$_\frac{1}{2}$) were fitted to the separation energy and hole widths determined
 from (e,e'p) and (p,2p) quasi-free scattering \cite{Mougey1980, Jacob1966,
 Jacob1973}.
+
+\subsection{Optimization with MCMC}
+The goal of a DOM analysis is to identify a
+reasonable range of optical potential parameter values by comparison of experimental data with
+DOM-generated predictions, where the degree of reasonableness is quantified by
+some utility function (e.g., a least-squares function).
+Several aspects of the DOM potential and the experimental
+data we used complicate this problem. First is the number of
+parameters: depending on the formulation of the potential and the nucleus under
+study, between 34 and 42 parameters must be jointly optimized for each nucleus.
+In such a high-dimensional parameter space, saddle points abound, slowing
+the progress and convergence of classical gradient-descent methods. Second, it is
+anticipated that several potential parameters will be strongly correlated: for
+instance, the magnitudes of the surface- and volume-associated imaginary
+potential are expected to be anticorrelated around 50 MeV, an energy region with
+contributions from both surface and volume absorptive modes. For certain
+optimization algorithms that sample one dimension at a time (e.g., Gibbs
+sampling), these multidimensional correlations can hinder the algorithm's
+efficient access to the full parameter space. In addition to these
+considerations, there is now a near-unanimous appreciation that nuclear physics
+models must report well-founded theoretical errors as part of their
+results. In the case of the DOM, this demands an understanding of parameter
+covariances in the high-dimensional region surrounding the region of the
+global optimum.
+
+To satisfy these demands, we conducted our DOM analysis using the affine-invariant
+Markov-Chain Monte Carlo (MCMC) sampling library, emcee \cite{emcee}, that has
+enjoyed widespread use in the astrophysics community. Many reviews are available
+on both the principles of MCMC \cite{MCMC ref 1, MCMC ref 2} and on emcee
+\cite{DFM paper 1, DFM paper 2}. Table \ref{ParameterValues} shows the parameter
+definitions and prior distributions used in this analysis. Table \ref{MCMCResults}
+shows relevant diagnostic quantities for validating the MCMC posterior sampling
+results.
+
+For a given parameter space vector $\vec{p}$, our utility function was defined as
+a weighted least-squares function where each datum was assigned a weight and a
+model error:
+
+\begin{equation} \label{UtilityFunction}
+    U(\vec{p}) = \sum_{d=1}^{N_{d}} w_{d} \frac{1}{N_{i}} \sum_{i=1}^{N_{i}}
+    \left(\frac{y^{calc}_{d,i}-y^{exp}_{d,i}}{\sigma^{calc}_{d,i}+\sigma^{exp_{d,i}}}\right),
+\end{equation}
+
+where
+
+\begin{itemize}
+
+    \item $N_{d}$ is the number of different sectors of nuclear data (e.g., proton \el\ cross sections,
+binding energy),
+    \item $w_{d}$ is a scalar weight assigned to the entire sector $d$,
+    \item $N_{i}$ is the number of data points in a sector $d$,
+    \item $y^{calc, exp}_{d,i}$ are the calculated and experimental values,
+        respectively, for the $i$th datum of sector $d$,
+    \item $\sigma^{calc, exp}_{d,i}$ are the calculated and experimental errors,
+        respectively, for the $i$th datum of sector $d$,
+    \item $w_{d,i}$ is a scalar weight assigned to the $i$th datum
+        $y_{d,i}$ of data sector $d$.
+\end{itemize}
+
+Due the approximate nature of any optical potential in representing the true many-body potential
+of a nucleus, it should be expected that DOM predictions for nuclear observables
+will suffer from some degree of theoretical error. For example, previous
+optical model analyses typically easily reproduce low-angle \el\ data taken at low scattering energies
+but have challenges at high energies and at backward angles where the predicted cross section may
+differ from experimental results by an order of magnitude or more. Accordingly,
+model error must be taken into account when determining the optimal parameters.
+The choice of model discrepancy for each point
+is somewhat subjective and depends on several factors, including the functional form chosen for the
+potential, numerical truncations, and the type of datum being calculated. In the
+final analysis, we settled on discrepancy terms based on how well preliminary
+fits could reproduce differing regions of each data sector, successes and
+failures of past optical model analyses, and numerical approximations used
+during the calculation of observables. Table \ref{ModelDiscrepancy} shows the model discrepancy terms we used 
+for each data sector. In keeping with the Bayesian mindset of MCMC, future
+analyses of this type may wish to consider these model discrepancy 
+terms as nuisance parameters, each with their own prior, and marginalize over
+them when making theoretical predictions.
+
+While the choice of model discrepancy is by its nature subjective, it should be noted that
+some reasonable model discrepancy is a vital component of our analysis. 
+Failure to include any discrepancy terms may lead to a biased predictions with
+an overconfident uncertainty band as shown in Fig. \ref{ModelDiscrepancyFigure}. 
 
 \subsection{Fit results on $^{16}$O}
 \subsection{Fit results on $^{18}$O}
