@@ -253,13 +253,21 @@ int main()
     PbGraphRamsauer->SetNameTitle("Ramsauer_A=207.2", "Ramsauer_A=207.2");
     PbGraphRamsauer->Write();
 
-    TGraph* ORelDiffGraph = createRelDiffGraph(createSAGraph(18, "O18"), createSAGraph(16, "O16"), "ORelDiff");
-    ORelDiffGraph->SetNameTitle("RelDiff18_16", "RelDiff18_16");
-    ORelDiffGraph->Write();
+    TGraph* ORelDiffGraphThird = createRelDiffGraph(createSAGraph(18, "O18"), createSAGraph(16, "O16"), "ORelDiff");
+    ORelDiffGraphThird->SetNameTitle("RelDiff18_16Third", "RelDiff18_16Third");
+    ORelDiffGraphThird->Write();
 
-    TGraph* NiRelDiffGraph = createRelDiffGraph(createSAGraph(64, "Ni64"), createSAGraph(58, "Ni58"), "NiRelDiff");
-    NiRelDiffGraph->SetNameTitle("RelDiff64_58", "RelDiff64_58");
-    NiRelDiffGraph->Write();
+    TGraph* ORelDiffGraphSixth = createRelDiffGraph(createSAGraph(17, "O18"), createSAGraph(16, "O16"), "ORelDiff");
+    ORelDiffGraphSixth->SetNameTitle("RelDiff18_16Sixth", "RelDiff18_16Sixth");
+    ORelDiffGraphSixth->Write();
+
+    TGraph* NiRelDiffGraphThird = createRelDiffGraph(createSAGraph(64, "Ni64"), createSAGraph(58, "Ni58"), "NiRelDiff");
+    NiRelDiffGraphThird->SetNameTitle("RelDiff64_58Third", "RelDiff64_58Third");
+    NiRelDiffGraphThird->Write();
+
+    TGraph* NiRelDiffGraphSixth = createRelDiffGraph(createSAGraph(61, "Ni64"), createSAGraph(58, "Ni58"), "NiRelDiff");
+    NiRelDiffGraphSixth->SetNameTitle("RelDiff64_58Sixth", "RelDiff64_58Sixth");
+    NiRelDiffGraphSixth->Write();
 
     TGraph* SnRelDiffGraphThird = createRelDiffGraph(createSAGraph(124, "Sn124"), createSAGraph(112, "Sn112"), "SnRelDiff");
     SnRelDiffGraphThird->SetNameTitle("RelDiff124_112Third", "RelDiff124_112Third");

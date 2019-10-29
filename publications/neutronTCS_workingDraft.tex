@@ -18,8 +18,8 @@ superscriptaddress, nobalancelastpage]{revtex4}
 
 \newcommand{\tot}{\ensuremath{\sigma_{tot}}}
 \newcommand{\totRD}{\ensuremath{\sigma_{A,A'}}(E)}
-\newcommand{\react}{\ensuremath{\sigma_{react}}}
-\newcommand{\elast}{\ensuremath{\sigma_{el}}}
+\newcommand{\rxn}{\ensuremath{\sigma_{rxn}}}
+\newcommand{\el}{\ensuremath{\frac{\lowercase{d}\sigma}{\lowercase{d}\Omega}}}
 
 \newcommand{\oSix}{\ensuremath{^{16}}O}
 \newcommand{\oSeven}{\ensuremath{^{17}}O}
@@ -271,62 +271,6 @@ prohibitively expensive; indeed, a literature search for isotopically-resolved
 closed-shell isotopes of special importance like $^{3,4}$He, $^{64}$Ni, and
 $^{204}$Pb (see Table \ref{IsotopicCrossSectionTable}).
 
-\begin{table}[tb]
-    \caption[Selected results from a literature study of
-    isotopically-resolved \tot\ data using the EXFOR database \cite{EXFORDatabase}]
-    {
-        Selected results from a literature search for isotopically-resolved
-        \tot\ data using the EXFOR database \cite{EXFORDatabase}.
-        For the heaviest and lightest stable nuclides in each closed shell in Z, all
-        datasets falling at least partially within
-        1-500 \mega\electronvolt\ are shown. For elements
-        whose natural abundance is $>$90\% of a single isotope (e.g.,
-        96.9\% of $^{\text{nat}}$Ca is \caForty), \tot\ data on the natural
-        sample was included as ``isotopic''.
-    }
-    \label{IsotopicCrossSectionTable}
-    \centering
-    \begin{tabular}{G M R@{\ --\ }l G}
-        \hline
-        Isotope & \multicolumn{1}{c}{Nat. Abund. [\%]} & \multicolumn{2}{c}{Energies
-    [\mega\electronvolt]} & Reference\\
-
-        \hline
-        $^{3}$He & \multicolumn{1}{c}{2$\times$10$^{-4}$} & 1.5 & 40 & \cite{Haesner1983}\\
-        $^{4}$He & \multicolumn{1}{c}{$>$99.9} & 0.7 & 30 & \cite{Goulding1973}\\
-                 &                  & 2   & 40 & \cite{Haesner1983}\\
-                 &                  & 77  & 151 & \cite{Measday1966}\\
-
-        \oSix & 99.8                & 0.2 & 49 & \cite{Perey1972}\\
-              &                     & 5   & 600 & \cite{Finlay1993}\\
-
-        \oEight & 0.20 & 0.1 & 2.5 & \cite{Vaughn1965}\\
-                & & 2.5 & 19 & \cite{Salisbury1965}\\
-
-        \caForty & 96.9 & $<$0.1 & 6.4 & \cite{Johnson1973}\\
-                  & & 5.3 & 560 & \cite{Abfalterer2001}\\
-
-        \caEight & 0.187 & 0.6 & 5.2 & \cite{Harvey1985}\\
-                  & & 12 & 276 & \cite{Shane2010}\\
-
-        \niEight & 68.1 & $<$0.1 & 68 & \cite{Perey1993}\\
-
-        \niFour & 0.926 & \multicolumn{2}{c}{14.1} & \cite{Dukarevich1967}\\
-
-        \snTwelve & 0.97 & $<$0.1 & 1.4 & \cite{Timokhov1989}\\
-                  & & \multicolumn{2}{c}{14.1} & \cite{Dukarevich1967}\\
-
-        \snFour & 5.79 & 0.3 & 5.0 & \cite{Harper1982}\\
-                   & & 5.1 & 26 & \cite{Rapaport1980}\\
-
-        $^{204}$Pb & 1.4 & $<$0.1 & 27 & \cite{Carlton2003}\\
-
-        \pbEight & 52.4 & $<$0.1 & 695 & \cite{Harvey1999}\\
-                   & & 5 & 600 & \cite{Finlay1993}\\
-
-        \hline
-    \end{tabular}
-\end{table}
 
 Recent developments in waveform digitizer technology have made it
 possible to reduce the per-event deadtime by an order of magnitude or more,
@@ -899,9 +843,12 @@ SAS model trend ($r \propto A^{\frac{1}{3}}$), shown by the black dashed lines.
 The well-known $r \propto A^{\frac{1}{6}}$ trend in Sn isotope shift data 
 \cite{Anselment1986} are also shown for reference (grad dotted lines) and
 underpredict the relative differences. As was noted by Dietrich et al. in
-their study of \tot\ relative differences in W isotopes, a full optical
-model analysis that includes isovector terms is likely required to
-reproduce the oscillatory behavior seen in the relative differences.
+their study of \tot\ relative differences in W isotopes, a dedicated optical
+model analysis along the entire isotopic chain may be required to
+reproduce the oscillatory behavior seen in the relative differences. We leave
+this comprehensive analysis to future authors and show individual Dispersive
+Optical Model fits to \oSixEight, \niEightFour, and \snTwelveFour in the
+following section.
 
 \begin{figure*}[tb]
     \centering
@@ -955,19 +902,20 @@ cross sections) to constrain the potential
 below. Details on the DOM formalism and results of many related DOM analyses are
 available in \cite{Mahaux1991, Dickhoff2018, PruittPhDThesis, AtkinsonPhDThesis, MahzoonPhDThesis}.
 
-In this section we present pertinent findings from Markov-Chain Monte Carlo
-(MCMC)-driven analyses on
-\oSixEight, \caAughtEight, \niEightFour, and \snTwelveFour. The analyses of \oSixEight\ are presented in
+In this section we present findings from Markov-Chain Monte Carlo
+(MCMC)-driven analyses on \oSixEight, \niEightFour, and \snTwelveFour.
+The analyses of \oSixEight\ are presented in
 greater detail to illustrate our approach, which uses an updated version
-of the DOM code that has been generalized for use with any doubly-even nucleus.
-This version is the first to extend beyond doubly-closed-shell nuclei and
-accommodates the partial filling
-of open shells, as for neutrons in \oEight, with a simple pairing parameter
-$\Delta$ (details are provided in \cite{PruittPhDThesis}).
-The full DOM potential parametrization and the optimized parameter values
-recovered from the fitting are provided in appendix A.
+of the DOM code that has been generalized for use with any even-even nucleus
+that is not too deformed.  This version is the first to extend beyond doubly-closed-shell
+nuclei and accommodates the partial filling
+of open shells, as for the neutron $d_{\frac{5}{2}}$ valence shell in \oEight, with a simple
+pairing parameter $\Delta$ (details are provided in \cite{PruittPhDThesis}).
+The full DOM potential parameterization and the optimized parameter mean values
+and variances recovered from the fitting are provided in appendix A for all six
+isotopes.
 
-\subsection{Experimental data used to constrain $^{16}$O potential}
+\subsection{Experimental data used to constrain $^{16}$O DOM potential}
 
 Nucleon elastic scattering data (including differential cross sections and analyzing
 powers) from 10-200 MeV and nucleon reaction cross sections from 20-65 MeV
@@ -984,21 +932,24 @@ neutrons, ten neutron elastic differential cross section
 data sets, ranging from a neutron energy of 10 MeV to 95 MeV, and a single
 neutron reaction cross section data point, at 14 MeV, were included. 
 Our newly-measured \tot\ results for $^{16}$O were included as well. In all,
-over sixty experimental nucleon scattering data sets were used to constrain the
-\oSix\ parameters.
+over sixty experimental nucleon scattering data sets, including our new \tot
+measurement, were used to constrain the \oSix\ parameters.
 
 In addition to nucleon scattering data, several sectors of bound-state data were
-included in the fit. Neutron (proton) 0p$_{\frac{1}{2}}$ and 0d$_{\frac{5}{2}}$ energies were
-assigned according to the mass differences between the $^{15,16}$O and
-$^{16,17}$O isotopes ($^{15}$N, $^{16}$O; $^{16}$O, $^{17}$F isotopes) \cite{AME2016}.
-The charge density profile and RMS charge radius used were extracted/compiled by
+included in the fit. Neutron (proton) 0p$_{\frac{1}{2}}$ and 0d$_{\frac{5}{2}}$
+single-particle level energies were
+assigned according to the nucleon separation energies of $^{16}$O and
+$^{17}$O isotopes ($^{16}$O, $^{17}$F isotopes) \cite{AME2016}.
+The charge density distributions used were extracted/compiled by
 De Vries et al from elastic electron scattering data
-\cite{DeVries1987}. To further constrain the shape of the imaginary
-potential below the Fermi energy, the locations and widths of the spectral peaks
-of the proton bound states (0s$_\frac{1}{2}$, 0p$_\frac{3}{2}$, and
-0p$_\frac{1}{2}$) were fitted to the separation energies and hole widths determined
-from quasi-free (e,e'p) and (p,2p) scattering \cite{Mougey1980, Jacob1966,
-Jacob1973}. Lastly, the experimentally-known total binding energy was included. 
+\cite{DeVries1987}. Since that compilation, new experimental
+data (in particular from muonic atom measurements) have improved the precision
+of many root-mean-square (RMS) charge radii by
+roughly an order of magnitude \cite{Angeli2013}. To account for these improved
+data we rescaled the distributions from \cite{DeVries1987} to recover the updated
+RMS charge radii while still conserving particle number, and also fitted directly
+to the state-of-the-art ground-state RMS charge radii of \cite{Angeli2013}.
+Lastly, the experimentally-known total binding energy was included as a fit constraint. 
 
 \subsection{Experimental data used to constrain $^{18}$O potential}
 
@@ -1008,19 +959,17 @@ sections were include, with an energy range from 8-200 MeV in the lab frame.
 No proton reaction cross sections were available. On the neutron side, three
 elastic differential cross section data sets were used, at 8.5, 14, and 24 MeV.
 Only one data point for the neutron reaction cross section was available (14.1
-MeV) and was included. Our \tot\ results for $^{18}$O were the
+MeV) and was included. Our new \tot\ results for $^{18}$O were the
 sole neutron total cross section data used in the fit. The energies of the
-neutron (proton) 0p$_{\frac{1}{2}}$ and 0d$_{\frac{5}{2}}$ orbitals were
-assigned according to the mass differences between the $^{15,16}$O and
-$^{16,17}$O isotopes ($^{15}$N, $^{16}$O; $^{16}$O, $^{17}$F isotopes) \cite{AME2016}.
-The charge density profile and RMS charge radius were assigned according to
-those extracted by DeVries et al from elastic electron scattering data
-\cite{DeVries1987}. Lastly, to further constrain the strength of the imaginary
-component of the potential below the Fermi energy, the spectral peak location and
-width of each of the bound states (0s$_\frac{1}{2}$, 0p$_\frac{3}{2}$, and
-0p$_\frac{1}{2}$) were fitted to the separation energy and hole widths determined
-from (e,e'p) and (p,2p) quasi-free scattering \cite{Mougey1980, Jacob1966,
-Jacob1973}.
+neutron (proton) 0p$_{\frac{1}{2}}$ and 0d$_{\frac{5}{2}}$ single-particle
+levels were assigned according to the same procedure used for \oSix.
+
+Unlike \oSix, for \oEight, no charge density distribution was available from
+\cite{DeVries1987}. To approximate it, we re-scaled the charge density
+distribution used for \oSix\ to match the reported \oEight\ RMS charge radius
+while preserving 8 units of charge. As with \oSix, we also fitted to the
+evaluated RMS charge radius of \cite{MuonicAtoms} and to the total binding
+energy.
 
 \subsection{Optimization with MCMC}
 The goal of a DOM analysis is to identify a
@@ -1040,21 +989,15 @@ contributions from both surface and volume absorptive modes. For certain
 optimization algorithms that sample one dimension at a time (e.g., Gibbs
 sampling), these multidimensional correlations can hinder the algorithm's
 efficient access to the full parameter space. In addition to these
-considerations, there is now a near-unanimous appreciation that nuclear physics
-models must report well-founded theoretical errors as part of their
-results. In the case of the DOM, this demands an understanding of parameter
-covariances in the high-dimensional region surrounding the region of the
-global optimum.
+considerations, there is appreciation that well-founded theoretical errors must
+be reported as part of any nuclear-model-derived results. In the case of the DOM,
+this means understanding parameter covariances in the high-dimensional region
+surrounding the region of the global optimum.
 
 To satisfy these demands, we conducted our DOM analysis using the affine-invariant
-Markov-Chain Monte Carlo (MCMC) sampling library, emcee \cite{emcee}, that has
-enjoyed widespread use in the astrophysics community. Many reviews are available
-on both the principles of MCMC \cite{MCMC ref 1, MCMC ref 2} and on emcee
-\cite{DFM paper 1, DFM paper 2}. Table \ref{ParameterValues} shows the parameter
-definitions and prior distributions used in this analysis. Table \ref{MCMCResults}
-shows relevant diagnostic quantities for validating the MCMC posterior sampling
-results.
-
+Markov-Chain Monte Carlo (MCMC) sampling library, emcee \cite{emcee}, that 
+enjoys widespread use in the analysis of astrophysical data. Table \ref{ParameterValues} 
+shows the parameter definitions and prior distributions used in this analysis.
 For a given parameter space vector $\vec{p}$, our utility function was defined as
 a weighted least-squares function where each datum was assigned a weight and a
 model error:
@@ -1080,47 +1023,83 @@ binding energy),
         $y_{d,i}$ of data sector $d$.
 \end{itemize}
 
-Due the approximate nature of any optical potential in representing the true many-body potential
-of a nucleus, it should be expected that DOM predictions for nuclear observables
-will suffer from some degree of theoretical error. For example, previous
-optical model analyses typically easily reproduce low-angle \el\ data taken at low scattering energies
-but have challenges at high energies and at backward angles where the predicted cross section may
-differ from experimental results by an order of magnitude or more. Accordingly,
-model error must be taken into account when determining the optimal parameters.
-The choice of model discrepancy for each point
-is somewhat subjective and depends on several factors, including the functional form chosen for the
-potential, numerical truncations, and the type of datum being calculated. In the
-final analysis, we settled on discrepancy terms based on how well preliminary
-fits could reproduce differing regions of each data sector, successes and
-failures of past optical model analyses, and numerical approximations used
-during the calculation of observables. Table \ref{ModelDiscrepancy} shows the model discrepancy terms we used 
-for each data sector. In keeping with the Bayesian mindset of MCMC, future
-analyses of this type may wish to consider these model discrepancy 
-terms as nuisance parameters, each with their own prior, and marginalize over
-them when making theoretical predictions.
-
+Due the only approximate value of any optical potential for realizing the true many-body 
+nuclear potential, it should be expected that DOM predictions for nuclear observables
+will suffer from some degree of model error. For example, previous
+optical model analyses tend to easily reproduce low-angle experimental \el\ data taken at
+lower scattering energies but are increasingly discrepant at high energies
+and at backward angles, where the predicted cross sections may
+differ from experimental results by an order of magnitude or more. Due to
+confounding between model discrepancy terms and free parameter values, constraints on
+model error are required for extracted parameter values to be meaningful
+\cite{Brynjarsdottir2014}.
+Table \ref{ModelDiscrepancyTable} shows the model discrepancy terms we used 
+for each data sector. The choice of model discrepancy for each point
+is depends on several factors, including the functional form chosen for the
+potential, numerical truncations, and the plausible range of the nuclear datum being 
+calculated. In the final analysis, we settled on discrepancy terms based
+on how well preliminary fits could reproduce differing regions of each data sector
+coupled with intuition from the successes and failures of past optical model analyses.
+In principle, the form of these model discrepancy terms should also be treated as random
+variables, but due to the already-challenging dimensionality of the DOM parameter space,
+we elected to fix the model discrepancy terms.
 While the choice of model discrepancy is by its nature subjective, it should be noted that
-some reasonable model discrepancy is a vital component of our analysis. 
-Failure to include any discrepancy terms may lead to a biased predictions with
-an overconfident uncertainty band as shown in Fig. \ref{ModelDiscrepancyFigure}. 
+totally neglecting model discrepancy (a common practice past optical model
+analyses) may dramatically bias predictions and underestimate variances of
+extracted quantities, as shown in Fig. \ref{ModelDiscrepancyFigure}. 
+
+\begin{table}[tb]
+    \caption[Model discrepancy terms used in MCMC utility function (Eq.
+    \ref{UtilityFunction})]
+    {Model discrepancy terms used in MCMC utility function (Eq.
+    \ref{UtilityFunction})}
+    \label{ModelDiscrepancyTable}
+    \centering
+    \begin{tabular}{ c c c c }
+        \hline
+        \el\ & A & \tot\ & \rxn \\
+        \hline
+         0.25 $\frac{\%}{\degree_{CM}}$ & 0.10 & 0.25\% & 0.25\% \\
+        \hline
+    \end{tabular}
+
+    \vfill
+
+    \begin{tabular}{ c c c c c }
+        \hline
+        S(n)/S(p) & BE/A & Part. No. & RMS & QDens \\
+        \hline
+        0.10 MeV & 5\% & 0.10 & 0.005 fm & 1\% \\
+        \\
+        \hline
+    \end{tabular}
+
+\end{table}
 
 \subsection{Fit results on $^{16}$O}
+
 \subsection{Fit results on $^{18}$O}
+
+\subsection{Fit results for \niEightFour\ and \snTwelveFour\ isotopes}
 
 \subsection{Discussion of fit results}
 
-In a previous DOM analysis \cite{}, the neutron skin thickness of $^{48}$Ca was
-found to be highly sensitive to the $^{40,48}$Ca \tot\ data used to constrain
-the potential. 
-
 \section{Conclusion}
-Isotopically-resolved neutron total cross sections are a valuable probe of the
-isovector component of optical potentials. By adopting a digitizer-driven
+Isotopically-resolved neutron total cross sections are a valuable asset for
+constraining optical potentials. By adopting a digitizer-driven
 approach, we have measured \tot\ on the important closed-shell nuclides
 $^{16,18}$O, $^{58,64}$Ni, and $^{112,124}$Sn across more than two orders of
 magnitude in energy (3-450 MeV). Except at the highest energies, our results
 on natural targets in are good agreement with previous analog measurements
 that required 10-20 times more target material. 
+
+Using these new data and a suite of scattering and bound-state literature data
+on \oSixEight, \niEightFour, and \snTwelveFour.
+we extracted neutron skins, binding energy distributions, and high-momentum
+content. Our results are in good agreement with spectroscopic information
+from (e,e'p) measurements and show the sensitivity of nucleon matter density
+distributions to SRCs, which push nucleon density outward from the core and
+to higher angular momenta.
 
 \section{Acknowledgements}
 
