@@ -92,9 +92,9 @@ superscriptaddress, nobalancelastpage]{revtex4}
     revealing additional information about
     the isovector components needed for an accurate optical model (OM)
     description away from stability. Digitizer-enabled \tot-measurement
-    techniques are discussed and a Dispersive Optical Model (DOM)
-    analysis using these data to extract neutron skins and spectroscopic factors
-    is presented.
+    techniques are discussed and a series of Dispersive Optical Model (DOM)
+    analyses using these new data is presented, validating the DOM for modeling light
+    systems (\oSixEight) and systems with open neutron shells (\niEightFour\ and \snTwelveFour).
 \end{abstract}
 
 \title{Isotopically-Resolved Neutron Total Cross Sections At
@@ -843,12 +843,12 @@ SAS model trend ($r \propto A^{\frac{1}{3}}$), shown by the black dashed lines.
 The well-known $r \propto A^{\frac{1}{6}}$ trend in Sn isotope shift data 
 \cite{Anselment1986} are also shown for reference (grad dotted lines) and
 underpredict the relative differences. As was noted by Dietrich et al. in
-their study of \tot\ relative differences in W isotopes, a dedicated optical
-model analysis along the entire isotopic chain may be required to
-reproduce the oscillatory behavior seen in the relative differences. We leave
-this comprehensive analysis to future authors and show individual Dispersive
-Optical Model fits to \oSixEight, \niEightFour, and \snTwelveFour in the
-following section.
+their study of \tot\ relative differences in W isotopes, a simultaneous optical
+model analysis along the entire isotopic chain (a l\'a \cite{Mueller2010})
+may be required to reproduce the oscillatory behavior seen in the relative differences.
+The individual Dispersive Optical Model fits to \oSixEight, \niEightFour, and
+\snTwelveFour\ in the following section lay the groundwork for a future study of
+this type.
 
 \begin{figure*}[tb]
     \centering
@@ -899,32 +899,36 @@ energy domain, allowing structural data from below the Fermi energy
 (e.g., charge densities, bound levels) to constrain the potential above,
 and data from above the Fermi energy (e.g., elastic, reaction, and total
 cross sections) to constrain the potential
-below. Details on the DOM formalism and results of many related DOM analyses are
+below. A thorough description of the DOM formalism and of past DOM analyses are
 available in \cite{Mahaux1991, Dickhoff2018, PruittPhDThesis, AtkinsonPhDThesis, MahzoonPhDThesis}.
 
 With our new \tot\ data for \oSixEight, \niEightFour, and \snTwelveFour, we
 performed a comprehensive DOM analysis on these isotopes using Markov-Chain Monte Carlo
 (MCMC) techniques to optimize DOM parameters. Compared to previous DOM analyses
-\cite{Mueller2010, AtkinsonPhDThesis, MahzoonPhDThesis}, we use an updated version of the DOM
+\cite{Mueller2010, AtkinsonPhDThesis, MahzoonPhDThesis}, we used an updated version of the DOM
 that has been generalized for use with any even-even nucleus that is not too
 deformed. Partial filling of open shells, as for the neutron $d_{\frac{5}{2}}$
 valence shell in \oEight, is accommodated with a simple
 pairing parameter $\Delta$ (details are provided in \cite{PruittPhDThesis}).
 The full DOM potential parameterization and the optimized parameter mean values
-and variances recovered from the fitting are provided in appendix A for all six
-isotopes. To illustrate the DOM approach and quality of the reproduction of experimental
-data, \oSixEight\ results are presented in additional detail in Figs.
-\ref{DOM_o16_scattering}-\ref{DOM_o18_structural}.
+and variances recovered from the fitting are provided in Appendix
+\ref{ParameterValues} for all six isotopes. The purpose of this section is to
+demonstrate the suitability of the DOM approach (as evidenced by the quality of
+the reproduction of experimental data used to constrain the potential) and to
+identify the dominant gaps in the nuclear data available for these systems
+and their impact on predicted quantities. Detailed results for \oSixEight\ are presented
+in the following subsection, followed by summarized results for \niEightFour\ and
+\snTwelveFour.
 
 \subsection{Experimental data used to constrain $^{16}$O DOM potential}
-
 Nucleon elastic scattering data (including differential cross sections and analyzing
 powers) from 10-200 MeV and nucleon reaction cross sections from 20-65 MeV
 were retrieved from the EXFOR database \cite{EXFORDatabase}.
 For protons, twenty-eight elastic differential cross
 sections data sets, twenty analyzing power data sets,
 and three reaction cross section data sets were
-incorporated in this energy range. Due to the lack of experimental proton
+incorporated in this energy range (see full list in Appendix
+\cite{DataReferences}). Due to the lack of experimental proton
 reaction cross sections between 65-200 MeV, we generated proton reaction cross
 section data points based on systematic trends identified in the comprehensive
 review of Carlson \cite{Carlson1996}. These pseudo-data points were included in the fit.
@@ -940,26 +944,25 @@ included in the fit. Neutron (proton) 0p$_{\frac{1}{2}}$ and 0d$_{\frac{5}{2}}$
 single-particle level energies were
 assigned according to the nucleon separation energies of $^{16}$O and
 $^{17}$O isotopes ($^{16}$O, $^{17}$F isotopes) \cite{AME2016}.
-The charge density distributions used were extracted/compiled by
-De Vries et al from elastic electron scattering data
-\cite{DeVries1987}. Since that compilation, new experimental
-data (in particular from muonic atom measurements) have improved the precision
-of many root-mean-square (RMS) charge radii by
-roughly an order of magnitude \cite{Angeli2013}. To account for these improved
-data we rescaled the distributions from \cite{DeVries1987} to recover the updated
-RMS charge radii while still conserving particle number, and also fitted directly
-to the state-of-the-art ground-state RMS charge radii of \cite{Angeli2013}.
-Lastly, the experimentally-known total binding energy was included as a fit constraint. 
+The charge density distributions used were extracted/compiled from elastic
+electron scattering data \cite{DeVries1987}. Since the time of that compilation,
+new experimental data (in particular from muonic atom measurements) have improved the precision
+of many root-mean-square (RMS) charge radii by roughly an order of magnitude \cite{Angeli2013}.
+To account for these improved data, we rescaled the distributions from
+\cite{DeVries1987} to recover the updated
+RMS charge radii while still conserving particle number. We also fitted directly
+to the updated RMS charge radii of \cite{Angeli2013}.
+Lastly, the experimentally-known total binding energy of \oSix\ from \cite{AME2016} was
+included as a fit constraint. 
 
 \subsection{Experimental data used to constrain $^{18}$O potential}
-
 As with $^{16}$O, a large corpus of proton elastic scattering data was
 available in the EXFOR database. Twenty-eight proton elastic differential cross
-sections were include, with an energy range from 8-200 MeV in the lab frame.
-No proton reaction cross sections were available. On the neutron side, three
-elastic differential cross section data sets were used, at 8.5, 14, and 24 MeV.
-Only one data point for the neutron reaction cross section was available (14.1
-MeV) and was included. Our new \tot\ results for $^{18}$O were the
+sections were include, with an energy range from 10-200 MeV in the lab frame.
+No proton reaction cross sections were available. On the neutron side, two
+elastic differential cross section data sets were used, at 14 and 24 MeV in the
+lab frame. Only one data point for the neutron reaction cross section was available
+(14.1 MeV) and was included. Our new \tot\ results for $^{18}$O were the
 sole neutron total cross section data used in the fit. The energies of the
 neutron (proton) 0p$_{\frac{1}{2}}$ and 0d$_{\frac{5}{2}}$ single-particle
 levels were assigned according to the same procedure used for \oSix.
@@ -968,7 +971,7 @@ Unlike \oSix, for \oEight, no charge density distribution was available from
 \cite{DeVries1987}. To approximate it, we re-scaled the charge density
 distribution used for \oSix\ to match the reported \oEight\ RMS charge radius
 while preserving 8 units of charge. As with \oSix, we also fitted to the
-evaluated RMS charge radius of \cite{MuonicAtoms} and to the total binding
+evaluated RMS charge radius of \cite{Angeli2013} and to the total binding
 energy.
 
 \subsection{Optimization with MCMC}
@@ -1032,7 +1035,10 @@ and at backward angles, where the predicted cross sections may
 differ from experimental results by an order of magnitude or more. Due to
 confounding between model discrepancy terms and free parameter values, constraints on
 model error are required for extracted parameter values to be meaningful
-\cite{Brynjarsdottir2014}.
+It should be noted that totally neglecting model discrepancy (common practice
+in past optical model analyses) may dramatically bias the fitted parameters and
+underestimate variances of extracted quantities \cite{Brynjarsdottir2014}.
+
 Table \ref{ModelDiscrepancyTable} shows the model discrepancy terms we used 
 for each data sector. The choice of model discrepancy for each point
 is depends on several factors, including the functional form chosen for the
@@ -1041,12 +1047,8 @@ calculated. In the final analysis, we settled on discrepancy terms based
 on how well preliminary fits could reproduce differing regions of each data sector
 coupled with intuition from the successes and failures of past optical model analyses.
 In principle, the form of these model discrepancy terms should also be treated as random
-variables, but due to the already-challenging dimensionality of the DOM parameter space,
-we elected to fix the model discrepancy terms.
-While the choice of model discrepancy is by its nature subjective, it should be noted that
-totally neglecting model discrepancy (a common practice past optical model
-analyses) may dramatically bias predictions and underestimate variances of
-extracted quantities, as shown in Fig. \ref{ModelDiscrepancyFigure}. 
+variables, but due to computational limitations and the already-challenging size
+of the DOM parameter space, we elected to fix the model discrepancy terms.
 
 \begin{table}[tb]
     \caption[Model discrepancy terms used in MCMC utility function (Eq.
@@ -1144,54 +1146,22 @@ extracted quantities, as shown in Fig. \ref{ModelDiscrepancyFigure}.
     \label{DOM_o16_structural}
 \end{figure*}
 
-\begin{figure*}[!htb]
-    \centering
-    \begin{minipage}{0.45\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{figures/o16_protonElastic.png}
-        \label{DOM_o16_proton_elastic}
-    \end{minipage}\hspace{6pt}
-    \begin{minipage}{0.45\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{figures/o16_neutronElastic.png}
-        \label{DOM_o16_neutron_elastic}
-    \end{minipage}
-    \centering
-    \begin{minipage}{0.45\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{figures/o16_protonInelastic.png}
-        \label{DOM_o16_proton_inelastic}
-    \end{minipage}\hspace{6pt}
-    \begin{minipage}{0.45\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{figures/o16_neutronInelastic.png}
-        \label{DOM_o16_neutron_inelastic}
-    \end{minipage}
-    \caption{\oSix\ nucleon scattering data used in DOM fit. In all panels, experimental data
-    are plotted as points and DOM calculations are shown as colored bands with
-    associated one-$\sigma$ and two-$\sigma$ uncertainty regions. Panel a (c)
-    shows proton (neutron) \el\ from 10-200 MeV. Panel b (d) shows proton
-    (neutron) analyzing powers. Data sets are offset vertically for clarity
-    and colored according to the center-of-mass scattering energy of the data
-    set. Panel e shows the proton \rxn. Panel f shows the neutron \tot\ and
-\rxn.}
-    \label{DOM_o16_scattering}
-\end{figure*}
-
 Figs. \ref{DOM_o16_scattering} and \ref{DOM_o16_structural} show the
-quality of the DOM fit of \oSix\ to the experimental data used as simultaneous
-constraints of the DOM potential. The experimental proton \rxn\, neutron \el, \tot, 
+DOM fit of \oSix\ to the experimental data used to constrain the potential.
+The experimental proton \rxn\, neutron \el, \tot, 
 and \rxn\, charge density distribution, RMS charge radius, binding energy per nucleon,
 and \pOne\ and \dFive\ single-particle energy data are all well-reproduced,
-indicating that the DOM can successfully model nuclei in the sub-Ca region.
-In addition, almost all experimental proton \el\ data are recovered by the DOM
-calculations except for the location and magnitude of the diffraction
-minima at backward angles, a common region of difficulty for past optical
-models. The assumption that the DOM optical potential can be factored into
+suggesting that the DOM is a robust modeling tool for nuclei as light as A=16.
+Almost all experimental proton \el\ data are recovered by the DOM
+calculations with the exception of the location and magnitude of the diffraction
+minima at backward angles, a failure common to many past optical model analyses.
+The assumption that the DOM optical potential can be factored into
 independent radial and energy-dependent terms may be responsible for the poorer
-performance of the DOM in this region. The analyzing powers appear to be the most
-difficult sector of experimental data to reproduce, with moderate deviations
-visible from 10-15 MeV for both protons and neutrons and above 100 MeV for
+performance of the DOM in this region.
+
+The analyzing powers appear to be the most difficult sector of experimental data to
+reproduce, with moderate deviations visible from 10-15 MeV for both protons and
+neutrons and above 100 MeV for
 protons (see panels B and D of Fig. \ref{DOM_o16_scattering}). Some
 of the difficulty with the analyzing powers is attributable to our neglecting of
 an imaginary spin-orbit term in the DOM potential used in this work, a choice
@@ -1199,32 +1169,112 @@ made due to the unreasonable unbounded growth of the imaginary spin-orbit term
 as $\ell$ grows in the traditional $\ell\cdot\sigma$ definition used in
 \cite{KoningDelaroche}. Future DOM analyses may demand a more sophisticated spin-orbit treatment.
 
-\subsection{Fit results on $^{18}$O}
+comments on pseudo-data for reaction cross section; relative value of TCS, ECS,
+and RCS data; importance of charge density distribution.
 
-\subsection{Fit results for \niEightFour\ and \snTwelveFour\ isotopes}
+\subsection{Fit results on $^{18}$O}
+\begin{figure*}[!htb]
+    \centering
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/o18_protonElastic.png}
+        \label{DOM_o18_proton_elastic}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/o18_neutronElastic.png}
+        \label{DOM_o18_neutron_elastic}
+    \end{minipage}
+    \centering
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/o18_protonInelastic.png}
+        \label{DOM_o18_proton_inelastic}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/o18_neutronInelastic.png}
+        \label{DOM_o18_neutron_inelastic}
+    \end{minipage}
+    \caption{\oEight\ nucleon scattering data used in DOM fit. In all panels, experimental data
+    are plotted as points and DOM calculations are shown as colored regions with
+    associated one-$\sigma$ and two-$\sigma$ uncertainty bands. Panel a (c)
+    shows proton (neutron) \el\ from 10-200 MeV. Panel b (d) shows proton
+    (neutron) analyzing powers. Data sets are offset vertically for clarity
+    and colored according to the center-of-mass scattering energy of the data
+    set. Panel e shows the proton \rxn. Panel f shows the neutron \tot\ and
+\rxn.}
+    \label{DOM_o18_scattering}
+\end{figure*}
+\begin{figure*}
+    \centering
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/o18_chargeDensity.png}
+        \label{DOM_o18_chargeDensity}
+    \end{minipage}
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/o18_SPLevels.png}
+        \label{DOM_o18_SPLevels}
+    \end{minipage}
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/o18_RMSRadius.png}
+        \label{DOM_o18_RMSRadius}
+    \end{minipage}
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/o18_BE.png}
+        \label{DOM_o18_BE}
+    \end{minipage}
+    \caption{\oEight\ structural data used in DOM fit. Panel a shows the charge
+        density distribution: the ``experimental'' data shown here were generated
+        by rescaling the \oSix\ distribution (see text). The DOM calculation is
+        shown with associated one-$\sigma$ and two-$\sigma$ uncertainty bands.
+        Panel b shows the DOM-calculated single-particle energies for protons
+        and neutrons with a one-sigma error band (left side of each subpanel) and
+        the known neutron and proton valence level energies, from \cite{AME2016}.
+        Panels c and d show the DOM-calculated RMS charge radius and binding energy per
+    nucleon, respectively; experimental values/uncertainties are shown in gray.}
+    \label{DOM_o18_structural}
+\end{figure*}
+
+comments on o18 fit and missing experimental neutron data
+
+\subsection{Summary fit results for \niEightFour\ and \snTwelveFour\ isotopes}
 
 \subsection{Discussion of fit results}
-\oEight\ missing proton reaction cross section data that appear to be
+- Charge density distribution and neutron \tot\ are two most useful data sets
+- Lack of elastic neutron scattering data is a big problem for \oEight, \niFour,
+and \snTwelveFour.
+- \oEight\ missing proton reaction cross section data that appear to be
 extremely valuable for fixing the magnitude of the imaginary strength asymmetry
 dependence and in turn the neutron skin thickness and extracted valence proton
 spectroscopic factors.
 
 \section{Conclusion}
-Isotopically-resolved neutron total cross sections are a valuable asset for
-constraining optical potentials. By adopting a digitizer-driven
-approach, we have measured \tot\ on the important closed-shell nuclides
+By adopting a digitizer-driven
+approach, we measured \tot\ on the important closed-shell nuclides
 $^{16,18}$O, $^{58,64}$Ni, and $^{112,124}$Sn across more than two orders of
 magnitude in energy (3-450 MeV). Except at the highest energies, our results
-on natural targets in are good agreement with previous analog measurements
+on natural targets in are good agreement with previous analog-mediated measurements
 that required 10-20 times more target material. 
 
 Using these new data and a suite of scattering and bound-state literature data
-on \oSixEight, \niEightFour, and \snTwelveFour.
-we extracted neutron skins, binding energy distributions, and high-momentum
-content. Our results are in good agreement with spectroscopic information
-from (e,e'p) measurements and show the sensitivity of nucleon matter density
-distributions to SRCs, which push nucleon density outward from the core and
-to higher angular momenta.
+on \oSixEight, \niEightFour, and \snTwelveFour,
+we extracted DOM potentials capable of reproducing a wide range of scattering
+and structural data for both neutrons and protons, validating the use of the
+DOM away from doubly-closed shells and in systems as light as \oSixEight.
+These analyses indicate that isotopically-resolved neutron \tot,
+proton \rxn, and charge density distribution data are valuable assets for
+constraining optical potentials, especially the imaginary and
+asymmetry-dependent components.
+
+%Our results are in good agreement with spectroscopic information
+%from (e,e'p) measurements and show the sensitivity of nucleon matter density
+%distributions to SRCs, which push nucleon density outward from the core and
+%to higher angular momenta.
 
 \section{Acknowledgements}
 
