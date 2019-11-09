@@ -10,6 +10,7 @@ superscriptaddress, nobalancelastpage]{revtex4}
 \usepackage{upgreek}
 \usepackage{textcomp}
 \usepackage[free-standing-units]{siunitx}
+\usepackage{xcolor}
 
 \newcolumntype{N}{>{\centering\arraybackslash}m{1.3in}}
 \newcolumntype{M}{>{\centering\arraybackslash}m{1.0in}}
@@ -102,13 +103,25 @@ Intermediate Energies}
 
 \author{C.~D.~Pruitt}  \email[Corresponding author:]{cdpruitt@wustl.edu}
 \author{R.~J.~Charity}
-\author{D. E.~M.~Hoff}  
+\affiliation{Department of Chemistry, Washington University, St. Louis, MO 63130}
 \author{L.~G.~Sobotka}
+\affiliation{Department of  Chemistry, Washington University, St. Louis, MO 63130, USA}
+\affiliation{Department of  Physics, Washington University, St. Louis, MO 63130, USA}
+\author{D. E.~M.~Hoff}  
+\affiliation{Department of Chemistry, Washington University, St. Louis, MO 63130}
+\altaffiliation{Present Address: \textit{Department of Physics, University of
+        Massachusetts-Lowell and
+Astronomy, Michigan State University, East Lansing, MI 48824, USA}}
+
 \author{K.~W.~Brown} \altaffiliation{Present Address: \textit{National
         Superconducting Cyclotron Laboratory, Departments of Physics and
 Astronomy, Michigan State University, East Lansing, MI 48824, USA}}
 \author{J.~M.~Elson}
 \affiliation{Department of Chemistry, Washington University, St. Louis, MO 63130}
+
+\author{M.C.~Atkinson}
+\author{W.H.~Dickhoff}
+\affiliation{Department of Physics, Washington University, St. Louis, MO 63130}
 
 \author{H. Y. Lee}
 \author{M. Devlin}
@@ -225,16 +238,21 @@ involve the interaction of many partial waves with many sometimes-opaque terms
 in the potential, complicating intuitive understanding of the underlying
 physics at play. In particular, the isovector components of optical potentials
 are quite difficult to constrain as they depend on both proton and neutron 
-scattering data, one or both of which are often unavailable.
+scattering data, one or both of which are often unavailable. For example,
+analysis of of neutron total cross section differences in W isotopes by Dietrich et al.
+\cite{Dietrich2003} indicated that inclusion of standard isovector terms in the optical model they used
+actually did a poorer job reproducing the W relative difference data, an
+illustration of how poorly these isovector components are known.
 
-With these considerations in mind, our present goal is twofold: to
+With these considerations in mind, our present goal is twofold: first, to
 provide new isotopically-resolved \tot\ data useful for identifying the 
 dependence of optical 
-potential terms on nuclear asymmetry, and, using a Dispersive Optical Model
+potential terms on nuclear asymmetry; and second, conduct a Dispersive Optical Model
 (DOM) analysis of these new \tot\ data along with a large corpus of scattering
-and bound-state data, to extract important quantities (neutron skin
-thicknesses, spectroscopic factors) for several cornerstone,
-closed proton shell nuclei.
+and bound-state data to extract structural quantities (neutron skin
+thicknesses, spectroscopic factors) for several cornerstone, closed proton shell nuclei.
+This work details the experimental effort while the key findings of the DOM analysis are
+presented in the companion paper \cite{Pruitt2020PRL}.
 
 %from  Anderson and Grimes were the first to define an isospin-isospin cross section
 %$\sigma_{is}$:
@@ -903,16 +921,18 @@ below. A thorough description of the DOM formalism and of past DOM analyses are
 available in \cite{Mahaux1991, Dickhoff2018, PruittPhDThesis, AtkinsonPhDThesis, MahzoonPhDThesis}.
 
 With our new \tot\ data for \oSixEight, \niEightFour, and \snTwelveFour, we
-performed a comprehensive DOM analysis on these isotopes using Markov-Chain Monte Carlo
-(MCMC) techniques to optimize DOM parameters. Compared to previous DOM analyses
-\cite{Mueller2010, AtkinsonPhDThesis, MahzoonPhDThesis}, we used an updated version of the DOM
+performed a comprehensive DOM analysis on these isotopes along with
+\caAughtEight and \pbEight using Markov-Chain Monte Carlo
+(MCMC) to optimize DOM parameters (see the companion paper
+\cite{Pruitt2020PRL} for details on the MCMC implementation). Compared to previous DOM analyses
+\cite{Mueller2011, AtkinsonPhDThesis, MahzoonPhDThesis}, we used an updated version of the DOM
 that has been generalized for use with any even-even nucleus that is not too
 deformed. Partial filling of open shells, as for the neutron $d_{\frac{5}{2}}$
 valence shell in \oEight, is accommodated with a simple
 pairing parameter $\Delta$ (details are provided in \cite{PruittPhDThesis}).
 The full DOM potential parameterization and the optimized parameter mean values
 and variances recovered from the fitting are provided in Appendix
-\ref{ParameterValues} for all six isotopes. The purpose of this section is to
+\ref{ParameterValues} for all isotopes. The purpose of this section is to
 demonstrate the suitability of the DOM approach (as evidenced by the quality of
 the reproduction of experimental data used to constrain the potential) and to
 identify the dominant gaps in the nuclear data available for these systems
@@ -973,110 +993,6 @@ distribution used for \oSix\ to match the reported \oEight\ RMS charge radius
 while preserving 8 units of charge. As with \oSix, we also fitted to the
 evaluated RMS charge radius of \cite{Angeli2013} and to the total binding
 energy.
-
-\subsection{Optimization with MCMC}
-The goal of a DOM analysis is to identify a
-reasonable range of optical potential parameter values by comparison of experimental data with
-DOM-generated predictions, where the degree of reasonableness is quantified by
-some utility function (e.g., a least-squares function).
-Several aspects of the DOM potential and the experimental
-data we used complicate this problem. First is the number of
-parameters: depending on the formulation of the potential and the nucleus under
-study, between 34 and 42 parameters must be jointly optimized for each nucleus.
-In such a high-dimensional parameter space, saddle points abound, slowing
-the progress and convergence of classical gradient-descent methods. Second, it is
-anticipated that several potential parameters will be strongly correlated: for
-instance, the magnitudes of the surface- and volume-associated imaginary
-potential are expected to be anticorrelated around 50 MeV, an energy region with
-contributions from both surface and volume absorptive modes. For certain
-optimization algorithms that sample one dimension at a time (e.g., Gibbs
-sampling), these multidimensional correlations can hinder the algorithm's
-efficient access to the full parameter space. In addition to these
-considerations, there is appreciation that well-founded theoretical errors must
-be reported as part of any nuclear-model-derived results. In the case of the DOM,
-this means understanding parameter covariances in the high-dimensional region
-surrounding the region of the global optimum.
-
-To satisfy these demands, we conducted our DOM analysis using the affine-invariant
-Markov-Chain Monte Carlo (MCMC) sampling library, emcee \cite{Foreman-Mackey2013}, that 
-enjoys widespread use in the analysis of astrophysical data. Table \ref{ParameterValues} 
-shows the parameter definitions and prior distributions used in this analysis.
-For a given parameter space vector $\vec{p}$, our utility function was defined as
-a weighted least-squares function where each datum was assigned a weight and a
-model error:
-
-\begin{equation} \label{UtilityFunction}
-    U(\vec{p}) = \sum_{d=1}^{N_{d}} w_{d} \frac{1}{N_{i}} \sum_{i=1}^{N_{i}}
-    \left(\frac{y^{calc}_{d,i}-y^{exp}_{d,i}}{\sigma^{calc}_{d,i}+\sigma^{exp_{d,i}}}\right),
-\end{equation}
-
-where
-
-\begin{itemize}
-
-    \item $N_{d}$ is the number of different sectors of nuclear data (e.g., proton \el\ cross sections,
-binding energy),
-    \item $w_{d}$ is a scalar weight assigned to the entire sector $d$,
-    \item $N_{i}$ is the number of data points in a sector $d$,
-    \item $y^{calc, exp}_{d,i}$ are the calculated and experimental values,
-        respectively, for the $i$th datum of sector $d$,
-    \item $\sigma^{calc, exp}_{d,i}$ are the calculated and experimental errors,
-        respectively, for the $i$th datum of sector $d$,
-    \item $w_{d,i}$ is a scalar weight assigned to the $i$th datum
-        $y_{d,i}$ of data sector $d$.
-\end{itemize}
-
-Due the only approximate value of any optical potential for realizing the true many-body 
-nuclear potential, it should be expected that DOM predictions for nuclear observables
-will suffer from some degree of model error. For example, previous
-optical model analyses tend to easily reproduce low-angle experimental \el\ data taken at
-lower scattering energies but are increasingly discrepant at high energies
-and at backward angles, where the predicted cross sections may
-differ from experimental results by an order of magnitude or more. Due to
-confounding between model discrepancy terms and free parameter values, constraints on
-model error are required for extracted parameter values to be meaningful
-It should be noted that totally neglecting model discrepancy (common practice
-in past optical model analyses) may dramatically bias the fitted parameters and
-underestimate variances of extracted quantities \cite{Brynjarsdottir2014}.
-
-Table \ref{ModelDiscrepancyTable} shows the model discrepancy terms we used 
-for each data sector. The choice of model discrepancy for each point
-is depends on several factors, including the functional form chosen for the
-potential, numerical truncations, and the plausible range of the nuclear datum being 
-calculated. In the final analysis, we settled on discrepancy terms based
-on how well preliminary fits could reproduce differing regions of each data sector
-coupled with intuition from the successes and failures of past optical model analyses.
-In principle, the form of these model discrepancy terms should also be treated as random
-variables, but due to computational limitations and the already-challenging size
-of the DOM parameter space, we elected to fix the model discrepancy terms.
-
-\begin{table}[tb]
-    \caption[Model discrepancy terms used in MCMC utility function (Eq.
-    \ref{UtilityFunction})]
-    {Model discrepancy terms used in MCMC utility function (Eq.
-    \ref{UtilityFunction})}
-    \label{ModelDiscrepancyTable}
-    \centering
-    \begin{tabular}{ c c c c }
-        \hline
-        \el\ & A & \tot\ & \rxn \\
-        \hline
-         0.25 $\frac{\%}{\degree_{CM}}$ & 0.10 & 0.25\% & 0.25\% \\
-        \hline
-    \end{tabular}
-
-    \vfill
-
-    \begin{tabular}{ c c c c c }
-        \hline
-        S(n)/S(p) & BE/A & Part. No. & RMS & QDens \\
-        \hline
-        0.10 MeV & 5\% & 0.10 & 0.005 fm & 1\% \\
-        \\
-        \hline
-    \end{tabular}
-
-\end{table}
 
 \subsection{Fit results on $^{16}$O}
 \begin{figure*}[!htb]
@@ -1147,8 +1063,8 @@ of the DOM parameter space, we elected to fix the model discrepancy terms.
 \end{figure*}
 
 Figs. \ref{DOM_o16_scattering} and \ref{DOM_o16_structural} show the
-DOM fit of \oSix\ to the experimental data used to constrain the potential.
-The experimental proton \rxn\, neutron \el, \tot, 
+DOM fit of \oSix\ to the experimental data used to constrain the potential via
+MCMC sampling.  The experimental proton \rxn\, neutron \el, \tot, 
 and \rxn\, charge density distribution, RMS charge radius, binding energy per nucleon,
 and \pOne\ and \dFive\ single-particle energy data are all well-reproduced,
 suggesting that the DOM is a robust modeling tool for nuclei as light as A=16.
@@ -1169,8 +1085,7 @@ made due to the unreasonable unbounded growth of the imaginary spin-orbit term
 as $\ell$ grows in the traditional $\ell\cdot\sigma$ definition used in
 \cite{KoningDelaroche}. Future DOM analyses may demand a more sophisticated spin-orbit treatment.
 
-comments on pseudo-data for reaction cross section; relative value of TCS, ECS,
-and RCS data; importance of charge density distribution.
+\textcolor{red}{comments on pseudo-data for reaction cross section; relative value of TCS, ECS, and RCS data; importance of charge density distribution.}
 
 \subsection{Fit results on $^{18}$O}
 \begin{figure*}[!htb]
@@ -1231,20 +1146,22 @@ and RCS data; importance of charge density distribution.
     \caption{\oEight\ structural data used in DOM fit. Panel a shows the charge
         density distribution: the ``experimental'' data shown here were generated
         by rescaling the \oSix\ distribution (see text). The DOM calculation is
-        shown with associated one-$\sigma$ and two-$\sigma$ uncertainty bands.
+        shown with associated 1$\sigma$ and 2$\sigma$ uncertainty bands.
         Panel b shows the DOM-calculated single-particle energies for protons
-        and neutrons with a one-sigma error band (left side of each subpanel) and
+        and neutrons with a 1$\sigma$ error band (left side of each subpanel) and
         the known neutron and proton valence level energies, from \cite{AME2016}.
         Panels c and d show the DOM-calculated RMS charge radius and binding energy per
     nucleon, respectively; experimental values/uncertainties are shown in gray.}
     \label{DOM_o18_structural}
 \end{figure*}
 
-comments on o18 fit and missing experimental neutron data
+\textcolor{red}{comments on o18 fit and missing experimental neutron data}
 
 \subsection{Summary fit results for \niEightFour\ and \snTwelveFour\ isotopes}
+\textcolor{red}{insert details}
 
 \subsection{Discussion of fit results}
+\textcolor{red}{
 - Charge density distribution and neutron \tot\ are two most useful data sets
 - Lack of elastic neutron scattering data is a big problem for \oEight, \niFour,
 and \snTwelveFour.
@@ -1252,6 +1169,7 @@ and \snTwelveFour.
 extremely valuable for fixing the magnitude of the imaginary strength asymmetry
 dependence and in turn the neutron skin thickness and extracted valence proton
 spectroscopic factors.
+}
 
 \section{Conclusion}
 By adopting a digitizer-driven
@@ -1277,6 +1195,7 @@ asymmetry-dependent components.
 %to higher angular momenta.
 
 \section{Acknowledgements}
+\textcolor{red}{insert acknowledgements}
 
 \bibliography{references}
 \begin{thebibliography}{32} \expandafter\ifx\csname
