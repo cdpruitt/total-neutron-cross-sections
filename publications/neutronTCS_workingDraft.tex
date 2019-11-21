@@ -910,24 +910,26 @@ or are hopelessly slow. Even if a reasonable optimum is found, robust
 uncertainty analysis requires information about the region around the optimum and
 accounting of inherent model errors.
 
-To fulfill these requirements, we used the affine-invariant MCMC implementation
-emcee \cite{Foreman-Mackey2013} based on the work of \cite{Goodman2010}.
-Computations were performed using the facilities of the Washington University
+To fulfill these requirements, we used the affine-invariant, ensemble-sampling
+MCMC utility emcee \cite{Foreman-Mackey2013} based on the work of \cite{Goodman2010}. For an
+accessible introduction to Bayesian data analysis and applied MCMC, see
+\cite{Sharma2017}. Computations were performed using the facilities of the Washington University
 Center for High Performance Computing, which were partially provided through NIH
-grant S10 OD018091. In this approach, several hundred ``walkers'' were
-first randomly initialized in parameter space for each nucleus according to a
+grant S10 OD018091. In the ensemble-sampling approach, several hundred
+``walkers'' are first randomly initialized in parameter space for each nucleus according to a
 uniform prior distribution. At each subsequent step $t$ during the
-random walk, each walker's position was updated from $\vec{x_{t}} \rightarrow
+random walk, each walker's position is updated from $\vec{x_{t}} \rightarrow
 \vec{x_{t+1}}$ either by accepting a new position $\vec{x'}$ with probability:
 \begin{equation}\label{AcceptanceEquation}
     p(\vec{x}\rightarrow \vec{x'}) = \min(1,\frac{U(\vec{x'}|D)}{U(\vec{x}|D)}).
 \end{equation}
 or by remaining in the same position $\vec{x}$ with probability
-$1-p(\vec{x}\rightarrow \vec{x'})$. The new positions were proposed according
-to the stretch-move proposal distribution of \cite{Goodman2010} with $\alpha =
-1.3$ to improve the acceptance fraction to 0.15 for all nuclei. In Eq.
+$1-p(\vec{x}\rightarrow \vec{x'})$. New positions are proposed according
+to the stretch-move proposal distribution of \cite{Goodman2010} (for our stretch
+move scaling, we used $\alpha = 1.3$ to improve the acceptance fraction from
+roughly 0.05 to 0.15). In Eq.
 (\ref{AcceptanceEquation}), the utility of a parameter vector conditional on the
-experimental data $U(\vec{x}|D)$ was defined according to Bayes rule:
+experimental data $U(\vec{x}|D)$ was defined according to Bayes rule
 \begin{equation}
     U(\vec{x}|D) \propto L(D|\vec{x}) \times P(\vec{x}),
 \end{equation}
@@ -1061,7 +1063,7 @@ of interest (such as the neutron skin of \oEight) was deemed unrealistic, given
 our computational resources. We note that $\tau_{f}$ \textit{could} be considerably
 smaller than $\tau_{p}$ due to the highly-correlated nature of DOM parameter space.
 
-To proceed, we used several commonsense tests to
+To proceed, we applied several commonsense tests to
 judge whether our parameter and extracted-quantity estimates were accurate.
 First, we sampled as long as possible and used as many parallel walkers as
 possible, given our computational resources. From time to time during sampling,
@@ -1163,8 +1165,7 @@ yield information about the asymmetry-dependence of the imaginary strength for
 a better characterization of this nucleus, even a single proton \rxn\ cross
 section between 10 and 50 MeV would be valuable.
 
-\subsection{Discussion of \caAughtEight, \niSixFour, \snTwelveFour, and
-    \pbEight\ fit results}
+\subsection{Fit results on \caAughtEight, \niEightFour, \snTwelveFour, and \pbEight}
 
 \section{Conclusion}
 By adopting a digitizer-driven
@@ -1206,6 +1207,7 @@ Training and University Based Research (CENTAUR) under grant number DE-NA0003841
 
 \end{thebibliography}
 
+\onecolumngrid
 \newpage
 \appendix \label{DOMFunctionalForms}
 \section{Definition of DOM Potential}
@@ -1213,142 +1215,279 @@ Training and University Based Research (CENTAUR) under grant number DE-NA0003841
 \newpage
 \appendix \label{DOMParameterValues}
 \section{Parameter Values for DOM Potential}
+The prior distribution was defined to be uniform with minimum and maximum values
+listed for each parameter below. Median, 16\textsuperscript{th} and
+84\textsuperscript{th} percentile values for each estimated parameter
+distribution are listed. Parameter labels correspond
+to those in the equations Appendix A. For symmetric nuclei \oSix\ and \caForty, the
+asymmetry-dependent parameters were disabled during fitting.
+
+\begin{table}[htb]
+    \centering
+    \caption{Real parameters (volume-like, symmetric)}
+    \input{parameters/HFParametersTable.tex}
+    \vspace{2em}
+    \caption{Real parameters (volume-like, asymmetric)}
+    \input{parameters/HFAsymmParametersTable.tex}
+\end{table}
+\begin{table}[htb]
+    \centering
+    \caption{Imaginary parameters (volume-like, symmetric)}
+    \makebox[\textwidth][c]{\input{parameters/ImVolumeParametersTable.tex}}
+    \vspace{2em}
+    \caption{Imaginary parameters (volume-like, asymmetric)}
+    \makebox[\textwidth][c]{\input{parameters/ImVolumeAsymmParametersTable.tex}}
+    \vspace{2em}
+    \caption{Imaginary parameters (surface-like, symmetric)}
+    \makebox[\textwidth][c]{\input{parameters/ImSurfaceParametersTable.tex}}
+\end{table}
+\clearpage
+\begin{table}[htb]
+    \centering
+    \caption{Imaginary parameters (surface-like, asymmetric)}
+    \makebox[\textwidth][c]{\input{parameters/ImSurfaceAsymmParametersTable.tex}}
+    \vspace{2em}
+    \caption{Spin-orbit parameters}
+    \makebox[\textwidth][c]{\input{parameters/SpinOrbitParametersTable.tex}}
+    \vspace*{4in}
+\end{table}
 
 \newpage
 \appendix \label{DOMFitResults}
 \section{DOM Fit Comparison to Experimental Data}
+This Appendix contains figures comparing calculations from optimal DOM fits to
+the experimental data used as a constraint. In all figures, experimental data
+(listed with references in Appendix B of \cite{PruittPhDThesis}) are shown
+as points with associated experimental error bars. DOM calculations are shown as
+1$\sigma$ and 2$\sigma$ colored uncertainty bands. 
+
+Nucleon scattering data are shown in the first six panels for each nucleus.
+Panels (a) and (c) show proton \el\ and analyzing powers from 10-200 MeV.
+Panels (b) and (d) show neutron \el\ and analyzing powers from 10-200 MeV.
+In panels (a) through (d), data at different energies are offset
+vertically for clarity and colored according to the center-of-mass scattering
+energy of the data set. Panel (e) shows the proton \rxn. Panel (f) shows the
+neutron \tot\ and \rxn.
+
+Bound-state data are shown in the last four panels for each nucleus.
+The charge density distributions of panel (g) are from the compilation of
+\cite{DeVries1987} and are displayed with an arbitrary 1\% uncertainty
+band, in black. Valence single-particle energies $\epsilon_{nlj}$ are shown as
+horizontal lines in panel (h); the experimental uncertainties for these energies
+are smaller than the line thickness. The DOM-generated results are shown with
+1$\sigma$ uncertainties. Panel (i) shows the DOM-generated charge radii as a red
+histogram; the experimental charge radii are displayed with dark gray and light
+gray bands representing 1$\sigma$ and 2$\sigma$ uncertainties, respectively.
+Panel (j) shows the DOM-generated binding energy per nucleon as a red
+histogram; the experimental value is shown with a thin gray band.
+
 \begin{figure*}[!htb]
     \centering
-    \begin{minipage}{\linewidth}
+    \begin{minipage}{0.4\linewidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/o16_protonElastic.png}
+        \includegraphics[width=\linewidth]{figures/o16_protonElastic.png}
         \label{DOM_o16_proton_elastic}
     \end{minipage}\hspace{6pt}
-    \begin{minipage}{\linewidth}
+    \begin{minipage}{0.4\linewidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/o16_neutronElastic.png}
+        \includegraphics[width=\linewidth]{figures/o16_neutronElastic.png}
         \label{DOM_o16_neutron_elastic}
     \end{minipage}
     \centering
-    \begin{minipage}{\linewidth}
+    \begin{minipage}{0.4\linewidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/o16_protonInelastic.png}
+        \includegraphics[width=\linewidth]{figures/o16_protonInelastic.png}
         \label{DOM_o16_proton_inelastic}
     \end{minipage}\hspace{6pt}
-    \begin{minipage}{\linewidth}
+    \begin{minipage}{0.4\linewidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/o16_neutronInelastic.png}
+        \includegraphics[width=\linewidth]{figures/o16_neutronInelastic.png}
         \label{DOM_o16_neutron_inelastic}
     \end{minipage}
-    \caption{\oSix\ nucleon scattering data used in DOM fit. In all panels, experimental data
-    are plotted as points and DOM calculations are shown as colored bands with
-    associated 1$\sigma$ and 2$\sigma$ uncertainty regions. Panel a (c)
-    shows proton (neutron) \el\ from 10-200 MeV. Panel b (d) shows proton
-    (neutron) analyzing powers. Data sets are offset vertically for clarity
-    and colored according to the center-of-mass scattering energy of the data
-    set. Panel e shows the proton \rxn. Panel f shows the neutron \tot\ and
-\rxn.}
+    \caption{\oSix\ nucleon scattering data used in DOM fit}
     \label{DOM_o16_scattering}
-\end{figure*}
-\begin{figure*}
     \centering
-    \begin{minipage}{\linewidth}
+    \begin{minipage}{0.4\linewidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/o16_chargeDensity.png}
+        \includegraphics[width=\linewidth]{figures/o16_chargeDensity.png}
         \label{DOM_o16_chargeDensity}
     \end{minipage}
-    \begin{minipage}{\linewidth}
+    \begin{minipage}{0.35\linewidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/o16_SPLevels.png}
+        \includegraphics[width=\linewidth]{figures/o16_SPLevels.png}
         \label{DOM_o16_SPLevels}
     \end{minipage}
-    \begin{minipage}{\linewidth}
+    \begin{minipage}{0.4\linewidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/o16_RMSRadius.png}
+        \includegraphics[width=\linewidth]{figures/o16_RMSRadius.png}
         \label{DOM_o16_RMSRadius}
     \end{minipage}
-    \begin{minipage}{\linewidth}
+    \begin{minipage}{0.4\linewidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/o16_BE.png}
+        \includegraphics[width=\linewidth]{figures/o16_BE.png}
         \label{DOM_o16_BE}
     \end{minipage}
-    \caption{\oSix\ structural data used in DOM fit. Panel a shows the charge
-        density distribution: the ``experimental'' data of \cite{DeVries1987}
-        are shown with an arbitrary 1\% error band and the DOM calculation is
-        shown with associated one-$\sigma$ and two-$\sigma$ uncertainty regions.
-        Panel b shows the DOM-calculated single-particle energies for protons
-        and neutrons with a one-sigma error band (left side of each subpanel) and
-        the known neutron and proton valence level energies, from \cite{AME2016}.
-        Panels c and d show the DOM-calculated RMS charge radius and binding energy per
-    nucleon, respectively; experimental values/uncertainties are shown in gray.}
+    \caption{\oSix\ bound-state data used in DOM fit}
     \label{DOM_o16_structural}
 \end{figure*}
-\newpage
+
 \begin{figure*}[!htb]
     \centering
-    \begin{minipage}{\linewidth}
+    \begin{minipage}{0.4\linewidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/o18_protonElastic.png}
+        \includegraphics[width=\linewidth]{figures/o18_protonElastic.png}
         \label{DOM_o18_proton_elastic}
-    \end{minipage}\hspace{6pt}
-    \begin{minipage}{\linewidth}
+    \end{minipage}
+    \begin{minipage}{0.4\linewidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/o18_neutronElastic.png}
+        \begin{minipage}[c]{0.5\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{figures/o18_neutronElastic.png}
+        \end{minipage}
+        \begin{minipage}[c]{0.4\linewidth}
+            \centering
+            No \oEight\\
+            proton \rxn\ data\\
+            were available
+        \end{minipage}
         \label{DOM_o18_neutron_elastic}
     \end{minipage}
     \centering
-    \begin{minipage}{\linewidth}
+    \begin{minipage}{0.4\linewidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/o18_protonInelastic.png}
+        \includegraphics[width=\linewidth]{figures/o18_protonInelastic.png}
         \label{DOM_o18_proton_inelastic}
     \end{minipage}\hspace{6pt}
-    \begin{minipage}{\linewidth}
+    \begin{minipage}{0.4\linewidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/o18_neutronInelastic.png}
+        \includegraphics[width=\linewidth]{figures/o18_neutronInelastic.png}
         \label{DOM_o18_neutron_inelastic}
     \end{minipage}
-    \caption{\oEight\ nucleon scattering data used in DOM fit. In all panels, experimental data
-    are plotted as points and DOM calculations are shown as colored regions with
-    associated 1$\sigma$ and 2$\sigma$ uncertainty bands. Panel a (c)
-    shows proton (neutron) \el\ from 10-200 MeV. Panel b (d) shows proton
-    (neutron) analyzing powers. Data sets are offset vertically for clarity
-    and colored according to the center-of-mass scattering energy of the data
-    set. Panel e shows the proton \rxn. Panel f shows the neutron \tot\ and
-\rxn.}
+    \caption{\oEight\ nucleon scattering data used in DOM fit}
     \label{DOM_o18_scattering}
-\end{figure*}
-\begin{figure*}
     \centering
-    \begin{minipage}{\linewidth}
+    \begin{minipage}{0.4\linewidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/o18_chargeDensity.png}
+        \includegraphics[width=\linewidth]{figures/o18_chargeDensity.png}
         \label{DOM_o18_chargeDensity}
     \end{minipage}
-    \begin{minipage}{\linewidth}
+    \begin{minipage}{0.35\linewidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/o18_SPLevels.png}
+        \includegraphics[width=\linewidth]{figures/o18_SPLevels.png}
         \label{DOM_o18_SPLevels}
     \end{minipage}
-    \begin{minipage}{\linewidth}
+    \begin{minipage}{0.4\linewidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/o18_RMSRadius.png}
+        \includegraphics[width=\linewidth]{figures/o18_RMSRadius.png}
         \label{DOM_o18_RMSRadius}
     \end{minipage}
-    \begin{minipage}{\linewidth}
+    \begin{minipage}{0.4\linewidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/o18_BE.png}
+        \includegraphics[width=\linewidth]{figures/o18_BE.png}
         \label{DOM_o18_BE}
     \end{minipage}
-    \caption{\oEight\ structural data used in DOM fit. Panel a shows the charge
-        density distribution: the ``experimental'' data shown here were generated
-        by rescaling the \oSix\ distribution (see text). The DOM calculation is
-        shown with associated 1$\sigma$ and 2$\sigma$ uncertainty bands.
-        Panel b shows the DOM-calculated single-particle energies for protons
-        and neutrons with a 1$\sigma$ error band (left side of each subpanel) and
-        the known neutron and proton valence level energies, from \cite{AME2016}.
-        Panels c and d show the DOM-calculated RMS charge radius and binding energy per
-    nucleon, respectively; experimental values/uncertainties are shown in gray.}
+    \caption{\oEight\ bound-state data used in DOM fit}
     \label{DOM_o18_structural}
+\end{figure*}
+
+\begin{figure*}[!htb]
+    \centering
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ca40_protonElastic.png}
+        \label{DOM_ca40_proton_elastic}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ca40_neutronElastic.png}
+        \label{DOM_ca40_neutron_elastic}
+    \end{minipage}
+    \centering
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ca40_protonInelastic.png}
+        \label{DOM_ca40_proton_inelastic}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ca40_neutronInelastic.png}
+        \label{DOM_ca40_neutron_inelastic}
+    \end{minipage}
+    \caption{\caForty\ nucleon scattering data used in DOM fit}
+    \label{DOM_ca40_scattering}
+    \centering
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ca40_chargeDensity.png}
+        \label{DOM_ca40_chargeDensity}
+    \end{minipage}
+    \begin{minipage}{0.35\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ca40_SPLevels.png}
+        \label{DOM_ca40_SPLevels}
+    \end{minipage}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ca40_RMSRadius.png}
+        \label{DOM_ca40_RMSRadius}
+    \end{minipage}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ca40_BE.png}
+        \label{DOM_ca40_BE}
+    \end{minipage}
+    \caption{\caForty\ bound-state data used in DOM fit}
+    \label{DOM_ca40_structural}
+\end{figure*}
+
+\begin{figure*}[!htb]
+    \centering
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ca48_protonElastic.png}
+        \label{DOM_ca48_proton_elastic}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ca48_neutronElastic.png}
+        \label{DOM_ca48_neutron_elastic}
+    \end{minipage}
+    \centering
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ca48_protonInelastic.png}
+        \label{DOM_ca48_proton_inelastic}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ca48_neutronInelastic.png}
+        \label{DOM_ca48_neutron_inelastic}
+    \end{minipage}
+    \caption{\caEight\ nucleon scattering data used in DOM fit}
+    \label{DOM_ca48_scattering}
+    \centering
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ca48_chargeDensity.png}
+        \label{DOM_ca48_chargeDensity}
+    \end{minipage}
+    \begin{minipage}{0.35\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ca48_SPLevels.png}
+        \label{DOM_ca48_SPLevels}
+    \end{minipage}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ca48_RMSRadius.png}
+        \label{DOM_ca48_RMSRadius}
+    \end{minipage}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ca48_BE.png}
+        \label{DOM_ca48_BE}
+    \end{minipage}
+    \caption{\caEight\ bound-state data used in DOM fit}
+    \label{DOM_ca48_structural}
 \end{figure*}
 
 \end{document}
