@@ -11,6 +11,7 @@ superscriptaddress, nobalancelastpage]{revtex4}
 \usepackage{textcomp}
 \usepackage[free-standing-units]{siunitx}
 \usepackage{xcolor}
+\usepackage{placeins}
 
 \newcolumntype{N}{>{\centering\arraybackslash}m{1.3in}}
 \newcolumntype{M}{>{\centering\arraybackslash}m{1.0in}}
@@ -86,9 +87,7 @@ superscriptaddress, nobalancelastpage]{revtex4}
     \leq$ 450 MeV) by
     leveraging waveform digitizer technology. The results are in good agreement
     with previous measurements that used analog techniques,
-    excepting small deviations at high energies. These data
-    continue the campaign of
-    \tot\ measurements we initiated with the case study of $^{40,48}$Ca in 2009.
+    excepting small deviations at high energies.
     The \tot\ relative differences between isotopes are presented,
     revealing additional information about
     the isovector components needed for an accurate optical model (OM)
@@ -145,9 +144,9 @@ including the neutron skin of neutron-rich nuclei
 an essential equation-of-state (EOS) input for neutron star
 structure calculations \cite{Fattoyev2012, Vinas2014, Brown2000}.
 
-In the crudest approximation, the ``strongly-absorbing sphere'' picture
-explains the dependence of \tot\ on the size of the target nucleus and on the
-energy of the incident neutron as a consequence of simple size-scaling:
+In the crude ``strongly-absorbing sphere'' (SAS) approximation, where a target
+nucleus absorbs incident neutrons passing within a nuclear radius,
+\tot\ depends solely on the target nucleus size and the energy of the incident neutron:
 \begin{equation} \label{SASAbsolute}
     \sigma_{tot}(E) = 2\pi(R + \lambdabar)^{2},
 \end{equation}
@@ -209,7 +208,7 @@ significant fraction of the total cross section, in turn implying a
 larger mean free path for neutrons through the nucleus 
 than might otherwise be expected in the absence of Pauli blocking
 \cite{Mohr1955, Feshbach1958}.
-Continuing, if we approximate the nucleus with a
+If we approximate the nucleus with a
 real spherical potential of radius $R$ and depth $U$, the total phase shift $\delta$ is:
 \begin{equation} \label{phaseShift}
     \delta =
@@ -225,7 +224,7 @@ This form reveals an important relation: as A is increased, to maintain constant
 phase $\delta$, E must also increase \cite{Satchler1980, Peterson1962}. 
 This is contrary to a typical resonance condition where an integer number of wavelengths
 are fit inside a potential; in that case, to maintain constant phase as A is increased,
-E must be \textit{decreased}. Thus these \tot\ oscillations have been referred to as
+E must be decreased. Thus these \tot\ oscillations have been referred to as
 ``anti-resonances'' or ``echoes'' \cite{Satchler1980, McVoy1967}.
 Other authors \cite{Ahmad1973} have
 exposed weaknesses in Angeli and Csikai's interpretation of
@@ -245,7 +244,7 @@ are quite difficult to constrain as they depend on both proton and neutron
 scattering data, one or both of which are often unavailable. For example,
 when Dietrich et al. conducted an analysis of neutron total cross section
 differences between W isotopes, including standard isovector terms in their
-optical potential actually worsened the reproduction of the experimental
+optical potential \textit{worsened} the reproduction of experimental
 relative differences, an
 illustration of how poorly these isovector components are known \cite{Dietrich2003}.
 
@@ -270,18 +269,18 @@ days) are technically infeasible for this reason, though a handful have been car
 samples with half-lives in the tens to thousands of years \cite{Poenitz1983,
 Phillips1980, Foster1971}.
 
-Traditionally, \tot\ measurements have relied on analog techniques for recording
+Traditionally, \tot\ measurements have relied on analog-electronics techniques for recording
 events, techniques that suffer from a large per-event deadtime of
-up to several $\micro\second$. Thus for a typical intermediate-energy \tot\ measurement
+up to several $\micro\second$. For a typical analog intermediate-energy \tot\ measurement
 with dozens or hundreds of energy bins, achieving statistical uncertainty at the
 level of 1\% requires a thick sample to attenuate a sizable fraction of the
-incident neutron flux. For cross sections in the 1-10 barn range, this means
+incident neutron flux. If cross sections are in the 1-10 barn range, this means
 sample masses of tens of grams \cite{Finlay1993, Abfalterer2001}.
 Producing an isotopically-enriched sample of this size is often
 prohibitively expensive; indeed, a literature search for isotopically-resolved
 \tot\ measurements revealed a paucity of data from 1-300 MeV, even for
 closed-shell isotopes of special importance like $^{3,4}$He, \oEight, \niFour,
-\snTwelveFour, and $^{204}$Pb (see Fig. 1.3 from \cite{IsotopicCrossSectionTable}).
+\snTwelveFour, and $^{204}$Pb (see Fig. 1.3 from \cite{PruittPhDThesis}).
 
 Recent developments in waveform digitizer technology have made it
 possible to reduce the per-event deadtime by an order of magnitude or more,
@@ -290,7 +289,7 @@ embarked on a campaign of \tot\ measurements on isotopically-enriched samples
 using these new technical capabilities,
 starting with $^{40,48}$Ca from $15 \leq E_{n} \leq 300$ MeV \cite{Shane2010}.
 The data from that measurement were incorporated into a comprehensive
-Dispersive Optical Model (DOM) analysis \cite{Mueller2011, Mahzoon2014,
+DOM analysis \cite{Mueller2011, Mahzoon2014,
 MahzoonPhDThesis} that yielded proton and neutron spectroscopic factors, charge
 radii, and initial estimates of the neutron skins \cite{Mahzoon2017}
 for these nuclei.
@@ -312,11 +311,12 @@ to $\approx$700 MeV are generated by impinging proton pulses onto a water-cooled
 cm-long tungsten target (see Fig. \ref{ExperimentalApparatus}). Before the beam
 enters the experimental area, a
 permanent magnet deflects all charged particles generated by the proton pulses, 
-allowing only neutrons and $\gamma$ rays to reach the flight path. At the
-entrance to the flight path, the beam was collimated to 0.200 inches using steel
-donuts with a total thickness of 24 inches and hardened using a plug of Hevimet (90\% W, 6\% 
-Ni, 4\% Cu by weight) inserted at the upstream entrance of the
-collimation stack. After collimation, the beam passed successively through a flux 
+allowing only neutrons and $\gamma$ rays to reach the experimental area. At the
+entrance to the experimental area, the beam was collimated to 0.200 inches using steel
+donuts with a total thickness of 24 inches. In addition the $\gamma$-ray content of the beam
+was suppressed using a plug of Hevimet (90\% W, 6\% Ni, 4\% Cu by weight)
+at the upstream entrance of the collimation stack.
+After collimation, the beam passed successively through a flux 
 monitor, the sample of interest, a veto detector, and finally the 
 time-of-flight (TOF) detector approximately 25 meters from the neutron source.
 All detectors consisted of BC-400 fast scintillating plastic mated with 
@@ -326,7 +326,7 @@ scintillator thicknesses of 0.25 inch and the TOF detector had a
 scintillator thickness of 1 inch. Signals from all detectors and
 the target changer were relayed to a 500-MHz CAEN DT-5730 waveform digitizer
 running custom software. To improve time resolution, the TOF detector used two
-PMTs (one left, one right) mated to the plastic scintillator and the PMTs' signals were 
+PMTs (one left, one right) mated to the same plastic scintillator and the PMTs' signals were 
 summed before digitization.
 
 \begin{figure}
@@ -354,7 +354,7 @@ summed before digitization.
 The particular neutron beam structure at WNR dictates the energy range
 achievable for \tot\ measurements (see Fig. \ref{BeamStructure}).
 Proton pulse trains, called ``macropulses'', are delivered to the tungsten target at 120 Hz.
-Each macropulse consists of ~350 individual proton pulses, called
+Each macropulse consists of \approx350 individual proton pulses, called
 ``micropulses'', spaced 1.8 
 \micro\second\ apart. Each micropulse consists of a single thin proton packet
 that generates $\gamma$ rays and neutrons within a tight
@@ -376,7 +376,7 @@ macropulses. The veto detector suppressed events from charged-particle productio
 in the samples and in air along the flight path.
 
 Custom digitizer software was used to run the 
-digitizer in two complementary modes, referred to as ``DPP mode'' and ``Waveform 
+digitizer in two complementary modes, referred to as ``DPP mode'' and ``waveform 
 mode''. In DPP mode, triggers were initiated by the digitizer's onboard
 peak-sensing firmware. For each trigger, several quantities were recorded: the trigger 
 timestamp, two charge integrals over the detected peak with different
@@ -414,6 +414,7 @@ Ni and Sn samples.
     %\addtolength{\tabcolsep}{-1pt}
     \begin{tabular}{c c c c c c c}
         \small Isotope & Length & Diam. & Mass & $\rho_{\text{A}}$ & NA & SP\\
+        \small & [mm] & [mm] & [g] & \frac{mol}{cm$^{2}$} & \% & \%\\
         \hline
         $^{\text{nat}}$C& 13.66(2)& 8.260(5)& 1.2363& 0.1921(1)& -& -\\
         $^{\text{nat}}$C& 27.29(2)& 8.260(5)& 2.4680& 0.3835(2)& -& -\\
@@ -437,24 +438,20 @@ Ni and Sn samples.
     \end{tabular}
     \centering
     \caption{Physical characteristics of samples used for neutron \tot\ measurements.
-        The length and diameter of the sample cylinders are given in
-        \milli\meter, and the sample masses are in grams. To calculate cross sections, the relevant
-        ``sample thickness'' is the areal density of nuclei
+The relevant ``sample thickness'' for cross section calculations is the areal density of nuclei
         $\rho_{\text{A}}$, equivalent to the volumetric number density times
-        the length of the sample, with units $\frac{mol}{cm^{2}_{ }}$. For liquid
+        the length of the sample. For liquid
         samples H$_{2}^{\text{nat}}$O, D$_{2}^{\text{nat}}$O, and H$_{2}^{18}$O,
         the length and diameter given are for the interior of the vessels
         used to hold the samples and the masses listed are calculated based on 
-        literature values for the density of each sample at 25 C.
-        For enriched samples, the natural abundance of the
-        isotope (NA) and the purity of our isotopic samples (SP) are provided in
-    percent.}
+        literature values for the density of each sample at 25 C.}
     \label{SampleCharacteristics}
 \end{table}
 
 The O isotopes were prepared as water samples to increase the areal density
 of atoms and for ease of handling. Each water sample was contained by a
-cylindrical brass vessel with thin brass endcaps (0.002 inches). \oSixEight\
+cylindrical brass vessel with thin brass endcaps (0.002 inches), and an
+empty brass vessel served as the blank. \oSixEight\
 cross sections were calculated by
 subtracting the well-known H cross section from the raw H$_{2}$O results.
 We used H \tot\  data sets from Clement et al. \cite{Clement1972} and Abfalterer
@@ -467,21 +464,6 @@ the poor machining properties of Rh, the \rhThree\ sample
 was prepared by purchasing and stacking a series of thin discs rather than by
 manufacturing a fused cylinder. These discs were held in place
 by a cylindrical plastic case with open ends.
-
-The sample configuration for each run varied, but generally all six positions on
-the sample changer were used. For the solid targets, a typical configuration was
-to place an empty styrofoam sample sleeve in the first sample-changer cradle as
-the ``blank'', the $^{\text{nat}}$C and $^{\text{nat}}$Pb samples in the second and third
-cradles, and the samples of interest (e.g., $^{58}$Ni, $^{\text{nat}}$Ni, $^{64}$Ni) in
-the fourth, fifth, and sixth cradles. For water samples, an empty brass vessel
-was placed in the first cradle to serve as the blank.
-\begin{figure}
-    \includegraphics[width=0.3\textwidth]{figures/AllIsotopicSamples.jpg}
-    \caption{(Color online) Section (a): the ${^{112,nat,124}}$Sn samples. Section (b): the 
-        vessels used to hold water samples for the ${^{nat, 18}}$O \tot\  measurement. 
-        Section (c): ${^{58,nat,64}}$Ni samples, shown end-on.}
-    \label{SamplesImage}
-\end{figure}
 
 \section{Experimental Analysis}
 The fundamental quantity of interest, \tot, is related to the flux
@@ -501,20 +483,10 @@ or low-density samples, flux attenuation through the sample will be small
 of counts will be required to determine the cross section to high
 precision.
 
-To identify valid neutron events and precisely determine the TOF start (micropulse start 
-time) and TOF stop time (arrival at TOF detector) for each event, a series of corrections 
-are required.  First, each event was assigned to the correct macropulse.
-Time offsets accounting for cable and
-electronics delay were applied, coarsely synchronizing all detectors with
-facility-provided signals that indicated the proton micropulse arrival time.
-To improve the time resolution for each TOF
-event, the digitized waveform for each event was passed 
-through an offline software constant-fraction discriminator (CFD) algorithm,
-improving the precision of the arrival time at the TOF detector.
-In addition, a $\gamma$-ray-averaging
-procedure (cf. \cite{Shane2010}) was used to improve the precision of each
-micropulse start time. After these corrections, the final TOF resolution
-(taken as the FWHM of the $\gamma$-ray peak in the TOF spectra) ranged from
+A $\gamma$-ray-averaging procedure (cf. \cite{Shane2010}) was
+used to improve the precision of each micropulse start time (see Fig.
+\ref{TimingCorrectionStudy}). The corrected TOF resolution (taken
+as the FWHM of the $\gamma$-ray peak in the TOF spectra) ranged from
 0.60-0.90 ns over the series of \tot\ measurements.
 This is comparable to the resolution from 
 our digitizer-mediated \tot\ measurement on Ca isotopes in 2008 \cite{Shane2010}.
@@ -529,7 +501,7 @@ a 0.82 ns detector-traversal time and an inherent TOF resolution of 0.80 ns
 has an energy uncertainty of only 13 keV. These energy uncertainties
 have been propagated through subsequent analysis into our \tot\ results below.
 
-Calculating the neutron energy requires knowledge of the flight path
+Calculating the neutron energy requires knowledge of the flight-path
 distance to high precision. We determined this distance by calculating 
 putative \tot\ data for $^{\text{nat}}$C from 3-15 MeV from our measurement and 
 comparing the resonance peaks in this region with high-precision literature data
@@ -561,8 +533,7 @@ TOF spectra and resulting cross sections. This busy period is referred to as the
 techniques
 \cite{Moore1980}. An additional complication is the possibility of flux
 variation between micropulses. If there is no variation, the fraction of time
-that the digitizer is dead for a given time bin $i$ can be calculated with a
-simple formula, per Moore's analysis of rate-dependence of counting losses
+that the digitizer is dead for a given time bin $i$ can be calculated:
 \cite{Moore1980}:
 \begin{equation}
     F_{i} = \sum^{N-1}_{j=0} R_{(i-j)\text{ mod N}}\times P_{j}
@@ -571,11 +542,10 @@ simple formula, per Moore's analysis of rate-dependence of counting losses
 where $N$ is the number of time bins in the micropulse, $R_{x}$ is the rate of
 detected events per micropulse in bin $x$, and $P_{j}$ is the probability that the
 digitizer is still busy from a trigger $j$ bins ago.
-Moore also provides a more advanced formula to generate the appropriate
-dead-time correction in cases where the variation in beam flux 
-is significant. However, an examination of our flux-per-micropulse data showed
+If the variation in beam flux is significant, a more advanced formula can be
+used; however, an examination of our flux-per-micropulse data showed
 very little flux variance across macropulses, except during the first 10\%
-of the micropulses within each macropulse. To be conservative we discarded the
+of the micropulses within each macropulse. In the final analysis we discarded the
 first 10\% of micropulses from each macropulse and used the simpler Eq.
 (\ref{DeadtimeEquation}) to calculate the dead time fraction.
 
@@ -583,7 +553,7 @@ To model the experimentally-observed probability-dead, $P_{j}$, we
 we fitted a logistic function to the observed spectrum for time
 differences between consecutive events (see Fig.
 \ref{TimeDifferenceBetweenEvents}). For a given bin $i$, the fraction of time that the 
-digitizer is dead, $F_{i}$, is in essence a discrete convolution of the
+digitizer is dead, $F_{i}$, is a discrete convolution of the
 \textit{measured} TOF spectrum with $P_{j}$. Note that except for the first and
 last micropulses in a macropulse, all micropulses are consecutive, so deadtime effects can
 ``wrap around'' from the end of one micropulse to the next. For these wrap-around
@@ -619,8 +589,8 @@ the correction is as low as a few percent,
 but at small TOFs (high energies), the digitizer is often still dead
 from the $\gamma$-ray flash and high-energy neutrons. In this regime
 the correction can be quite large ($\approx$20\% for our Ni/Rh runs,
-and $\approx$40\% for our Sn/O runs). The corrections needed for our measurement
-are far lower than the typical analytic deadtime corrections required
+and $\approx$40\% for our Sn/O runs). Still, the corrections needed for our measurement
+are far smaller than the typical analytic deadtime corrections required
 with the deadtime mitigation scheme of previous analog measurements \cite{Finlay1993,
 Abfalterer2001}.
 
@@ -723,8 +693,8 @@ energy range, comparable to the 2\% systematic difference between our final
 \oSix\ neutron \tot\ results and those of \cite{Abfalterer2001}. The size and
 uniformity of these systematic differences is consistent with
 a combination of slight ($\approx$ 1\%) normalization errors
-in some or all of the H, D, O, and C neutron \tot\ results,
-both in our measurement and in the literature.
+in some or all of the H, D, O, and C neutron \tot\ results
+from our measurement or in the literature data.
 \begin{figure}
     \includegraphics[width=\linewidth]{figures/literatureBenchmarking.png}
     \caption{(Color online) A comparison of literature data (taken with analog
@@ -760,21 +730,23 @@ years ago \cite{Dukarevich1967} and our present values are in excellent agreemen
 
 Our results for relative differences between isotopic pairs \oSixEight,
 \niEightFour, and \snTwelveFour\ are shown in Fig. \ref{ThreePanelRelDiff}. In
-\oSixEight, the purely-isoscalar SAS model grossly reproduces the relative
+\oSixEight (Fig. \ref{ThreePanelRelDiff}, section a), the purely-isoscalar
+SAS model (Eq.  \ref{SASAbsolute}) grossly reproduces the relative
 difference below 100 MeV, but fails completely above 100 MeV. Near 200
 MeV, the \oEight\ \tot\ drops below that of \oSix\ resulting in a negative
 relative difference, in keeping with the Ramsauer-logic expectation of Eq.
 (\ref{OscillatoryModel}) that \tot\ oscillation minima shift to higher
 energies as A is increased. In the relative difference subfigures for 
-\niEightFour\ and \snTwelveFour, the average \tot\ values are below the
+\niEightFour\ and \snTwelveFour (Fig. \ref{ThreePanelRelDiff}, sections b and c),
+the average \tot\ values are below the
 SAS model trend ($r \propto A^{\frac{1}{3}}$), shown by the black dashed lines. 
-The well-known $r \propto A^{\frac{1}{6}}$ trend in Sn isotope shift data 
-\cite{Anselment1986} are also shown for reference and
-underpredict the relative differences. As was noted by Dietrich et al. in
-their study of \tot\ relative differences in W isotopes, a simultaneous optical
-model analysis along the entire isotopic chain (a l\'a \cite{Mueller2011})
-may be required to reproduce the oscillatory behavior seen in the relative differences.
-The individual Dispersive Optical Model fits to \oSixEight, \niEightFour, and
+The well-known $r \propto A^{\frac{1}{6}}$ trend in Sn isotope-shift data 
+\cite{Anselment1986} is also shown for reference and
+underpredicts the relative differences. As was noted by Dietrich et al. in
+their study of \tot\ relative differences in W isotopes, a simultaneous optical-model
+analysis along the entire isotopic chain (a l\'a \cite{Mueller2011})
+may be required to characterize the oscillatory behavior seen in the relative differences.
+The individual DOM fits to \oSixEight, \niEightFour, and
 \snTwelveFour\ in the following section lay the groundwork for a future study of
 this type.
 \begin{figure*}[tb]
@@ -826,15 +798,15 @@ cross sections) to constrain the potential
 below. Using our new \tot\ data for \oSixEight, \niEightFour, and \snTwelveFour, we
 performed a comprehensive DOM analysis on these isotopes and also
 \caAughtEight\ and \pbEight. Compared to previous DOM
-analyses \cite{Mueller2011, Atkinson2017, Mahzoon2014, Mahzoon2017},
+analyses \cite{Mueller2011, Atkinson2018, Mahzoon2014, Mahzoon2017},
 we employ an updated version of the DOM that has been generalized for use with
-any even-even nucleus that is not too deformed. Partial filling of open shells,
+any near-spherical even-even nucleus. Partial filling of open shells,
 as for the neutron \dFive\ valence shell in \oEight, is accommodated with a simple
 pairing parameter $\Delta$ (see \cite{PruittPhDThesis}). The other major
 methodological difference is our use of Markov-Chain Monte Carlo (MCMC) for
 parameter optimization, discussed below. 
 
-In this work, we give the functional forms used to define the
+In this work we provide the functional forms used to define the
 potential (Appendix \ref{DOMFunctionalForms}), optimized parameter values with
 uncertainties (Appendix \ref{DOMParameterValues}), and figures showing the quality
 of the DOM reproduction of experimental data (Appendix \ref{DOMFitResults}).
@@ -843,7 +815,9 @@ Dickhoff2018}. Except where indicated, the corpus of experimental data used for
 fitting is the same as in \cite{PruittPhDThesis}. To situate the reader, we discuss the
 experimental data and DOM results for \oSixEight\ in full detail. The
 experimental data used and fit quality for \caAughtEight, \niEightFour,
-\snTwelveFour, and \pbEight\ are similar and key differences are noted.
+\snTwelveFour, and \pbEight\ are similar and key differences are noted. For
+systematics of neutron skins and binding energies, see the companion letter
+\cite{PruittPRL2020}.
 
 \subsection{\oSix\ experimental data used in DOM analysis}
 For protons, twenty-eight differential elastic cross
@@ -911,11 +885,9 @@ uncertainty analysis requires information about the region around the optimum an
 accounting of inherent model errors.
 
 To fulfill these requirements, we used the affine-invariant, ensemble-sampling
-MCMC utility emcee \cite{Foreman-Mackey2013} based on the work of \cite{Goodman2010}. For an
+MCMC utility emcee \cite{Foreman-Mackey2013}. For an
 accessible introduction to Bayesian data analysis and applied MCMC, see
-\cite{Sharma2017}. Computations were performed using the facilities of the Washington University
-Center for High Performance Computing, which were partially provided through NIH
-grant S10 OD018091. In the ensemble-sampling approach, several hundred
+\cite{Sharma2017}. In the ensemble-sampling approach, several hundred
 ``walkers'' are first randomly initialized in parameter space for each nucleus according to a
 uniform prior distribution. At each subsequent step $t$ during the
 random walk, each walker's position is updated from $\vec{x_{t}} \rightarrow
@@ -934,10 +906,10 @@ experimental data $U(\vec{x}|D)$ was defined according to Bayes rule
     U(\vec{x}|D) \propto L(D|\vec{x}) \times P(\vec{x}),
 \end{equation}
 in terms of a likelihood function and a prior distribution. The likelihood
-function was taken as a weighted least-squares function where each datum was assigned
-a weight and a model error:
+function was defined as a least-squares function where each datum was assigned
+a model discrepancy:
 \begin{equation} \label{LikelihoodFunction}
-    L(D|\vec{x}) = \sum_{d=1}^{N_{d}} w_{d} \frac{1}{N_{i}} \sum_{i=1}^{N_{i}}
+    L(D|\vec{x}) = \frac{1}{N_{i}} \sum_{i=1}^{N_{i}}
     \left(\frac{y^{calc}_{d,i}-y^{exp}_{d,i}}{\sigma^{calc}_{d,i}+\sigma^{exp_{d,i}}}\right),
 \end{equation}
 where
@@ -945,7 +917,6 @@ where
     \item $N_{d}$ is the number of different sectors of available experimental
         data, $D$ (e.g., proton \el\ cross sections,
 binding energy, etc.),
-    \item $w_{d}$ is a scalar weight assigned to the entire sector $d$,
     \item $N_{i}$ is the number of data points in a sector $d$,
     \item $y^{calc, exp}_{d,i}$ are the calculated and experimental values,
         respectively, for the $i$th datum of sector $d$,
@@ -955,24 +926,20 @@ binding energy, etc.),
         $y_{d,i}$ of data sector $d$.
 \end{itemize}
 
-Due the only approximate value
-of any optical potential for realizing the true many-body 
-potential, it should be expected that DOM predictions for nuclear observables
-will suffer from some degree of error inherent to the model. For example, previous
+Due to the choice of functional form and finite model basis,
+DOM predictions for nuclear observables must suffer from some degree of error
+inherent to the model. For example, many previous
 OM analyses tend to easily reproduce low-angle experimental \el\ data taken at
 lower scattering energies but are increasingly discrepant at high energies
 and at backward angles, where the predicted cross sections may
 differ from experimental results by an order of magnitude or more. 
-
-Neglecting model discrepancy may
-dramatically bias fitted parameters and underestimate variances of extracted
+Neglecting this model discrepancy can
+dramatically bias parameter values and underestimate variances of extracted
 quantities. Table \ref{ModelDiscrepancyTable} shows the model discrepancy terms we used 
-for each data sector. The choice of model discrepancy for each point
-is depends on several factors, including the functional form chosen for the
-potential, numerical truncations, and the plausible range of the nuclear datum being 
-calculated. In the final analysis, we settled on discrepancy terms based
-on how well preliminary fits could reproduce differing regions of each data sector
-coupled with intuition from the successes and failures of past optical model analyses.
+for each data sector. We assigned model discrepancy term for each data set
+based on how well preliminary fits could reproduce differing regions of each
+data sector, the flexibility of the functional forms, and intuition
+from the successes and failures of past optical model analyses.
 In principle, the form of these model discrepancy terms should also be treated as random
 variables, but due to computational limitations and the already-challenging size
 of the DOM parameter space, we elected to fix the model discrepancy terms.
@@ -1019,48 +986,19 @@ analysis.
 Following \cite{Foreman-Mackey2013} we attempted an
 autocorrelation analysis to test for convergence
 and estimate the number of independent samples we had collected for each nucleus.
-For $N$ total samples collected of a quantity $f$ over the probability density
-$p(\theta)$, the normalized autocorrelation function is
-\begin{equation}
-    \hat{\rho}_{f}(\tau) = \frac{\hat{c}_{f}(\tau)}{\hat{c}_{f}(0)}
-\end{equation}
-where
-\begin{equation}
-    \hat{c}_{f}(\tau) = \frac{1}{N-\tau} \sum_{n=1}^{N-\tau}
-    (f_{n}-\mu_{f})(f_{n+\tau}-\mu_{f}).
-\end{equation}
-Here $f_{n}$ is the $n^{th}$ sample of $f$ and $mu_{f}$ is the mean value of
-$f$. By definition, $\hat{\rho}_{f}(0) = 1$. At small $\tau$, $f_{\tau}$ will still
-be strongly correlated with $f_{0}$, so $\hat{\rho}_{f}(\tau)$ will be close to
-1. At large $\tau$, $f$ will ``forget'' where it started and $f_{\tau}$ will
-decay toward 0. With $\hat{\rho}_{f}(\tau)$ in hand the integrated autocorrelation
-time can be computed
-\begin{equation}\label{TauEstimator}
-    \tau_{f} \equiv \sum_{\tau=-\infty}^{\infty} \hat{\rho}_{f}(\tau) \approx
-    1 + 2 \sum_{\tau=1}^{M} \hat{\rho}_{f}(\tau),
-\end{equation}
-where $M << N$, then used to estimate the variance of $f$ over $p(\theta)$:
-\begin{equation}\label{VarianceEstimator}
-    \sigma^{2} = \frac{\tau_{f}}{N}\sigma^{2}_{p(\theta)}[f(\theta)]
-\end{equation}
-The number of independent samples is not $N$ but instead
-$N/\tau_{f}$. For the approximation of Eq. (\ref{TauEstimator}) to
-converge, $M$ must be several times larger $\tau_{f}$. Thus, a reasonable
-estimate of $\tau_{f}$ requires a very large number of samples, say, $N > 100\tau_{f}$.
-
-In an ideal MCMC analysis, $\tau_{f}$ could be computed for all $f$ of
-interest (each parameter and extracted physics quantity) and Eq.
-(\ref{VarianceEstimator}) would give the complete variance, including sampling
-error from MCMC. In practice, we found this to be computationally infeasible
+In an ideal MCMC analysis, the integrated autocorrelation time, $\tau_{f}$,
+could be computed for all $f$ of interest (each parameter and extracted physics
+quantity) and the variance from MCMC sampling error could be robustly estimated.
+In practice, we found this to be computationally infeasible
 for the DOM parameter space. For example, in our analysis of \oEight, we were
 able to perform $N=31000$ steps for each of 336 walkers (more than 100,000
 CPU-hours in total). Over this domain, we calculated the
 integrated autocorrelation time, $\tau_{p}$, for each potential parameter $p$,
 was roughly 2800 -- that is, $N \approx 11\tau_{p}$, rather than the
 $N > 100\tau_{p}$ rule-of-thumb condition for convergence of the $\tau$ estimate
-for each parameter. Similarly, calculating $\tau_{f}$ for other quantities
-of interest (such as the neutron skin of \oEight) was deemed unrealistic, given
-our computational resources. We note that $\tau_{f}$ \textit{could} be considerably
+for each parameter. In other words, from $\tau_{f}$, we could not exclude the
+possibility that the parameters had not ``settled'' in the region of their
+optimal values. We note that $\tau_{f}$ \textit{could} be considerably
 smaller than $\tau_{p}$ due to the highly-correlated nature of DOM parameter space.
 
 To proceed, we applied several commonsense tests to
@@ -1080,14 +1018,44 @@ our results are independent of the initial walker positions. Finally, for a
 skins, scattering cross sections) for all walker at several intervals
 to confirm that their mean values were stable. Again using \oSix\ and \oEight\ as
 an example, we found their mean neutron skin values varied by less
-than 0.001 and 0.01 fm, respectively, over several thousand sampling steps.
-To be conservative (and given our expectation of very large autocorrelation times)
+than 0.001 and 0.01 fm, respectively, over several thousand sampling steps late
+in sampling. Out of caution (and given our expectation of very large autocorrelation times)
 we used only the terminal sample for each walker chain to produce
 the results presented here and in the companion paper \cite{Pruitt2020PRL}.
-In the end, we expect that additional sampling would slightly
+In the end, we expect that additional sampling could slightly
 reduce the estimated variance of each extracted quantity but have a negligible
 effect on the mean values. The estimated mean values and variances for each
-parameter for each nucleus are listed in Appendix \ref{ParameterValues}.
+parameter for each nucleus are listed in Appendix \ref{DOMParameterValues}.
+
+%For $N$ total samples collected of a quantity $f$ over the probability density
+%$p(\theta)$, the normalized autocorrelation function is
+%\begin{equation}
+%    \hat{\rho}_{f}(\tau) = \frac{\hat{c}_{f}(\tau)}{\hat{c}_{f}(0)}
+%\end{equation}
+%where
+%\begin{equation}
+%    \hat{c}_{f}(\tau) = \frac{1}{N-\tau} \sum_{n=1}^{N-\tau}
+%    (f_{n}-\mu_{f})(f_{n+\tau}-\mu_{f}).
+%\end{equation}
+%Here $f_{n}$ is the $n^{th}$ sample of $f$ and $mu_{f}$ is the mean value of
+%$f$. By definition, $\hat{\rho}_{f}(0) = 1$. At small $\tau$, $f_{\tau}$ will still
+%be strongly correlated with $f_{0}$, so $\hat{\rho}_{f}(\tau)$ will be close to
+%1. At large $\tau$, $f$ will ``forget'' where it started and $f_{\tau}$ will
+%decay toward 0. With $\hat{\rho}_{f}(\tau)$ in hand the integrated autocorrelation
+%time can be computed
+%\begin{equation}\label{TauEstimator}
+%    \tau_{f} \equiv \sum_{\tau=-\infty}^{\infty} \hat{\rho}_{f}(\tau) \approx
+%    1 + 2 \sum_{\tau=1}^{M} \hat{\rho}_{f}(\tau),
+%\end{equation}
+%where $M << N$, then used to estimate the variance of $f$ over $p(\theta)$:
+%\begin{equation}\label{VarianceEstimator}
+%    \sigma^{2} = \frac{\tau_{f}}{N}\sigma^{2}_{p(\theta)}[f(\theta)]
+%\end{equation}
+%The number of independent samples is not $N$ but instead
+%$N/\tau_{f}$. For the approximation of Eq. (\ref{TauEstimator}) to
+%converge, $M$ must be several times larger $\tau_{f}$. Thus, a reasonable
+%estimate of $\tau_{f}$ requires a very large number of samples, say, $N > 100\tau_{f}$.
+
 
 \subsection{Fit results on $^{16}$O}
 Figs. \ref{DOM_o16_scattering} and \ref{DOM_o16_structural} in Appendix
@@ -1166,6 +1134,7 @@ a better characterization of this nucleus, even a single proton \rxn\ cross
 section between 10 and 50 MeV would be valuable.
 
 \subsection{Fit results on \caAughtEight, \niEightFour, \snTwelveFour, and \pbEight}
+\textcolor{red}{Insert discussion here - ideas?}
 
 \section{Conclusion}
 By adopting a digitizer-driven
@@ -1192,6 +1161,9 @@ PHY-1613362 and PHY-1912643. C.D.P. gratefully acknowledges support from the
 U.S. Department of Energy SCGSR Program (2014 and 2016 solicitations) and the
 National Nuclear Security Administration through the Center for Excellence in Nuclear
 Training and University Based Research (CENTAUR) under grant number DE-NA0003841.
+Computations were performed using the facilities of the Washington University
+Center for High Performance Computing, which were partially provided through NIH
+grant S10 OD018091. 
 
 \bibliography{references}
 \begin{thebibliography}{32} \expandafter\ifx\csname
@@ -1204,59 +1176,221 @@ Training and University Based Research (CENTAUR) under grant number DE-NA0003841
         \expandafter\ifx\csname urlprefix\endcsname\relax\def\urlprefix{URL
         }\fi \providecommand{\bibinfo}[2]{#2}
         \providecommand{\eprint}[2][]{\url{#2}}
-
 \end{thebibliography}
 
-\onecolumngrid
-\newpage
+\clearpage
 \appendix \label{DOMFunctionalForms}
-\section{Definition of DOM Potential}
+\section{Appendix A: Definition of DOM Potential}
+\subsection{Functional Forms}
+Before giving the full parameterization, we identify a few standard functional
+forms. Radial dependences are defined a Woods-Saxon shape or a derivative:
+\begin{equation} \label{WoodsSaxon}
+    \begin{split}
+        f_{vol}(r; r_{0}, a) & = \frac{-1}{1+e^{(r-R)/a}},\\
+        \\
+        f_{sur}(r; r_{0}, a) & = \frac{1}{r}\frac{d}{dr}f_{vol}(r; r_{0}, a).
+    \end{split}
+\end{equation}
+$R$ is the nuclear radius, calculated as $R = r_{0}A^{\frac{1}{3}}$, with $A$ the total number of
+nucleons in the nucleus. The sign of the potential is such that the Woods-Saxon form
+provides an attractive interaction. For non-localities, we use a Gaussian
+non-locality first proposed by \cite{Perey1962}:
+\begin{equation}
+    N(r, r';\beta) = \frac{1}{\pi^{\frac{3}{2}}\beta^{3}}
+    e^{|r-r'|^{2}/{\beta^{2}}},
+\end{equation}
+where $\beta$ sets the Gaussian width.
+The energy-dependences of the imaginary components is based on the functional form of \cite{Charity2006}:
+\begin{equation} \label{omega}
+    \omega_{n}(E; A, B, C) = \Theta(X)A\frac{X^{n}}{X^{n}+B^{n}}
+\end{equation}
+where
+\begin{equation*}
+    X = |E-\epsilon_{F}|-C\\
+\end{equation*}
+and $\Theta(X)$ is the Heaviside step function. 
 
-\newpage
+For symmetric nuclei, the same potential was used for protons and neutrons,
+excepting Coulomb. For asymmetric nuclei, we introduced five asymmetry-dependent terms.
+For all energy dependences, the energy domain was $\epsilon_{F}-300
+\mega\electronvolt$ to $\epsilon_{F}-200 \mega\electronvolt$.
+
+The irreducible self-energy (optical potential) used in this work is defined
+\begin{equation} \label{SelfEnergyBreakdown}
+    \Sigma^{*}(\alpha,\beta;E) =  \Sigma_{s}^{*}(\alpha,\beta) + \Sigma_{im}^{*}(\alpha,\beta;E)
+    + \Sigma_{d}^{*}(\alpha,\beta;E).
+\end{equation}
+The energy-independent real part ($\Sigma_{s}(\alpha,\beta)$) and 
+energy-dependent imaginary part ($\Sigma_{im}^{*}(\alpha,\beta)$)
+parameterizations are given in the following two subsections. The
+dispersive correction term ($\Sigma_{d}^{*}*\alpha,\beta;E)$) is completely
+determined by an integral over the imaginary part (see Eq. (3) of
+\cite{Mahzoon2014}). All free parameters that are fit via MCMC sampling are
+typeset in \textbf{bold}.
+
+\subsection{Real Part}
+The energy-independent real part of the self-energy consists of a nonlocal Hartree-Fock and
+a spin-orbit component (plus a local Coulomb term if the nucleon in question is a proton):
+\begin{equation}
+    \Sigma_{s}(r,r') =
+    \Sigma_{HF}(r,r')+V_{so}(r,r')+V_{C}(r)\delta(r-r').
+\end{equation}
+The Coulomb potential is calculated using the same experimentally-derived charge
+density distributions (see \cite{DeVries1987}) used in fitting.
+The Hartree-Fock component $V_{HF}$ has two subcomponents:
+\begin{equation} \label{HFWBEquation}
+    \Sigma_{HF}(r,r') = V_{vol}(r,r') + V_{wb}(r),
+\end{equation}
+where the non-local Hartree-Fock volume term $V_{vol}(r,r')$, is defined as
+a Woods-Saxon form coupled to a Gaussian non-locality:
+\begin{equation} \label{RealVolume}
+    V_{vol}(r,r') = \mathbf{V_{1}}{\times}f_{vol}(r; \mathbf{r_{1}}, \mathbf{a_{1}})
+    {\times}N(r,r';\boldsymbol{\beta_{1}}).
+\end{equation}
+The local Hartree-Fock wine-bottle
+term $V_{wb}$, named for resemblance to the dimple at the bottom of a wine
+bottle, is defined as a Gaussian centered at the nuclear origin:
+\begin{equation}
+    V_{wb}(r) = \mathbf{V_{2}}{\times}e^{r^{2}/\boldsymbol{\sigma_{2}}^{2}}.
+\end{equation}
+with the sign of $\mathbf{V_{2}}$ opposite that of $\mathbf{V_{1}}$.
+The real spin-orbit component $V_{so}$ is defined using a derivative-Woods-Saxon
+shape in keeping with the expectation that the spin-orbit coupling is strongest near the
+nuclear surface:
+\begin{equation} \label{RealSOEquation}
+    \begin{split}
+        V_{so}(r,r') = \left(\frac{\hbar}{m_{\pi}c}\right)^{2}
+        \mathbf{V_{3}}\times\frac{1}{r}f_{sur}(r;\mathbf{r_{3}}, \mathbf{a_{3}})\\
+        {\times}N(r,r';\boldsymbol{\beta_{3}}) {\times}(\ell\cdot\sigma).
+    \end{split}
+\end{equation}
+The leading constant $\left(\frac{\hbar}{m_{\pi}c}\right)^{2}$ is taken to be 2.0 fm$^{2}$
+\cite{MahzoonPhDThesis}. In total, there are ten free parameters for the
+symmetric real part of the potential.
+
+\subsection{Imaginary Part}
+The imaginary part of the potential is comprised of independent surface and volume terms
+both above and below the Fermi surface:
+\begin{equation}
+    \Sigma_{im}^{*}(r,r',E) =
+    \Sigma_{vol}^{\pm}(r,r',E)
+    + \Sigma_{sur}^{\pm}(r,r',E),
+\end{equation}
+where the volume and surface components are defined:
+\begin{equation}
+    \begin{split}
+        \Sigma_{vol}^{\pm}(r,r',E)
+        = W_{vol}^{\pm}(E) & {\times}f_{vol}(r; \mathbf{r_{4}^{\pm}},
+        \mathbf{a_{4}^{\pm}})\\
+        & {\times}N(r,r'; \boldsymbol{\beta_{4}^{\pm}}),\\
+        \Sigma_{sur}^{\pm}(r,r',E)
+        = 4\mathbf{a_{5}}W_{sur}^{\pm}(E) & {\times}f_{sur}(r;
+        \mathbf{r_{5}^{\pm}}, \mathbf{a_{5}^{\pm}})\\
+        & {\times} N(r,r';\boldsymbol{\beta_{5}^{\pm}}).
+    \end{split}
+\end{equation}
+The terms labeled with $+$ determine the potential above $\epsilon_{F}$, and the terms labeled
+with $-$ determine the potential below $\epsilon_{F}$.
+The energy dependence of the imaginary volume terms read:
+\begin{equation} \label{ImagVolume}
+    W_{vol}^{\pm}(E) = \mathbf{A_{5}^{\pm}}\left[\frac{(E_{\Delta})^{4}}
+    {(E_{\Delta})^{4}+(\mathbf{B_{5}^{\pm}})^{4}} + W_{NM}^{\pm}(E)\right],
+\end{equation}
+where $E_{\Delta} = |E-\epsilon_{F}|$ and
+\begin{equation}
+    \begin{split}
+        W_{NM}^{+}(E) & = {\boldsymbol{\alpha_{6}}}\left[\sqrt{E} +
+            \frac{(\epsilon_{F}+\mathbf{E^{+}_{6}})^{\frac{3}{2}}}{2E}
+        -\frac{3}{2}\sqrt{\epsilon_{F}+\mathbf{E^{+}_{6}}}\right],\\
+        W_{NM}^{-}(E) & = \frac{(\epsilon_{F}-E-\mathbf{E_{6}^{-}})^{2}}
+        {(\epsilon_{F}-E-\mathbf{E_{6}^{-}})^{2}+(\mathbf{E_{6}^{-}})^{2}}.
+        \end{split}
+    \end{equation}
+The terms $W_{NM}^{\pm}$ are asymmetric above and below the Fermi surface and are modeled after
+nuclear-matter calculations. They account for the decreasing phase space at negative energies
+and the increasing phase space at positive energies.
+The energy-dependence of the imaginary surface terms read:
+\begin{equation} \label{ImagSurface}
+    W_{sur}^{\pm}(E) = \omega_{4}(E, \mathbf{A_{7}^{\pm}}, \mathbf{B_{7}^{\pm}}, 0)
+    - \omega_{2}(E, \mathbf{A_{7}^{\pm}}, \mathbf{B_{7}^{'\pm}}, \mathbf{C_{7}^{\pm}})
+\end{equation}
+In total, there are
+thirteen free parameters for the symmetric imaginary volume terms of the
+potential and fourteen free parameters for the symmetric imaginary surface terms
+of the potential. Thus for symmetric nuclei, thirty-seven real and imaginary
+parameters were used.
+
+\subsection{Parameterization of Asymmetry Dependence}
+For asymmetric nuclei,
+the parametric forms must be modified to account for the different potential experienced by 
+protons and neutrons. For the real potential, only $\mathbf{V_{1}}$ from Eq. \ref{RealVolume},
+was allowed to vary with asymmetry:
+\begin{equation}
+    \mathbf{V_{1}} \Rightarrow \begin{cases}
+        \mathbf{V_{1}} + \mathbf{V_{asym}}\times\frac{N-Z}{A} & \text{for protons}\\
+        \mathbf{V_{1}} - \mathbf{V_{asym}}\times\frac{N-Z}{A} & \text{for neutrons}.
+    \end{cases}
+\end{equation}
+The magnitude of the energy-dependence for the imaginary surface and volume,
+$\mathbf{A_{5}^{\pm}}$ and $\mathbf{A_{7}^{\pm}}$ from Eqs. \ref{ImagVolume} and \ref{ImagSurface},
+were allowed to vary with asymmetry:
+\begin{equation}
+    \mathbf{A_{5}^{\pm}} \Rightarrow \begin{cases}
+        \mathbf{A_{5}^{\pm}} + \mathbf{A_{vol, asym}^{\pm}}\times\frac{N-Z}{A} & \text{for protons}\\
+        \mathbf{A_{5}^{\pm}} - \mathbf{A_{vol, asym}^{\pm}}\times\frac{N-Z}{A} & \text{for neutrons},
+    \end{cases}
+\end{equation}
+\begin{equation}
+    \mathbf{A_{7}^{\pm}} \Rightarrow \begin{cases}
+        \mathbf{A_{7}^{\pm}} + \mathbf{A_{sur, asym}^{\pm}}\times\frac{N-Z}{A} & \text{for protons}\\
+        \mathbf{A_{7}^{\pm}} - \mathbf{A_{sur, asym}^{\pm}}\times\frac{N-Z}{A} & \text{for neutrons}.
+    \end{cases}
+\end{equation}
+There should be no confusion between $\mathbf{A_{5,7}^{\pm}}$, $A$ (the total number
+of nucleons), and the analyzing power. 
+With these five additional asymmetric terms,
+the total number of free parameters used for
+fitting asymmetric nuclei in the present work totals forty-two.
+
+\clearpage
+\onecolumngrid
 \appendix \label{DOMParameterValues}
-\section{Parameter Values for DOM Potential}
-The prior distribution was defined to be uniform with minimum and maximum values
-listed for each parameter below. Median, 16\textsuperscript{th} and
+\section{Appendix B: Parameter Values for DOM Potential}
+Parameter labels correspond to those in the equations Appendix A. 
+For each parameter, the prior distribution was defined to be uniform with minimum and maximum values
+listed in columns 2 and 3 of each table. For each nucleus, the
+16\textsuperscript{th}, 50\textsuperscript{th}, and
 84\textsuperscript{th} percentile values for each estimated parameter
-distribution are listed. Parameter labels correspond
-to those in the equations Appendix A. For symmetric nuclei \oSix\ and \caForty, the
-asymmetry-dependent parameters were disabled during fitting.
-
-\begin{table}[htb]
-    \centering
+distribution are listed. The format is $\text{50}^{\text{84}}_{\text{16}}$.
+For symmetric nuclei \oSix\ and \caForty, the asymmetry-dependent parameters were disabled during fitting.
+\begin{table}[htbp]
+    \footnotesize
     \caption{Real parameters (volume-like, symmetric)}
     \input{parameters/HFParametersTable.tex}
-    \vspace{2em}
     \caption{Real parameters (volume-like, asymmetric)}
     \input{parameters/HFAsymmParametersTable.tex}
-\end{table}
-\begin{table}[htb]
-    \centering
     \caption{Imaginary parameters (volume-like, symmetric)}
-    \makebox[\textwidth][c]{\input{parameters/ImVolumeParametersTable.tex}}
-    \vspace{2em}
+    \input{parameters/ImVolumeParametersTable.tex}
+    \caption{Imaginary parameters (volume-like, symmetric, nuclear-matter correction)}
+    \input{parameters/ImVolumeNMCorrParametersTable.tex}
     \caption{Imaginary parameters (volume-like, asymmetric)}
-    \makebox[\textwidth][c]{\input{parameters/ImVolumeAsymmParametersTable.tex}}
-    \vspace{2em}
-    \caption{Imaginary parameters (surface-like, symmetric)}
-    \makebox[\textwidth][c]{\input{parameters/ImSurfaceParametersTable.tex}}
+    \input{parameters/ImVolumeAsymmParametersTable.tex}
 \end{table}
 \clearpage
-\begin{table}[htb]
-    \centering
+\begin{table}[htbp!]
+    \footnotesize
+    \caption{Imaginary parameters (surface-like, symmetric)}
+    \input{parameters/ImSurfaceParametersTable.tex}
+    \vspace{0.3em}
     \caption{Imaginary parameters (surface-like, asymmetric)}
-    \makebox[\textwidth][c]{\input{parameters/ImSurfaceAsymmParametersTable.tex}}
-    \vspace{2em}
+    \input{parameters/ImSurfaceAsymmParametersTable.tex}
+    \vspace{0.3em}
     \caption{Spin-orbit parameters}
-    \makebox[\textwidth][c]{\input{parameters/SpinOrbitParametersTable.tex}}
-    \vspace*{4in}
+    \input{parameters/SpinOrbitParametersTable.tex}
 \end{table}
-
-\newpage
 \appendix \label{DOMFitResults}
-\section{DOM Fit Comparison to Experimental Data}
-This Appendix contains figures comparing calculations from optimal DOM fits to
-the experimental data used as a constraint. In all figures, experimental data
+\section{Appendix C: DOM Fit Comparison to Experimental Data}
+In all figures, experimental data
 (listed with references in Appendix B of \cite{PruittPhDThesis}) are shown
 as points with associated experimental error bars. DOM calculations are shown as
 1$\sigma$ and 2$\sigma$ colored uncertainty bands. 
@@ -1265,8 +1399,8 @@ Nucleon scattering data are shown in the first six panels for each nucleus.
 Panels (a) and (c) show proton \el\ and analyzing powers from 10-200 MeV.
 Panels (b) and (d) show neutron \el\ and analyzing powers from 10-200 MeV.
 In panels (a) through (d), data at different energies are offset
-vertically for clarity and colored according to the center-of-mass scattering
-energy of the data set. Panel (e) shows the proton \rxn. Panel (f) shows the
+vertically for legibility and colored according to the scattering
+energy. Panel (e) shows the proton \rxn. Panel (f) shows the
 neutron \tot\ and \rxn.
 
 Bound-state data are shown in the last four panels for each nucleus.
@@ -1488,6 +1622,256 @@ histogram; the experimental value is shown with a thin gray band.
     \end{minipage}
     \caption{\caEight\ bound-state data used in DOM fit}
     \label{DOM_ca48_structural}
+\end{figure*}
+
+\begin{figure*}[!htb]
+    \centering
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ni58_protonElastic.png}
+        \label{DOM_ni58_proton_elastic}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ni58_neutronElastic.png}
+        \label{DOM_ni58_neutron_elastic}
+    \end{minipage}
+    \centering
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ni58_protonInelastic.png}
+        \label{DOM_ni58_proton_inelastic}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ni58_neutronInelastic.png}
+        \label{DOM_ni58_neutron_inelastic}
+    \end{minipage}
+    \caption{\niEight\ nucleon scattering data used in DOM fit}
+    \label{DOM_ni58_scattering}
+    \centering
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ni58_chargeDensity.png}
+        \label{DOM_ni58_chargeDensity}
+    \end{minipage}
+    \begin{minipage}{0.35\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ni58_SPLevels.png}
+        \label{DOM_ni58_SPLevels}
+    \end{minipage}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ni58_RMSRadius.png}
+        \label{DOM_ni58_RMSRadius}
+    \end{minipage}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ni58_BE.png}
+        \label{DOM_ni58_BE}
+    \end{minipage}
+    \caption{\niEight\ bound-state data used in DOM fit}
+    \label{DOM_ni58_structural}
+\end{figure*}
+
+\begin{figure*}[!htb]
+    \centering
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ni64_protonElastic.png}
+        \label{DOM_ni64_proton_elastic}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ni64_neutronElastic.png}
+        \label{DOM_ni64_neutron_elastic}
+    \end{minipage}
+    \centering
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ni64_protonInelastic.png}
+        \label{DOM_ni64_proton_inelastic}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ni64_neutronInelastic.png}
+        \label{DOM_ni64_neutron_inelastic}
+    \end{minipage}
+    \caption{\niFour\ nucleon scattering data used in DOM fit}
+    \label{DOM_ni64_scattering}
+    \centering
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ni64_chargeDensity.png}
+        \label{DOM_ni64_chargeDensity}
+    \end{minipage}
+    \begin{minipage}{0.35\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ni64_SPLevels.png}
+        \label{DOM_ni64_SPLevels}
+    \end{minipage}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ni64_RMSRadius.png}
+        \label{DOM_ni64_RMSRadius}
+    \end{minipage}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/ni64_BE.png}
+        \label{DOM_ni64_BE}
+    \end{minipage}
+    \caption{\niFour\ bound-state data used in DOM fit}
+    \label{DOM_ni64_structural}
+\end{figure*}
+
+\begin{figure*}[!htb]
+    \centering
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/sn112_protonElastic.png}
+        \label{DOM_sn112_proton_elastic}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/sn112_neutronElastic.png}
+        \label{DOM_sn112_neutron_elastic}
+    \end{minipage}
+    \centering
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/sn112_protonInelastic.png}
+        \label{DOM_sn112_proton_inelastic}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/sn112_neutronInelastic.png}
+        \label{DOM_sn112_neutron_inelastic}
+    \end{minipage}
+    \caption{\snTwelve\ nucleon scattering data used in DOM fit}
+    \label{DOM_sn112_scattering}
+    \centering
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/sn112_chargeDensity.png}
+        \label{DOM_sn112_chargeDensity}
+    \end{minipage}
+    \begin{minipage}{0.35\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/sn112_SPLevels.png}
+        \label{DOM_sn112_SPLevels}
+    \end{minipage}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/sn112_RMSRadius.png}
+        \label{DOM_sn112_RMSRadius}
+    \end{minipage}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/sn112_BE.png}
+        \label{DOM_sn112_BE}
+    \end{minipage}
+    \caption{\snTwelve\ bound-state data used in DOM fit}
+    \label{DOM_sn112_structural}
+\end{figure*}
+
+\begin{figure*}[!htb]
+    \centering
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/sn124_protonElastic.png}
+        \label{DOM_sn124_proton_elastic}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/sn124_neutronElastic.png}
+        \label{DOM_sn124_neutron_elastic}
+    \end{minipage}
+    \centering
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/sn124_protonInelastic.png}
+        \label{DOM_sn124_proton_inelastic}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/sn124_neutronInelastic.png}
+        \label{DOM_sn124_neutron_inelastic}
+    \end{minipage}
+    \caption{\snFour\ nucleon scattering data used in DOM fit}
+    \label{DOM_sn124_scattering}
+    \centering
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/sn124_chargeDensity.png}
+        \label{DOM_sn124_chargeDensity}
+    \end{minipage}
+    \begin{minipage}{0.35\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/sn124_SPLevels.png}
+        \label{DOM_sn124_SPLevels}
+    \end{minipage}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/sn124_RMSRadius.png}
+        \label{DOM_sn124_RMSRadius}
+    \end{minipage}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/sn124_BE.png}
+        \label{DOM_sn124_BE}
+    \end{minipage}
+    \caption{\snFour\ bound-state data used in DOM fit}
+    \label{DOM_sn124_structural}
+\end{figure*}
+
+\begin{figure*}[!htb]
+    \centering
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/pb208_protonElastic.png}
+        \label{DOM_pb208_proton_elastic}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/pb208_neutronElastic.png}
+        \label{DOM_pb208_neutron_elastic}
+    \end{minipage}
+    \centering
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/pb208_protonInelastic.png}
+        \label{DOM_pb208_proton_inelastic}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/pb208_neutronInelastic.png}
+        \label{DOM_pb208_neutron_inelastic}
+    \end{minipage}
+    \caption{\pbEight\ nucleon scattering data used in DOM fit}
+    \label{DOM_pb208_scattering}
+    \centering
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/pb208_chargeDensity.png}
+        \label{DOM_pb208_chargeDensity}
+    \end{minipage}
+    \begin{minipage}{0.35\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/pb208_SPLevels.png}
+        \label{DOM_pb208_SPLevels}
+    \end{minipage}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/pb208_RMSRadius.png}
+        \label{DOM_pb208_RMSRadius}
+    \end{minipage}
+    \begin{minipage}{0.4\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/pb208_BE.png}
+        \label{DOM_pb208_BE}
+    \end{minipage}
+    \caption{\pbEight\ bound-state data used in DOM fit}
+    \label{DOM_pb208_structural}
 \end{figure*}
 
 \end{document}
