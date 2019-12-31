@@ -63,16 +63,16 @@ superscriptaddress, nobalancelastpage]{revtex4}
 \newcommand{\pbNat}{\ensuremath{^{\text{\lowercase{nat}}}}P\lowercase{b}}
 
 % shell labels
-\newcommand{\sOne}{s\ensuremath{_{\frac{1}{2}}}}
-\newcommand{\pThree}{p\ensuremath{_{\frac{3}{2}}}}
-\newcommand{\pOne}{p\ensuremath{_{\frac{1}{2}}}}
-\newcommand{\dFive}{d\ensuremath{_{\frac{5}{2}}}}
-\newcommand{\dThree}{d\ensuremath{_{\frac{3}{2}}}}
-\newcommand{\fSeven}{f\ensuremath{_{\frac{7}{2}}}}
-\newcommand{\fFive}{f\ensuremath{_{\frac{5}{2}}}}
-\newcommand{\gNine}{g\ensuremath{_{\frac{9}{2}}}}
-\newcommand{\gSeven}{g\ensuremath{_{\frac{7}{2}}}}
-\newcommand{\hEleven}{h\ensuremath{_{\frac{11}{2}}}}
+\newcommand{\sOne}{s\ensuremath{_{1/2}}}
+\newcommand{\pThree}{p\ensuremath{_{3/2}}}
+\newcommand{\pOne}{p\ensuremath{_{1/2}}}
+\newcommand{\dFive}{d\ensuremath{_{5/2}}}
+\newcommand{\dThree}{d\ensuremath{_{3/2}}}
+\newcommand{\fSeven}{f\ensuremath{_{7/2}}}
+\newcommand{\fFive}{f\ensuremath{_{5/2}}}
+\newcommand{\gNine}{g\ensuremath{_{9/2}}}
+\newcommand{\gSeven}{g\ensuremath{_{7/2}}}
+\newcommand{\hEleven}{h\ensuremath{_{11/2}}}
 
 \newcommand{\tZero}{T\ensuremath{_{0}}}
 
@@ -106,21 +106,17 @@ Intermediate Energies}
 
 \author{C.~D.~Pruitt}  \email[Corresponding author:]{cdpruitt@wustl.edu}
 \author{R.~J.~Charity}
-\affiliation{Department of Chemistry, Washington University, St. Louis, MO 63130}
 \author{L.~G.~Sobotka}
-\affiliation{Department of  Chemistry, Washington University, St. Louis, MO 63130, USA}
-\affiliation{Department of  Physics, Washington University, St. Louis, MO 63130, USA}
+\author{J.~M.~Elson}
+\affiliation{Department of Chemistry, Washington University, St. Louis, MO 63130}
 \author{D. E.~M.~Hoff}  
 \affiliation{Department of Chemistry, Washington University, St. Louis, MO 63130}
 \altaffiliation{Present Address: \textit{Department of Physics, University of
         Massachusetts-Lowell and
 Astronomy, Michigan State University, East Lansing, MI 48824, USA}}
-
 \author{K.~W.~Brown} \altaffiliation{Present Address: \textit{National
         Superconducting Cyclotron Laboratory, Departments of Physics and
 Astronomy, Michigan State University, East Lansing, MI 48824, USA}}
-\author{J.~M.~Elson}
-\affiliation{Department of Chemistry, Washington University, St. Louis, MO 63130}
 
 \author{M.C.~Atkinson}
 \author{W.H.~Dickhoff}
@@ -253,9 +249,9 @@ provide new isotopically-resolved \tot\ data useful for identifying the
 dependence of optical 
 potential terms on nuclear asymmetry; and second, conduct a Dispersive Optical Model
 (DOM) analysis of these new \tot\ data along with a large corpus of scattering
-and bound-state data to extract structural quantities (neutron skin
-thicknesses, spectroscopic factors) for several cornerstone, closed-proton-shell nuclei.
-Key findings of this DOM analysis are presented in the companion paper \cite{Pruitt2020PRL}.
+and bound-state data to extract veiled structural quantities (e.g. neutron skin
+thicknesses and spectroscopic factors) for several cornerstone, closed-proton-shell nuclei.
+Key findings of this DOM analysis are presented in the companion Letter \cite{Pruitt2020PRL}.
 
 \section{Experimental Considerations}
 By scattering secondary radioactive beams off of hydrogen targets in inverse
@@ -815,8 +811,8 @@ Dickhoff2018}. Except where indicated, the corpus of experimental data used for
 fitting is the same as in \cite{PruittPhDThesis}. To situate the reader, we discuss the
 experimental data and DOM results for \oSixEight\ in full detail. The
 experimental data used and fit quality for \caAughtEight, \niEightFour,
-\snTwelveFour, and \pbEight\ are similar and key differences are noted. For
-systematics of neutron skins and binding energies, see the companion letter
+\snTwelveFour, and \pbEight\ are similar and only key differences are noted. For
+systematics of neutron skins and binding energies, see companion Letter
 \cite{PruittPRL2020}.
 
 \subsection{\oSix\ experimental data used in DOM analysis}
@@ -825,7 +821,9 @@ sections data sets and twenty analyzing power data sets from 10-200 MeV were
 incorporated. Only three proton reaction cross section data sets, ranging from 20-65 MeV,
 were available. As an added constraint, we used systematic trends
 from the comprehensive review of Carlson \cite{Carlson1975} to generate proton
-reaction cross section pseudo-data from 70-200 MeV, which were included in the fit.
+\rxn\ pseudo-data from 70-200 MeV, which were included in the fit.
+These pseudo-data are shown as open symbols in proton \rxn\ figures in
+Appendix C.
 For neutrons, ten differential elastic cross section
 data sets from a 10 MeV to 95 MeV, a single
 neutron reaction cross section data point at 14 MeV, and our newly-measured \tot\ results
@@ -1021,7 +1019,7 @@ an example, we found their mean neutron skin values varied by less
 than 0.001 and 0.01 fm, respectively, over several thousand sampling steps late
 in sampling. Out of caution (and given our expectation of very large autocorrelation times)
 we used only the terminal sample for each walker chain to produce
-the results presented here and in the companion paper \cite{Pruitt2020PRL}.
+the results presented here and in the companion Letter \cite{Pruitt2020PRL}.
 In the end, we expect that additional sampling could slightly
 reduce the estimated variance of each extracted quantity but have a negligible
 effect on the mean values. The estimated mean values and variances for each
@@ -1058,7 +1056,7 @@ parameter for each nucleus are listed in Appendix \ref{DOMParameterValues}.
 
 
 \subsection{Fit results on $^{16}$O}
-Figs. \ref{DOM_o16_scattering} and \ref{DOM_o16_structural} in Appendix
+Figures \ref{DOM_o16_scattering} and \ref{DOM_o16_structural} in Appendix
 \ref{DOMFitResults} show the DOM fit of \oSix\ to experimental data via
 MCMC sampling. The experimental proton \rxn\, neutron \el, \tot, 
 and \rxn\, charge density distribution, RMS charge radius, binding energy per nucleon,
@@ -1067,14 +1065,17 @@ suggesting that the DOM is a effect tool for modeling nuclei as light as A=16.
 Almost all experimental proton \el\ data are recovered by the DOM
 calculations with the exception of the location and magnitude of the diffraction
 minima at backward angles, a regime known to be challenging from past
-optical model analyses. To reproduce the \oSix\ proton \rxn\
+optical model analyses.
+
+To reproduce the \oSix\ proton \rxn\
 pseudo-data, generated from \cite{Carlson1975}, a large volume imaginary term
 was required above 100 MeV, which in turn reduced the spectroscopic strength in
-the valence $\pi$ and $\nu$ \pOne\ shell by roughly 0.05. This connection
+the valence $\pi$ and $\nu$ \pOne\ orbital by roughly 0.05. This connection
 between large proton \rxn\ at high energies and modest reduction of valence
 spectroscopic factors appeared on all isotopes we analyzed, indicating that a
-non-negligible fraction of spectral strength rests above 100 MeV. We also note
-the importance of the charge density distribution for determining the 
+non-negligible fraction of spectral strength rests above 100 MeV.
+
+We also note the importance of the charge density distribution for determining the 
 magnitude of the imaginary strength below the Fermi energy. For example, in test
 fits where the charge density was not included as a constraint, most of the
 negative imaginary strength was concentrated in the negative surface term
@@ -1082,15 +1083,15 @@ between $-30 E < \epsilon_{F}$ MeV, and the tail of the charge density was
 overpredicted. With the charge density included as a constraint,
 the negative surface term shrank by a factor of two and the negative volume term
 grew to compensate, pushing nucleon density deeper in energy space and
-increasing the binding energy closer to the experimental value. While
-the proton \rxn, neutron \tot, and charge density appear to provide the most
+increasing the binding energy closer to the experimental value.
+
+The proton \rxn, neutron \tot, and charge density appear to provide the most
 stringent constraints on the self-energy out of all the data sectors we
 considered, all sectors provided complementary information that is not fully
-captured by any other sector.
-
-The analyzing powers appear to be the most difficult sector of experimental data to
+captured by any other sector. However, it is also true that the analyzing powers
+were the most difficult sector of experimental data to
 reproduce, with moderate deviations visible from 10-15 MeV for both protons and
-neutrons and above 100 MeV for protons (see panels B and D of
+neutrons and above 100 MeV for protons (see panels (b) and (d) of
 Fig. \ref{DOM_o16_scattering}). Some
 of the difficulty with the analyzing powers is attributable to our neglecting of
 an imaginary spin-orbit term in the DOM potential used in this work, a choice
@@ -1101,9 +1102,10 @@ investigate the importance of the imaginary spin-orbit term and to compare
 different options for its functional form.
 
 \subsection{Fit results on $^{18}$O}
-Figs. \ref{DOM_o18_scattering} and \ref{DOM_o18_structural} in Appendix
-\ref{DOMFitResults} show the DOM fit of \oEight\ and \oEight\ experimental data
-used as a constraint. Of the systems we studied, \oEight\ was one of most challenging due to the 
+Figures \ref{DOM_o18_scattering} and \ref{DOM_o18_structural} in Appendix
+\ref{DOMFitResults} show \oEight\ experimental data and the DOM fit.
+
+Of the systems we studied, \oEight\ was one of most challenging due to the 
 paucity of experimental data. To constrain the negative-energy domain
 of the potential, the only unambiguous experimental data were the neutron
 and proton separation energies and the overall binding energy, adding
@@ -1117,10 +1119,11 @@ easily reproduced. Due to the deterioration of systematic trends from
 for lower energies, so the positive-energy surface term of the potential
 was largely unconstrained in this important area.
 
-Our results for the spectrosopic factors for the $\pi$ and $\nu$ 0\pOne\ shell and the
+Our results for the spectroscopic factors for the $\pi$ and $\nu$ 0\pOne\ shell and the
 neutron skin thickness for \oEight\ (see \cite{Pruitt2020PRL}) have a large variance,
-which we consider a consequence of the absence of experimental proton \rxn\ data for
-\oEight\ below 70 MeV, unique among all nuclei included in the present study.
+which likely results from the absence of experimental proton \rxn\ data for
+\oEight\ below 70 MeV (fortunately, \oEight\ is unique in this way among the
+nuclei we studied). 
 In symmetric \oSix, the proton and neutron potentials were identical except for
 the Coulomb interaction, so the neutron \tot\ data provided information about
 both the proton and neutron imaginary strength at positive energies. For
@@ -1135,6 +1138,47 @@ section between 10 and 50 MeV would be valuable.
 
 \subsection{Fit results on \caAughtEight, \niEightFour, \snTwelveFour, and \pbEight}
 \textcolor{red}{Insert discussion here - ideas?}
+
+\subsection{Trends in valence spectroscopic factors}
+\begin{table}[tb]
+    \centering
+    \begin{tabular}{c c c c c c c}
+        \small Isotope & Length & Diam. & Mass & $\rho_{\text{A}}$ & NA & SP\\
+        \small & [mm] & [mm] & [g] & \frac{mol}{cm$^{2}$} & \% & \%\\
+        \hline
+        $^{\text{nat}}$C& 13.66(2)& 8.260(5)& 1.2363& 0.1921(1)& -& -\\
+        $^{\text{nat}}$C& 27.29(2)& 8.260(5)& 2.4680& 0.3835(2)& -& -\\
+        \\
+        H$_{2}$O& 20.00(1)& 8.92(1)& 1.2461& 0.1107(3)& -& - \\
+        D$_{2}$O& 20.00(1)& 8.92(1)& 1.3852& 0.1107(3)& 0.02& 99.9\\
+        H$_{2}$$^{18}$O& 20.00(1)& 8.92(1)& 1.3844& 0.1107(3)& 0.20& 99.9\\
+        \\
+        $^{58}$Ni& 7.97(3)& 8.18(2)& 3.6438& 0.1197(3)& 68.1& 99.6 \\
+        $^{\text{nat}}$Ni& 8.00(3)& 8.20(2 & 3.6898& 0.1192(3)& - & -\\
+        $^{64}$Ni& 7.96(2)& 8.20(4)& 3.9942& 0.1192(6)& 0.93& 92.2\\
+        \\
+        $^{103}$Rh& 2.03(1)& 10.20(2)& 2.8359& 0.02426(4)& 100& 99.9\\
+        \\
+        $^{112}$Sn& 13.65(3)& 8.245(5)& 4.9720& 0.08332(5)& 0.97& 99.9\\
+        $^{\text{nat}}$Sn& 13.68(3)& 8.245(5)& 5.3263& 0.08414(5)& - & -\\
+        $^{124}$Sn& 13.73(3)& 8.245(5)& 5.5492& 0.08399(5)& 5.79& 99.9\\
+        \\
+        $^{\text{nat}}$Pb& 10.07(2)& 8.27(1)& 6.130& 0.05508(6)& -& -\\
+        \hline
+    \end{tabular}
+    \centering
+    \caption{Physical characteristics of samples used for neutron \tot\ measurements.
+The relevant ``sample thickness'' for cross section calculations is the areal density of nuclei
+        $\rho_{\text{A}}$, equivalent to the volumetric number density times
+        the length of the sample. For liquid
+        samples H$_{2}^{\text{nat}}$O, D$_{2}^{\text{nat}}$O, and H$_{2}^{18}$O,
+        the length and diameter given are for the interior of the vessels
+        used to hold the samples and the masses listed are calculated based on 
+        literature values for the density of each sample at 25 C.}
+    \label{SampleCharacteristics}
+\end{table}
+
+
 
 \section{Conclusion}
 By adopting a digitizer-driven
@@ -1183,7 +1227,7 @@ grant S10 OD018091.
 \section{Appendix A: Definition of DOM Potential}
 \subsection{Functional Forms}
 Before giving the full parameterization, we identify a few standard functional
-forms. Radial dependences are defined a Woods-Saxon shape or a derivative:
+forms. Radial dependences are defined by a Woods-Saxon shape or a derivative:
 \begin{equation} \label{WoodsSaxon}
     \begin{split}
         f_{vol}(r; r_{0}, a) & = \frac{-1}{1+e^{(r-R)/a}},\\
@@ -1220,11 +1264,11 @@ The irreducible self-energy (optical potential) used in this work is defined
     \Sigma^{*}(\alpha,\beta;E) =  \Sigma_{s}^{*}(\alpha,\beta) + \Sigma_{im}^{*}(\alpha,\beta;E)
     + \Sigma_{d}^{*}(\alpha,\beta;E).
 \end{equation}
-The energy-independent real part ($\Sigma_{s}(\alpha,\beta)$) and 
-energy-dependent imaginary part ($\Sigma_{im}^{*}(\alpha,\beta)$)
+The energy-independent real part $\Sigma_{s}(\alpha,\beta)$ and 
+energy-dependent imaginary part $\Sigma_{im}^{*}(\alpha,\beta)$
 parameterizations are given in the following two subsections. The
-dispersive correction term ($\Sigma_{d}^{*}*\alpha,\beta;E)$) is completely
-determined by an integral over the imaginary part (see Eq. (3) of
+dispersive correction term $\Sigma_{d}^{*}*\alpha,\beta;E)$ is completely
+determined by an integral over the imaginary part (Eq. (3) of
 \cite{Mahzoon2014}). All free parameters that are fit via MCMC sampling are
 typeset in \textbf{bold}.
 
@@ -1244,16 +1288,16 @@ The Hartree-Fock component $V_{HF}$ has two subcomponents:
 where the non-local Hartree-Fock volume term $V_{vol}(r,r')$, is defined as
 a Woods-Saxon form coupled to a Gaussian non-locality:
 \begin{equation} \label{RealVolume}
-    V_{vol}(r,r') = \mathbf{V_{1}}{\times}f_{vol}(r; \mathbf{r_{1}}, \mathbf{a_{1}})
+    V_{vol}(r,r') = -\mathbf{V_{1}}{\times}f_{vol}(r; \mathbf{r_{1}}, \mathbf{a_{1}})
     {\times}N(r,r';\boldsymbol{\beta_{1}}).
 \end{equation}
 The local Hartree-Fock wine-bottle
 term $V_{wb}$, named for resemblance to the dimple at the bottom of a wine
-bottle, is defined as a Gaussian centered at the nuclear origin:
+bottle, is defined as a Gaussian centered at the nuclear origin,
 \begin{equation}
     V_{wb}(r) = \mathbf{V_{2}}{\times}e^{r^{2}/\boldsymbol{\sigma_{2}}^{2}}.
 \end{equation}
-with the sign of $\mathbf{V_{2}}$ opposite that of $\mathbf{V_{1}}$.
+
 The real spin-orbit component $V_{so}$ is defined using a derivative-Woods-Saxon
 shape in keeping with the expectation that the spin-orbit coupling is strongest near the
 nuclear surface:
