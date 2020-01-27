@@ -78,6 +78,44 @@
     gROOT->SetStyle("graphStyle");
     gROOT->ForceStyle();
 
+    // create DOM relative difference file
+    vector<double> energies;
+    vector<double> CSs;
+    vector<double> energyErrors;
+    vector<double> CSErrors;
+
+    string DOMRelDiffFileName = "~/gDOM/output/sn124_sn112.txt";
+    ifstream DOMRelDiffFile(DOMReslDiffFileName.c_str());
+    string line;
+    while(getline(DOMRelDiffFile,line))
+    {
+        // parse line into tokens
+        vector<string> tokens;
+        istringstream iss(line);
+        copy(istream_iterator<string>(iss),
+                istream_iterator<string>(),
+                back_inserter(tokens));
+
+        // skip empty lines
+        if(!tokens.size())
+        {
+            continue;
+        }
+
+        energies.push_back(tokens[0]);
+        energyErrors.push_back(0);
+        CSs.push_back(tokens[1]);
+        CSErrors.push_back(0);
+    }
+    
+    TGraphAsymmErrors* DOMGraph = new TGraphAsymmErrors(numberOfDOMPoints,
+                                      &energies[0],
+                                      &CSs[0],
+                                      &energyErrors[0],
+                                      &energyErrors[0],
+                                      &CSErrors[0],
+                                      &CSErrors[0]);
+
     // Set graph point and line characteristics
     relGraph->SetLineColor(kRed);
     relGraph->SetLineWidth(3);
@@ -93,6 +131,10 @@
     SARelDiffGraphSixth->SetLineStyle(7);
     SARelDiffGraphSixth->SetLineWidth(3);
     SARelDiffGraphSixth->SetLineColor(kGray+2);
+
+    DOMGraph->SetLineStyle(7);
+    DOMGraph->SetLineWidth(3);
+    DOMGraph->SetLineColor(kGray+2);
 
     RamsauerRelDiffGraph->SetLineStyle(7);
     RamsauerRelDiffGraph->SetLineWidth(3);
@@ -119,6 +161,7 @@
     mg->Add(relGraphSE, "3");
     mg->Add(SARelDiffGraphThird, "l");
     mg->Add(SARelDiffGraphSixth, "l");
+    mg->Add(DOMGraph, "l");
     //mg->Add(RamsauerRelDiffGraph, "l");
     //mg->Add(RamsauerRelDiffGraphSixth, "l");
 
@@ -164,6 +207,7 @@
     legend->AddEntry(SARelDiffGraphThird,"SAS, r #alpha A^{1/3} ","l");
     legend->AddEntry(relGraphSE,"Exp data, sys only   ","f");
     legend->AddEntry(SARelDiffGraphSixth,"SAS, r #alpha A^{1/6} ","l");
+    legend->AddEntry(DOMGraph,"DOM fit","l");
     //legend->AddEntry(RamsauerRelDiffGraph,"Ramsauer","l");
     legend->Draw();
 
