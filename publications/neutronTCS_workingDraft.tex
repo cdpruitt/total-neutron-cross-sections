@@ -1,5 +1,5 @@
 \documentclass[twocolumn,secnumarabic,amssymb, nobibnotes, aps, prl,
-superscriptaddress, nobalancelastpage]{revtex4}
+superscriptaddress, nobalancelastpage, draft]{revtex4}
 \newcommand{\revtex}{REV\TeX\ }
 \newcommand{\classoption}[1]{\texttt{#1}}
 \newcommand{\macro}[1]{\texttt{\textbackslash#1}}
@@ -350,7 +350,7 @@ summed before digitization.
 The particular neutron beam structure at WNR dictates the energy range
 achievable for \tot\ measurements (see Fig. \ref{BeamStructure}).
 Proton pulse trains, called ``macropulses'', are delivered to the tungsten target at 120 Hz.
-Each macropulse consists of \approx350 individual proton pulses, called
+Each macropulse consists of $\approx$350 individual proton pulses, called
 ``micropulses'', spaced 1.8 
 \micro\second\ apart. Each micropulse consists of a single thin proton packet
 that generates $\gamma$ rays and neutrons within a tight
@@ -410,7 +410,7 @@ Ni and Sn samples.
     %\addtolength{\tabcolsep}{-1pt}
     \begin{tabular}{c c c c c c c}
         \small Isotope & Length & Diam. & Mass & $\rho_{\text{A}}$ & NA & SP\\
-        \small & [mm] & [mm] & [g] & \frac{mol}{cm$^{2}$} & \% & \%\\
+        \small & [mm] & [mm] & [g] & $\frac{\textrm{mol}}{\textrm{cm}^{2}}$ & \% & \%\\
         \hline
         $^{\text{nat}}$C& 13.66(2)& 8.260(5)& 1.2363& 0.1921(1)& -& -\\
         $^{\text{nat}}$C& 27.29(2)& 8.260(5)& 2.4680& 0.3835(2)& -& -\\
@@ -944,33 +944,26 @@ of the DOM parameter space, we elected to fix the model discrepancy terms.
 
 \begin{table}[tb]
     \centering
-    \bgroup
-    \def\arraystretch{1.8}%
-    \begin{tabular}{ c c c c }
-        \el\ & A & \tot\ & \rxn \\
+    \begin{tabular}{ c c c c c c c c c}
+        \el\ & A & \tot\ & \rxn\ & $\epsilon_{nlj}$ & BE/A & N,Z & $r_{rms}$ & $\rho_{q}$ \\ \relax
+        [\%/$\degree$] & [-] & [mb] & [mb] & [MeV] & [MeV] & [-] & [fm] & [\%] \\
         \hline
-        \textcolor{red}{0.25} $\%/\degree_{CM}$ & \textcolor{red}{0.10}
-            & \textcolor{red}{0.25}\% & \textcolor{red}{0.25}\% \\
+        \textcolor{red}{0.25} & \textcolor{red}{0.10} & \textcolor{red}{0.25} &
+        \textcolor{red}{0.25} & \textcolor{red}{0.10} & \textcolor{red}{5} &
+        \textcolor{red}{0.10} & \textcolor{red}{0.005} & \textcolor{red}{1} \\
     \end{tabular}
-    \begin{tabular}{ c c c c c }
-        $\epsilon_{nlj}$ & BE/A & N,Z & $r_{rms}$ & $\rho_{Q}$ \\
-        \hline
-        \textcolor{red}{0.10} MeV & \textcolor{red}{5}\% & \textcolor{red}{0.10}
-        & \textcolor{red}{0.005} fm & \textcolor{red}{1}\%\\
-    \end{tabular}
-    \egroup
     \caption{Model discrepancy terms for each data sector used in
-        MCMC utility function. For \el\, the model discrepancy was defined to
-        increase linearly with respect to the scattering angle in the
-        center-of-mass frame, with units of \% per degree. $\epsilon_{nlj}$
+        MCMC utility function. For \el\, the model discrepancy increased
+        linearly with respect to the scattering angle in the
+        center-of-mass frame with units of \% per degree. $\epsilon_{nlj}$
         are the single-particle energies for valence nucleons as calculated
-        from separation energies in \cite{AME2016},
-        $r_{rms}$ is the root-mean-square charge radius, and
-    $\rho_{Q}$ is the charge density distribution.}
+        from separation energies in \cite{AME2016}.
+        $r_{rms}$ is the root-mean-square charge radius and
+        $\rho_{q}$ is the charge density distribution.}
     \label{ModelDiscrepancyTable}
 \end{table}
 
-The prior distribution $P(\vec{x})$ was taken to be uniform over a
+    The prior distribution $P(\vec{x})$ was taken to be uniform over a
 physically-reasonable range for each parameter. For example, the
 diffusenesses of all Woods-Saxon terms were restricted to 0.4-1.0 fm.
 After $N$ samples have been taken from the posterior distribution,
@@ -1144,41 +1137,14 @@ section between 10 and 50 MeV would be valuable.
     \centering
     \begin{tabular}{c c c c c c c}
         \small Isotope & Length & Diam. & Mass & $\rho_{\text{A}}$ & NA & SP\\
-        \small & [mm] & [mm] & [g] & \frac{mol}{cm$^{2}$} & \% & \%\\
         \hline
         $^{\text{nat}}$C& 13.66(2)& 8.260(5)& 1.2363& 0.1921(1)& -& -\\
-        $^{\text{nat}}$C& 27.29(2)& 8.260(5)& 2.4680& 0.3835(2)& -& -\\
-        \\
-        H$_{2}$O& 20.00(1)& 8.92(1)& 1.2461& 0.1107(3)& -& - \\
-        D$_{2}$O& 20.00(1)& 8.92(1)& 1.3852& 0.1107(3)& 0.02& 99.9\\
-        H$_{2}$$^{18}$O& 20.00(1)& 8.92(1)& 1.3844& 0.1107(3)& 0.20& 99.9\\
-        \\
-        $^{58}$Ni& 7.97(3)& 8.18(2)& 3.6438& 0.1197(3)& 68.1& 99.6 \\
-        $^{\text{nat}}$Ni& 8.00(3)& 8.20(2 & 3.6898& 0.1192(3)& - & -\\
-        $^{64}$Ni& 7.96(2)& 8.20(4)& 3.9942& 0.1192(6)& 0.93& 92.2\\
-        \\
-        $^{103}$Rh& 2.03(1)& 10.20(2)& 2.8359& 0.02426(4)& 100& 99.9\\
-        \\
-        $^{112}$Sn& 13.65(3)& 8.245(5)& 4.9720& 0.08332(5)& 0.97& 99.9\\
-        $^{\text{nat}}$Sn& 13.68(3)& 8.245(5)& 5.3263& 0.08414(5)& - & -\\
-        $^{124}$Sn& 13.73(3)& 8.245(5)& 5.5492& 0.08399(5)& 5.79& 99.9\\
-        \\
-        $^{\text{nat}}$Pb& 10.07(2)& 8.27(1)& 6.130& 0.05508(6)& -& -\\
-        \hline
     \end{tabular}
     \centering
     \caption{Physical characteristics of samples used for neutron \tot\ measurements.
-The relevant ``sample thickness'' for cross section calculations is the areal density of nuclei
-        $\rho_{\text{A}}$, equivalent to the volumetric number density times
-        the length of the sample. For liquid
-        samples H$_{2}^{\text{nat}}$O, D$_{2}^{\text{nat}}$O, and H$_{2}^{18}$O,
-        the length and diameter given are for the interior of the vessels
-        used to hold the samples and the masses listed are calculated based on 
-        literature values for the density of each sample at 25 C.}
-    \label{SampleCharacteristics}
+The relevant literature values for the density of each sample at 25 C.}
+    \label{SpectroscopicFactors}
 \end{table}
-
-
 
 \section{Conclusion}
 By adopting a digitizer-driven
