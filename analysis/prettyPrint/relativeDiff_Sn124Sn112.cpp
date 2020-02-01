@@ -84,8 +84,8 @@
     vector<double> energyErrors;
     vector<double> CSErrors;
 
-    string DOMRelDiffFileName = "~/gDOM/output/sn124_sn112.txt";
-    ifstream DOMRelDiffFile(DOMReslDiffFileName.c_str());
+    string DOMRelDiffFileName = "/home/cdpruitt/gDOM/output/sn124_sn112.txt";
+    ifstream DOMRelDiffFile(DOMRelDiffFileName.c_str());
     string line;
     while(getline(DOMRelDiffFile,line))
     {
@@ -102,13 +102,14 @@
             continue;
         }
 
-        energies.push_back(tokens[0]);
+        energies.push_back(stod(tokens[0]));
         energyErrors.push_back(0);
-        CSs.push_back(tokens[1]);
+        CSs.push_back(100*stod(tokens[1]));
         CSErrors.push_back(0);
+        //CSErrors.push_back(100*stod(tokens[2]));
     }
     
-    TGraphAsymmErrors* DOMGraph = new TGraphAsymmErrors(numberOfDOMPoints,
+    TGraphAsymmErrors* DOMGraph = new TGraphAsymmErrors(energies.size(),
                                       &energies[0],
                                       &CSs[0],
                                       &energyErrors[0],
@@ -126,15 +127,18 @@
 
     SARelDiffGraphThird->SetLineStyle(9);
     SARelDiffGraphThird->SetLineWidth(3);
-    SARelDiffGraphThird->SetLineColor(kBlack);
+    SARelDiffGraphThird->SetLineColor(kGray+2);
 
     SARelDiffGraphSixth->SetLineStyle(7);
     SARelDiffGraphSixth->SetLineWidth(3);
     SARelDiffGraphSixth->SetLineColor(kGray+2);
 
-    DOMGraph->SetLineStyle(7);
-    DOMGraph->SetLineWidth(3);
-    DOMGraph->SetLineColor(kGray+2);
+    DOMGraph->SetLineStyle(3);
+    DOMGraph->SetLineWidth(5);
+    DOMGraph->SetLineColor(kBlack);
+    //DOMGraph->SetMarkerColor(kBlue-8);
+    //DOMGraph->SetFillColor(kBlue-8);
+    //DOMGraph->SetFillStyle(3002);
 
     RamsauerRelDiffGraph->SetLineStyle(7);
     RamsauerRelDiffGraph->SetLineWidth(3);
@@ -192,16 +196,16 @@
     mg->GetYaxis()->SetLabelSize(0.05);
 
     mg->GetYaxis()->SetLabelFont(2);
-    mg->GetYaxis()->SetNdivisions(5);
+    mg->GetYaxis()->SetNdivisions(10);
     mg->GetYaxis()->SetTickLength(0.02);
 
     gPad->SetLogx(1);
     
-    mg->GetYaxis()->SetRangeUser(0.0,4.1);
+    mg->GetYaxis()->SetRangeUser(0.0,5.001);
     mg->GetXaxis()->SetLimits(5,600);
 
     // Define legend format and contents
-    TLegend *legend = new TLegend(0.15, 0.83, 0.45, 0.95);
+    TLegend *legend = new TLegend(0.65, 0.20, 0.95, 0.34);
     legend->SetNColumns(2);
     legend->AddEntry(relGraph,"Exp data, sys + stat   ","f");
     legend->AddEntry(SARelDiffGraphThird,"SAS, r #alpha A^{1/3} ","l");
