@@ -12,6 +12,8 @@ superscriptaddress, nobalancelastpage, draft]{revtex4}
 \usepackage[free-standing-units]{siunitx}
 \usepackage{xcolor}
 \usepackage{placeins}
+\usepackage{multirow}
+\usepackage{bm}
 
 \newcolumntype{N}{>{\centering\arraybackslash}m{1.3in}}
 \newcolumntype{M}{>{\centering\arraybackslash}m{1.0in}}
@@ -953,9 +955,7 @@ of the DOM parameter space, we elected to fix the model discrepancy terms.
         \el\ & A & \tot\ & \rxn\ & $\epsilon_{nlj}$ & BE/A & N,Z & $r_{rms}$ & $\rho_{q}$ \\ \relax
         [\%/$\degree$] & [-] & [mb] & [mb] & [MeV] & [MeV] & [-] & [fm] & [\%] \\
         \hline
-        \textcolor{red}{0.25} & \textcolor{red}{0.10} & \textcolor{red}{0.25} &
-        \textcolor{red}{0.25} & \textcolor{red}{0.10} & \textcolor{red}{5} &
-        \textcolor{red}{0.10} & \textcolor{red}{0.005} & \textcolor{red}{1} \\
+        0.25 & 0.10 & 0.25 & 0.25 & 0.10 & 5 & 0.10 & 0.005 & 1 \\
     \end{tabular}
     \caption{Model discrepancy terms for each data sector used in
         MCMC utility function. For \el\, the model discrepancy increased
@@ -1138,18 +1138,30 @@ section between 10 and 50 MeV would be valuable.
 \textcolor{red}{Insert discussion here - ideas?}
 
 \subsection{Trends in valence spectroscopic factors}
-\begin{table}[tb]
+\begin{table*}[tb]
     \centering
-    \begin{tabular}{c c c c c c c}
-        \small Isotope & Length & Diam. & Mass & $\rho_{\text{A}}$ & NA & SP\\
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{c c c c c c c c c c c c}
+        \multicolumn{3}{c}{Isotope} & \oSix & \oEight & \caForty & \caEight & \niEight & \niFour & \snTwelve & \snFour & \pbEight \\
         \hline
-        $^{\text{nat}}$C& 13.66(2)& 8.260(5)& 1.2363& 0.1921(1)& -& -\\
+        \multirow{2}{*}{\large$\pi$} & & Level & 0\pOne & 0\pOne & 0\dThree & 1\sOne & 0\fSeven &
+        0\fSeven & 0\gNine & 0\gNine & 2\sOne \\
+        & & SF & $0.76^{0.82}_{0.67}$ & $0.62^{0.73}_{0.51}$ & $0.65^{0.72}_{0.54}$ &
+        $0.64^{0.72}_{0.55}$ & $0.73^{0.77}_{0.65}$ & $0.49^{0.60}_{0.39}$ & $0.55^{0.64}_{0.47}$ &
+        $0.51^{0.61}_{0.39}$ & $0.58^{0.67}_{0.49}$ \\
+        \hline
+        \multirow{2}{*}{\large$\nu$} & & Level & 0\pOne & 0\dFive & 0\dThree & 0\fSeven & 1\pThree &
+        1\pThree & 1\dFive & 0\hEleven & 1\fFive \\
+        & & SF & $0.76^{0.82}_{0.67}$ & $0.78^{0.82}_{0.71}$ & $0.64^{0.71}_{0.53}$ &
+        $0.73^{0.80}_{0.65}$ & $0.77^{0.80}_{0.72}$ & $0.64^{0.70}_{0.54}$ & $0.68^{0.73}_{0.62}$ &
+        $0.63^{0.70}_{0.52}$ & $0.66^{0.73}_{0.54}$ \\
     \end{tabular}
-    \centering
-    \caption{Physical characteristics of samples used for neutron \tot\ measurements.
-The relevant literature values for the density of each sample at 25 C.}
+    \caption{Spectroscopic factors for valence proton ($\pi$) and neutron ($\nu$) levels,
+    extracted from DOM analysis. The 16\textsuperscript{th}, 
+    50\textsuperscript{th}, and 84\textsuperscript{th} percentiles of the MCMC-generated
+    posterior distributions are reported.}
     \label{SpectroscopicFactors}
-\end{table}
+\end{table*}
 
 \section{Conclusion}
 By adopting a digitizer-driven
