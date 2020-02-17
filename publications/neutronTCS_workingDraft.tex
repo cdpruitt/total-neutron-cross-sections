@@ -105,20 +105,29 @@ superscriptaddress, nobalancelastpage, draft]{revtex4}
 Intermediate Energies}
 
 \author{C.~D.~Pruitt}  \email[Corresponding author:]{cdpruitt@wustl.edu}
+\altaffiliation{Present Address: \textit{Lawrence Livermore National Laboratory, Livermore, CA
+94550}}
+\affiliation{Department of Chemistry, Washington University, St. Louis, MO 63130}
 \author{R.~J.~Charity}
+\affiliation{Department of Chemistry, Washington University, St. Louis, MO 63130}
 \author{L.~G.~Sobotka}
+\affiliation{Department of Chemistry, Washington University, St. Louis, MO 63130}
+\affiliation{Department of Physics, Washington University, St. Louis, MO 63130}
 \author{J.~M.~Elson}
 \affiliation{Department of Chemistry, Washington University, St. Louis, MO 63130}
 \author{D. E.~M.~Hoff}  
-\affiliation{Department of Chemistry, Washington University, St. Louis, MO 63130}
 \altaffiliation{Present Address: \textit{Department of Physics, University of
         Massachusetts-Lowell and
 Astronomy, Michigan State University, East Lansing, MI 48824, USA}}
-\author{K.~W.~Brown} \altaffiliation{Present Address: \textit{National
+\affiliation{Department of Chemistry, Washington University, St. Louis, MO 63130}
+\author{K.~W.~Brown}
+\altaffiliation{Present Address: \textit{National
         Superconducting Cyclotron Laboratory, Departments of Physics and
 Astronomy, Michigan State University, East Lansing, MI 48824, USA}}
-
+\affiliation{Department of Chemistry, Washington University, St. Louis, MO 63130}
 \author{M.C.~Atkinson}
+\altaffiliation{Present Address: \textit{TRIUMF, Vancouver, BC V6T 2A3, Canada}}
+\affiliation{Department of Physics, Washington University, St. Louis, MO 63130}
 \author{W.H.~Dickhoff}
 \affiliation{Department of Physics, Washington University, St. Louis, MO 63130}
 
@@ -164,14 +173,17 @@ of the incident neutron with energy $E$ in the center of mass \cite{Fernbach1949
 While on \textit{average}, experimental \tot\ data comport with this na\"ive
 model, the most prominent feature of experimental \tot\ data is the oscillatory
 behavior centered about the average of Eq. (\ref{SASAbsolute}), visible in Fig.
-\ref{SASphereVsExperiment}.
-
+\ref{SASphereVsExperiment}. Peterson \cite{Peterson1962} interpreted these oscillations as the 
+result of a phase shift between neutron partial waves passing \textit{around} the 
+nucleus (thus undergoing no phase shift) and waves passing
+\textit{through} the nuclear potential, where they are refracted and exhibit a 
+retardation of phase (an illustration is available in \cite{Satchler1980}).
 \begin{figure}
     \includegraphics[width=\linewidth]{figures/ExampleTCS.png}
     \caption{
         (Color online) Experimental \tot\ data are shown from 2-500
         MeV for nuclides from A=12 to A=208
-        \cite{Finlay1993, Schwartz1974, Poenitz1983, Abfalterer2000, Abfalterer2001}.
+        \protect\cite{Finlay1993, Schwartz1974, Poenitz1983, Abfalterer2000, Abfalterer2001}.
         Predictions for \tot\ given by the ``strongly-absorbing sphere'' (SAS)
         model, Eq. (\ref{SASAbsolute}), are shown as thin dashed lines for each nucleus.
         Regular oscillations about the SAS model are visible
@@ -180,11 +192,6 @@ behavior centered about the average of Eq. (\ref{SASAbsolute}), visible in Fig.
     }
     \label{SASphereVsExperiment}
 \end{figure}
-Peterson \cite{Peterson1962} interpreted these oscillations as the 
-result of a phase shift between neutron partial waves passing \textit{around} the 
-nucleus (thus undergoing no phase shift) and waves passing
-\textit{through} the nuclear potential, where they are refracted and exhibit a 
-retardation of phase (an illustration is available in \cite{Satchler1980}).
 This explanation was termed the 
 ``nuclear Ramsauer effect'' by Carpenter and Wilson \cite{Carpenter1959} based on 
 the analogous effect seen in electron scattering on noble gases.
@@ -410,7 +417,7 @@ Ni and Sn samples.
     %\addtolength{\tabcolsep}{-1pt}
     \begin{tabular}{c c c c c c c}
         \small Isotope & Length & Diam. & Mass & $\rho_{\text{A}}$ & NA & SP\\
-        \small & [mm] & [mm] & [g] & $\frac{\textrm{mol}}{\textrm{cm}^{2}}$ & \% & \%\\
+        \small & [mm] & [mm] & [g] & [mol/cm$^{2}$] & \% & \%\\
         \hline
         $^{\text{nat}}$C& 13.66(2)& 8.260(5)& 1.2363& 0.1921(1)& -& -\\
         $^{\text{nat}}$C& 27.29(2)& 8.260(5)& 2.4680& 0.3835(2)& -& -\\
@@ -435,12 +442,13 @@ Ni and Sn samples.
     \centering
     \caption{Physical characteristics of samples used for neutron \tot\ measurements.
 The relevant ``sample thickness'' for cross section calculations is the areal density of nuclei
-        $\rho_{\text{A}}$, equivalent to the volumetric number density times
+        $\rho_{\text{A}}$, equal to the volumetric number density times
         the length of the sample. For liquid
         samples H$_{2}^{\text{nat}}$O, D$_{2}^{\text{nat}}$O, and H$_{2}^{18}$O,
         the length and diameter given are for the interior of the vessels
         used to hold the samples and the masses listed are calculated based on 
-        literature values for the density of each sample at 25 C.}
+        literature values for the density of each sample at 25 C. Isotopic natural abundances (NA) and
+        the abundances in our enriched samples (SA) are provided for reference.}
     \label{SampleCharacteristics}
 \end{table}
 
@@ -699,8 +707,7 @@ from our measurement or in the literature data.
     3-500 MeV; in panel (b), the relative differences between the literature data and
     our data are shown in percent. From 3-100 MeV, our data are fully consistent with the
     literature datasets but above 100 MeV, a difference arises, peaking at
-    $\approx$5\% at 300 MeV.
-b}
+    $\approx$5\% at 300 MeV.}
     \label{LiteratureBenchmarking}
 \end{figure}
 
@@ -813,8 +820,7 @@ experimental data and DOM results for \oSixEight\ in full detail. The
 experimental data used and fit quality for \caAughtEight, \niEightFour,
 \snTwelveFour, and \pbEight\ are similar and only key differences are noted. For
 systematics of neutron skins and binding energies, see companion Letter
-\cite{PruittPRL2020}.
-
+\cite{Pruitt2020PRL}.
 \subsection{\oSix\ experimental data used in DOM analysis}
 For protons, twenty-eight differential elastic cross
 sections data sets and twenty analyzing power data sets from 10-200 MeV were
@@ -847,7 +853,6 @@ Because the DOM self-energy does not necessarily conserve particle number, we
 included the ``experimental'' proton and neutron numbers of 8 as part of the
 fit. Lastly, the total binding energy of \oSix\ from \cite{AME2016} was
 included as a constraint. 
-
 \subsection{\oEight\ experimental data used in DOM analysis}
 A large corpus of proton elastic scattering data for \oEight\ was
 available from the EXFOR database. Twenty-eight proton elastic differential cross
@@ -1448,15 +1453,15 @@ histogram; the experimental value is shown with a thin gray band.
         \includegraphics[width=\linewidth]{figures/o16_neutronInelastic.png}
         \label{DOM_o16_neutron_inelastic}
     \end{minipage}
-    \caption{\oSix\ nucleon scattering data used in DOM fit}
-    \label{DOM_o16_scattering}
+    %\caption{\oSix\ nucleon scattering data used in DOM fit}
+    %\label{DOM_o16_scattering}
     \centering
     \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/o16_chargeDensity.png}
         \label{DOM_o16_chargeDensity}
-    \end{minipage}
-    \begin{minipage}{0.35\linewidth}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/o16_SPLevels.png}
         \label{DOM_o16_SPLevels}
@@ -1465,13 +1470,13 @@ histogram; the experimental value is shown with a thin gray band.
         \centering
         \includegraphics[width=\linewidth]{figures/o16_RMSRadius.png}
         \label{DOM_o16_RMSRadius}
-    \end{minipage}
+    \end{minipage}\hspace{6pt}
     \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/o16_BE.png}
         \label{DOM_o16_BE}
     \end{minipage}
-    \caption{\oSix\ bound-state data used in DOM fit}
+    \caption{\oSix: constraining experimental data and DOM fit}
     \label{DOM_o16_structural}
 \end{figure*}
 
@@ -1481,17 +1486,18 @@ histogram; the experimental value is shown with a thin gray band.
         \centering
         \includegraphics[width=\linewidth]{figures/o18_protonElastic.png}
         \label{DOM_o18_proton_elastic}
-    \end{minipage}
+    \end{minipage}\hspace{6pt}
     \begin{minipage}{0.4\linewidth}
         \centering
+        \vspace{-10pt}
         \begin{minipage}[c]{0.5\linewidth}
             \centering
-            \includegraphics[width=\linewidth]{figures/o18_neutronElastic.png}
+                \includegraphics[width=\linewidth]{figures/o18_neutronElastic.png}
         \end{minipage}
-        \begin{minipage}[c]{0.4\linewidth}
+        \begin{minipage}[c]{0.45\linewidth}
             \centering
-            No \oEight\\
-            proton \rxn\ data\\
+            No \oEight\ neutron \\
+            analyzing powers\\
             were available
         \end{minipage}
         \label{DOM_o18_neutron_elastic}
@@ -1507,15 +1513,13 @@ histogram; the experimental value is shown with a thin gray band.
         \includegraphics[width=\linewidth]{figures/o18_neutronInelastic.png}
         \label{DOM_o18_neutron_inelastic}
     \end{minipage}
-    \caption{\oEight\ nucleon scattering data used in DOM fit}
-    \label{DOM_o18_scattering}
     \centering
     \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/o18_chargeDensity.png}
         \label{DOM_o18_chargeDensity}
-    \end{minipage}
-    \begin{minipage}{0.35\linewidth}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/o18_SPLevels.png}
         \label{DOM_o18_SPLevels}
@@ -1524,13 +1528,13 @@ histogram; the experimental value is shown with a thin gray band.
         \centering
         \includegraphics[width=\linewidth]{figures/o18_RMSRadius.png}
         \label{DOM_o18_RMSRadius}
-    \end{minipage}
+    \end{minipage}\hspace{6pt}
     \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/o18_BE.png}
         \label{DOM_o18_BE}
     \end{minipage}
-    \caption{\oEight\ bound-state data used in DOM fit}
+    \caption{\oEight: constraining experimental data and DOM fit}
     \label{DOM_o18_structural}
 \end{figure*}
 
@@ -1557,15 +1561,13 @@ histogram; the experimental value is shown with a thin gray band.
         \includegraphics[width=\linewidth]{figures/ca40_neutronInelastic.png}
         \label{DOM_ca40_neutron_inelastic}
     \end{minipage}
-    \caption{\caForty\ nucleon scattering data used in DOM fit}
-    \label{DOM_ca40_scattering}
     \centering
     \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/ca40_chargeDensity.png}
         \label{DOM_ca40_chargeDensity}
-    \end{minipage}
-    \begin{minipage}{0.35\linewidth}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/ca40_SPLevels.png}
         \label{DOM_ca40_SPLevels}
@@ -1574,13 +1576,13 @@ histogram; the experimental value is shown with a thin gray band.
         \centering
         \includegraphics[width=\linewidth]{figures/ca40_RMSRadius.png}
         \label{DOM_ca40_RMSRadius}
-    \end{minipage}
+    \end{minipage}\hspace{6pt}
     \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/ca40_BE.png}
         \label{DOM_ca40_BE}
     \end{minipage}
-    \caption{\caForty\ bound-state data used in DOM fit}
+    \caption{\caForty: constraining experimental data and DOM fit}
     \label{DOM_ca40_structural}
 \end{figure*}
 
@@ -1593,7 +1595,17 @@ histogram; the experimental value is shown with a thin gray band.
     \end{minipage}\hspace{6pt}
     \begin{minipage}{0.4\linewidth}
         \centering
-        \includegraphics[width=\linewidth]{figures/ca48_neutronElastic.png}
+        \vspace{-10pt}
+        \begin{minipage}[c]{0.5\linewidth}
+            \centering
+                \includegraphics[width=\linewidth]{figures/ca48_neutronElastic.png}
+        \end{minipage}
+        \begin{minipage}[c]{0.45\linewidth}
+            \centering
+            No \caEight\ neutron \\
+            analyzing powers \\
+            were available
+        \end{minipage}
         \label{DOM_ca48_neutron_elastic}
     \end{minipage}
     \centering
@@ -1607,15 +1619,13 @@ histogram; the experimental value is shown with a thin gray band.
         \includegraphics[width=\linewidth]{figures/ca48_neutronInelastic.png}
         \label{DOM_ca48_neutron_inelastic}
     \end{minipage}
-    \caption{\caEight\ nucleon scattering data used in DOM fit}
-    \label{DOM_ca48_scattering}
     \centering
     \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/ca48_chargeDensity.png}
         \label{DOM_ca48_chargeDensity}
-    \end{minipage}
-    \begin{minipage}{0.35\linewidth}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/ca48_SPLevels.png}
         \label{DOM_ca48_SPLevels}
@@ -1624,13 +1634,13 @@ histogram; the experimental value is shown with a thin gray band.
         \centering
         \includegraphics[width=\linewidth]{figures/ca48_RMSRadius.png}
         \label{DOM_ca48_RMSRadius}
-    \end{minipage}
+    \end{minipage}\hspace{6pt}
     \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/ca48_BE.png}
         \label{DOM_ca48_BE}
     \end{minipage}
-    \caption{\caEight\ bound-state data used in DOM fit}
+    \caption{\caEight: constraining experimental data and DOM fit}
     \label{DOM_ca48_structural}
 \end{figure*}
 
@@ -1657,15 +1667,13 @@ histogram; the experimental value is shown with a thin gray band.
         \includegraphics[width=\linewidth]{figures/ni58_neutronInelastic.png}
         \label{DOM_ni58_neutron_inelastic}
     \end{minipage}
-    \caption{\niEight\ nucleon scattering data used in DOM fit}
-    \label{DOM_ni58_scattering}
     \centering
     \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/ni58_chargeDensity.png}
         \label{DOM_ni58_chargeDensity}
-    \end{minipage}
-    \begin{minipage}{0.35\linewidth}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/ni58_SPLevels.png}
         \label{DOM_ni58_SPLevels}
@@ -1674,13 +1682,13 @@ histogram; the experimental value is shown with a thin gray band.
         \centering
         \includegraphics[width=\linewidth]{figures/ni58_RMSRadius.png}
         \label{DOM_ni58_RMSRadius}
-    \end{minipage}
+    \end{minipage}\hspace{6pt}
     \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/ni58_BE.png}
         \label{DOM_ni58_BE}
     \end{minipage}
-    \caption{\niEight\ bound-state data used in DOM fit}
+    \caption{\niEight: constraining experimental data and DOM fit}
     \label{DOM_ni58_structural}
 \end{figure*}
 
@@ -1693,7 +1701,17 @@ histogram; the experimental value is shown with a thin gray band.
     \end{minipage}\hspace{6pt}
     \begin{minipage}{0.4\linewidth}
         \centering
-        \includegraphics[width=\linewidth]{figures/ni64_neutronElastic.png}
+        \vspace{-10pt}
+        \begin{minipage}[c]{0.5\linewidth}
+            \centering
+                \includegraphics[width=\linewidth]{figures/ni64_neutronElastic.png}
+        \end{minipage}
+        \begin{minipage}[c]{0.45\linewidth}
+            \centering
+            No \niFour\ neutron \\
+            analyzing powers \\
+            were available
+        \end{minipage}
         \label{DOM_ni64_neutron_elastic}
     \end{minipage}
     \centering
@@ -1707,15 +1725,13 @@ histogram; the experimental value is shown with a thin gray band.
         \includegraphics[width=\linewidth]{figures/ni64_neutronInelastic.png}
         \label{DOM_ni64_neutron_inelastic}
     \end{minipage}
-    \caption{\niFour\ nucleon scattering data used in DOM fit}
-    \label{DOM_ni64_scattering}
     \centering
     \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/ni64_chargeDensity.png}
         \label{DOM_ni64_chargeDensity}
-    \end{minipage}
-    \begin{minipage}{0.35\linewidth}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/ni64_SPLevels.png}
         \label{DOM_ni64_SPLevels}
@@ -1724,28 +1740,51 @@ histogram; the experimental value is shown with a thin gray band.
         \centering
         \includegraphics[width=\linewidth]{figures/ni64_RMSRadius.png}
         \label{DOM_ni64_RMSRadius}
-    \end{minipage}
+    \end{minipage}\hspace{6pt}
     \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/ni64_BE.png}
         \label{DOM_ni64_BE}
     \end{minipage}
-    \caption{\niFour\ bound-state data used in DOM fit}
+    \caption{\niFour: constraining experimental data and DOM fit}
     \label{DOM_ni64_structural}
 \end{figure*}
 
 \begin{figure*}[!htb]
     \centering
     \begin{minipage}{0.4\linewidth}
+        %\vspace{-10pt}
         \centering
-        \includegraphics[width=\linewidth]{figures/sn112_protonElastic.png}
+        \begin{minipage}[c]{0.5\linewidth}
+            \centering
+                \includegraphics[width=\linewidth]{figures/sn112_protonElastic.png}
+        \end{minipage}
+        \begin{minipage}[c]{0.45\linewidth}
+            \centering
+            No \snTwelve\ proton \\
+            analyzing powers \\
+            were available
+        \end{minipage}
         \label{DOM_sn112_proton_elastic}
     \end{minipage}\hspace{6pt}
     \begin{minipage}{0.4\linewidth}
+        %\vspace{-10pt}
         \centering
-        \includegraphics[width=\linewidth]{figures/sn112_neutronElastic.png}
+        \begin{minipage}[c]{0.5\linewidth}
+            \centering
+                \includegraphics[width=\linewidth]{figures/sn112_neutronElastic.png}
+        \end{minipage}
+        \begin{minipage}[c]{0.45\linewidth}
+            \centering
+            No \snTwelve\ neutron \\
+            analyzing powers \\
+            were available
+        \end{minipage}
         \label{DOM_sn112_neutron_elastic}
     \end{minipage}
+
+    \vspace{10pt}
+
     \centering
     \begin{minipage}{0.4\linewidth}
         \centering
@@ -1757,15 +1796,13 @@ histogram; the experimental value is shown with a thin gray band.
         \includegraphics[width=\linewidth]{figures/sn112_neutronInelastic.png}
         \label{DOM_sn112_neutron_inelastic}
     \end{minipage}
-    \caption{\snTwelve\ nucleon scattering data used in DOM fit}
-    \label{DOM_sn112_scattering}
     \centering
     \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/sn112_chargeDensity.png}
         \label{DOM_sn112_chargeDensity}
-    \end{minipage}
-    \begin{minipage}{0.35\linewidth}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/sn112_SPLevels.png}
         \label{DOM_sn112_SPLevels}
@@ -1774,13 +1811,13 @@ histogram; the experimental value is shown with a thin gray band.
         \centering
         \includegraphics[width=\linewidth]{figures/sn112_RMSRadius.png}
         \label{DOM_sn112_RMSRadius}
-    \end{minipage}
+    \end{minipage}\hspace{6pt}
     \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/sn112_BE.png}
         \label{DOM_sn112_BE}
     \end{minipage}
-    \caption{\snTwelve\ bound-state data used in DOM fit}
+    \caption{\snTwelve: constraining experimental data and DOM fit}
     \label{DOM_sn112_structural}
 \end{figure*}
 
@@ -1792,11 +1829,19 @@ histogram; the experimental value is shown with a thin gray band.
         \label{DOM_sn124_proton_elastic}
     \end{minipage}\hspace{6pt}
     \begin{minipage}{0.4\linewidth}
-        \centering
-        \includegraphics[width=\linewidth]{figures/sn124_neutronElastic.png}
+        \vspace{-10pt}
+        \begin{minipage}{0.5\linewidth}
+            \includegraphics[width=\linewidth]{figures/sn124_neutronElastic.png}
+        \end{minipage}
+        \begin{minipage}{0.45\linewidth}
+            \centering
+            No \snFour\ neutron \\
+            analyzing powers \\
+            were available
+        \end{minipage}
         \label{DOM_sn124_neutron_elastic}
     \end{minipage}
-    \centering
+    %\centering
     \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/sn124_protonInelastic.png}
@@ -1807,15 +1852,13 @@ histogram; the experimental value is shown with a thin gray band.
         \includegraphics[width=\linewidth]{figures/sn124_neutronInelastic.png}
         \label{DOM_sn124_neutron_inelastic}
     \end{minipage}
-    \caption{\snFour\ nucleon scattering data used in DOM fit}
-    \label{DOM_sn124_scattering}
     \centering
     \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/sn124_chargeDensity.png}
         \label{DOM_sn124_chargeDensity}
-    \end{minipage}
-    \begin{minipage}{0.35\linewidth}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/sn124_SPLevels.png}
         \label{DOM_sn124_SPLevels}
@@ -1824,13 +1867,13 @@ histogram; the experimental value is shown with a thin gray band.
         \centering
         \includegraphics[width=\linewidth]{figures/sn124_RMSRadius.png}
         \label{DOM_sn124_RMSRadius}
-    \end{minipage}
+    \end{minipage}\hspace{6pt}
     \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/sn124_BE.png}
         \label{DOM_sn124_BE}
     \end{minipage}
-    \caption{\snFour\ bound-state data used in DOM fit}
+    \caption{\snFour: constraining experimental data and DOM fit}
     \label{DOM_sn124_structural}
 \end{figure*}
 
@@ -1857,15 +1900,13 @@ histogram; the experimental value is shown with a thin gray band.
         \includegraphics[width=\linewidth]{figures/pb208_neutronInelastic.png}
         \label{DOM_pb208_neutron_inelastic}
     \end{minipage}
-    \caption{\pbEight\ nucleon scattering data used in DOM fit}
-    \label{DOM_pb208_scattering}
     \centering
     \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/pb208_chargeDensity.png}
         \label{DOM_pb208_chargeDensity}
-    \end{minipage}
-    \begin{minipage}{0.35\linewidth}
+    \end{minipage}\hspace{6pt}
+    \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/pb208_SPLevels.png}
         \label{DOM_pb208_SPLevels}
@@ -1874,14 +1915,423 @@ histogram; the experimental value is shown with a thin gray band.
         \centering
         \includegraphics[width=\linewidth]{figures/pb208_RMSRadius.png}
         \label{DOM_pb208_RMSRadius}
-    \end{minipage}
+    \end{minipage}\hspace{6pt}
     \begin{minipage}{0.4\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/pb208_BE.png}
         \label{DOM_pb208_BE}
     \end{minipage}
-    \caption{\pbEight\ bound-state data used in DOM fit}
+    \caption{\pbEight: constraining experimental data and DOM fit}
     \label{DOM_pb208_structural}
 \end{figure*}
+
+%\begin{figure*}[!htb]
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/o18_protonElastic.png}
+%        \label{DOM_o18_proton_elastic}
+%    \end{minipage}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \begin{minipage}[c]{0.5\linewidth}
+%            \centering
+%            \includegraphics[width=\linewidth]{figures/o18_neutronElastic.png}
+%        \end{minipage}
+%        \begin{minipage}[c]{0.4\linewidth}
+%            \centering
+%            No \oEight\\
+%            proton \rxn\ data\\
+%            were available
+%        \end{minipage}
+%        \label{DOM_o18_neutron_elastic}
+%    \end{minipage}
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/o18_protonInelastic.png}
+%        \label{DOM_o18_proton_inelastic}
+%    \end{minipage}\hspace{6pt}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/o18_neutronInelastic.png}
+%        \label{DOM_o18_neutron_inelastic}
+%    \end{minipage}
+%    \caption{\oEight\ nucleon scattering data used in DOM fit}
+%    \label{DOM_o18_scattering}
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/o18_chargeDensity.png}
+%        \label{DOM_o18_chargeDensity}
+%    \end{minipage}
+%    \begin{minipage}{0.35\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/o18_SPLevels.png}
+%        \label{DOM_o18_SPLevels}
+%    \end{minipage}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/o18_RMSRadius.png}
+%        \label{DOM_o18_RMSRadius}
+%    \end{minipage}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/o18_BE.png}
+%        \label{DOM_o18_BE}
+%    \end{minipage}
+%    \caption{\oEight\ bound-state data used in DOM fit}
+%    \label{DOM_o18_structural}
+%\end{figure*}
+%
+%\begin{figure*}[!htb]
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ca40_protonElastic.png}
+%        \label{DOM_ca40_proton_elastic}
+%    \end{minipage}\hspace{6pt}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ca40_neutronElastic.png}
+%        \label{DOM_ca40_neutron_elastic}
+%    \end{minipage}
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ca40_protonInelastic.png}
+%        \label{DOM_ca40_proton_inelastic}
+%    \end{minipage}\hspace{6pt}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ca40_neutronInelastic.png}
+%        \label{DOM_ca40_neutron_inelastic}
+%    \end{minipage}
+%    \caption{\caForty\ nucleon scattering data used in DOM fit}
+%    \label{DOM_ca40_scattering}
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ca40_chargeDensity.png}
+%        \label{DOM_ca40_chargeDensity}
+%    \end{minipage}
+%    \begin{minipage}{0.35\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ca40_SPLevels.png}
+%        \label{DOM_ca40_SPLevels}
+%    \end{minipage}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ca40_RMSRadius.png}
+%        \label{DOM_ca40_RMSRadius}
+%    \end{minipage}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ca40_BE.png}
+%        \label{DOM_ca40_BE}
+%    \end{minipage}
+%    \caption{\caForty\ bound-state data used in DOM fit}
+%    \label{DOM_ca40_structural}
+%\end{figure*}
+%
+%\begin{figure*}[!htb]
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ca48_protonElastic.png}
+%        \label{DOM_ca48_proton_elastic}
+%    \end{minipage}\hspace{6pt}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ca48_neutronElastic.png}
+%        \label{DOM_ca48_neutron_elastic}
+%    \end{minipage}
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ca48_protonInelastic.png}
+%        \label{DOM_ca48_proton_inelastic}
+%    \end{minipage}\hspace{6pt}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ca48_neutronInelastic.png}
+%        \label{DOM_ca48_neutron_inelastic}
+%    \end{minipage}
+%    \caption{\caEight\ nucleon scattering data used in DOM fit}
+%    \label{DOM_ca48_scattering}
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ca48_chargeDensity.png}
+%        \label{DOM_ca48_chargeDensity}
+%    \end{minipage}
+%    \begin{minipage}{0.35\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ca48_SPLevels.png}
+%        \label{DOM_ca48_SPLevels}
+%    \end{minipage}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ca48_RMSRadius.png}
+%        \label{DOM_ca48_RMSRadius}
+%    \end{minipage}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ca48_BE.png}
+%        \label{DOM_ca48_BE}
+%    \end{minipage}
+%    \caption{\caEight\ bound-state data used in DOM fit}
+%    \label{DOM_ca48_structural}
+%\end{figure*}
+%
+%\begin{figure*}[!htb]
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ni58_protonElastic.png}
+%        \label{DOM_ni58_proton_elastic}
+%    \end{minipage}\hspace{6pt}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ni58_neutronElastic.png}
+%        \label{DOM_ni58_neutron_elastic}
+%    \end{minipage}
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ni58_protonInelastic.png}
+%        \label{DOM_ni58_proton_inelastic}
+%    \end{minipage}\hspace{6pt}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ni58_neutronInelastic.png}
+%        \label{DOM_ni58_neutron_inelastic}
+%    \end{minipage}
+%    \caption{\niEight\ nucleon scattering data used in DOM fit}
+%    \label{DOM_ni58_scattering}
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ni58_chargeDensity.png}
+%        \label{DOM_ni58_chargeDensity}
+%    \end{minipage}
+%    \begin{minipage}{0.35\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ni58_SPLevels.png}
+%        \label{DOM_ni58_SPLevels}
+%    \end{minipage}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ni58_RMSRadius.png}
+%        \label{DOM_ni58_RMSRadius}
+%    \end{minipage}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ni58_BE.png}
+%        \label{DOM_ni58_BE}
+%    \end{minipage}
+%    \caption{\niEight\ bound-state data used in DOM fit}
+%    \label{DOM_ni58_structural}
+%\end{figure*}
+%
+%\begin{figure*}[!htb]
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ni64_protonElastic.png}
+%        \label{DOM_ni64_proton_elastic}
+%    \end{minipage}\hspace{6pt}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ni64_neutronElastic.png}
+%        \label{DOM_ni64_neutron_elastic}
+%    \end{minipage}
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ni64_protonInelastic.png}
+%        \label{DOM_ni64_proton_inelastic}
+%    \end{minipage}\hspace{6pt}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ni64_neutronInelastic.png}
+%        \label{DOM_ni64_neutron_inelastic}
+%    \end{minipage}
+%    \caption{\niFour\ nucleon scattering data used in DOM fit}
+%    \label{DOM_ni64_scattering}
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ni64_chargeDensity.png}
+%        \label{DOM_ni64_chargeDensity}
+%    \end{minipage}
+%    \begin{minipage}{0.35\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ni64_SPLevels.png}
+%        \label{DOM_ni64_SPLevels}
+%    \end{minipage}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ni64_RMSRadius.png}
+%        \label{DOM_ni64_RMSRadius}
+%    \end{minipage}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/ni64_BE.png}
+%        \label{DOM_ni64_BE}
+%    \end{minipage}
+%    \caption{\niFour\ bound-state data used in DOM fit}
+%    \label{DOM_ni64_structural}
+%\end{figure*}
+%
+%\begin{figure*}[!htb]
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/sn112_protonElastic.png}
+%        \label{DOM_sn112_proton_elastic}
+%    \end{minipage}\hspace{6pt}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/sn112_neutronElastic.png}
+%        \label{DOM_sn112_neutron_elastic}
+%    \end{minipage}
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/sn112_protonInelastic.png}
+%        \label{DOM_sn112_proton_inelastic}
+%    \end{minipage}\hspace{6pt}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/sn112_neutronInelastic.png}
+%        \label{DOM_sn112_neutron_inelastic}
+%    \end{minipage}
+%    \caption{\snTwelve\ nucleon scattering data used in DOM fit}
+%    \label{DOM_sn112_scattering}
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/sn112_chargeDensity.png}
+%        \label{DOM_sn112_chargeDensity}
+%    \end{minipage}
+%    \begin{minipage}{0.35\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/sn112_SPLevels.png}
+%        \label{DOM_sn112_SPLevels}
+%    \end{minipage}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/sn112_RMSRadius.png}
+%        \label{DOM_sn112_RMSRadius}
+%    \end{minipage}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/sn112_BE.png}
+%        \label{DOM_sn112_BE}
+%    \end{minipage}
+%    \caption{\snTwelve\ bound-state data used in DOM fit}
+%    \label{DOM_sn112_structural}
+%\end{figure*}
+%
+%\begin{figure*}[!htb]
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/sn124_protonElastic.png}
+%        \label{DOM_sn124_proton_elastic}
+%    \end{minipage}\hspace{6pt}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/sn124_neutronElastic.png}
+%        \label{DOM_sn124_neutron_elastic}
+%    \end{minipage}
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/sn124_protonInelastic.png}
+%        \label{DOM_sn124_proton_inelastic}
+%    \end{minipage}\hspace{6pt}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/sn124_neutronInelastic.png}
+%        \label{DOM_sn124_neutron_inelastic}
+%    \end{minipage}
+%    \caption{\snFour\ nucleon scattering data used in DOM fit}
+%    \label{DOM_sn124_scattering}
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/sn124_chargeDensity.png}
+%        \label{DOM_sn124_chargeDensity}
+%    \end{minipage}
+%    \begin{minipage}{0.35\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/sn124_SPLevels.png}
+%        \label{DOM_sn124_SPLevels}
+%    \end{minipage}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/sn124_RMSRadius.png}
+%        \label{DOM_sn124_RMSRadius}
+%    \end{minipage}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/sn124_BE.png}
+%        \label{DOM_sn124_BE}
+%    \end{minipage}
+%    \caption{\snFour\ bound-state data used in DOM fit}
+%    \label{DOM_sn124_structural}
+%\end{figure*}
+%
+%\begin{figure*}[!htb]
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/pb208_protonElastic.png}
+%        \label{DOM_pb208_proton_elastic}
+%    \end{minipage}\hspace{6pt}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/pb208_neutronElastic.png}
+%        \label{DOM_pb208_neutron_elastic}
+%    \end{minipage}
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/pb208_protonInelastic.png}
+%        \label{DOM_pb208_proton_inelastic}
+%    \end{minipage}\hspace{6pt}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/pb208_neutronInelastic.png}
+%        \label{DOM_pb208_neutron_inelastic}
+%    \end{minipage}
+%    \caption{\pbEight\ nucleon scattering data used in DOM fit}
+%    \label{DOM_pb208_scattering}
+%    \centering
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/pb208_chargeDensity.png}
+%        \label{DOM_pb208_chargeDensity}
+%    \end{minipage}
+%    \begin{minipage}{0.35\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/pb208_SPLevels.png}
+%        \label{DOM_pb208_SPLevels}
+%    \end{minipage}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/pb208_RMSRadius.png}
+%        \label{DOM_pb208_RMSRadius}
+%    \end{minipage}
+%    \begin{minipage}{0.4\linewidth}
+%        \centering
+%        \includegraphics[width=\linewidth]{figures/pb208_BE.png}
+%        \label{DOM_pb208_BE}
+%    \end{minipage}
+%    \caption{\pbEight\ bound-state data used in DOM fit}
+%    \label{DOM_pb208_structural}
+%\end{figure*}
 
 \end{document}
