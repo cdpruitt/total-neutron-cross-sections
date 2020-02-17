@@ -69,6 +69,45 @@ void ThreePanelRelDiff() {
         TGraph* SARelDiffGraphSixth = (TGraph*)ramsauerFile->Get(SARelDiffGraphSixthName.c_str());
         TGraph* RamsauerRelDiffGraph = (TGraph*)ramsauerFile->Get(RamsauerRelDiffGraphName.c_str());
 
+        // create DOM relative difference file
+        vector<double> energies;
+        vector<double> CSs;
+        vector<double> energyErrors;
+        vector<double> CSErrors;
+
+        string DOMRelDiffFileName = "/home/cdpruitt/gDOM/output/o18_o16.txt";
+        ifstream DOMRelDiffFile(DOMRelDiffFileName.c_str());
+        string line;
+        while(getline(DOMRelDiffFile,line))
+        {
+            // parse line into tokens
+            vector<string> tokens;
+            istringstream iss(line);
+            copy(istream_iterator<string>(iss),
+                    istream_iterator<string>(),
+                    back_inserter(tokens));
+
+            // skip empty lines
+            if(!tokens.size())
+            {
+                continue;
+            }
+
+            energies.push_back(stod(tokens[0]));
+            energyErrors.push_back(0);
+            CSs.push_back(100*stod(tokens[1]));
+            CSErrors.push_back(0);
+            //CSErrors.push_back(100*stod(tokens[2]));
+        }
+
+        TGraphAsymmErrors* DOMGraph = new TGraphAsymmErrors(energies.size(),
+                &energies[0],
+                &CSs[0],
+                &energyErrors[0],
+                &energyErrors[0],
+                &CSErrors[0],
+                &CSErrors[0]);
+
         // Set graph point and line characteristics
         relGraph->SetLineColor(kRed);
         relGraph->SetLineWidth(5);
@@ -79,18 +118,22 @@ void ThreePanelRelDiff() {
 
         SARelDiffGraphThird->SetLineStyle(9);
         SARelDiffGraphThird->SetLineWidth(3);
-        SARelDiffGraphThird->SetLineColor(kBlack);
+        SARelDiffGraphThird->SetLineColor(kGray+2);
 
         SARelDiffGraphSixth->SetLineStyle(7);
         SARelDiffGraphSixth->SetLineWidth(3);
         SARelDiffGraphSixth->SetLineColor(kGray+2);
+
+        DOMGraph->SetLineStyle(4);
+        DOMGraph->SetLineWidth(5);
+        DOMGraph->SetLineColor(kBlack);
 
         RamsauerRelDiffGraph->SetLineStyle(7);
         RamsauerRelDiffGraph->SetLineWidth(5);
         RamsauerRelDiffGraph->SetLineColor(kGray+2);
 
         relGraphSE->SetFillColor(kBlue);
-        relGraphSE->SetFillStyle(3001);
+        relGraphSE->SetFillStyle(3002);
 
         // first panel
         {
@@ -110,6 +153,7 @@ void ThreePanelRelDiff() {
             mg->Add(SARelDiffGraphSixth, "l");
             mg->Add(relGraph,"3l");
             mg->Add(relGraphSE, "3");
+            mg->Add(DOMGraph, "l");
 
             mg->Draw("al");
 
@@ -162,6 +206,7 @@ void ThreePanelRelDiff() {
             legend->AddEntry(relGraph,"Exp data, sys + stat   ","f");
             //legend->AddEntry(SARelDiffGraph,"SAS, r #alpha A^{1/3} ","l");
             legend->AddEntry(relGraphSE,"Exp data, sys only   ","f");
+            legend->AddEntry(DOMGraph,"DOM fit","l");
             //legend->AddEntry(RamsauerRelDiffGraph,"Ramsauer","l");
             //legend->Draw();
         }
@@ -189,6 +234,47 @@ void ThreePanelRelDiff() {
         TGraph* SARelDiffGraphSixth = (TGraph*)ramsauerFile->Get(SARelDiffGraphSixthName.c_str());
         TGraph* RamsauerRelDiffGraph = (TGraph*)ramsauerFile->Get(RamsauerRelDiffGraphName.c_str());
 
+        // create DOM relative difference file
+        vector<double> energies;
+        vector<double> CSs;
+        vector<double> energyErrors;
+        vector<double> CSErrors;
+
+        string DOMRelDiffFileName = "/home/cdpruitt/gDOM/output/ni64_ni58.txt";
+        ifstream DOMRelDiffFile(DOMRelDiffFileName.c_str());
+        string line;
+        while(getline(DOMRelDiffFile,line))
+        {
+            // parse line into tokens
+            vector<string> tokens;
+            istringstream iss(line);
+            copy(istream_iterator<string>(iss),
+                    istream_iterator<string>(),
+                    back_inserter(tokens));
+
+            // skip empty lines
+            if(!tokens.size())
+            {
+                continue;
+            }
+
+            energies.push_back(stod(tokens[0]));
+            energyErrors.push_back(0);
+            CSs.push_back(100*stod(tokens[1]));
+            CSErrors.push_back(0);
+            //CSErrors.push_back(100*stod(tokens[2]));
+        }
+
+        TGraphAsymmErrors* DOMGraph = new TGraphAsymmErrors(energies.size(),
+                &energies[0],
+                &CSs[0],
+                &energyErrors[0],
+                &energyErrors[0],
+                &CSErrors[0],
+                &CSErrors[0]);
+
+
+
         // Set graph point and line characteristics
         relGraph->SetLineColor(kRed);
         relGraph->SetLineWidth(5);
@@ -199,18 +285,23 @@ void ThreePanelRelDiff() {
 
         SARelDiffGraphThird->SetLineStyle(9);
         SARelDiffGraphThird->SetLineWidth(3);
-        SARelDiffGraphThird->SetLineColor(kBlack);
+        SARelDiffGraphThird->SetLineColor(kGray+2);
 
         SARelDiffGraphSixth->SetLineStyle(7);
         SARelDiffGraphSixth->SetLineWidth(3);
         SARelDiffGraphSixth->SetLineColor(kGray+2);
+
+        DOMGraph->SetLineStyle(4);
+        DOMGraph->SetLineWidth(5);
+        DOMGraph->SetLineColor(kBlack);
+
 
         RamsauerRelDiffGraph->SetLineStyle(7);
         RamsauerRelDiffGraph->SetLineWidth(5);
         RamsauerRelDiffGraph->SetLineColor(kGray+2);
 
         relGraphSE->SetFillColor(kBlue);
-        relGraphSE->SetFillStyle(3001);
+        relGraphSE->SetFillStyle(3002);
 
         // second panel
         {
@@ -230,6 +321,7 @@ void ThreePanelRelDiff() {
             mg->Add(SARelDiffGraphSixth, "l");
             mg->Add(relGraph,"3l");
             mg->Add(relGraphSE, "3");
+            mg->Add(DOMGraph, "l");
 
             mg->Draw("al");
 
@@ -282,6 +374,8 @@ void ThreePanelRelDiff() {
             legend->AddEntry(relGraph,"Exp data, sys + stat   ","f");
             //legend->AddEntry(SARelDiffGraph,"SAS, r #alpha A^{1/3} ","l");
             legend->AddEntry(relGraphSE,"Exp data, sys only   ","f");
+            legend->AddEntry(DOMGraph,"DOM fit","l");
+
             //legend->AddEntry(RamsauerRelDiffGraph,"Ramsauer","l");
             //legend->Draw();
         }
@@ -312,6 +406,45 @@ void ThreePanelRelDiff() {
         TGraph* RamsauerRelDiffGraph = (TGraph*)ramsauerFile->Get(RamsauerRelDiffGraphName.c_str());
         TGraph* RamsauerRelDiffGraphSixth = (TGraph*)ramsauerFile->Get(RamsauerRelDiffGraphSixthName.c_str());
 
+        // create DOM relative difference file
+        vector<double> energies;
+        vector<double> CSs;
+        vector<double> energyErrors;
+        vector<double> CSErrors;
+
+        string DOMRelDiffFileName = "/home/cdpruitt/gDOM/output/sn124_sn112.txt";
+        ifstream DOMRelDiffFile(DOMRelDiffFileName.c_str());
+        string line;
+        while(getline(DOMRelDiffFile,line))
+        {
+            // parse line into tokens
+            vector<string> tokens;
+            istringstream iss(line);
+            copy(istream_iterator<string>(iss),
+                    istream_iterator<string>(),
+                    back_inserter(tokens));
+
+            // skip empty lines
+            if(!tokens.size())
+            {
+                continue;
+            }
+
+            energies.push_back(stod(tokens[0]));
+            energyErrors.push_back(0);
+            CSs.push_back(100*stod(tokens[1]));
+            CSErrors.push_back(0);
+            //CSErrors.push_back(100*stod(tokens[2]));
+        }
+
+        TGraphAsymmErrors* DOMGraph = new TGraphAsymmErrors(energies.size(),
+                &energies[0],
+                &CSs[0],
+                &energyErrors[0],
+                &energyErrors[0],
+                &CSErrors[0],
+                &CSErrors[0]);
+
         // Set graph point and line characteristics
         relGraph->SetLineColor(kRed);
         relGraph->SetLineWidth(3);
@@ -322,11 +455,15 @@ void ThreePanelRelDiff() {
 
         SARelDiffGraphThird->SetLineStyle(9);
         SARelDiffGraphThird->SetLineWidth(3);
-        SARelDiffGraphThird->SetLineColor(kBlack);
+        SARelDiffGraphThird->SetLineColor(kGray+2);
 
         SARelDiffGraphSixth->SetLineStyle(7);
         SARelDiffGraphSixth->SetLineWidth(3);
         SARelDiffGraphSixth->SetLineColor(kGray+2);
+
+        DOMGraph->SetLineStyle(4);
+        DOMGraph->SetLineWidth(5);
+        DOMGraph->SetLineColor(kBlack);
 
         RamsauerRelDiffGraph->SetLineStyle(7);
         RamsauerRelDiffGraph->SetLineWidth(3);
@@ -357,6 +494,7 @@ void ThreePanelRelDiff() {
             mg->Add(SARelDiffGraphSixth, "l");
             mg->Add(relGraph,"3l");
             mg->Add(relGraphSE, "3");
+            mg->Add(DOMGraph, "l");
 
             mg->Draw("al");
 
@@ -398,7 +536,7 @@ void ThreePanelRelDiff() {
             latex.SetTextSize(0.10);
             latex.SetTextAlign(13); // align at top
 
-            latex.DrawLatex(0.13, 0.88, "^{112,124}Sn");
+            latex.DrawLatex(0.17, 0.92, "^{112,124}Sn");
 
             latex.SetTextSize(0.10);
             latex.DrawLatex(0.87, 0.33, "(c)");
@@ -409,6 +547,8 @@ void ThreePanelRelDiff() {
             legend->AddEntry(relGraph,"Exp data, sys + stat   ","f");
             //legend->AddEntry(SARelDiffGraphThird,"SAS, r #alpha A^{1/3} ","l");
             legend->AddEntry(relGraphSE,"Exp data, sys only   ","f");
+            legend->AddEntry(DOMGraph,"DOM fit","l");
+
             //legend->AddEntry(SARelDiffGraphSixth,"SAS, r #alpha A^{1/6} ","l");
             //legend->AddEntry(RamsauerRelDiffGraph,"Ramsauer","l");
             //legend->Draw();
